@@ -8,6 +8,7 @@ use common::*;
 use morrow_agent_harness::{
     core::{
         agent,
+        artifact_provenance::{sha256_hex, ArtifactStatus, HostArtifactReceipt},
         rpi_agent::{AgentError, AgentTool, AgentToolResult, ToolResultPartial},
         rpi_ai::{Schema, Tool},
         RunRequest,
@@ -70,6 +71,67 @@ struct Resumer {
 impl HarnessHost for Resumer {
     async fn verify(&self, candidate: Candidate, cancel: CancellationToken) -> Result<ReviewReceipt> {
         self.inner.verify(candidate, cancel).await
+    }
+    async fn review_artifacts(&self, basis: ReviewBasis, cancel: CancellationToken) -> Result<Vec<ArtifactReceiptRef>> {
+        anyhow::ensure!(!cancel.is_cancelled(), "artifact review canceled");
+        let evidence = basis.events_path.parent().unwrap();
+        let receipt: ReviewReceipt =
+            serde_json::from_slice(&std::fs::read(evidence.join(format!("run-{}-review.json", basis.run_number)))?)?;
+        assert_eq!(receipt.basis, basis, "raw Host review must precede artifact review");
+        assert!(receipt.committed);
+        assert_eq!(receipt.settlement, Settlement::Settled);
+        assert_eq!(receipt.verdict, Verdict::Verified);
+        assert_eq!(std::fs::read(self.inner.root.join("answer.txt"))?, b"correct");
+        assert!(!review_artifact_manifest_path(evidence, basis.run_number).exists());
+
+        // Resolve candidates from this resume's new evidence directory only.
+        // A reconciled original call or the old review is not a new Run artifact.
+        let artifacts = read_tool_artifacts(evidence)?;
+        assert_eq!(artifacts.len(), 1);
+        let candidate = &artifacts[0];
+        assert_eq!(candidate.status, ArtifactStatus::Candidate);
+        assert_eq!(candidate.task_id, basis.task_id);
+        assert_eq!(candidate.session_id, basis.session_id);
+        assert_eq!(candidate.run_id, basis.run_id);
+        assert_eq!(candidate.native_call_id, "write-correct");
+        assert_eq!(candidate.tool, "write_answer");
+        assert_eq!(candidate.input_sha256, sha256_hex(&serde_json::to_vec(&json!({"content":"correct"}))?));
+        let result_index: usize = candidate.artifact_ref.rsplit_once("result-").unwrap().1.parse()?;
+        assert!(result_index >= basis.raw_start && result_index < basis.raw_end);
+        let journal = core::session_journal::Journal::for_session(&basis.session_path);
+        assert_eq!(journal.proof(basis.raw_start, basis.raw_end)?, basis.raw_proof);
+
+        let host_receipt = HostArtifactReceipt {
+            receipt_id: format!("resume-artifact-{}", basis.run_id),
+            artifact_id: candidate.artifact_id.clone(),
+            task_id: basis.task_id.clone(),
+            session_id: basis.session_id.clone(),
+            run_id: basis.run_id.clone(),
+            native_call_id: candidate.native_call_id.clone(),
+            input_sha256: candidate.input_sha256.clone(),
+            output_sha256: candidate.output_sha256.clone(),
+            verifier: "resume-test-host".into(),
+            verifier_version: "1".into(),
+            verified_at: "2026-11-10T15:00:00Z".into(),
+            committed: true,
+            settled: true,
+        };
+        let receipt_path = evidence.join(format!("run-{}-host-artifact-receipt.json", basis.run_number));
+        std::fs::write(&receipt_path, serde_json::to_vec(&host_receipt)?)?;
+        std::fs::OpenOptions::new().write(true).open(&receipt_path)?.sync_all()?;
+        let verified = candidate.verify(host_receipt)?;
+        append_tool_artifact(evidence, &verified)?;
+        Ok(vec![ArtifactReceiptRef {
+            artifact_id: verified.artifact_id,
+            artifact_ref: verified.artifact_ref,
+            task_id: verified.task_id,
+            session_id: verified.session_id,
+            run_id: verified.run_id,
+            native_call_id: verified.native_call_id,
+            input_sha256: verified.input_sha256,
+            output_sha256: verified.output_sha256,
+            status: verified.status,
+        }])
     }
     async fn prepare_continuation(&self, continuation: Continuation, cancel: CancellationToken) -> Result<RunRequest> {
         self.inner.prepare_continuation(continuation, cancel).await
@@ -147,6 +209,61 @@ fn fence_of(root: &Path) -> std::path::PathBuf {
         .expect("fence")
 }
 
+fn check_resumed_artifact_review(evidence: &Path, outcome: &TaskOutcome, run_id: &str) {
+    let basis = &outcome.last_candidate.as_ref().unwrap().basis;
+    assert_eq!(basis.run_id, run_id);
+    assert_eq!(basis.run_number, 2);
+    assert_eq!(basis.events_path.parent().unwrap(), evidence);
+    let manifest: ReviewArtifactManifest =
+        serde_json::from_slice(&std::fs::read(review_artifact_manifest_path(evidence, 2)).unwrap()).unwrap();
+    assert_eq!(manifest.version, ReviewArtifactManifest::VERSION);
+    assert_eq!(manifest.basis, *basis);
+    assert_eq!(manifest.receipt.basis, *basis);
+    assert_eq!(manifest.receipt.verdict, Verdict::Verified);
+    assert_eq!(manifest.artifacts, outcome.artifacts);
+    assert_eq!(manifest.artifacts.len(), 1);
+    let raw_review: Value =
+        serde_json::from_slice(&std::fs::read(evidence.join("run-2-review.json")).unwrap()).unwrap();
+    assert_eq!(raw_review, serde_json::to_value(&manifest.receipt).unwrap());
+    assert_eq!(raw_review, serde_json::to_value(outcome.last_receipt.as_ref().unwrap()).unwrap());
+    let callback: Value =
+        serde_json::from_slice(&std::fs::read(evidence.join("run-2-artifacts-callback.json")).unwrap()).unwrap();
+    assert_eq!(callback, serde_json::to_value(&manifest).unwrap());
+    let artifacts = read_tool_artifacts(evidence).unwrap();
+    assert_eq!(artifacts.len(), 1);
+    let records: Vec<Value> = std::fs::read_to_string(tool_artifacts_path(evidence))
+        .unwrap()
+        .lines()
+        .map(|line| serde_json::from_str(line).unwrap())
+        .collect();
+    assert_eq!(records.len(), 2, "candidate and verified transition remain in the current evidence ledger");
+    assert_eq!(records[0]["status"], "candidate");
+    assert_eq!(records[1]["status"], "verified");
+    assert!(records.iter().all(|record| record["run_id"] == run_id));
+    let artifact = &artifacts[0];
+    let reference = &manifest.artifacts[0];
+    assert_eq!(artifact.status, ArtifactStatus::Verified);
+    assert_eq!(reference.artifact_id, artifact.artifact_id);
+    assert_eq!(reference.run_id, run_id);
+    assert_eq!(reference.native_call_id, "write-correct");
+    assert_eq!(reference.input_sha256, artifact.input_sha256);
+    assert_eq!(reference.output_sha256, artifact.output_sha256);
+    let host_receipt: HostArtifactReceipt =
+        serde_json::from_slice(&std::fs::read(evidence.join("run-2-host-artifact-receipt.json")).unwrap()).unwrap();
+    assert_eq!(artifact.host_receipt.as_ref(), Some(&host_receipt));
+    assert_eq!(host_receipt.run_id, run_id);
+    assert_eq!(host_receipt.artifact_id, reference.artifact_id);
+    host_receipt.validate().unwrap();
+    for name in ["outcome.json", "released.json"] {
+        let persisted: TaskOutcome = serde_json::from_slice(&std::fs::read(evidence.join(name)).unwrap()).unwrap();
+        assert_eq!(persisted.artifacts, manifest.artifacts);
+        assert_eq!(persisted.last_candidate.as_ref().unwrap().basis, *basis);
+        assert_eq!(serde_json::to_value(persisted.last_receipt).unwrap(), raw_review);
+        assert!(!persisted.task_accepted);
+    }
+    assert!(!review_artifact_manifest_path(evidence, 1).exists(), "old Run is not republished as current evidence");
+}
+
 #[tokio::test]
 async fn crashed_owner_resumes_only_after_host_settlement_without_replay_or_budget_refund() {
     let directory = tempfile::tempdir().unwrap();
@@ -173,6 +290,7 @@ async fn crashed_owner_resumes_only_after_host_settlement_without_replay_or_budg
     assert_eq!(pending.open_tool_calls[0].id, "deploy-1");
     assert!(start(host.spec("fresh"), host.request("fresh-run"), host.clone()).is_err());
     let original_fence = std::fs::read(&fence).unwrap();
+    let original_evidence = tree(&root.join("original"));
 
     let resumer = Arc::new(Resumer { inner: host.clone(), mode: Mutex::new(Mode::Unknown), reviews: Mutex::default() });
     // Hosts without reconciliation support, unknown/uncommitted/mismatched
@@ -205,6 +323,8 @@ async fn crashed_owner_resumes_only_after_host_settlement_without_replay_or_budg
     assert_eq!(outcome.runs, 2);
     // Run 1 had no observation: charged its whole admitted limit (4), never refunded.
     assert_eq!(outcome.observed_calls, 4 + 2);
+    check_resumed_artifact_review(&root.join("settled"), &outcome, "resume-settled");
+    assert!(tree(&root.join("original")) == original_evidence, "crashed owner evidence must remain intact");
     assert_eq!(tool.executions.load(Ordering::SeqCst), 1, "interrupted effect must not be replayed");
     assert_eq!(std::fs::read(root.join("answer.txt")).unwrap(), b"correct");
     assert_eq!(outcome.fence_presence, FencePresence::Released);
@@ -249,6 +369,14 @@ async fn resume_of_a_reconciliation_stop_keeps_cumulative_consumption() {
     let outcome = start(spec.clone(), host.request("first-run"), host.clone()).unwrap().wait().await;
     assert_eq!(outcome.stop, TaskStop::ReconciliationRequired);
     assert_eq!(outcome.observed_calls, 2);
+    assert!(outcome.artifacts.is_empty(), "Unknown review cannot publish accepted artifact references");
+    let original_evidence = tree(&root.join("first"));
+    let original_artifacts = read_tool_artifacts(&root.join("first")).unwrap();
+    assert_eq!(original_artifacts.len(), 1);
+    assert_eq!(original_artifacts[0].run_id, "first-run");
+    assert_eq!(original_artifacts[0].status, ArtifactStatus::Candidate);
+    assert!(root.join("first/run-1-artifacts-callback.json").is_file());
+    assert!(!review_artifact_manifest_path(&root.join("first"), 1).exists());
     // The settling Host reviews with the same tool, model and steering owners.
     let mut settled_host = Host::new(&root, &provider, Fault::None);
     settled_host.tool = host.tool.clone();
@@ -260,6 +388,15 @@ async fn resume_of_a_reconciliation_stop_keeps_cumulative_consumption() {
     let outcome = resume(s, r, resumer.clone(), TaskOptions::default()).await.unwrap().wait().await;
     assert_eq!(outcome.stop, TaskStop::AwaitingHostAcceptance, "{outcome:?}");
     assert_eq!((outcome.runs, outcome.observed_calls), (2, 4));
+    check_resumed_artifact_review(&root.join("second"), &outcome, "resume-second");
+    assert!(tree(&root.join("first")) == original_evidence, "old artifacts and callback must not be rewritten");
+    assert_ne!(outcome.artifacts[0].artifact_id, original_artifacts[0].artifact_id);
+    assert_ne!(outcome.artifacts[0].artifact_ref, original_artifacts[0].artifact_ref);
+    assert_eq!(host.tool.writes.load(Ordering::SeqCst), 2, "each Run writes once, with no replay");
+    assert_eq!(provider.requests.lock().unwrap().len(), 4);
+    let resume_record: Value =
+        serde_json::from_slice(&std::fs::read(root.join("second/resume.json")).unwrap()).unwrap();
+    assert_eq!(resume_record["consumed_calls"], 2);
     let review = resumer.reviews.lock().unwrap()[0].clone();
     assert!(review.interrupted_run.is_none());
     assert_eq!(review.fenced_outcome.as_ref().unwrap().stop, TaskStop::ReconciliationRequired);

@@ -80,8 +80,8 @@ Core Run 已 joined 且 Journal 范围可读后，Harness 从 `raw_start..raw_en
 `journal/<tool-call-raw-index>/result-<result-raw-index>`。工具结果声明
 `effects_unknown` 时，自动记录为 `unknown`，不进入 Verified 路径。普通完成路径要求
 范围内的调用全部闭合。取消或中断路径允许范围内存在未结算调用，原调用保存在 Journal。
-已闭合的结果仍会落盘。Review 阶段会用
-`ReviewBasis.raw_proof` 校验 Journal 没有变化。配对失败、Review proof 变化或候选
+已闭合的结果仍会落盘。Review 阶段逐记录检查 hash/chain，并用
+`ReviewBasis.raw_proof` 校验来源范围。配对失败、源记录或 Review proof 变化、候选
 写入失败时，Task 保留 fence 并进入 `ReconciliationRequired`，不继续 Host review。
 
 候选写入按记录顺序进行。中途写入失败时，已经落盘的记录保留为现场证据，Task
@@ -90,14 +90,28 @@ Core Run 已 joined 且 Journal 范围可读后，Harness 从 `raw_start..raw_en
 Host review 可实现 `HarnessHost::review_artifacts`，返回绑定当前
 `ReviewBasis`（含 Task、Session、Run）的 `ArtifactReceiptRef`。Host 可以引用
 Harness 自动生成的 candidate，也可以追加自己的业务产物记录。Harness 在原始
-`run-N-(review|budget-review|stop-review).json` 回执写入后，重新读取
-`tool-artifacts.jsonl`，逐字段核对 ID、引用、Task/Session/Run、native call、输入输出
+`run-N-(review|budget-review|stop-review).json` 回执写入后调用 artifact 回调。
+Harness 把当前 basis、原 review receipt 和回调返回的引用写入
+`run-N-artifacts-callback.json`。随后复核
+Journal 与事件来源，并重新读取 `tool-artifacts.jsonl`，逐字段核对 ID、引用、
+Task/Session/Run、native call、输入输出
 摘要和状态。`Verified` 回执还要求每个引用实际为 `verified`，并带已提交且已结算的
-Host receipt。通过后写入 `run-N-artifacts.json`，并将同一组引用放入
-`TaskOutcome.artifacts`。如果回执未提交、结算未知或 verdict 为 `Unknown`，引用仍
-   写入 `run-N-artifacts-callback.json` 作为未接受的回调证据，`TaskOutcome` 不发布
-   这些引用；校验失败保留原始回执、保持 fence，不继续 Run，也不释放 Session。没有
-   引用的旧 Host 仍走空列表路径。
+Host receipt。来源、引用和结算通过后，再次检查取消和截止时间，写入适用的
+budget/stop review index，最后写 `run-N-artifacts.json` 并把引用放入
+`TaskOutcome.artifacts`。取消、未提交、未知结算、非法引用和来源变化时，已返回的
+引用保存在 callback 文件，Task 保留 fence。回调报错时保存原 review 回执。
+旧 Host 的默认 artifact 回调返回空列表。
+
+这些文件按顺序写入。后续文件写入失败时，前面的阶段证据保留，TaskOutcome
+保持失败状态和 fence。单个 index 或 manifest 只能证明对应审查步骤已经完成，
+业务接受还需检查 outcome、释放记录及 Host 结算。
+
+`NeedsChanges` 准备下一 Run 时保留上一 Run 的引用。新的 Run admission 成功后
+清空 outcome 中的旧引用，下一次有效 review 再发布当前 Run 的引用。历史 manifest
+始终留在各自 evidence 目录。resume 沿用累计 Run 编号，在新的 evidence 目录发布
+新 Run 的回调证据和 manifest，原 evidence 目录通过 `resume.json` 保留来源链。
+当前崩溃恢复给原 Run 补写的 Host reconciliation ToolResult 保存在 Journal 和
+resume 记录中，原 Run 的 ToolArtifact 补写及其可重入恢复仍在实现清单内。
 
 `append_tool_artifact` 先校验记录，再在 evidence 目录锁下追加一行并同步文件。
 同一 `artifact_id` 的后续记录只能表示允许的状态转移：`candidate` 可以变为
@@ -127,6 +141,10 @@ Harness provenance 是额外的 Host 证据，不覆盖旧字段。
    candidate/unknown/revoked 产物不能支撑 `Verified`，而 `NeedsChanges`/`Unknown`
    的引用保留为证据。
 7. 现有 Core/Harness 测试和 workspace 编译继续通过。
+8. ordinary、budget、length 三条 review 路径验证回调证据先于 accepted manifest，
+   并验证 `NeedsChanges` 后引用切换到下一 Run。
+9. 回调取消、引用无效或回调内修改 Journal/事件时保留 callback 文件及 fence。
+10. resume 的新 Run 引用绑定原 Task/Session 和新的 Run，保留累计预算及原 evidence。
 
 真实模型、业务文件、设备和生产效果仍由 Host 验收，本功能只保存 Host 已经
 提交的证据边界。

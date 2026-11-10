@@ -436,6 +436,12 @@ impl Journal {
         })?;
         Ok(result)
     }
+    /// Recheck record hashes and chains in each segment intersecting the range.
+    /// This streams records without retaining the messages in memory.
+    pub fn verify_range(&self, from: usize, to: usize) -> Result<()> {
+        let head = self.load_head()?;
+        self.visit(&head, from, to, |_| Ok(()))
+    }
     fn boundary(&self, head: &Head, index: usize) -> Result<String> {
         if index == 0 {
             return Ok(ROOT.into());
@@ -708,6 +714,26 @@ mod tests {
         journal.commit(json!({}), 1, &[crate::context_memory::user("new".into())], &[]).unwrap();
         assert_eq!(proof, journal.proof(0, 1).unwrap());
         assert_eq!(journal.read(1, 2, 1024).unwrap().len(), 1);
+        std::fs::remove_dir_all(root).unwrap();
+    }
+    #[test]
+    fn range_verification_detects_same_length_corruption_at_proof_boundaries() {
+        let (root, journal) = fixture();
+        journal.commit(json!({}), 0, &[crate::context_memory::user("correct".into())], &[]).unwrap();
+        let proof = journal.proof(0, 1).unwrap();
+        journal.verify_range(0, 1).unwrap();
+        journal.verify_range(0, 0).unwrap();
+        assert!(journal.verify_range(0, 2).is_err());
+        assert!(journal.verify_range(1, 0).is_err());
+        let path = journal.segment_path(0);
+        let original = std::fs::read_to_string(&path).unwrap();
+        let changed = original.replacen("correct", "corrupt", 1);
+        assert_ne!(original, changed);
+        assert_eq!(original.len(), changed.len());
+        std::fs::write(&path, &changed).unwrap();
+        assert_eq!(journal.proof(0, 1).unwrap(), proof);
+        assert!(journal.verify_range(0, 1).unwrap_err().to_string().contains("integrity mismatch"));
+        assert_eq!(std::fs::read_to_string(path).unwrap(), changed);
         std::fs::remove_dir_all(root).unwrap();
     }
     #[test]

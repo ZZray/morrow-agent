@@ -673,6 +673,9 @@ async fn run_task(
                 "deadline_unix_ms":spec.deadline_unix_ms,"max_seconds":request.max_seconds,
             }),
         )?;
+        // References describe the last reviewed Run. A new Run must earn its
+        // own references, while prior manifests retain the review history.
+        progress.outcome.artifacts.clear();
         let events_path = admission.evidence.join(format!("run-{run_number}-events.jsonl"));
         let file = OpenOptions::new().write(true).create_new(true).open(&events_path)?;
         crate::storage::sync_parent(&events_path)?;
@@ -986,6 +989,13 @@ async fn run_task(
                 return Ok(false);
             }
         };
+        let manifest = ReviewArtifactManifest {
+            version: ReviewArtifactManifest::VERSION,
+            basis: subject.basis().clone(),
+            receipt: receipt.clone(),
+            artifacts: artifact_refs.clone(),
+        };
+        write_new(&admission.evidence.join(format!("run-{run_number}-artifacts-callback.json")), &manifest)?;
         if artifact_stopped || cancellation.is_cancelled() {
             progress.stop(
                 TaskStop::Cancelled,
@@ -993,24 +1003,11 @@ async fn run_task(
             );
             return Ok(false);
         }
+        subject.check()?;
         if validate_review_artifacts(&admission.evidence, subject.basis(), &receipt, &artifact_refs).is_err() {
             progress.stop(TaskStop::ReconciliationRequired, "Host artifact references failed Harness validation");
             return Ok(false);
         }
-        let manifest_path = if valid_settlement(&receipt) {
-            crate::review_artifact_manifest_path(&admission.evidence, run_number)
-        } else {
-            admission.evidence.join(format!("run-{run_number}-artifacts-callback.json"))
-        };
-        write_new(
-            &manifest_path,
-            &ReviewArtifactManifest {
-                version: ReviewArtifactManifest::VERSION,
-                basis: subject.basis().clone(),
-                receipt: receipt.clone(),
-                artifacts: artifact_refs.clone(),
-            },
-        )?;
         if !valid_settlement(&receipt) {
             progress.stop(
                 TaskStop::ReconciliationRequired,
@@ -1018,8 +1015,10 @@ async fn run_task(
             );
             return Ok(false);
         }
-        progress.outcome.artifacts = artifact_refs;
-        subject.check()?;
+        if cancellation.is_cancelled() || Instant::now() >= deadline {
+            progress.stop(TaskStop::Cancelled, "original deadline/cancellation reached during artifact review checks");
+            return Ok(false);
+        }
         if let ReviewSubject::Budget { reference, .. } = &subject {
             if cancellation.is_cancelled() || Instant::now() >= deadline {
                 progress
@@ -1049,6 +1048,12 @@ async fn run_task(
                 &json!({"version":1,"kind":"stop_snapshot_review","snapshot":reference,"receipt":receipt}),
             )?;
         }
+        if cancellation.is_cancelled() || Instant::now() >= deadline {
+            progress.stop(TaskStop::Cancelled, "original deadline/cancellation reached before artifact publication");
+            return Ok(false);
+        }
+        write_new(&crate::review_artifact_manifest_path(&admission.evidence, run_number), &manifest)?;
+        progress.outcome.artifacts = artifact_refs;
         match &receipt.verdict {
             Verdict::Verified => {
                 progress.stop(
@@ -1198,6 +1203,7 @@ fn check_basis(basis: &ReviewBasis) -> Result<()> {
         crate::storage::hash(&serde_json::to_vec(&head)?) == basis.journal_head_sha256,
         "review journal head changed"
     );
+    journal.verify_range(basis.raw_start, basis.raw_end)?;
     ensure!(journal.proof(basis.raw_start, basis.raw_end)? == basis.raw_proof, "review journal source changed");
     Ok(())
 }
