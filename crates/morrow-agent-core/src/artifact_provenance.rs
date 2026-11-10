@@ -3,7 +3,7 @@
 //! These records describe evidence supplied by a Host. They do not execute tools,
 //! inspect business systems, or accept a Task.
 
-use anyhow::{ensure, Result};
+use anyhow::{ensure, Context, Result};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::HashSet;
@@ -11,6 +11,16 @@ use std::collections::HashSet;
 const MAX_IDENTIFIER_BYTES: usize = 256;
 const MAX_REFERENCE_BYTES: usize = 4096;
 const MAX_ARTIFACTS: usize = 64;
+
+/// Parse persisted Unix-millisecond or RFC3339 times for historical filtering.
+/// Existing opaque time labels remain valid records and fail only when queried
+/// through a time filter that needs an actual timestamp.
+pub fn parse_provenance_time_ms(value: &str) -> Result<i64> {
+    if let Ok(milliseconds) = value.parse::<i64>() {
+        return Ok(milliseconds);
+    }
+    Ok(chrono::DateTime::parse_from_rfc3339(value).context("invalid provenance timestamp")?.timestamp_millis())
+}
 
 fn bounded(value: &str, limit: usize, label: &str) -> Result<()> {
     ensure!(!value.is_empty(), "{label} is required");

@@ -10,6 +10,7 @@
 
 mod auto_artifacts;
 mod provenance;
+mod provenance_query;
 mod runner;
 mod skill_provenance;
 mod snapshot;
@@ -24,6 +25,11 @@ pub use morrow_agent_core as core;
 pub use provenance::{
     append_skill_provenance, append_tool_artifact, read_skill_provenance, read_tool_artifacts, skill_provenance_path,
     tool_artifacts_path,
+};
+pub use provenance_query::{
+    query_provenance, EvidenceScope, ProvenanceEntry, ProvenanceFileReference, ProvenanceKind, ProvenanceQuery,
+    ProvenanceQueryReport, ProvenanceRecord, ProvenanceScopeError, ProvenanceScopeErrorKind, ProvenanceSourceState,
+    ProvenanceStatus,
 };
 pub use runner::{resume, resume_checked, start, start_with_options, TaskHandle};
 pub use skill_provenance::{

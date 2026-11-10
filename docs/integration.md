@@ -39,6 +39,19 @@ and checks its source artifacts. A changed bundle, replacement installation,
 changed native evidence or revoked source causes that availability check to fail.
 Hosts continue to decide business Task acceptance.
 
+### Cross-Task provenance queries
+
+Pass explicitly authorized `EvidenceScope` values to `query_provenance`, each
+with its Task, Session and evidence directory. `ProvenanceQuery` filters the
+supplied scopes by identity, record kind, artifact, Skill, bundle hash, receipt,
+time and status. Time ranges are half-open Unix-millisecond intervals.
+
+The report contains typed records, exact ledger file references and SHA-256
+digests, historical source states, and per-scope errors. A damaged scope is
+reported while other authorized scopes continue. Legal source revocations stay
+visible in historical results. Use Host checks for current business files and
+`verified_skill_provenance` for current Skill library availability.
+
 ## JSONL host
 
 Python and Node hosts can launch `morrow-agent-jsonl` as a sidecar. The model

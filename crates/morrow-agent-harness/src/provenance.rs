@@ -13,7 +13,7 @@ use serde::Serialize;
 
 use crate::storage;
 
-const MAX_FILE_BYTES: u64 = 8 * 1024 * 1024;
+pub(crate) const MAX_FILE_BYTES: u64 = 8 * 1024 * 1024;
 const MAX_LINE_BYTES: usize = 1024 * 1024;
 const TOOL_ARTIFACTS_FILE: &str = "tool-artifacts.jsonl";
 const SKILL_PROVENANCE_FILE: &str = "skill-provenance.jsonl";
@@ -59,7 +59,7 @@ fn append_record<T: Serialize>(path: &Path, record: &T) -> Result<()> {
     storage::sync_parent(path)
 }
 
-fn lock(evidence_dir: &Path, exclusive: bool) -> Result<File> {
+pub(crate) fn lock(evidence_dir: &Path, exclusive: bool) -> Result<File> {
     let path = evidence_dir.join(".morrow-provenance.lock");
     let file = OpenOptions::new().read(true).write(true).create(true).truncate(false).open(path)?;
     if exclusive { FileExt::try_lock_exclusive(&file) } else { FileExt::try_lock_shared(&file) }
@@ -67,7 +67,7 @@ fn lock(evidence_dir: &Path, exclusive: bool) -> Result<File> {
     Ok(file)
 }
 
-fn read_tool_artifacts_unlocked(evidence_dir: &Path) -> Result<Vec<ToolArtifact>> {
+pub(crate) fn read_tool_artifacts_unlocked(evidence_dir: &Path) -> Result<Vec<ToolArtifact>> {
     let records: Vec<ToolArtifact> = read_records(&tool_artifacts_path(evidence_dir))?;
     let mut positions = HashMap::new();
     let mut artifacts = Vec::with_capacity(records.len());
@@ -156,7 +156,7 @@ pub(crate) fn validate_sources(provenance: &SkillProvenance, artifacts: &[ToolAr
     Ok(())
 }
 
-fn read_skill_provenance_unlocked(evidence_dir: &Path) -> Result<Vec<SkillProvenance>> {
+pub(crate) fn read_skill_provenance_unlocked(evidence_dir: &Path) -> Result<Vec<SkillProvenance>> {
     let records: Vec<SkillProvenance> = read_records(&skill_provenance_path(evidence_dir))?;
     let mut provenance: Vec<SkillProvenance> = Vec::new();
     for record in records {
