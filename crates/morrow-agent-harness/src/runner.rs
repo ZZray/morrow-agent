@@ -35,6 +35,9 @@ use crate::{
     TaskSpec, TaskStop, TruncatedMessageRef, UnknownEffectRecord, Verdict,
 };
 
+#[path = "continuation.rs"]
+pub(crate) mod continuation;
+
 /// Cloneable observation/cancellation handle. No handle drop aborts the worker.
 #[derive(Clone)]
 pub struct TaskHandle {
@@ -249,17 +252,15 @@ pub async fn resume_checked(
     }
     let authorization = authority.snapshot(&spec)?;
     crate::snapshot::persist_authorization(&authorization, &evidence)?;
+    let recovery = crate::recovery_artifacts::prepare(&review, &next, &receipt)?;
     let resume_record = json!({
         "version":1,"kind":"fenced_task_resume","fenced_evidence_dir":fenced_evidence,
         "fence":fence,"consumed_runs":consumed_runs,"consumed_calls":consumed_calls,
         "interrupted_run":interrupted,"receipt":receipt,
+        "artifact_recovery":recovery,
     });
-    let admission = fenced.take_over(&spec, &next.state_path, evidence, &record, &resume_record)?;
-    if let Some(run) = &interrupted {
-        // After take-over a crash leaves the new fence and resume record, so a
-        // later resume sees the same pending Run and the same consumption.
-        agent::reconcile_interrupted_run(&next.state_path, &next.cwd, run, &receipt.tool_calls, &receipt.evidence)?;
-    }
+    let admission = fenced.take_over(&spec, &next.state_path, evidence, &authority.record()?, &resume_record)?;
+    crate::recovery_artifacts::recover(&recovery)?;
     write_new(&admission.evidence.join("task-options.json"), &options)?;
     let mut progress = Progress::new(&spec);
     progress.outcome.runs = consumed_runs;
@@ -276,7 +277,11 @@ fn consumed(evidence: &std::path::Path, outcome: Option<&TaskOutcome>) -> Result
     let count = |value: &Value, key: &str| -> Result<usize> {
         Ok(usize::try_from(value[key].as_u64().with_context(|| format!("{key} missing"))?)?)
     };
-    let prior = evidence.join("resume.json");
+    let prior = if evidence.join("continuation.json").is_file() {
+        evidence.join("continuation.json")
+    } else {
+        evidence.join("resume.json")
+    };
     let (mut runs, mut calls) = if prior.is_file() {
         let prior = read(prior)?;
         (count(&prior, "consumed_runs")?, count(&prior, "consumed_calls")?)
@@ -670,6 +675,7 @@ async fn run_task(
                 "task_id":spec.task_id,"run_id":run_id,"run_number":run_number,
                 "criteria_revision":spec.criteria_revision,"authorization_revision":spec.authorization_revision,
                 "session_path":state_path,"remaining_calls":run_calls_limit,
+                "raw_start":raw_start,"session_id":session_id,
                 "deadline_unix_ms":spec.deadline_unix_ms,"max_seconds":request.max_seconds,
             }),
         )?;

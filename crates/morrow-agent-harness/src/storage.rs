@@ -78,6 +78,12 @@ pub(crate) struct FencedSession {
     pub record: Value,
 }
 
+/// Session ownership before admitting a reviewed successor of a released Task.
+pub(crate) struct ReleasedSession {
+    lock: File,
+    fence: PathBuf,
+}
+
 fn lock_session(session: &Path) -> Result<(File, PathBuf)> {
     let parent = session.parent().context("Session parent missing")?;
     ensure!(parent.is_dir(), "Session parent must already exist");
@@ -118,6 +124,12 @@ fn fence_record(
 }
 
 impl Admission {
+    pub(crate) fn released(session: &Path) -> Result<ReleasedSession> {
+        let (lock, fence) = lock_session(session)?;
+        ensure!(!fence.exists(), "Session has an active or unresolved harness fence; use resume_checked");
+        Ok(ReleasedSession { lock, fence })
+    }
+
     pub fn acquire(spec: &TaskSpec, session: &Path, authority: &Value) -> Result<Self> {
         let (lock, fence) = lock_session(session)?;
         ensure!(!fence.exists(), "Session has an active or unresolved harness fence; reconcile original effects");
@@ -128,6 +140,7 @@ impl Admission {
         marker.sync_all()?;
         sync_parent(&fence)?;
         write_new(&evidence.join("task.json"), spec)?;
+        write_new(&evidence.join("authority-record.json"), authority)?;
         Ok(Self { _lock: lock, fence, fence_bytes, evidence })
     }
 
@@ -139,6 +152,25 @@ impl Admission {
         let bytes = fs::read(&fence)?;
         let record = serde_json::from_slice(&bytes).context("harness fence is not readable JSON")?;
         Ok(FencedSession { lock, fence, bytes, record })
+    }
+}
+
+impl ReleasedSession {
+    /// All successor evidence and the source claim are durable before this marker.
+    pub(crate) fn admit(
+        self,
+        spec: &TaskSpec,
+        session: &Path,
+        authority: &Value,
+        previous: &Path,
+    ) -> Result<Admission> {
+        let evidence = canonical(&spec.evidence_dir)?;
+        let fence_bytes = fence_record(spec, session, &evidence, authority, Some(previous))?;
+        let mut marker = OpenOptions::new().write(true).create_new(true).open(&self.fence)?;
+        marker.write_all(&fence_bytes)?;
+        marker.sync_all()?;
+        sync_parent(&self.fence)?;
+        Ok(Admission { _lock: self.lock, fence: self.fence, fence_bytes, evidence })
     }
 }
 
@@ -164,6 +196,7 @@ impl FencedSession {
         let previous = PathBuf::from(self.record["evidence_dir"].as_str().context("fence evidence missing")?);
         write_new(&evidence.join("task.json"), spec)?;
         write_new(&evidence.join("resume.json"), resume)?;
+        write_new(&evidence.join("authority-record.json"), authority)?;
         let fence_bytes = fence_record(spec, session, &evidence, authority, Some(&previous))?;
         let staged = self.fence.with_extension("resume.tmp");
         // A stale staged file is only an unpublished earlier attempt under this lock.

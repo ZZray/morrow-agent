@@ -40,8 +40,9 @@ the Host to copy the received basis, including additional fields.
 - [x] 2. Run the original start golden cases with unchanged fixtures. Requirement R1.
 - [x] 3. Exercise legacy inline, large reference, NeedsChanges and tampering through
   real sidecar processes and the Python/Node clients. Requirements R2–R4.
-- [ ] 4. Run focused Rust/client checks and independent diff review, then commit
+- [x] 4. Run focused Rust/client checks and independent diff review, then commit
   and push with verification evidence. Requirements R1–R4.
 
+Delivered in `825df7c486b2e4afd1e36508fc062e774159a24c`.
 The final source-archive checks and retained failures are recorded in
 [the compatibility evidence](../evidence/jsonl-legacy-review-20261111.md).

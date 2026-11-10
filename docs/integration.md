@@ -19,6 +19,50 @@ morrow-agent-harness = { git = "https://github.com/ZZray/morrow-agent.git", rev 
 Pin a commit in the consuming product and verify the package name, source, and
 lockfile entry with `cargo metadata`.
 
+### Continue a reviewed Task
+
+Use `continue_reviewed` after a Task has released its Session and the Host has
+committed correction feedback. Rebuild the next `RunRequest` with the original
+Session, paths, model route, credentials and tool authority. Keep the original
+Task terms, total budgets, deadline and `TaskOptions`, and select a fresh Run ID
+and evidence directory.
+
+The following fragment runs inside the product's async Host. The Host supplies
+the previous released Task's spec, next request, exact SHA-256 of `released.json`,
+and a committed `NeedsChanges` receipt bound to the original `ReviewBasis`.
+
+```rust
+use morrow_agent_harness::{continue_reviewed, ReviewedContinuation};
+
+let mut spec = previous_spec.clone();
+spec.evidence_dir = next_evidence_dir;
+let task = continue_reviewed(
+    spec,
+    next_request,
+    host.clone(),
+    original_options,
+    ReviewedContinuation {
+        previous_evidence_dir: previous_spec.evidence_dir.clone(),
+        expected_released_sha256: released_sha256,
+        review: Some(committed_review),
+    },
+)?;
+let outcome = task.wait().await;
+```
+
+The startup call is synchronous. `wait()` joins the actual worker. The Host
+decides business acceptance after inspecting the outcome. An original
+`NeedsChanges` receipt with nonempty feedback can be reused with `review: None`.
+A previously verified candidate needs a new committed `NeedsChanges` receipt.
+
+An existing Session fence requires `resume_checked`. A durable successor claim
+can be retried with the same request and evidence directory before its fence
+was published. Legacy evidence without `authority-record.json` returns
+`original per-Run authority record unavailable; legacy evidence cannot continue_reviewed`.
+The Host must retain that error and inspect the original authorization evidence.
+The lifecycle and recovery rules are described in
+[reviewed continuation](design/reviewed-continuation.md).
+
 ### Skill verification
 
 `core::skill_library::read_verification(&roots, scope, name)` returns the current

@@ -60,6 +60,7 @@ enum Mode {
     Uncommitted,
     WrongCalls,
     Settled,
+    BlockArtifactFile,
 }
 
 struct Resumer {
@@ -74,6 +75,9 @@ impl HarnessHost for Resumer {
     }
     async fn review_artifacts(&self, basis: ReviewBasis, cancel: CancellationToken) -> Result<Vec<ArtifactReceiptRef>> {
         anyhow::ensure!(!cancel.is_cancelled(), "artifact review canceled");
+        if basis.session_id.is_empty() {
+            return Ok(Vec::new());
+        }
         let evidence = basis.events_path.parent().unwrap();
         let receipt: ReviewReceipt =
             serde_json::from_slice(&std::fs::read(evidence.join(format!("run-{}-review.json", basis.run_number)))?)?;
@@ -86,7 +90,15 @@ impl HarnessHost for Resumer {
 
         // Resolve candidates from this resume's new evidence directory only.
         // A reconciled original call or the old review is not a new Run artifact.
-        let artifacts = read_tool_artifacts(evidence)?;
+        let all_artifacts = read_tool_artifacts(evidence)?;
+        let artifacts: Vec<_> = all_artifacts
+            .into_iter()
+            .filter(|artifact| {
+                artifact.task_id == basis.task_id
+                    && artifact.session_id == basis.session_id
+                    && artifact.run_id == basis.run_id
+            })
+            .collect();
         assert_eq!(artifacts.len(), 1);
         let candidate = &artifacts[0];
         assert_eq!(candidate.status, ArtifactStatus::Candidate);
@@ -139,6 +151,9 @@ impl HarnessHost for Resumer {
     async fn reconcile_resume(&self, review: ResumeReview, _: CancellationToken) -> Result<ResumeReceipt> {
         self.reviews.lock().unwrap().push(review.clone());
         let mode = *self.mode.lock().unwrap();
+        if mode == Mode::BlockArtifactFile {
+            std::fs::create_dir(tool_artifacts_path(&review.resume_evidence_dir))?;
+        }
         let calls = review.interrupted_run.as_ref().map(|run| run.open_tool_calls.clone()).unwrap_or_default();
         let tool_calls = calls
             .iter()
@@ -158,6 +173,62 @@ impl HarnessHost for Resumer {
     }
 }
 
+#[tokio::test]
+async fn resume_retries_original_artifacts_after_native_reconciliation_was_already_committed() {
+    let retained = std::env::var_os("MORROW_RECOVERY_EVIDENCE");
+    let directory = match &retained {
+        Some(base) => {
+            std::fs::create_dir_all(base).unwrap();
+            tempfile::Builder::new().prefix("public-resume-").tempdir_in(base).unwrap()
+        }
+        None => tempfile::tempdir().unwrap(),
+    };
+    let root = directory.path().canonicalize().unwrap();
+    let _directory = if retained.is_some() {
+        let _ = directory.keep();
+        eprintln!("Public resume recovery evidence {}", root.display());
+        None
+    } else {
+        Some(directory)
+    };
+    let provider =
+        Provider::new(vec![call("deploy-1", "deploy_step", json!({})), write_answer("correct"), text("Submitted.")]);
+    let tool = hang();
+    let mut inner = Host::new(&root, &provider, Fault::None);
+    inner.read_tool = Some(tool.clone());
+    let host = Arc::new(inner);
+    let spec = host.spec("original");
+    crash_owner(host.clone(), spec.clone(), tool.clone());
+    let original_evidence = tree(&root.join("original"));
+    let resumer =
+        Arc::new(Resumer { inner: host.clone(), mode: Mutex::new(Mode::BlockArtifactFile), reviews: Mutex::default() });
+    let (spec_first, request_first) = resumed(&host, &spec, "first");
+    let error = match resume(spec_first, request_first, resumer.clone(), TaskOptions::default()).await {
+        Ok(_) => panic!("blocked artifact file must refuse before starting a new Run"),
+        Err(error) => error,
+    };
+    assert!(error.to_string().contains("provenance"), "{error:#}");
+    assert!(agent::interrupted_run(&root.join("session.json"), &root).unwrap().is_none());
+    assert_eq!(provider.requests.lock().unwrap().len(), 1);
+    assert!(!root.join("first/recovered-run-1-artifacts.json").exists());
+    std::fs::remove_dir(tool_artifacts_path(&root.join("first"))).unwrap();
+    *resumer.mode.lock().unwrap() = Mode::Settled;
+    let (spec_second, request_second) = resumed(&host, &spec, "second");
+    let outcome =
+        resume(spec_second, request_second, resumer.clone(), TaskOptions::default()).await.unwrap().wait().await;
+    assert_eq!(outcome.stop, TaskStop::AwaitingHostAcceptance, "{outcome:?}");
+    assert_eq!((outcome.runs, outcome.observed_calls), (2, 6));
+    check_resumed_artifact_review(&root.join("second"), &outcome, "resume-second");
+    let recovered = read_tool_artifacts(&root.join("first")).unwrap();
+    assert_eq!(recovered.len(), 1);
+    assert_eq!(recovered[0].run_id, "original");
+    assert_eq!(recovered[0].native_call_id, "deploy-1");
+    assert!(root.join("first/recovered-run-1-artifacts.json").is_file());
+    assert!(tree(&root.join("original")) == original_evidence);
+    assert_eq!(tool.executions.load(Ordering::SeqCst), 1);
+    assert!(resumer.reviews.lock().unwrap().last().unwrap().interrupted_run.is_none());
+}
+
 fn hang() -> Arc<Hang> {
     Arc::new(Hang {
         schema: Tool {
@@ -173,11 +244,15 @@ fn hang() -> Arc<Hang> {
 
 /// Run the owner on its own runtime and drop that runtime mid-tool.
 fn crash_owner(host: Arc<Host>, spec: TaskSpec, tool: Arc<Hang>) {
+    let mut request = host.request("original");
+    request.objective = "Call deploy_step once, then submit the answer.".into();
+    crash_owner_with_request(host, spec, tool, request);
+}
+
+fn crash_owner_with_request(host: Arc<Host>, spec: TaskSpec, tool: Arc<Hang>, request: RunRequest) {
     std::thread::spawn(move || {
         let runtime = tokio::runtime::Builder::new_multi_thread().enable_all().build().unwrap();
         runtime.block_on(async {
-            let mut request = host.request("original");
-            request.objective = "Call deploy_step once, then submit the answer.".into();
             let _handle = start(spec, request, host.clone()).unwrap();
             tokio::time::timeout(Duration::from_secs(10), async {
                 while !tool.started.load(Ordering::SeqCst) {
@@ -187,10 +262,50 @@ fn crash_owner(host: Arc<Host>, spec: TaskSpec, tool: Arc<Hang>) {
             .await
             .unwrap();
         });
-        runtime.shutdown_timeout(Duration::from_millis(0));
+        // Wait for canceled runtime workers to drop the Session lock. Returning
+        // immediately can leave an owner alive while the test starts takeover.
+        runtime.shutdown_timeout(Duration::from_secs(5));
     })
     .join()
     .unwrap();
+}
+
+#[tokio::test]
+async fn legacy_empty_session_key_resumes_open_call_without_inventing_artifact_identity() {
+    let directory = tempfile::tempdir().unwrap();
+    let root = directory.path().canonicalize().unwrap();
+    let provider =
+        Provider::new(vec![call("deploy-1", "deploy_step", json!({})), text("The Host confirmed completion.")]);
+    let tool = hang();
+    let mut inner = Host::new(&root, &provider, Fault::None);
+    inner.read_tool = Some(tool.clone());
+    let host = Arc::new(inner);
+    let spec = host.spec("original");
+    let mut request = host.request("original");
+    request.session_key.clear();
+    crash_owner_with_request(host.clone(), spec.clone(), tool.clone(), request);
+    let path = root.join("original/run-1-admission.json");
+    let mut admission: Value = serde_json::from_slice(&std::fs::read(&path).unwrap()).unwrap();
+    admission.as_object_mut().unwrap().remove("raw_start");
+    admission.as_object_mut().unwrap().remove("session_id");
+    std::fs::write(path, serde_json::to_vec(&admission).unwrap()).unwrap();
+    let original_evidence = tree(&root.join("original"));
+    std::fs::write(root.join("answer.txt"), "correct").unwrap();
+    let resumer = Arc::new(Resumer { inner: host.clone(), mode: Mutex::new(Mode::Settled), reviews: Mutex::default() });
+    let (next_spec, mut next) = resumed(&host, &spec, "resumed");
+    next.session_key.clear();
+    let outcome = resume(next_spec, next, resumer, TaskOptions::default()).await.unwrap().wait().await;
+    assert_eq!(outcome.stop, TaskStop::AwaitingHostAcceptance, "{outcome:?}");
+    assert_eq!((outcome.runs, outcome.observed_calls), (2, 5));
+    assert_eq!(tool.executions.load(Ordering::SeqCst), 1);
+    assert!(agent::interrupted_run(&root.join("session.json"), &root).unwrap().is_none());
+    assert!(outcome.artifacts.is_empty());
+    assert!(read_tool_artifacts(&root.join("resumed")).unwrap().is_empty());
+    let marker: Value =
+        serde_json::from_slice(&std::fs::read(root.join("resumed/recovered-run-1-artifacts.json")).unwrap()).unwrap();
+    assert_eq!(marker["coverage"]["kind"], "unavailable_session");
+    assert_eq!(marker["artifact_ids"], json!([]));
+    assert!(tree(&root.join("original")) == original_evidence);
 }
 
 fn resumed(host: &Host, spec: &TaskSpec, name: &str) -> (TaskSpec, RunRequest) {
@@ -229,12 +344,19 @@ fn check_resumed_artifact_review(evidence: &Path, outcome: &TaskOutcome, run_id:
     let callback: Value =
         serde_json::from_slice(&std::fs::read(evidence.join("run-2-artifacts-callback.json")).unwrap()).unwrap();
     assert_eq!(callback, serde_json::to_value(&manifest).unwrap());
-    let artifacts = read_tool_artifacts(evidence).unwrap();
+    let artifacts: Vec<_> = read_tool_artifacts(evidence)
+        .unwrap()
+        .into_iter()
+        .filter(|artifact| {
+            artifact.task_id == basis.task_id && artifact.session_id == basis.session_id && artifact.run_id == run_id
+        })
+        .collect();
     assert_eq!(artifacts.len(), 1);
     let records: Vec<Value> = std::fs::read_to_string(tool_artifacts_path(evidence))
         .unwrap()
         .lines()
         .map(|line| serde_json::from_str(line).unwrap())
+        .filter(|record: &Value| record["run_id"] == run_id)
         .collect();
     assert_eq!(records.len(), 2, "candidate and verified transition remain in the current evidence ledger");
     assert_eq!(records[0]["status"], "candidate");
@@ -324,6 +446,15 @@ async fn crashed_owner_resumes_only_after_host_settlement_without_replay_or_budg
     // Run 1 had no observation: charged its whole admitted limit (4), never refunded.
     assert_eq!(outcome.observed_calls, 4 + 2);
     check_resumed_artifact_review(&root.join("settled"), &outcome, "resume-settled");
+    let recovered: Vec<_> = read_tool_artifacts(&root.join("settled"))
+        .unwrap()
+        .into_iter()
+        .filter(|artifact| artifact.run_id == "original")
+        .collect();
+    assert_eq!(recovered.len(), 1);
+    assert_eq!(recovered[0].native_call_id, "deploy-1");
+    assert_eq!(recovered[0].status, ArtifactStatus::Candidate);
+    assert!(root.join("settled/recovered-run-1-artifacts.json").is_file());
     assert!(tree(&root.join("original")) == original_evidence, "crashed owner evidence must remain intact");
     assert_eq!(tool.executions.load(Ordering::SeqCst), 1, "interrupted effect must not be replayed");
     assert_eq!(std::fs::read(root.join("answer.txt")).unwrap(), b"correct");
@@ -649,6 +780,9 @@ async fn resume_clamps_larger_run_caps_to_the_original_admission() {
         serde_json::from_slice(&std::fs::read(fixture.root.join("clamped/run-2-admission.json")).unwrap()).unwrap();
     // The original first Run was admitted with 4 calls; the request asked for 7.
     assert_eq!(admission["remaining_calls"], 4, "{admission}");
+    let authority: Value =
+        serde_json::from_slice(&std::fs::read(fixture.root.join("clamped/authority-record.json")).unwrap()).unwrap();
+    assert_eq!(authority["run_max_calls"], 4, "later continuations must retain the effective cap");
     assert_eq!(fixture.tool.executions.load(Ordering::SeqCst), 1);
 }
 

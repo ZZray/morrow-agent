@@ -11,6 +11,7 @@
 mod auto_artifacts;
 mod provenance;
 mod provenance_query;
+mod recovery_artifacts;
 mod runner;
 mod skill_provenance;
 mod snapshot;
@@ -31,6 +32,7 @@ pub use provenance_query::{
     ProvenanceQueryReport, ProvenanceRecord, ProvenanceScopeError, ProvenanceScopeErrorKind, ProvenanceSourceState,
     ProvenanceStatus,
 };
+pub use runner::continuation::{continue_reviewed, ReviewedContinuation};
 pub use runner::{resume, resume_checked, start, start_with_options, TaskHandle};
 pub use skill_provenance::{
     query_skill_provenance, record_skill_verification, verified_skill_provenance, SkillProvenanceQuery,
