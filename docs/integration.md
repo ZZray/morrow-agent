@@ -116,6 +116,11 @@ Rust validates and persists those records. Accepted references are available in
 the original outcome's `artifacts` array. Hosts that omit the option continue
 using the existing review callbacks.
 
+Runnable Python examples cover local files, S3-compatible object storage and
+model-only results, including inspection, explicit reconciliation, resume and
+independent business acceptance. See the
+[business Host examples](../crates/morrow-agent-jsonl/examples/business_hosts/README.md).
+
 ## MCP host
 
 `morrow-agent-mcp` reads the Claude Code `.mcp.json` shape for stdio and
