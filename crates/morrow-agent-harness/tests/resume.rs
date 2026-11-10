@@ -282,6 +282,10 @@ async fn resume_checked_refuses_with_typed_reasons_before_any_callback() {
     crash_owner(host.clone(), spec.clone(), tool.clone());
     let fence = fence_of(&root);
     let original_fence = std::fs::read(&fence).unwrap();
+    let fence_value: Value = serde_json::from_slice(&original_fence).unwrap();
+    let authorization_path =
+        Path::new(fence_value["evidence_dir"].as_str().unwrap()).join("authorization-snapshot.json");
+    let original_authorization = std::fs::read(&authorization_path).unwrap();
     let resumer = Arc::new(Resumer { inner: host.clone(), mode: Mutex::new(Mode::Settled), reviews: Mutex::default() });
     let checked = |spec: TaskSpec, request: RunRequest, checks: ResumeChecks| {
         resume_checked(spec, request, resumer.clone(), TaskOptions::default(), checks)
@@ -300,6 +304,12 @@ async fn resume_checked_refuses_with_typed_reasons_before_any_callback() {
     let (mut s, r) = resumed(&host, &spec, "terms");
     s.criteria_revision = "other".into();
     assert_eq!(refusal(checked(s, r, ResumeChecks::default()).await.err().unwrap()), ResumeRefusal::TaskTermsMismatch);
+    let mut tampered = String::from_utf8(original_authorization.clone()).unwrap();
+    tampered = tampered.replace("harness-fixture", "tampered-model");
+    std::fs::write(&authorization_path, tampered).unwrap();
+    let (s, r) = resumed(&host, &spec, "authorization-snapshot");
+    assert_eq!(refusal(checked(s, r, ResumeChecks::default()).await.err().unwrap()), ResumeRefusal::FenceUnreadable);
+    std::fs::write(&authorization_path, original_authorization).unwrap();
     let (s, mut r) = resumed(&host, &spec, "authority");
     r.endpoint = "http://127.0.0.1:9/v1".into();
     assert_eq!(refusal(checked(s, r, ResumeChecks::default()).await.err().unwrap()), ResumeRefusal::AuthorityChanged);

@@ -1,6 +1,9 @@
-use std::path::PathBuf;
+use std::{
+    io::Read,
+    path::{Path, PathBuf},
+};
 
-use anyhow::{bail, Result};
+use anyhow::{bail, ensure, Result};
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -30,6 +33,79 @@ pub struct TaskSpec {
     /// This is not provider usage or billing.
     pub max_calls: usize,
     pub deadline_unix_ms: u64,
+}
+
+/// The Host-visible authority declaration captured for one Task admission.
+///
+/// The projection contains the selected model route, paths, tool schemas and
+/// policy inputs. `authority_sha256` binds the complete internal declaration
+/// used by the Harness fence. The model credential itself is represented by a
+/// hash.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct AuthorizationSnapshot {
+    pub version: u32,
+    pub task_id: String,
+    pub criteria_revision: String,
+    pub authorization_revision: String,
+    pub declaration: Value,
+    pub declaration_sha256: String,
+    /// SHA-256 of the complete internal authority declaration used by the Session fence.
+    pub authority_sha256: String,
+}
+
+impl AuthorizationSnapshot {
+    pub const VERSION: u32 = 1;
+
+    pub(crate) fn new(
+        task_id: &str,
+        criteria_revision: &str,
+        authorization_revision: &str,
+        declaration: Value,
+        authority_sha256: String,
+    ) -> Result<Self> {
+        let declaration_sha256 = crate::storage::hash(&serde_json::to_vec(&declaration)?);
+        let snapshot = Self {
+            version: Self::VERSION,
+            task_id: task_id.into(),
+            criteria_revision: criteria_revision.into(),
+            authorization_revision: authorization_revision.into(),
+            declaration,
+            declaration_sha256,
+            authority_sha256,
+        };
+        snapshot.validate()?;
+        Ok(snapshot)
+    }
+
+    pub(crate) fn validate(&self) -> Result<()> {
+        ensure!(self.version == Self::VERSION, "unsupported authorization snapshot version");
+        ensure!(!self.task_id.trim().is_empty(), "authorization snapshot task ID required");
+        ensure!(!self.criteria_revision.trim().is_empty(), "authorization snapshot criteria revision required");
+        ensure!(
+            !self.authorization_revision.trim().is_empty(),
+            "authorization snapshot authorization revision required"
+        );
+        ensure!(
+            crate::storage::hash(&serde_json::to_vec(&self.declaration)?) == self.declaration_sha256,
+            "authorization snapshot declaration hash changed"
+        );
+        ensure!(
+            self.authority_sha256.len() == 64 && self.authority_sha256.bytes().all(|byte| byte.is_ascii_hexdigit()),
+            "authorization snapshot authority hash is invalid"
+        );
+        Ok(())
+    }
+
+    pub(crate) fn read(path: &Path) -> Result<Self> {
+        const MAX_BYTES: u64 = 8 * 1024 * 1024;
+        let mut bytes = Vec::new();
+        std::fs::File::open(path)?.take(MAX_BYTES + 1).read_to_end(&mut bytes)?;
+        ensure!(bytes.len() as u64 <= MAX_BYTES, "authorization snapshot exceeds byte limit");
+        let snapshot: Self = serde_json::from_slice(&bytes)?;
+        snapshot.validate()?;
+        Ok(snapshot)
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]

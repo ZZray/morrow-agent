@@ -25,11 +25,12 @@ use morrow_agent_core::{
 
 use crate::{
     storage::{canonical, write_new, Admission},
-    BudgetStopContinuation, BudgetStopDetail, BudgetStopReviewPolicy, BudgetStopReviewRecord, BudgetStopSnapshot,
-    BudgetStopSnapshotReference, BudgetStopTrigger, Candidate, Continuation, EffectEvidence, EffectReceiptRef,
-    EventEnvelope, FencePresence, HarnessHost, HostReceiptRef, LengthStopReviewPolicy, ResumeChecks, ResumeRefusal,
-    ResumeReview, ReviewBasis, ReviewReceipt, Settlement, StopContinuation, StopSnapshot, StopSnapshotReference,
-    TaskOptions, TaskOutcome, TaskSpec, TaskStop, TruncatedMessageRef, UnknownEffectRecord, Verdict,
+    AuthorizationSnapshot, BudgetStopContinuation, BudgetStopDetail, BudgetStopReviewPolicy, BudgetStopReviewRecord,
+    BudgetStopSnapshot, BudgetStopSnapshotReference, BudgetStopTrigger, Candidate, Continuation, EffectEvidence,
+    EffectReceiptRef, EventEnvelope, FencePresence, HarnessHost, HostReceiptRef, LengthStopReviewPolicy, ResumeChecks,
+    ResumeRefusal, ResumeReview, ReviewBasis, ReviewReceipt, Settlement, StopContinuation, StopSnapshot,
+    StopSnapshotReference, TaskOptions, TaskOutcome, TaskSpec, TaskStop, TruncatedMessageRef, UnknownEffectRecord,
+    Verdict,
 };
 
 /// Cloneable observation/cancellation handle. No handle drop aborts the worker.
@@ -100,7 +101,9 @@ pub fn start_with_options(
     initial.state_path = canonical(&initial.state_path)?;
     initial.environment_state = canonical(&initial.environment_state)?;
     let authority = Authority::capture(&initial)?;
+    let authorization = authority.snapshot(&spec)?;
     let admission = Admission::acquire(&spec, &initial.state_path, &authority.record()?)?;
+    crate::snapshot::persist_authorization(&authorization, &admission.evidence)?;
     write_new(&admission.evidence.join("task-options.json"), &options)?;
     let progress = Progress::new(&spec);
     spawn(spec, authority, admission, progress, initial, host, options)
@@ -158,6 +161,7 @@ pub async fn resume_checked(
     }
     let fence = fenced.record.clone();
     let original = fence.get("authority").context(ResumeRefusal::FenceUnreadable)?;
+    let fenced_evidence = std::path::PathBuf::from(fence["evidence_dir"].as_str().context("fence evidence missing")?);
     let same = |key: &str, value: Value| fence.get(key) == Some(&value);
     if !(same("task_id", json!(spec.task_id))
         && same("criteria_revision", json!(spec.criteria_revision))
@@ -170,6 +174,18 @@ pub async fn resume_checked(
     if !(same("max_runs", json!(spec.max_runs)) && same("max_calls", json!(spec.max_calls))) {
         return Err(ResumeRefusal::BudgetLarger.into());
     }
+    let prior_authorization_path = crate::snapshot::authorization_snapshot_path(&fenced_evidence);
+    if prior_authorization_path.is_file() {
+        let prior = crate::snapshot::read_authorization(&prior_authorization_path)
+            .map_err(|error| error.context(ResumeRefusal::FenceUnreadable))?;
+        if prior.task_id != spec.task_id
+            || prior.criteria_revision != spec.criteria_revision
+            || prior.authorization_revision != spec.authorization_revision
+            || Some(prior.authority_sha256.as_str()) != original["declaration_sha256"].as_str()
+        {
+            return Err(ResumeRefusal::FenceUnreadable.into());
+        }
+    }
     if original["declaration_sha256"] != record["declaration_sha256"] {
         return Err(ResumeRefusal::AuthorityChanged.into());
     }
@@ -181,7 +197,6 @@ pub async fn resume_checked(
     // Per-Run caps never grow past the original Task's first admission.
     authority.max_calls = authority.max_calls.min(run_max_calls as usize);
     authority.max_seconds = authority.max_seconds.min(run_max_seconds);
-    let fenced_evidence = std::path::PathBuf::from(fence["evidence_dir"].as_str().context("fence evidence missing")?);
     let outcome_path = fenced_evidence.join("outcome.json");
     let fenced_outcome: Option<TaskOutcome> = if outcome_path.is_file() {
         Some(serde_json::from_slice(&std::fs::read(&outcome_path)?).context("fenced outcome unreadable")?)
@@ -230,6 +245,8 @@ pub async fn resume_checked(
     if !receipt.tool_calls.iter().map(|call| call.call_id.as_str()).eq(open.iter().copied()) {
         return Err(ResumeRefusal::CallMismatch.into());
     }
+    let authorization = authority.snapshot(&spec)?;
+    crate::snapshot::persist_authorization(&authorization, &evidence)?;
     let resume_record = json!({
         "version":1,"kind":"fenced_task_resume","fenced_evidence_dir":fenced_evidence,
         "fence":fence,"consumed_runs":consumed_runs,"consumed_calls":consumed_calls,
@@ -415,6 +432,17 @@ impl Authority {
         }))
     }
 
+    fn snapshot(&self, spec: &TaskSpec) -> Result<AuthorizationSnapshot> {
+        let authority_sha256 = crate::storage::hash(&serde_json::to_vec(&self.declaration)?);
+        AuthorizationSnapshot::new(
+            &spec.task_id,
+            &spec.criteria_revision,
+            &spec.authorization_revision,
+            snapshot_declaration(&self.declaration)?,
+            authority_sha256,
+        )
+    }
+
     fn check(&self, request: &RunRequest) -> Result<()> {
         ensure!(self.declaration == authority_declaration(request)?, "continuation changed Host authority");
         ensure!(Arc::ptr_eq(&self.model_host, &request.model_host), "continuation changed ModelHost registry");
@@ -466,6 +494,48 @@ fn authority_declaration(request: &RunRequest) -> Result<Value> {
         declaration["policies"] = policies;
     }
     Ok(declaration)
+}
+
+fn snapshot_declaration(declaration: &Value) -> Result<Value> {
+    let mut declaration = declaration.clone();
+    let object = declaration.as_object_mut().context("authority declaration must be an object")?;
+    if let Some(snapshot) = object.get_mut("snapshot") {
+        if let Some(records) = snapshot.get_mut("records").and_then(Value::as_array_mut) {
+            for record in records {
+                if let Some(record) = record.as_object_mut() {
+                    record.remove("text");
+                }
+            }
+        }
+    }
+    for key in ["goal_lease", "resume_job_lease"] {
+        if let Some(lease) = object.remove(key) {
+            let digest = crate::storage::hash(&serde_json::to_vec(&lease)?);
+            object.insert(format!("{key}_sha256"), json!(digest));
+        }
+    }
+    Ok(declaration)
+}
+
+#[cfg(test)]
+mod authorization_tests {
+    use super::*;
+
+    #[test]
+    fn snapshot_projection_drops_context_text_and_replaces_lease_payloads() {
+        let declaration = json!({
+            "snapshot":{"version":1,"records":[{"id":"r1","text":"private knowledge","hash":"h"}]},
+            "goal_lease":{"goal_id":"g1","controller":"host","session":"s1"},
+            "resume_job_lease":null,
+            "model":"model"
+        });
+        let projected = snapshot_declaration(&declaration).unwrap();
+        assert!(projected["snapshot"]["records"][0].get("text").is_none());
+        assert!(projected["goal_lease"].is_null());
+        assert_eq!(projected["goal_lease_sha256"].as_str().unwrap().len(), 64);
+        assert!(projected.get("resume_job_lease").is_none());
+        assert_eq!(projected["resume_job_lease_sha256"], Value::String(crate::storage::hash(b"null")));
+    }
 }
 
 /// On cancellation or deadline, signal and JOIN the same future. Cooperative

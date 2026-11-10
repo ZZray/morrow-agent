@@ -7,9 +7,28 @@ use std::{
 use anyhow::{ensure, Context, Result};
 use serde_json::Value;
 
-use crate::{storage, BudgetStopSnapshot, BudgetStopSnapshotReference};
+use crate::{storage, AuthorizationSnapshot, BudgetStopSnapshot, BudgetStopSnapshotReference};
 
 const SNAPSHOT_BYTES: u64 = 8 * 1024 * 1024;
+const AUTHORIZATION_SNAPSHOT_FILE: &str = "authorization-snapshot.json";
+
+pub fn authorization_snapshot_path(evidence_dir: &Path) -> PathBuf {
+    evidence_dir.join(AUTHORIZATION_SNAPSHOT_FILE)
+}
+
+pub(crate) fn persist_authorization(snapshot: &AuthorizationSnapshot, evidence_dir: &Path) -> Result<()> {
+    snapshot.validate()?;
+    let path = authorization_snapshot_path(evidence_dir);
+    storage::write_new(&path, snapshot)?;
+    ensure!(read_authorization(&path)? == *snapshot, "authorization snapshot changed after write");
+    Ok(())
+}
+
+pub(crate) fn read_authorization(path: &Path) -> Result<AuthorizationSnapshot> {
+    let metadata = std::fs::metadata(path)?;
+    ensure!(metadata.len() <= SNAPSHOT_BYTES, "authorization snapshot exceeds byte limit");
+    AuthorizationSnapshot::read(path)
+}
 
 pub fn budget_snapshot_path(evidence_dir: &Path, run_number: usize) -> PathBuf {
     evidence_dir.join(format!("run-{run_number}-budget-snapshot.json"))
@@ -44,8 +63,38 @@ mod tests {
     use super::*;
     use crate::{
         core::termination::{BudgetStopCause, ClosedBudgetTermination},
-        ReviewBasis,
+        AuthorizationSnapshot, ReviewBasis,
     };
+
+    #[test]
+    fn authorization_snapshot_roundtrips_and_rejects_tampering() {
+        let directory = tempfile::tempdir().unwrap();
+        let snapshot = AuthorizationSnapshot::new(
+            "task-1",
+            "criteria-v1",
+            "authorization-v1",
+            serde_json::json!({"model":"test-model","tools":["read_file"],"token_hash":"a".repeat(64)}),
+            "b".repeat(64),
+        )
+        .unwrap();
+        persist_authorization(&snapshot, directory.path()).unwrap();
+        assert_eq!(AuthorizationSnapshot::read(&authorization_snapshot_path(directory.path())).unwrap(), snapshot);
+
+        let path = authorization_snapshot_path(directory.path());
+        let mut tampered = std::fs::read_to_string(&path).unwrap();
+        tampered = tampered.replace("test-model", "other-model");
+        std::fs::write(&path, tampered).unwrap();
+        assert!(read_authorization(&path).unwrap_err().to_string().contains("declaration hash changed"));
+    }
+
+    #[test]
+    fn authorization_snapshot_size_is_checked_before_reading_contents() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = authorization_snapshot_path(directory.path());
+        let file = std::fs::File::create(&path).unwrap();
+        file.set_len(SNAPSHOT_BYTES + 1).unwrap();
+        assert!(read_authorization(&path).unwrap_err().to_string().contains("exceeds byte limit"));
+    }
 
     #[test]
     fn oversized_valid_snapshot_file_is_rejected_even_with_its_actual_hash() {

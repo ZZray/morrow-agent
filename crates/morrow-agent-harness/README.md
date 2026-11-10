@@ -45,6 +45,11 @@ morrow-agent-harness = { path = "../morrow-agent-harness" }
 完整可运行实现见 [capability_host.rs](examples/capability_host.rs) 和
 [业务 Host 示例](examples/capability/host.rs)。
 
+每次 Task admission 会在其 evidence 目录写入 `authorization-snapshot.json`。
+快照记录 Task 修订号、工具 schema、路径、模型路由和声明摘要，Context 正文不会写入，
+租约内容只保留摘要，模型凭据只保留 SHA-256。Host 可通过
+`authorization_snapshot_path` 定位文件并在恢复前核对原授权。
+
 初始运行前，Host 应创建工作区、Session 父目录和证据父目录，提供绝对路径；
 每个 Task 的 `evidence_dir` 必须尚不存在。所有续作必须复用同一模型 Host、工具和
 steering 的 Arc 身份。工具实现内部的授权变化仍由产品管理。

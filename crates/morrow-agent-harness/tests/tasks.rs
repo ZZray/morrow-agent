@@ -34,6 +34,15 @@ async fn actual_file_feedback_repair_reuses_session_and_original_call_budget() {
     let rows = events(&candidate.basis.events_path);
     assert!(rows.iter().any(|row| row["event"]["type"] == "tool_end"));
     assert!(directory.path().join("repair/released.json").is_file());
+    let first: AuthorizationSnapshot =
+        serde_json::from_slice(&std::fs::read(directory.path().join("repair/authorization-snapshot.json")).unwrap())
+            .unwrap();
+    assert_eq!(first.task_id, "repair");
+    assert_eq!(first.criteria_revision, "actual-file-correct-v1");
+    assert_eq!(first.authorization_revision, "single-file-v1");
+    let token_hash = first.declaration["token_hash"].as_str().unwrap();
+    assert_ne!(token_hash, "harness-fixture-key");
+    assert_eq!(token_hash.len(), 64);
 }
 
 #[tokio::test]

@@ -17,6 +17,6 @@ mod types;
 
 pub use morrow_agent_core as core;
 pub use runner::{resume, resume_checked, start, start_with_options, TaskHandle};
-pub use snapshot::{budget_review_index_path, budget_snapshot_path};
+pub use snapshot::{authorization_snapshot_path, budget_review_index_path, budget_snapshot_path};
 pub use stop_review::{stop_review_index_path, stop_snapshot_path};
 pub use types::*;
