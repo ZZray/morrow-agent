@@ -294,7 +294,7 @@ async function save(file, value) {
   finally { await handle.close(); }
 }
 
-for (const mode of ['ordinary', 'needs-changes', 'budget', 'length', 'omitted', 'false', 'wrong-run', 'exception', 'tamper', 'cancel']) {
+for (const mode of ['ordinary', 'needs-changes', 'budget', 'length', 'omitted', 'false', 'legacy-large', 'wrong-run', 'exception', 'tamper', 'cancel']) {
   test(`actual sidecar artifact review ${mode}`, { skip: !binary, timeout: 45000 }, async (t) => {
     let root;
     if (evidenceRoot) {
@@ -319,9 +319,10 @@ for (const mode of ['ordinary', 'needs-changes', 'budget', 'length', 'omitted', 
       requests.push(JSON.parse(Buffer.concat(chunks).toString('utf8')));
       const number = requests.length;
       const tool = number % 2 === 1;
-      const content = mode === 'needs-changes' && number === 1 ? 'wrong' : 'correct';
+      const content = ['needs-changes', 'legacy-large'].includes(mode) && number === 1 ? 'wrong' : 'correct';
       const delta = tool ? { tool_calls: [{ index: 0, id: `write-${number}`, type: 'function',
-        function: { name: 'write_answer', arguments: JSON.stringify({ content }) } }] } : { content: 'Submitted.' };
+        function: { name: 'write_answer', arguments: JSON.stringify({ content }) } }] }
+        : { content: mode === 'legacy-large' ? '\\'.repeat(140000) : 'Submitted.' };
       response.writeHead(200, { 'Content-Type': 'text/event-stream' });
       for (const [part, finish] of [[{ role: 'assistant' }, null], [delta, null],
         [{}, tool ? 'tool_calls' : mode === 'length' ? 'length' : 'stop']]) {
@@ -345,7 +346,7 @@ for (const mode of ['ordinary', 'needs-changes', 'budget', 'length', 'omitted', 
           parameters: { type: 'object', properties: { content: { type: 'string' } }, required: ['content'], additionalProperties: false } }] },
       cancel_grace_ms: 1000, emit_events: false };
     if (mode === 'omitted') delete start.artifact_review;
-    if (mode === 'false') start.artifact_review = false;
+    if (['false', 'legacy-large'].includes(mode)) start.artifact_review = false;
     if (mode === 'budget') {
       start.budget_stop_review = 'review_closed_tool_round';
       start.run.max_calls = 1; start.task.max_calls = 1;
@@ -366,6 +367,11 @@ for (const mode of ['ordinary', 'needs-changes', 'budget', 'length', 'omitted', 
       },
       async verify(subject) {
         counts.reviews += 1;
+        assert.equal(Object.hasOwn(subject.basis, 'session_id'), !!start.artifact_review);
+        const sourceKind = mode === 'budget' ? 'budget-snapshot' : mode === 'length' ? 'stop-snapshot' : 'candidate';
+        const original = JSON.parse(await fs.readFile(path.join(start.task.evidence_dir,
+          `run-${subject.basis.run_number}-${sourceKind}.json`), 'utf8'));
+        assert.equal(original.basis.session_id, start.run.session_key);
         const correct = await fs.readFile(path.join(root, 'answer.txt'), 'utf8') === 'correct';
         const receipt = path.join(root, `review-${counts.reviews}.json`);
         await save(receipt, { basis: subject.basis, correct });
@@ -374,6 +380,8 @@ for (const mode of ['ordinary', 'needs-changes', 'budget', 'length', 'omitted', 
       },
       async prepare(continuation) {
         counts.prepares += 1;
+        assert.deepEqual(continuation.previous.basis, continuation.receipt.basis);
+        assert.equal(Object.hasOwn(continuation.previous.basis, 'session_id'), !!start.artifact_review);
         return { run_id_next: `run-${continuation.next_run_number}`, objective: 'Repair the answer file.' };
       },
     };
@@ -417,8 +425,8 @@ for (const mode of ['ordinary', 'needs-changes', 'budget', 'length', 'omitted', 
     await save(path.join(root, 'counts.json'), { ...counts, modelCalls: requests.length, catalogRequests });
     await save(path.join(root, 'provider-requests.json'), requests);
     assert.equal(await fs.readFile(path.join(root, 'answer.txt'), 'utf8'), 'correct');
-    assert.equal(counts.writes, mode === 'needs-changes' ? 2 : 1);
-    assert.equal(requests.length, mode === 'budget' ? 1 : mode === 'needs-changes' ? 4 : 2);
+    assert.equal(counts.writes, ['needs-changes', 'legacy-large'].includes(mode) ? 2 : 1);
+    assert.equal(requests.length, mode === 'budget' ? 1 : ['needs-changes', 'legacy-large'].includes(mode) ? 4 : 2);
     assert.equal(result.callbacks_finished, true);
     const rejected = ['wrong-run','exception','tamper','cancel'].includes(mode);
     if (rejected) {
@@ -445,6 +453,12 @@ for (const mode of ['ordinary', 'needs-changes', 'budget', 'length', 'omitted', 
         assert.deepEqual(result.outcome.artifacts ?? [], []);
         assert.equal(counts.artifactReviews, 0);
         assert.equal(await exists(path.join(start.task.evidence_dir, 'jsonl-artifact-review-1.json')), false);
+        if (mode === 'legacy-large') {
+          const projected = JSON.parse(await fs.readFile(path.join(start.task.evidence_dir, 'jsonl-candidate-1.json'), 'utf8'));
+          assert.equal(Object.hasOwn(projected.basis, 'session_id'), false);
+          const continuation = JSON.parse(await fs.readFile(path.join(start.task.evidence_dir, 'jsonl-continuation-2.json'), 'utf8'));
+          assert.deepEqual(continuation.previous, projected);
+        }
       }
     }
   });

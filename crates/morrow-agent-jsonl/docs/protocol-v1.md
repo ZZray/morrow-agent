@@ -119,8 +119,14 @@ Host 回 `tool_reply`，精确复制原关联字段，不能重算或改写参�
 | `verify_request` | `candidate` 或 `candidate_ref`，二选一 | `verify_reply`，包含 `receipt` |
 | `prepare_request` | `continuation` 或 `continuation_ref`，二选一 | `prepare_reply`，包含 `run_id_next` 和 `objective` |
 
-`candidate` 是公共 Harness 的完整 `Candidate`，包含 `basis/output/goal`。
-Host 原样复制完整 basis 到 `receipt.basis`，实际保存证据后返回：
+`candidate` 包含 `basis/output/goal`。普通检查在缺省或
+`artifact_review: false` 时使用原有 v1 basis 字段，省略 `session_id`。
+启用 artifact review 后携带完整 Harness basis。Harness 的原始候选文件
+始终保存 Session 身份。大型旧格式候选通过 `candidate_ref` 引用
+`jsonl-candidate-N.json`，其内容与 inline 候选一致，原件及投影文件都在
+回调前后接受核验。
+
+Host 原样复制收到的完整 basis 到 `receipt.basis`，保存实际检查证据后返回以下回执。
 
 ```json
 {
@@ -136,6 +142,10 @@ Host 原样复制完整 basis 到 `receipt.basis`，实际保存证据后返回�
 `Verified` 和 `Unknown`。`continuation` 包含原 `previous`、检查 `receipt`、
 `next_run_number`、`remaining_calls` 和原 `deadline_unix_ms`。
 Host 的新 objective 应包含实际失败反馈；reply 无法更换其余配置。
+
+普通旧格式 continuation 中的 `previous.basis` 和 `receipt.basis`
+采用相同字段。budget 和 length 的显式 opt-in 回调使用完整 basis，
+并继续校验其固定来源文件。Host 应原样保留收到的额外 basis 字段。
 
 ## ToolArtifact 回调
 

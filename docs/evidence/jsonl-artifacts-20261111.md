@@ -48,8 +48,10 @@ Session parent aliases.
 - Three start-frame golden cases differ from their old snapshots only by
   `candidate.basis.session_id`. `git log -S` and `git show a7c20cb` locate the
   addition in the baseline commit. The affected cases are `ok_text`,
-  `ok_tool_then_text` and `tool_named_read`. Snapshot changes are awaiting the
-  user's choice. Existing snapshots and strict equality remain intact.
+  `ok_tool_then_text` and `tool_named_read`. The later ordinary-wire projection
+  resolves the differences with the existing snapshots and equality assertions.
+  Its implementation and final verification are recorded in
+  [the compatibility increment](jsonl-legacy-review-20261111.md).
 - The first large-reference test reached its final assertion and failed when
   comparing Windows extended and ordinary path strings. The assertion now
   uses `Path.samefile`; the subsequent execution passed. Both evidence
@@ -90,6 +92,6 @@ ran the affected artifact, budget, length-stop and client regression suites.
 The Node junction patch and 16 MiB protocol description received a further
 independent review from `/root/core_scope_review`, who also ran the alias test.
 
-Golden compatibility remains pending. Actual business models, production
-Hosts, object storage and crashed original-Run artifact recovery belong to the
-remaining goal stages.
+Golden compatibility is covered by the subsequent compatibility increment.
+Actual business models, production Hosts, object storage and crashed
+original-Run artifact recovery have separate goal-stage evidence.

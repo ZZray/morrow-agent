@@ -607,23 +607,39 @@ impl HarnessHost for ExternalHost {
     }
 
     async fn verify(&self, candidate: Candidate, cancellation: CancellationToken) -> Result<ReviewReceipt> {
-        let mut body = json!({"candidate":candidate});
+        let source = evidence::checked_candidate(&candidate).inspect_err(|_| self.bridge.fail())?;
+        let mut wire_candidate = candidate.clone();
+        if !self.artifact_review {
+            wire_candidate.basis.session_id.clear();
+        }
+        let payload = serde_json::to_value(&wire_candidate)?;
+        let mut body = json!({"candidate":payload});
+        let mut projection = None;
         if self
             .bridge
             .output
             .needs_reference(&with_worst_header(body.clone(), &self.bridge.task_id, &candidate.basis.run_id))
             .inspect_err(|_| self.bridge.fail())?
         {
-            let reference = match evidence::checked_candidate(&candidate) {
-                Ok(reference) => reference,
-                Err(error) => {
-                    self.bridge.fail();
-                    return Err(error);
-                }
+            let reference = if self.artifact_review {
+                source.clone()
+            } else {
+                let path =
+                    self.bridge.evidence_dir.join(format!("jsonl-candidate-{}.json", candidate.basis.run_number));
+                let reference = evidence::write_new(&path, &payload).inspect_err(|_| self.bridge.fail())?;
+                projection = Some(reference.clone());
+                reference
             };
             body = json!({"candidate_ref":reference});
         }
-        match self.bridge.call("verify_request", candidate.basis.run_id.clone(), body, None, cancellation).await? {
+        let reply = self.bridge.call("verify_request", candidate.basis.run_id.clone(), body, None, cancellation).await;
+        let after = evidence::checked_candidate(&candidate).inspect_err(|_| self.bridge.fail())?;
+        ensure!(after.sha256 == source.sha256 && after.path == source.path, "candidate_changed_during_verify");
+        if let Some(reference) = projection {
+            let after = evidence::checked_value(&reference.path, &payload).inspect_err(|_| self.bridge.fail())?;
+            ensure!(after.sha256 == reference.sha256, "candidate_projection_changed_during_verify");
+        }
+        match reply? {
             Reply::Verify(receipt) => Ok(*receipt),
             _ => anyhow::bail!("verify_reply_kind"),
         }
@@ -631,9 +647,13 @@ impl HarnessHost for ExternalHost {
 
     async fn prepare_continuation(
         &self,
-        continuation: Continuation,
+        mut continuation: Continuation,
         cancellation: CancellationToken,
     ) -> Result<RunRequest> {
+        if !self.artifact_review {
+            continuation.previous.basis.session_id.clear();
+            continuation.receipt.basis.session_id.clear();
+        }
         let run_id = continuation.previous.basis.run_id.clone();
         let payload = json!({"previous":continuation.previous,"receipt":continuation.receipt,
             "next_run_number":continuation.next_run_number,"remaining_calls":continuation.remaining_calls,

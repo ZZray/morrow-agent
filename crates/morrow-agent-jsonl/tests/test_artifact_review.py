@@ -414,6 +414,70 @@ class ArtifactProcessTest(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(result['stop'], 'AwaitingHostAcceptance')
             self.assertEqual(result.get('artifacts', []), [])
             self.assertFalse((self.root / 'harness/jsonl-artifact-review-1.json').exists())
+            receipt = json.loads((self.root / 'review-1.json').read_bytes())
+            self.assertNotIn('session_id', receipt['basis'])
+            original = json.loads((self.root / 'harness/run-1-candidate.json').read_bytes())
+            self.assertEqual(original['basis']['session_id'], settings['run']['session_key'])
+
+    async def test_legacy_large_candidate_and_continuation_keep_full_harness_sources(self):
+        test = self
+
+        class LegacyHost(FileHost):
+            async def verify(self, subject, cancelled):
+                test.assertNotIn('session_id', subject['basis'])
+                return await super().verify(subject, cancelled)
+
+            async def prepare(self, continuation, cancelled):
+                test.assertNotIn('session_id', continuation['previous']['basis'])
+                test.assertEqual(continuation['previous']['basis'], continuation['receipt']['basis'])
+                return await super().prepare(continuation, cancelled)
+
+        # Escaping crosses the frame byte limit within Core's 128 KiB text cap.
+        with ControlledProvider([call('first', 'write_answer', {'content': 'wrong'}), text('\\' * 140000),
+                                 call('fixed', 'write_answer', {'content': 'correct'}), text('Fixed.')]) as provider:
+            settings = config(self.root, provider.endpoint)
+            settings['artifact_review'] = False
+            result = await self.invoke(settings, LegacyHost(self.root))
+            self.assertEqual((result['stop'], result['runs'], len(provider.requests)),
+                             ('AwaitingHostAcceptance', 2, 4))
+            evidence = self.root / 'harness'
+            original = json.loads((evidence / 'run-1-candidate.json').read_bytes())
+            projected = json.loads((evidence / 'jsonl-candidate-1.json').read_bytes())
+            self.assertEqual(original['basis'].pop('session_id'), settings['run']['session_key'])
+            self.assertEqual(original, projected)
+            continuation = json.loads((evidence / 'jsonl-continuation-2.json').read_bytes())
+            self.assertEqual(continuation['previous'], projected)
+            frames = [json.loads(path.read_bytes()) for path in evidence.glob('jsonl-rpc-*-request.json')]
+            self.assertTrue(any('candidate_ref' in frame for frame in frames))
+            self.assertTrue(any('continuation_ref' in frame for frame in frames))
+
+    async def test_legacy_large_review_detects_projected_and_original_file_tampering(self):
+        for filename in ('jsonl-candidate-1.json', 'run-1-candidate.json'):
+            with self.subTest(filename=filename):
+                root = self.root / filename.removesuffix('.json')
+                root.mkdir()
+
+                class TamperingHost(FileHost):
+                    async def verify(self, subject, cancelled):
+                        receipt = await super().verify(subject, cancelled)
+                        assert (self.root / 'harness/jsonl-candidate-1.json').is_file()
+                        (self.root / 'harness' / filename).write_text('{}', encoding='utf-8')
+                        return receipt
+
+                with ControlledProvider([call('write', 'write_answer', {'content': 'correct'}),
+                                         text('\\' * 140000)]) as provider:
+                    settings = config(root, provider.endpoint)
+                    settings.pop('artifact_review')
+                    try:
+                        await client.run_task(BINARY, settings, TamperingHost(root), token=TOKEN,
+                                              operation_directory=root / 'operations')
+                    except client.ReconciliationRequired:
+                        pass  # Delivery failure also leaves the original failed outcome below.
+                    outcome = json.loads((root / 'harness/outcome.json').read_bytes())
+                    self.assertEqual(outcome['stop'], 'ReconciliationRequired')
+                    self.assertEqual(outcome['fence_presence'], 'Present')
+                    self.assertEqual(outcome.get('artifacts', []), [])
+                    self.assertEqual(len(provider.requests), 2)
 
     async def test_cross_run_reply_is_rejected_and_leaves_fence(self):
         await self.rejected_callback('cross-run')
