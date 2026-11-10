@@ -107,6 +107,7 @@ mod tests {
                 criteria_revision: "criteria".into(),
                 authorization_revision: "grant".into(),
                 run_id: "original".into(),
+                session_id: String::new(),
                 run_number: 1,
                 session_path: directory.path().join("session.json"),
                 events_path: directory.path().join("run-1-events.jsonl"),

@@ -147,9 +147,14 @@
 | `morrow_agent_harness::Settlement` | stable | 变体 `Settled`、`Unknown` |
 | `morrow_agent_harness::Verdict` | stable | 变体 `Verified`、`NeedsChanges { feedback }`、`Unknown` |
 | `morrow_agent_harness::Continuation` | stable | 字段 `previous`、`receipt`、`next_run_number`、`remaining_calls`、`deadline_unix_ms` |
-| `morrow_agent_harness::TaskOutcome` | stable | 除下面两个字段外的全部字段；`task_accepted` 恒为 false |
+| `morrow_agent_harness::TaskOutcome` | stable | 除下面三个 experimental 字段外的全部字段；`task_accepted` 恒为 false |
 | `morrow_agent_harness::TaskOutcome.unknown_effects` | experimental | P3 新增的未知副作用记录 |
 | `morrow_agent_harness::TaskOutcome.budget_stop` | experimental | P3 新增的摘要预算停止原因 |
+| `morrow_agent_harness::TaskOutcome.artifacts` | experimental | Host review 后由 Harness 重新校验并写入的 ToolArtifact 引用 |
+| `morrow_agent_harness::ArtifactReceiptRef` | experimental | 结构化 ToolArtifact 引用；不替代 evidence JSONL 真相源 |
+| `morrow_agent_harness::ReviewArtifactManifest` | experimental | review 回执之后的 artifact provenance 侧车记录 |
+| `morrow_agent_harness::HarnessHost::review_artifacts` | experimental | 可选的结构化 artifact 引用回调，默认返回空列表 |
+| `morrow_agent_harness::review_artifact_manifest_path` | experimental | review artifact provenance 侧车的固定 evidence 路径 |
 | `morrow_agent_harness::TaskStop` | stable | 7 个停止原因 |
 | `morrow_agent_harness::FencePresence` | stable | 变体 `Present`、`Released`、`Unknown` |
 | `morrow_agent_harness::EventEnvelope` | stable | 字段 `task_id`、`run_id`、`seq`、`event`（JSON 值） |

@@ -3,6 +3,7 @@
 //! when empty, and old JSON without them still parses with defaults.
 use std::path::PathBuf;
 
+use morrow_agent_harness::core::artifact_provenance::ArtifactStatus;
 use morrow_agent_harness::*;
 use proptest::prelude::*;
 use serde_json::Value;
@@ -51,6 +52,22 @@ fn outcome() -> impl Strategy<Value = TaskOutcome> {
     let budget = proptest::option::of((0usize..64, 0usize..64).prop_map(|(task_max_calls, total_calls)| {
         BudgetStopDetail { trigger: BudgetStopTrigger::CompactionSummary, task_max_calls, total_calls }
     }));
+    let artifacts = proptest::collection::vec(
+        ("[a-z]{1,8}", "[a-z]{1,8}", "[a-z]{1,8}", "[a-z]{1,8}", "[0-9a-f]{64}", "[0-9a-f]{64}").prop_map(
+            |(id, artifact_ref, task_id, session_id, input_sha256, output_sha256)| ArtifactReceiptRef {
+                artifact_id: id,
+                artifact_ref,
+                task_id,
+                session_id,
+                run_id: "run-1".into(),
+                native_call_id: "call-1".into(),
+                input_sha256,
+                output_sha256,
+                status: ArtifactStatus::Verified,
+            },
+        ),
+        0..4,
+    );
     (
         "[a-z0-9-]{1,12}",
         stop(),
@@ -60,23 +77,27 @@ fn outcome() -> impl Strategy<Value = TaskOutcome> {
         proptest::option::of("[a-z]{1,8}"),
         proptest::collection::vec(record(), 0..4),
         budget,
+        artifacts,
     )
-        .prop_map(|(task_id, stop, runs, observed_calls, detail, fence, unknown_effects, budget_stop)| {
-            TaskOutcome {
-                task_id,
-                stop,
-                runs,
-                observed_calls,
-                last_candidate: None,
-                last_receipt: None,
-                detail,
-                task_accepted: false,
-                fence_presence: if fence.is_some() { FencePresence::Present } else { FencePresence::Released },
-                reconciliation_fence: fence.map(|name| PathBuf::from(format!("/f/{name}.fence.json"))),
-                unknown_effects,
-                budget_stop,
-            }
-        })
+        .prop_map(
+            |(task_id, stop, runs, observed_calls, detail, fence, unknown_effects, budget_stop, artifacts)| {
+                TaskOutcome {
+                    task_id,
+                    stop,
+                    runs,
+                    observed_calls,
+                    last_candidate: None,
+                    last_receipt: None,
+                    detail,
+                    task_accepted: false,
+                    fence_presence: if fence.is_some() { FencePresence::Present } else { FencePresence::Released },
+                    reconciliation_fence: fence.map(|name| PathBuf::from(format!("/f/{name}.fence.json"))),
+                    unknown_effects,
+                    budget_stop,
+                    artifacts,
+                }
+            },
+        )
 }
 
 proptest! {
@@ -98,9 +119,11 @@ proptest! {
         let object = old.as_object_mut().unwrap();
         object.remove("unknown_effects");
         object.remove("budget_stop");
+        object.remove("artifacts");
         let legacy: TaskOutcome = serde_json::from_value(old.clone()).unwrap();
         prop_assert!(legacy.unknown_effects.is_empty());
         prop_assert!(legacy.budget_stop.is_none());
+        prop_assert!(legacy.artifacts.is_empty());
         prop_assert_eq!(serde_json::to_value(&legacy).unwrap(), old);
         // Pretty bytes (as outcome.json is written) parse to the same value.
         let pretty = serde_json::to_vec_pretty(&outcome).unwrap();

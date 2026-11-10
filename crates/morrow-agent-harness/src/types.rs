@@ -10,7 +10,7 @@ use serde_json::Value;
 use tokio_util::sync::CancellationToken;
 
 pub use morrow_agent_core::agent::{InterruptedRun, OpenToolCall, ToolCallReconciliation, ToolCallSettlement};
-use morrow_agent_core::RunRequest;
+use morrow_agent_core::{artifact_provenance::ArtifactStatus, RunRequest};
 
 /// Guidance only. A task kind grants no tool, filesystem or network authority.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -114,6 +114,10 @@ pub struct ReviewBasis {
     pub criteria_revision: String,
     pub authorization_revision: String,
     pub run_id: String,
+    /// Host-chosen Session identity used to bind reusable artifacts to this Run.
+    /// Empty only for legacy records written before artifact publication existed.
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub session_id: String,
     pub run_number: usize,
     pub session_path: PathBuf,
     pub events_path: PathBuf,
@@ -261,6 +265,39 @@ pub struct ReviewReceipt {
     pub evidence: Vec<String>,
 }
 
+/// A structured Host reference to one persisted ToolArtifact. The Harness
+/// re-reads the evidence JSONL record and compares every field before it is
+/// published in a review manifest; this is not a second source of truth.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ArtifactReceiptRef {
+    pub artifact_id: String,
+    pub artifact_ref: String,
+    pub task_id: String,
+    pub session_id: String,
+    pub run_id: String,
+    pub native_call_id: String,
+    pub input_sha256: String,
+    pub output_sha256: String,
+    pub status: ArtifactStatus,
+}
+
+/// Experimental sidecar published after the raw Host ReviewReceipt has been
+/// persisted and the referenced ToolArtifact records have been revalidated.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ReviewArtifactManifest {
+    pub version: u32,
+    pub basis: ReviewBasis,
+    pub receipt: ReviewReceipt,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub artifacts: Vec<ArtifactReceiptRef>,
+}
+
+impl ReviewArtifactManifest {
+    pub const VERSION: u32 = 1;
+}
+
 #[derive(Clone, Debug)]
 pub struct Continuation {
     pub previous: Candidate,
@@ -373,6 +410,18 @@ pub trait HarnessHost: Send + Sync + 'static {
     /// Honor cancellation and return only after any callback effects have settled.
     async fn verify(&self, candidate: Candidate, cancellation: CancellationToken) -> Result<ReviewReceipt>;
 
+    /// Optionally provide structured ToolArtifact references for the exact
+    /// review basis. Implementations should persist candidate/verified records
+    /// through the Harness provenance API before returning. The default keeps
+    /// existing Hosts and JSONL clients compatible.
+    async fn review_artifacts(
+        &self,
+        _basis: ReviewBasis,
+        _cancellation: CancellationToken,
+    ) -> Result<Vec<ArtifactReceiptRef>> {
+        Ok(Vec::new())
+    }
+
     /// Supply a new Run ID and correction objective in the SAME Session. The
     /// harness checks immutable authority and overrides remaining call/time caps.
     /// A fresh ID must never be used to replay an operation with unknown effects.
@@ -468,6 +517,9 @@ pub struct TaskOutcome {
     /// Why a `BudgetExhausted` stop happened, when it was not a plain Run end.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub budget_stop: Option<BudgetStopDetail>,
+    /// References successfully revalidated and persisted in a review manifest.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub artifacts: Vec<ArtifactReceiptRef>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]

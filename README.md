@@ -45,10 +45,13 @@ workspace test run.
 ## Design direction
 
 Morrow keeps a stable execution boundary while the host supplies business
-capabilities. Planned work includes reusable tool artifacts with provenance,
-immutable authorization snapshots, explicit Trigger/Task/Run identities,
-context retrieval across compaction, and bounded watchdog recovery. These
-features will be added with executable evidence and host-level acceptance.
+capabilities. Reusable tool artifacts now have an experimental review sidecar:
+the Host returns structured references, Harness rechecks the matching
+`tool-artifacts.jsonl` records, and accepted references are written to
+`TaskOutcome.artifacts`. Immutable authorization snapshots are also present.
+Explicit Trigger/Task/Run identities, context retrieval across compaction, and
+bounded watchdog recovery remain future work; each needs executable evidence
+and host-level acceptance.
 
 The design review used Hyra 2.0, DeepSeek's SuperAgent prototype, and the
 `super-agent-study` notes as external references. They inform the direction but

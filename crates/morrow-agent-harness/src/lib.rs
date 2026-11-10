@@ -16,6 +16,8 @@ mod storage;
 pub mod task_set;
 mod types;
 
+use std::path::{Path, PathBuf};
+
 pub use morrow_agent_core as core;
 pub use provenance::{
     append_skill_provenance, append_tool_artifact, read_skill_provenance, read_tool_artifacts, skill_provenance_path,
@@ -25,3 +27,8 @@ pub use runner::{resume, resume_checked, start, start_with_options, TaskHandle};
 pub use snapshot::{authorization_snapshot_path, budget_review_index_path, budget_snapshot_path};
 pub use stop_review::{stop_review_index_path, stop_snapshot_path};
 pub use types::*;
+
+/// Evidence path for the experimental review artifact provenance sidecar.
+pub fn review_artifact_manifest_path(evidence_dir: &Path, run_number: usize) -> PathBuf {
+    evidence_dir.join(format!("run-{run_number}-artifacts.json"))
+}

@@ -15,7 +15,9 @@ Morrow 需要把一次工具调用产生的可复核产物交给业务 Host。�
   和验证回执。
 
 执行循环、工具注册和 Skill 安装流程保持不变。Host 负责创建候选产物、检查
-真实文件或业务结果，并决定是否写入验证记录。
+真实文件或业务结果，并决定是否写入验证记录。ReviewReceipt 保持当前稳定字段，
+避免要求既有 Rust Host 和 JSONL 客户端同时升级；新的结构化引用通过 Harness
+的实验性回调和 review 侧车接入。
 
 ## 数据契约
 
@@ -69,6 +71,17 @@ Harness 在每个 evidence 目录提供两个固定路径：
 - `tool-artifacts.jsonl`
 - `skill-provenance.jsonl`
 
+Host review 可实现 `HarnessHost::review_artifacts`，返回绑定当前
+`ReviewBasis`（含 Task、Session、Run）的 `ArtifactReceiptRef`。Harness 在原始
+`run-N-(review|budget-review|stop-review).json` 回执写入后，重新读取
+`tool-artifacts.jsonl`，逐字段核对 ID、引用、Task/Session/Run、native call、输入输出
+摘要和状态。`Verified` 回执还要求每个引用实际为 `verified`，并带已提交且已结算的
+Host receipt。通过后写入 `run-N-artifacts.json`，并将同一组引用放入
+`TaskOutcome.artifacts`。如果回执未提交、结算未知或 verdict 为 `Unknown`，引用仍
+   写入 `run-N-artifacts-callback.json` 作为未接受的回调证据，`TaskOutcome` 不发布
+   这些引用；校验失败保留原始回执、保持 fence，不继续 Run，也不释放 Session。没有
+   引用的旧 Host 仍走空列表路径。
+
 `append_tool_artifact` 先校验记录，再在 evidence 目录锁下追加一行并同步文件。
 读取时限制单行和总大小，并拒绝重复 `artifact_id`。`append_skill_provenance` 会读取同目录的
 ToolArtifact 记录，确认所有来源 ID 都是 `verified`，并逐项核对 Host receipt ID 与输入输出摘要，再追加 Skill 记录。读取 Skill provenance 时也会重新执行这组核对。Core
@@ -86,7 +99,10 @@ Harness provenance 是额外的 Host 证据，不覆盖旧字段。
 3. `candidate`、`unknown`、`revoked` 产物不能进入 Skill provenance。
 4. 当前 bundle hash 改变后，Skill provenance 变为 `revoked`。
 5. Harness 固定路径能追加、读取和拒绝重复或篡改记录。
-6. 现有 Core/Harness 测试和 workspace 编译继续通过。
+6. `ReviewArtifactManifest` 能 round-trip；缺失、篡改、Task/Session/Run 不匹配、
+   candidate/unknown/revoked 产物不能支撑 `Verified`，而 `NeedsChanges`/`Unknown`
+   的引用保留为证据。
+7. 现有 Core/Harness 测试和 workspace 编译继续通过。
 
 真实模型、业务文件、设备和生产效果仍由 Host 验收，本功能只保存 Host 已经
 提交的证据边界。

@@ -157,6 +157,7 @@ mod tests {
                     criteria_revision: "criteria-fixture".into(),
                     authorization_revision: "grant-fixture".into(),
                     run_id: "run-fixture".into(),
+                    session_id: String::new(),
                     run_number: 1,
                     session_path: directory.join("session.json"),
                     events_path: directory.join("run-1-events.jsonl"),

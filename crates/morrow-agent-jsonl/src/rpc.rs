@@ -409,6 +409,7 @@ fn strict_receipt(value: &Value) -> Result<()> {
             "criteria_revision",
             "authorization_revision",
             "run_id",
+            "session_id",
             "run_number",
             "session_path",
             "events_path",
@@ -592,5 +593,22 @@ mod tests {
         let other = Fixture::new();
         other.bridge.fail();
         assert_eq!(other.bridge.failure_category(), Some(CALLBACK_UNKNOWN));
+    }
+
+    #[test]
+    fn review_receipt_basis_accepts_session_identity_and_legacy_omission() {
+        let mut basis = json!({
+            "task_id":"task-1", "criteria_revision":"criteria-1", "authorization_revision":"auth-1",
+            "run_id":"run-1", "session_id":"session-1", "run_number":1,
+            "session_path":"session.json", "events_path":"events.jsonl", "events_sha256":"hash",
+            "event_count":1, "run_calls":1, "total_calls":1, "journal_head_sha256":"head",
+            "raw_start":0, "raw_end":1, "raw_proof":"proof"
+        });
+        let receipt = json!({"basis":basis,"committed":true,"settlement":"Settled","verdict":"Verified","evidence":[]});
+        assert!(strict_receipt(&receipt).is_ok());
+        basis.as_object_mut().unwrap().remove("session_id");
+        let mut legacy = receipt;
+        legacy["basis"] = basis;
+        assert!(strict_receipt(&legacy).is_ok());
     }
 }

@@ -20,17 +20,18 @@ use tokio::{
 use tokio_util::sync::CancellationToken;
 
 use morrow_agent_core::{
-    agent, model::ModelHost, rpi_agent::AgentTool, termination::StopEvidence, RunMode, RunRequest,
+    agent, artifact_provenance::ArtifactStatus, model::ModelHost, rpi_agent::AgentTool, termination::StopEvidence,
+    RunMode, RunRequest,
 };
 
 use crate::{
     storage::{canonical, write_new, Admission},
-    AuthorizationSnapshot, BudgetStopContinuation, BudgetStopDetail, BudgetStopReviewPolicy, BudgetStopReviewRecord,
-    BudgetStopSnapshot, BudgetStopSnapshotReference, BudgetStopTrigger, Candidate, Continuation, EffectEvidence,
-    EffectReceiptRef, EventEnvelope, FencePresence, HarnessHost, HostReceiptRef, LengthStopReviewPolicy, ResumeChecks,
-    ResumeRefusal, ResumeReview, ReviewBasis, ReviewReceipt, Settlement, StopContinuation, StopSnapshot,
-    StopSnapshotReference, TaskOptions, TaskOutcome, TaskSpec, TaskStop, TruncatedMessageRef, UnknownEffectRecord,
-    Verdict,
+    ArtifactReceiptRef, AuthorizationSnapshot, BudgetStopContinuation, BudgetStopDetail, BudgetStopReviewPolicy,
+    BudgetStopReviewRecord, BudgetStopSnapshot, BudgetStopSnapshotReference, BudgetStopTrigger, Candidate,
+    Continuation, EffectEvidence, EffectReceiptRef, EventEnvelope, FencePresence, HarnessHost, HostReceiptRef,
+    LengthStopReviewPolicy, ResumeChecks, ResumeRefusal, ResumeReview, ReviewArtifactManifest, ReviewBasis,
+    ReviewReceipt, Settlement, StopContinuation, StopSnapshot, StopSnapshotReference, TaskOptions, TaskOutcome,
+    TaskSpec, TaskStop, TruncatedMessageRef, UnknownEffectRecord, Verdict,
 };
 
 /// Cloneable observation/cancellation handle. No handle drop aborts the worker.
@@ -391,6 +392,7 @@ impl Progress {
                 fence_presence: FencePresence::Unknown,
                 unknown_effects: Vec::new(),
                 budget_stop: None,
+                artifacts: Vec::new(),
             },
         }
     }
@@ -652,6 +654,7 @@ async fn run_task(
         }
         let run_id = request.id.clone();
         let mode = request.mode;
+        let session_id = request.session_key.clone();
         let state_path = request.state_path.clone();
         let cwd = request.cwd.clone();
         let run_calls_limit = request.max_calls;
@@ -859,6 +862,7 @@ async fn run_task(
             criteria_revision: spec.criteria_revision.clone(),
             authorization_revision: spec.authorization_revision.clone(),
             run_id,
+            session_id,
             run_number,
             session_path: state_path,
             events_path,
@@ -939,13 +943,56 @@ async fn run_task(
             );
             return Ok(false);
         }
-        if receipt.basis != *subject.basis() || !valid_settlement(&receipt) {
+        if !receipt_basis_matches(subject.basis(), &receipt.basis) {
             progress.stop(
                 TaskStop::ReconciliationRequired,
                 "Host review is uncommitted, unknown, or bound to another candidate",
             );
             return Ok(false);
         }
+        subject.check()?;
+        let (artifact_result, artifact_stopped) =
+            joined(host.review_artifacts(subject.basis().clone(), cancellation.clone()), cancellation, deadline).await;
+        let artifact_refs = match artifact_result {
+            Ok(refs) => refs,
+            Err(_) => {
+                progress.stop(TaskStop::ReconciliationRequired, "Host artifact review failed; evidence retained");
+                return Ok(false);
+            }
+        };
+        if artifact_stopped || cancellation.is_cancelled() {
+            progress.stop(
+                TaskStop::Cancelled,
+                "artifact review callback joined after cancellation/deadline; reconcile callback effects",
+            );
+            return Ok(false);
+        }
+        if validate_review_artifacts(&admission.evidence, subject.basis(), &receipt, &artifact_refs).is_err() {
+            progress.stop(TaskStop::ReconciliationRequired, "Host artifact references failed Harness validation");
+            return Ok(false);
+        }
+        let manifest_path = if valid_settlement(&receipt) {
+            crate::review_artifact_manifest_path(&admission.evidence, run_number)
+        } else {
+            admission.evidence.join(format!("run-{run_number}-artifacts-callback.json"))
+        };
+        write_new(
+            &manifest_path,
+            &ReviewArtifactManifest {
+                version: ReviewArtifactManifest::VERSION,
+                basis: subject.basis().clone(),
+                receipt: receipt.clone(),
+                artifacts: artifact_refs.clone(),
+            },
+        )?;
+        if !valid_settlement(&receipt) {
+            progress.stop(
+                TaskStop::ReconciliationRequired,
+                "Host review is uncommitted, unknown, or bound to another candidate",
+            );
+            return Ok(false);
+        }
+        progress.outcome.artifacts = artifact_refs;
         subject.check()?;
         if let ReviewSubject::Budget { reference, .. } = &subject {
             if cancellation.is_cancelled() || Instant::now() >= deadline {
@@ -1068,6 +1115,53 @@ async fn run_task(
 
 fn valid_settlement(receipt: &ReviewReceipt) -> bool {
     receipt.committed && receipt.settlement == Settlement::Settled && receipt.verdict != Verdict::Unknown
+}
+
+fn receipt_basis_matches(expected: &ReviewBasis, actual: &ReviewBasis) -> bool {
+    if expected == actual {
+        return true;
+    }
+    if !actual.session_id.is_empty() {
+        return false;
+    }
+    let mut legacy = expected.clone();
+    legacy.session_id.clear();
+    &legacy == actual
+}
+
+fn validate_review_artifacts(
+    evidence_dir: &Path,
+    basis: &ReviewBasis,
+    receipt: &ReviewReceipt,
+    references: &[ArtifactReceiptRef],
+) -> Result<()> {
+    let artifacts = crate::read_tool_artifacts(evidence_dir)?;
+    let mut ids = HashSet::new();
+    for reference in references {
+        ensure!(ids.insert(reference.artifact_id.as_str()), "duplicate artifact reference");
+        ensure!(reference.task_id == basis.task_id, "artifact Task does not match review basis");
+        ensure!(!basis.session_id.is_empty(), "artifact review requires a Session identity");
+        ensure!(reference.session_id == basis.session_id, "artifact Session does not match review basis");
+        ensure!(reference.run_id == basis.run_id, "artifact Run does not match review basis");
+        let artifact = artifacts
+            .iter()
+            .find(|artifact| artifact.artifact_id == reference.artifact_id)
+            .context("review artifact is missing")?;
+        ensure!(artifact.artifact_ref == reference.artifact_ref, "artifact reference changed");
+        ensure!(artifact.task_id == reference.task_id, "artifact Task changed");
+        ensure!(artifact.session_id == reference.session_id, "artifact Session changed");
+        ensure!(artifact.run_id == reference.run_id, "artifact Run changed");
+        ensure!(artifact.native_call_id == reference.native_call_id, "artifact native call changed");
+        ensure!(artifact.input_sha256 == reference.input_sha256, "artifact input hash changed");
+        ensure!(artifact.output_sha256 == reference.output_sha256, "artifact output hash changed");
+        ensure!(artifact.status == reference.status, "artifact status changed");
+        if receipt.verdict == Verdict::Verified {
+            ensure!(artifact.status == ArtifactStatus::Verified, "Verified review references an unverified artifact");
+            let host_receipt = artifact.host_receipt.as_ref().context("verified artifact receipt is missing")?;
+            ensure!(host_receipt.committed && host_receipt.settled, "verified artifact receipt is not settled");
+        }
+    }
+    Ok(())
 }
 
 fn check_basis(basis: &ReviewBasis) -> Result<()> {
@@ -1462,6 +1556,7 @@ mod consumed_tests {
             fence_presence: FencePresence::Present,
             unknown_effects: Vec::new(),
             budget_stop: None,
+            artifacts: Vec::new(),
         }
     }
 
@@ -1656,5 +1751,144 @@ mod summary_reservation_tests {
             total += calls;
         }
         assert_eq!(total, 6);
+    }
+}
+
+#[cfg(test)]
+mod artifact_review_tests {
+    use super::*;
+    use morrow_agent_core::artifact_provenance::{HostArtifactReceipt, ToolArtifact};
+    use std::path::PathBuf;
+
+    fn basis() -> ReviewBasis {
+        ReviewBasis {
+            task_id: "task-1".into(),
+            criteria_revision: "criteria-1".into(),
+            authorization_revision: "auth-1".into(),
+            run_id: "run-1".into(),
+            session_id: "session-1".into(),
+            run_number: 1,
+            session_path: PathBuf::from("session.json"),
+            events_path: PathBuf::from("run-1-events.jsonl"),
+            events_sha256: "e".repeat(64),
+            event_count: 1,
+            run_calls: 1,
+            total_calls: 1,
+            journal_head_sha256: "j".repeat(64),
+            raw_start: 0,
+            raw_end: 1,
+            raw_proof: "p".repeat(64),
+        }
+    }
+
+    fn candidate_artifact(id: &str) -> ToolArtifact {
+        ToolArtifact {
+            version: ToolArtifact::VERSION,
+            artifact_id: id.into(),
+            task_id: "task-1".into(),
+            session_id: "session-1".into(),
+            run_id: "run-1".into(),
+            native_call_id: "call-1".into(),
+            tool: "write_answer".into(),
+            input_sha256: "a".repeat(64),
+            output_sha256: "b".repeat(64),
+            artifact_ref: "answer.txt".into(),
+            status: ArtifactStatus::Candidate,
+            created_at: "2026-11-10T10:00:00Z".into(),
+            host_receipt: None,
+        }
+    }
+
+    fn verified_artifact() -> ToolArtifact {
+        candidate_artifact("artifact-1")
+            .verify(HostArtifactReceipt {
+                receipt_id: "receipt-1".into(),
+                artifact_id: "artifact-1".into(),
+                task_id: "task-1".into(),
+                session_id: "session-1".into(),
+                run_id: "run-1".into(),
+                native_call_id: "call-1".into(),
+                input_sha256: "a".repeat(64),
+                output_sha256: "b".repeat(64),
+                verifier: "test-host".into(),
+                verifier_version: "1".into(),
+                verified_at: "2026-11-10T10:01:00Z".into(),
+                committed: true,
+                settled: true,
+            })
+            .unwrap()
+    }
+
+    fn reference(artifact: &ToolArtifact) -> ArtifactReceiptRef {
+        ArtifactReceiptRef {
+            artifact_id: artifact.artifact_id.clone(),
+            artifact_ref: artifact.artifact_ref.clone(),
+            task_id: artifact.task_id.clone(),
+            session_id: artifact.session_id.clone(),
+            run_id: artifact.run_id.clone(),
+            native_call_id: artifact.native_call_id.clone(),
+            input_sha256: artifact.input_sha256.clone(),
+            output_sha256: artifact.output_sha256.clone(),
+            status: artifact.status,
+        }
+    }
+
+    fn receipt(basis: ReviewBasis, verdict: Verdict) -> ReviewReceipt {
+        ReviewReceipt { basis, committed: true, settlement: Settlement::Settled, verdict, evidence: vec![] }
+    }
+
+    #[test]
+    fn verified_artifact_is_revalidated_and_candidate_cannot_back_a_verified_review() {
+        let directory = tempfile::tempdir().unwrap();
+        let verified = verified_artifact();
+        crate::append_tool_artifact(directory.path(), &verified).unwrap();
+        let basis = basis();
+        assert!(validate_review_artifacts(
+            directory.path(),
+            &basis,
+            &receipt(basis.clone(), Verdict::Verified),
+            &[reference(&verified)],
+        )
+        .is_ok());
+
+        let candidate = candidate_artifact("artifact-2");
+        crate::append_tool_artifact(directory.path(), &candidate).unwrap();
+        assert!(validate_review_artifacts(
+            directory.path(),
+            &basis,
+            &receipt(basis.clone(), Verdict::Verified),
+            &[reference(&candidate)],
+        )
+        .is_err());
+        assert!(validate_review_artifacts(
+            directory.path(),
+            &basis,
+            &receipt(basis.clone(), Verdict::NeedsChanges { feedback: "repair".into() }),
+            &[reference(&candidate)],
+        )
+        .is_ok());
+    }
+
+    #[test]
+    fn missing_or_tampered_artifact_reference_is_rejected() {
+        let directory = tempfile::tempdir().unwrap();
+        let artifact = verified_artifact();
+        let basis = basis();
+        let receipt = receipt(basis.clone(), Verdict::Verified);
+        assert!(validate_review_artifacts(directory.path(), &basis, &receipt, &[reference(&artifact)]).is_err());
+        crate::append_tool_artifact(directory.path(), &artifact).unwrap();
+        let path = crate::tool_artifacts_path(directory.path());
+        let tampered = std::fs::read_to_string(&path).unwrap().replace(&"b".repeat(64), &"c".repeat(64));
+        std::fs::write(path, tampered).unwrap();
+        assert!(validate_review_artifacts(directory.path(), &basis, &receipt, &[reference(&artifact)]).is_err());
+    }
+
+    #[test]
+    fn legacy_review_receipt_without_session_id_remains_compatible() {
+        let expected = basis();
+        let mut legacy = expected.clone();
+        legacy.session_id.clear();
+        assert!(receipt_basis_matches(&expected, &legacy));
+        assert!(!receipt_basis_matches(&expected, &ReviewBasis { run_id: "other".into(), ..legacy }));
     }
 }

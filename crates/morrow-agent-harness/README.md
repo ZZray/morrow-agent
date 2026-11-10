@@ -37,6 +37,11 @@ morrow-agent-harness = { path = "../morrow-agent-harness" }
 
 - `verify`：检查实际文件、工具收据或业务结果，先保存检查证据，再返回绑定当前
   `Candidate.basis` 的 `ReviewReceipt`。
+- `review_artifacts`（可选）：在 `tool-artifacts.jsonl` 中保存或更新当前 Run 的
+  `ToolArtifact`，返回结构化 `ArtifactReceiptRef`。Harness 会重新核对引用，写入
+  `run-N-artifacts.json`，并把已结算回执的引用放入 `TaskOutcome.artifacts`。未提交或
+  未知回执只写 `run-N-artifacts-callback.json` 作为回调证据。默认实现返回空列表，
+  旧 Host 无需修改。
 - `prepare_continuation`：根据有效的 `NeedsChanges` 反馈创建下一 Run，请求沿用原
   Session 和授权，使用新的 Run ID。Harness 会限制剩余调用数和原截止时间。
 
