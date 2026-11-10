@@ -63,6 +63,50 @@ The Host must retain that error and inspect the original authorization evidence.
 The lifecycle and recovery rules are described in
 [reviewed continuation](design/reviewed-continuation.md).
 
+### Persistent task queue
+
+Use `morrow_agent_harness::orchestration::Store` for durable Host scheduling.
+The Host supplies a `Trigger`, authorizing `Mandate` and `AssignmentSpec`, with
+stable IDs and a SHA-256 digest of its execution configuration. The running Host
+reconstructs the `RunRequest`, credentials and callback implementation.
+
+This fragment runs inside a Tokio runtime. `intent` contains a unique attempt
+ID, the request's Run ID, the original evidence directory and `DispatchMode::Start`.
+`now_ms` and `lease_expires_ms` are Unix milliseconds.
+
+```rust
+use morrow_agent_harness::orchestration::Store;
+
+let queue = Store::open(queue_directory)?;
+queue.enqueue(trigger, mandate, assignment, now_ms)?;
+if let Some(owner) = queue.claim_next(worker_id, now_ms, lease_expires_ms)? {
+    let handle = owner.dispatch(intent, request, host.clone(), &configuration_sha256)?;
+    let report = handle.wait().await;
+    // Inspect report.error and report.outcome, then apply Host business acceptance.
+}
+```
+
+`DispatchHandle::cancel` persists cancellation. Its supervisor keeps ownership
+until the Harness worker and callbacks join, including after observers are
+dropped. `snapshot` reads identities and evidence references. `events_after`
+resumes event consumption after a saved sequence. `watchdog` records expired
+leases and requests cancellation. It leaves external settlement to recovery.
+
+After process loss, use `claim_recovery` to acquire the original assignment.
+Inspect its attempts and the original Session fence, then harvest a released
+outcome or dispatch `Resume` with the checked fence hash. A prepared unadmitted
+intent can be retried through `retry_unadmitted` with a committed Host receipt
+and exactly the original Run and evidence identity. `claim_reviewed` and
+`DispatchMode::Continue` connect released candidates to `continue_reviewed`.
+`observe_job` binds a native managed Job to its real `job_start` invocation and
+saved Run evidence.
+
+This local store supports at most 1024 assignments, 32768 events and a 32 MiB
+snapshot. Capacity errors preserve the last committed state. Event trimming
+and assignment removal are currently unavailable. Brief lock contention returns
+`StoreBusy` to callers. The Host owns its bounded retry and scheduling policy.
+See the [orchestration design](design/orchestration.md) for recovery boundaries.
+
 ### Skill verification
 
 `core::skill_library::read_verification(&roots, scope, name)` returns the current

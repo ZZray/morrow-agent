@@ -72,3 +72,23 @@ collisions at the index/manifest paths.
 - Tests use controlled providers and local files. Real model tasks, business
   Hosts and cross-process artifact recovery remain outside this result.
 - The intermittent exec marker failure remains an observed test limitation.
+
+## Subsequent verification
+
+The recovery implementation in `3b9b8ef` added restart-safe original-Run artifact
+backfill. Its [verification record](resume-artifacts-20261111.md) retains the
+older admission and missing-Session coverage boundaries.
+
+The final delivery added a real Task deadline test across ordinary, budget and
+length artifact callbacks. The Host waits for the original deadline's
+cancellation token and returns Verified references after joining. The test
+checks retained callback evidence and fence, an empty outcome artifact list,
+and absence of accepted manifest/index publication. The complete artifact
+review target passed 10/10 in 10.18 seconds. Its source SHA-256 is
+`b2df1e9566be984ee45f49443ecc7968ba8dcdf1a9191606890030024f9b646f`.
+
+The [system verification](system-verification-20261111.md) records the later
+workspace and client regressions. Real-model business acceptance and actual
+S3 read-timeout recovery are covered by the
+[business Host record](business-hosts-20261111.md). Earlier failures above
+remain part of the verification history.

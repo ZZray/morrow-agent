@@ -128,12 +128,136 @@ The local evidence root is
   journal, artifact ledger, released outcome and business acceptance.
 - `live-local-1` retains the first failed real-model trial.
 
-Same-Task resume was exercised through the actual SDK with a controlled model.
-The three final real-model trials exercised ordinary successful starts. The S3
-service was a local persistent SeaweedFS instance. Remote production storage,
-other S3 implementations and live-model interruption recovery remain outside
-this verification record. The main agent independently reviewed the production
+The initial same-Task resume test used the actual SDK with a controlled model.
+The three final real-model start trials exercised ordinary successful starts.
+The S3 service was a local persistent SeaweedFS instance. Remote production
+storage and other S3 implementations remain outside this verification record.
+The real-model recovery trials below extend the initial coverage.
+The main agent independently reviewed the production
 callbacks, CLI, receipts, reconciliation and artifact paths and found no
 blocking implementation issue. It identified a README Python-version mismatch
 with the SDK's `asyncio.timeout` requirement. The README now requires Python
 3.11 or later. The main agent owns the final scoped commit.
+
+## Real-model cancellation and timeout recovery
+
+Two further trials used the delivered examples at commit `547f2e4`, the same
+executable SHA-256 recorded above, CAS `deepseek-v4.1-flash` and the original
+business criterion `Morrow business integration verified`. Each fresh Task
+started with a 900-second deadline, four Runs, sixteen total calls and the
+existing four-call/60-second per-Run authority. Temporary Python drivers under
+the local evidence root supplied the fault and post-reconciliation Host
+feedback. Production source hashes matched the final start trials.
+
+| Trial | Original Task | Initial process result | Fresh-process resume |
+| --- | --- | --- | --- |
+| `live-recovery-local-1` | `05202730c98842feb3103ef922e8c962` | Exit 2, Cancelled, 3.541 s | Exit 0, accepted, 3.526 s |
+| `live-recovery-object-timeout-1` | `dbb0219760c34b0e9ab85ed4473fd67a` | Exit 2, Cancelled, 7.480 s | Exit 0, accepted, 3.123 s |
+
+### File write followed by an unknown settlement
+
+The temporary file driver performed the production write, `flush` and `fsync`,
+then appended and synced a write-count record. The business operation's original
+Settled receipt was already durable when the driver changed the callback's
+settlement to Unknown. The runtime retained a fence and recorded one unknown
+effect. Its first outcome was Cancelled, with one consumed Run and three
+observed calls.
+
+The explicit Host reconciliation read the actual file, compared its 36 bytes
+with the unchanged business criterion and checked the original operation
+receipt. The proof retained the original outcome, fence, Task identity and
+receipt SHA-256. The original Run had already closed with `pending_run: null`,
+so the declaration used `tool_calls: []` and supplied the external proof and
+original receipt as evidence.
+
+Fresh Host process PID 36648 resumed the Task after PID 16132 performed the
+original write. Final cumulative counts were two Runs and four calls. The
+audit found exactly one native `submit_result` call and one external write.
+The original write log and receipt hashes matched their pre-resume values.
+The file SHA-256 remained
+`3d68a83fa34825a277833cccef818d36853d68803eff946bb5b9ae2354772dbe`.
+
+### Real S3 read timeout after a successful PUT
+
+A temporary HTTP proxy ran in PID 46500 at `http://127.0.0.1:52111` and forwarded
+requests to the existing SeaweedFS endpoint `http://127.0.0.1:27969`. It preserved
+the original request headers for SigV4 verification and recorded request
+methods, object paths, hashes and response metadata. Credential headers were
+excluded from the evidence logs.
+
+The proxy forwarded the actual PUT and saved the backend's HTTP 200 receipt
+before delaying its response by six seconds. The production boto3 client used
+its configured four-second read timeout and one attempt. It raised an actual
+`ReadTimeoutError`; the production Host persisted an Unknown operation receipt,
+and the runtime retained a Cancelled outcome and reconciliation fence. The
+proxy later recorded that the client had disconnected after the successful
+backend response.
+
+The backend object was
+`host-live-timeout/0bc2f92e54954efaaa027e8528f6c10f/result.txt` in bucket
+`morrow-acceptance-1e0a75e04712`. A direct backend GET, outside the proxy, verified
+the original 36 bytes and their SHA-256 before the explicit reconciliation
+declaration was created. The recorded PUT ETag was
+`07803c839df39760adca73d4cb7ff5e2` and request ID was
+`18E6C310D7C2B014E1D7EA51`. SeaweedFS supplied no version ID for this write.
+
+Host PID 68872 resumed the original Task after PID 64584 handled the timed-out
+write. Counts advanced from one Run/three calls to two Runs/four calls. The
+proxy recorded exactly one forwarded PUT across both processes. Direct backend
+readback after resume still matched the original content and hash. The original
+Unknown receipt retained SHA-256
+`05bf91e2f6cafe1766297d3006cf784c222f5ecc568639ebc01f9d11e10ae461`.
+The proxy closed in `finally`, its server thread joined, and a subsequent
+listener query found zero listeners on port 52111.
+
+### Shared recovery checks and boundaries
+
+Both audits checked the original Task and Session, unchanged deadline, criteria,
+authorization revision, tool declaration and per-Run limits. Each resume record
+retained `consumed_runs: 1` and `consumed_calls: 3`. Original receipts, external
+readback, final outcome, review and business-proof hashes were checked. The
+final outcome was `AwaitingHostAcceptance` with `task_accepted: false`, and the
+separate `business-acceptance.json` recorded `accepted: true`.
+
+After checking the original business effect and receipt hash, each temporary
+Host supplied resume-specific feedback stating that the effect had completed
+and requesting a completion report without another submission. That feedback
+was saved in `resume-host-feedback.json`. These trials exercise a Host-directed
+continuation through the production SDK. The production example CLI continues
+to use its existing objective generation.
+
+The original ledgers retain `reference_read` as candidate and `submit_result`
+as unknown. Each recovery record has `artifact_recovery: []`. The resumed Runs
+made no business tool calls, and their final outcomes contain zero verified
+artifact references. The explicit business reconciliation and acceptance
+receipts provide the new settlement evidence. Historical unknown artifact
+records remain available for inspection.
+
+The file trial covers injected lost settlement after a durable write and its
+runtime cancellation path. The S3 trial covers an actual socket read timeout
+after a durable external effect, followed by explicit reconciliation. User
+cancellation, hard process termination and Task-deadline expiry recovery were
+outside these two trials. The older expired `live-local-1` Task retains its
+original failed evidence and deadline.
+
+### Recovery evidence
+
+Under the local evidence root, each recovery Task contains
+`operator-business-check.json`, `operator-reconciliation.json`, original
+operation receipts, `resume-host-feedback.json`, the resumed evidence directory,
+`business-acceptance.json` and `recovery-audit.json`. The file Task also retains
+`external-writes.jsonl` and `injected-unknown.json`.
+
+`live-recovery-object-timeout-proxy-1/` contains `proxy-start.json`,
+`requests.jsonl`, both subprocess outputs and exit records, and
+`proxy-stop.json`. `listener-check.json` records the subsequent zero-listener
+check. Local temporary scripts retain the fault and audit mechanics.
+
+| Temporary script | SHA-256 |
+| --- | --- |
+| `live-recovery-driver.py` | `4a9c686725e88ca3db769e895e6438a20ff097b8fd7650e0daa13a49aa287406` |
+| `live-recovery-launch.py` | `d638172755976906e0282ff60592948b4bb5a01a58704b18d02dcb7a0539f865` |
+| `live-recovery-reconcile.py` | `9b713021469927fa383113e5485d3f110375b44b32d283a5c8ec0e54be03f1a9` |
+| `live-recovery-audit.py` | `602dd9c6a1ccf66a5d61fe7270c723810feb46db9f8480aa08ea775a7f3c2563` |
+| `live-recovery-object-driver.py` | `8821c852fdf19e37b977e0a9dcb77c4937e077e82b33c5d46d7f44903e8b072f` |
+| `live-recovery-object-trial.py` | `2f71a7b7901b7f2287916c33822bc86d8cd27d171a243db9180ac87d866302b0` |

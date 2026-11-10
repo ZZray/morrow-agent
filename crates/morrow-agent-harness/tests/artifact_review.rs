@@ -11,7 +11,7 @@ use std::{
     io::Write,
     path::Path,
     sync::{
-        atomic::{AtomicBool, Ordering},
+        atomic::{AtomicBool, AtomicU64, Ordering},
         Arc,
     },
     time::Duration,
@@ -29,6 +29,7 @@ enum ArtifactMode {
     Uncommitted,
     UnknownSettlement,
     CancelCallback,
+    DeadlineCallback,
     TamperEvents,
     TamperJournal,
     FailSecondCallback,
@@ -41,6 +42,7 @@ struct ArtifactHost {
     mode: ArtifactMode,
     callback_started: Notify,
     callback_joined: AtomicBool,
+    callback_cancelled_at: AtomicU64,
 }
 
 impl ArtifactHost {
@@ -50,6 +52,7 @@ impl ArtifactHost {
             mode,
             callback_started: Notify::new(),
             callback_joined: AtomicBool::new(false),
+            callback_cancelled_at: AtomicU64::new(0),
         }
     }
 
@@ -180,6 +183,19 @@ impl HarnessHost for ArtifactHost {
                     committed: true,
                     settled: true,
                 })?;
+                if self.mode == ArtifactMode::DeadlineCallback {
+                    assert!(!cancellation.is_cancelled());
+                    self.callback_started.notify_one();
+                    tokio::time::timeout(Duration::from_secs(5), cancellation.cancelled()).await?;
+                    self.callback_cancelled_at.store(common::now_ms(), Ordering::SeqCst);
+                    tokio::time::sleep(Duration::from_millis(30)).await;
+                    // The Host finishes verification only after the original
+                    // Task deadline. Harness must join and retain this late
+                    // result without publishing it as accepted evidence.
+                    append_tool_artifact(evidence, &verified)?;
+                    self.callback_joined.store(true, Ordering::SeqCst);
+                    return Ok(vec![Self::artifact_ref(&verified)]);
+                }
                 append_tool_artifact(basis.events_path.parent().unwrap(), &verified)?;
                 match self.mode {
                     ArtifactMode::CancelCallback => {
@@ -303,6 +319,10 @@ fn responses(path: ReviewPath, answer: &str) -> Vec<Value> {
 }
 
 fn start_path(host: &Arc<ArtifactHost>, path: ReviewPath) -> TaskHandle {
+    start_path_with_spec(host, path, host.inner.spec("artifact-flow"))
+}
+
+fn start_path_with_spec(host: &Arc<ArtifactHost>, path: ReviewPath, spec: TaskSpec) -> TaskHandle {
     let mut request = host.inner.request("initial");
     let mut options = TaskOptions::default();
     match path {
@@ -313,7 +333,7 @@ fn start_path(host: &Arc<ArtifactHost>, path: ReviewPath) -> TaskHandle {
         }
         ReviewPath::Length => options.length_stop_review = LengthStopReviewPolicy::ReviewClosedLength,
     }
-    start_with_options(host.inner.spec("artifact-flow"), request, host.clone(), options).unwrap()
+    start_with_options(spec, request, host.clone(), options).unwrap()
 }
 
 fn manifest(evidence: &Path, number: usize) -> ReviewArtifactManifest {
@@ -437,6 +457,55 @@ async fn cancelled_artifact_callback_joins_and_keeps_refs_without_accepting_them
             serde_json::from_slice(&std::fs::read(evidence.join("run-1-artifacts-callback.json")).unwrap()).unwrap();
         assert_eq!(callback.artifacts.len(), 1);
         assert!(!review_artifact_manifest_path(&evidence, 1).exists());
+    }
+}
+
+#[tokio::test]
+async fn task_deadline_cancels_and_joins_artifact_callback_without_publishing_late_verified_refs() {
+    for path in REVIEW_PATHS {
+        let directory = tempfile::tempdir().unwrap();
+        let provider = Provider::new(responses(path, "correct"));
+        let host = Arc::new(ArtifactHost::new(directory.path(), &provider, ArtifactMode::DeadlineCallback));
+        let mut spec = host.inner.spec("artifact-flow");
+        spec.deadline_unix_ms = common::now_ms() + 2_000;
+        let deadline = spec.deadline_unix_ms;
+        let handle = start_path_with_spec(&host, path, spec);
+        tokio::time::timeout(Duration::from_secs(10), host.callback_started.notified()).await.unwrap();
+        assert!(common::now_ms() < deadline, "{path:?}: artifact callback must start before Task expiry");
+        assert!(!host.callback_joined.load(Ordering::SeqCst));
+        // No explicit cancel: joined() must signal this callback when the real
+        // original Task deadline elapses, then await its late Verified result.
+        let outcome = tokio::time::timeout(Duration::from_secs(10), handle.wait()).await.unwrap();
+        assert!(
+            host.callback_cancelled_at.load(Ordering::SeqCst) >= deadline,
+            "{path:?}: cancellation preceded Task expiry"
+        );
+        assert!(host.callback_joined.load(Ordering::SeqCst));
+        assert_eq!(outcome.stop, TaskStop::Cancelled, "{path:?}: {outcome:?}");
+        assert!(outcome.detail.contains("artifact review callback joined after cancellation/deadline"));
+        assert!(outcome.artifacts.is_empty());
+        assert!(!outcome.task_accepted);
+        assert_eq!(outcome.fence_presence, FencePresence::Present);
+        let fence: Value =
+            serde_json::from_slice(&std::fs::read(outcome.reconciliation_fence.as_ref().unwrap()).unwrap()).unwrap();
+        assert_eq!(fence["state"], "active_or_unknown");
+        assert_eq!(fence["deadline_unix_ms"], deadline);
+        let evidence = directory.path().join("artifact-flow");
+        let callback: ReviewArtifactManifest =
+            serde_json::from_slice(&std::fs::read(evidence.join("run-1-artifacts-callback.json")).unwrap()).unwrap();
+        assert_eq!(callback.receipt.verdict, Verdict::Verified);
+        assert_eq!(callback.artifacts.len(), 1);
+        assert_eq!(callback.artifacts[0].status, ArtifactStatus::Verified);
+        assert!(!review_artifact_manifest_path(&evidence, 1).exists());
+        assert!(!budget_review_index_path(&evidence, 1).exists());
+        assert!(!evidence.join("run-1-stop-review-index.json").exists());
+        assert!(!evidence.join("released.json").exists());
+        let persisted: TaskOutcome =
+            serde_json::from_slice(&std::fs::read(evidence.join("outcome.json")).unwrap()).unwrap();
+        assert_eq!(persisted.stop, TaskStop::Cancelled);
+        assert_eq!(persisted.fence_presence, FencePresence::Present);
+        assert!(persisted.artifacts.is_empty());
+        assert_eq!(provider.requests.lock().unwrap().len(), responses(path, "correct").len());
     }
 }
 

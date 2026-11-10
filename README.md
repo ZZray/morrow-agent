@@ -50,9 +50,13 @@ the exact ToolCall/ToolResult range before Host review. The Host supplies
 business receipts, Harness rechecks matching `tool-artifacts.jsonl` records, and
 accepted references are written to `TaskOutcome.artifacts`. Immutable
 authorization snapshots are also present.
-Explicit Trigger/Task/Run identities, context retrieval across compaction, and
-bounded watchdog recovery remain future work; each needs executable evidence
-and host-level acceptance.
+Harness also provides a persistent Host queue with Trigger, Mandate, Assignment,
+Task, Session, Run and native Job references, worker leases, cancellation and
+checked recovery. [Orchestration](docs/design/orchestration.md) describes its
+bounded local store and recovery contracts. The Python
+[business Host examples](crates/morrow-agent-jsonl/examples/business_hosts/README.md)
+cover file, S3-compatible object and model-result acceptance. Broader context
+retrieval across compaction remains future work.
 
 The design review used Hyra 2.0, DeepSeek's SuperAgent prototype, and the
 `super-agent-study` notes as external references. They inform the direction but
