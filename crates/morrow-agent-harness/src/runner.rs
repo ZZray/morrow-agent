@@ -25,6 +25,7 @@ use morrow_agent_core::{
 };
 
 use crate::{
+    auto_artifacts,
     storage::{canonical, write_new, Admission},
     ArtifactReceiptRef, AuthorizationSnapshot, BudgetStopContinuation, BudgetStopDetail, BudgetStopReviewPolicy,
     BudgetStopReviewRecord, BudgetStopSnapshot, BudgetStopSnapshotReference, BudgetStopTrigger, Candidate,
@@ -693,6 +694,31 @@ async fn run_task(
                 "core_joined":true,"stopped":executed.1,
             }),
         )?;
+        if journal.exists() {
+            let journal_head = journal.open()?;
+            let allow_unresolved = observed.failed || executed.1 || cancellation.is_cancelled();
+            if let Err(error) = auto_artifacts::persist_run(
+                &journal,
+                &admission.evidence,
+                &spec.task_id,
+                &session_id,
+                &run_id,
+                raw_start,
+                journal_head.raw_count,
+                allow_unresolved,
+            ) {
+                progress.outcome.unknown_effects.extend(unknown_effect_records(
+                    &journal,
+                    &state_path,
+                    raw_start,
+                    &run_id,
+                    &events_path,
+                ));
+                let detail = format!("automatic ToolArtifact generation failed; evidence retained: {error}");
+                progress.stop(TaskStop::ReconciliationRequired, &detail);
+                return Ok(false);
+            }
+        }
         if observed.failed || observed.calls > run_calls_limit || progress.outcome.observed_calls > spec.max_calls {
             // 22.6: the Run is already joined; record what has unknown effects.
             progress.outcome.unknown_effects.extend(unknown_effect_records(
@@ -803,6 +829,25 @@ async fn run_task(
         ensure!(head.metadata.get("pending_run").is_some_and(Value::is_null), "native Run remains pending");
         ensure!(journal.contains_run(&run_id)?, "native Run has no durable completed receipt");
         let raw_end = head.raw_count;
+        let basis = ReviewBasis {
+            task_id: spec.task_id.clone(),
+            criteria_revision: spec.criteria_revision.clone(),
+            authorization_revision: spec.authorization_revision.clone(),
+            run_id: run_id.clone(),
+            session_id: session_id.clone(),
+            run_number,
+            session_path: state_path.clone(),
+            events_path: events_path.clone(),
+            events_sha256: observed.digest.clone(),
+            event_count: observed.seq,
+            run_calls: observed.calls,
+            total_calls: progress.outcome.observed_calls,
+            journal_head_sha256: crate::storage::hash(&serde_json::to_vec(&head)?),
+            raw_start,
+            raw_end,
+            raw_proof: journal.proof(raw_start, raw_end)?,
+        };
+        check_basis(&basis)?;
         let mut native_unknown = false;
         let mut cursor = raw_start;
         while cursor < raw_end {
@@ -857,25 +902,6 @@ async fn run_task(
             progress.stop(TaskStop::ReconciliationRequired, "last model result is not an ordinary complete agent Stop");
             return Ok(false);
         }
-        let basis = ReviewBasis {
-            task_id: spec.task_id.clone(),
-            criteria_revision: spec.criteria_revision.clone(),
-            authorization_revision: spec.authorization_revision.clone(),
-            run_id,
-            session_id,
-            run_number,
-            session_path: state_path,
-            events_path,
-            events_sha256: observed.digest,
-            event_count: observed.seq,
-            run_calls: observed.calls,
-            total_calls: progress.outcome.observed_calls,
-            journal_head_sha256: crate::storage::hash(&serde_json::to_vec(&head)?),
-            raw_start,
-            raw_end,
-            raw_proof: journal.proof(raw_start, raw_end)?,
-        };
-        check_basis(&basis)?;
         let subject = if let Some(termination) = budget_termination {
             let snapshot = BudgetStopSnapshot { basis, diagnostic_output: result.text, goal, termination };
             let reference = crate::snapshot::persist(&snapshot, &admission.evidence)?;

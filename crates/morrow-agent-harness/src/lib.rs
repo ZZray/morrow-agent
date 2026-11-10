@@ -8,6 +8,7 @@
 //! supplies no automatic fence reset or replay operation. `resume` continues such a
 //! Task only after the Host committed a settled reconciliation of what it left behind.
 
+mod auto_artifacts;
 mod provenance;
 mod runner;
 mod snapshot;

@@ -1,5 +1,5 @@
 use std::{
-    collections::HashSet,
+    collections::HashMap,
     fs::{self, File, OpenOptions},
     io::{Read, Write},
     path::{Path, PathBuf},
@@ -67,13 +67,50 @@ fn lock(evidence_dir: &Path) -> Result<File> {
 }
 
 fn read_tool_artifacts_unlocked(evidence_dir: &Path) -> Result<Vec<ToolArtifact>> {
-    let artifacts: Vec<ToolArtifact> = read_records(&tool_artifacts_path(evidence_dir))?;
-    let mut ids = HashSet::new();
-    for artifact in &artifacts {
+    let records: Vec<ToolArtifact> = read_records(&tool_artifacts_path(evidence_dir))?;
+    let mut positions = HashMap::new();
+    let mut artifacts = Vec::with_capacity(records.len());
+    for artifact in records {
         artifact.validate()?;
-        ensure!(ids.insert(artifact.artifact_id.as_str()), "duplicate ToolArtifact ID");
+        if let Some(index) = positions.get(&artifact.artifact_id).copied() {
+            let previous = &artifacts[index];
+            validate_artifact_transition(previous, &artifact)?;
+            artifacts[index] = artifact;
+        } else {
+            positions.insert(artifact.artifact_id.clone(), artifacts.len());
+            artifacts.push(artifact);
+        }
     }
     Ok(artifacts)
+}
+
+fn validate_artifact_transition(previous: &ToolArtifact, next: &ToolArtifact) -> Result<()> {
+    ensure!(
+        previous.version == next.version
+            && previous.artifact_id == next.artifact_id
+            && previous.task_id == next.task_id
+            && previous.session_id == next.session_id
+            && previous.run_id == next.run_id
+            && previous.native_call_id == next.native_call_id
+            && previous.tool == next.tool
+            && previous.input_sha256 == next.input_sha256
+            && previous.output_sha256 == next.output_sha256
+            && previous.artifact_ref == next.artifact_ref
+            && previous.created_at == next.created_at,
+        "ToolArtifact transition changed immutable provenance"
+    );
+    ensure!(
+        matches!(
+            (previous.status, next.status),
+            (ArtifactStatus::Candidate, ArtifactStatus::Verified | ArtifactStatus::Revoked)
+                | (ArtifactStatus::Verified, ArtifactStatus::Revoked)
+        ),
+        "invalid ToolArtifact status transition"
+    );
+    if previous.status == ArtifactStatus::Verified {
+        ensure!(previous.host_receipt == next.host_receipt, "verified ToolArtifact receipt changed during revocation");
+    }
+    Ok(())
 }
 
 pub fn read_tool_artifacts(evidence_dir: &Path) -> Result<Vec<ToolArtifact>> {
@@ -87,7 +124,9 @@ pub fn append_tool_artifact(evidence_dir: &Path, artifact: &ToolArtifact) -> Res
     let _guard = lock(evidence_dir)?;
     artifact.validate()?;
     let artifacts = read_tool_artifacts_unlocked(evidence_dir)?;
-    ensure!(artifacts.iter().all(|existing| existing.artifact_id != artifact.artifact_id), "duplicate ToolArtifact ID");
+    if let Some(existing) = artifacts.iter().find(|existing| existing.artifact_id == artifact.artifact_id) {
+        validate_artifact_transition(existing, artifact)?;
+    }
     append_record(&tool_artifacts_path(evidence_dir), artifact)
 }
 
@@ -216,16 +255,25 @@ mod tests {
     }
 
     #[test]
-    fn tool_artifact_jsonl_roundtrip_rejects_duplicate_ids() {
+    fn tool_artifact_jsonl_roundtrip_allows_one_verified_transition_and_rejects_invalid_duplicates() {
         let directory = tempfile::tempdir().unwrap();
-        append_tool_artifact(directory.path(), &candidate()).unwrap();
+        let candidate_artifact = candidate();
+        append_tool_artifact(directory.path(), &candidate_artifact).unwrap();
         assert_eq!(read_tool_artifacts(directory.path()).unwrap().len(), 1);
-        assert!(append_tool_artifact(directory.path(), &candidate()).is_err());
-        let path = tool_artifacts_path(directory.path());
-        let mut line = std::fs::read_to_string(&path).unwrap();
-        line = line.replace("artifact-1", "artifact-2");
-        std::fs::write(path, line).unwrap();
-        assert_eq!(read_tool_artifacts(directory.path()).unwrap()[0].artifact_id, "artifact-2");
+        assert!(append_tool_artifact(directory.path(), &candidate_artifact).is_err());
+        let verified_artifact = verified();
+        append_tool_artifact(directory.path(), &verified_artifact).unwrap();
+        assert_eq!(read_tool_artifacts(directory.path()).unwrap(), vec![verified_artifact.clone()]);
+        assert!(append_tool_artifact(directory.path(), &verified_artifact).is_err());
+
+        let mut changed = candidate();
+        changed.output_sha256 = "c".repeat(64);
+        assert!(append_tool_artifact(directory.path(), &changed).is_err());
+
+        let mut revoked = verified_artifact.clone();
+        revoked.revoke().unwrap();
+        append_tool_artifact(directory.path(), &revoked).unwrap();
+        assert_eq!(read_tool_artifacts(directory.path()).unwrap(), vec![revoked]);
 
         let verified_directory = tempfile::tempdir().unwrap();
         append_tool_artifact(verified_directory.path(), &verified()).unwrap();
@@ -238,6 +286,12 @@ mod tests {
         );
         std::fs::write(path, tampered).unwrap();
         assert!(read_tool_artifacts(verified_directory.path()).is_err());
+
+        let unknown_directory = tempfile::tempdir().unwrap();
+        let mut unknown = candidate();
+        unknown.status = ArtifactStatus::Unknown;
+        append_tool_artifact(unknown_directory.path(), &unknown).unwrap();
+        assert!(append_tool_artifact(unknown_directory.path(), &verified()).is_err());
     }
 
     #[test]

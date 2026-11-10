@@ -27,6 +27,16 @@ async fn actual_file_feedback_repair_reuses_session_and_original_call_budget() {
     assert_eq!(std::fs::read(directory.path().join("answer.txt")).unwrap(), b"correct");
     assert_eq!(provider.requests.lock().unwrap().len(), 4);
     let candidate = outcome.last_candidate.as_ref().unwrap();
+    let artifacts = read_tool_artifacts(&directory.path().join("repair")).unwrap();
+    assert_eq!(artifacts.len(), 2);
+    assert_eq!(artifacts[0].run_id, "initial");
+    assert_eq!(artifacts[1].run_id, candidate.basis.run_id);
+    assert_ne!(artifacts[0].run_id, artifacts[1].run_id);
+    assert_ne!(artifacts[0].artifact_id, artifacts[1].artifact_id);
+    assert_ne!(artifacts[0].artifact_ref, artifacts[1].artifact_ref);
+    assert!(artifacts
+        .iter()
+        .all(|artifact| { artifact.task_id == "repair" && artifact.session_id == candidate.basis.session_id }));
     assert_eq!(
         candidate.basis.session_path.canonicalize().unwrap(),
         directory.path().join("session.json").canonicalize().unwrap()
@@ -165,6 +175,47 @@ async fn cancellation_during_real_core_tool_waits_for_settlement_and_never_repla
     assert_eq!(provider.requests.lock().unwrap().len(), 1);
     assert!(start(host.spec("after-cancel"), host.request("do-not-replay"), host).is_err());
     assert_eq!(provider.requests.lock().unwrap().len(), 1);
+    let artifacts = read_tool_artifacts(&directory.path().join("tool-cancel")).unwrap();
+    assert_eq!(artifacts.len(), 1, "automatic artifact evidence should retain the settled canceled call");
+    assert_eq!(artifacts[0].status, core::artifact_provenance::ArtifactStatus::Unknown);
+}
+
+#[tokio::test]
+async fn artifact_write_failure_preserves_cancelled_tool_unknown_effects() {
+    use std::time::Duration;
+
+    let directory = tempfile::tempdir().unwrap();
+    let provider = Provider::new(vec![call("unknown-call", "delayed_cancel", serde_json::json!({}))]);
+    let tool = Arc::new(DelayedCancelTool::new(directory.path()));
+    let mut host = Host::new(directory.path(), &provider, Fault::None);
+    host.read_tool = Some(tool.clone());
+    let host = Arc::new(host);
+    let handle = start(host.spec("artifact-write-failure"), host.request("unknown-run"), host.clone()).unwrap();
+    tokio::time::timeout(Duration::from_secs(4), async {
+        while !tool.started.load(Ordering::SeqCst) {
+            tokio::task::yield_now().await;
+        }
+    })
+    .await
+    .unwrap();
+    let evidence = directory.path().join("artifact-write-failure");
+    std::fs::create_dir(tool_artifacts_path(&evidence)).unwrap();
+    handle.cancel();
+    tool.release_settlement();
+    let outcome = tokio::time::timeout(Duration::from_secs(5), handle.wait()).await.unwrap();
+    assert_eq!(outcome.stop, TaskStop::ReconciliationRequired, "{outcome:?}");
+    assert!(outcome.detail.contains("automatic ToolArtifact generation failed"));
+    assert_eq!(outcome.unknown_effects.len(), 1);
+    assert_eq!(outcome.unknown_effects[0].run_id, "unknown-run");
+    assert!(outcome.reconciliation_fence.as_ref().unwrap().is_file());
+    assert!(tool.joined.load(Ordering::SeqCst));
+    assert_eq!(tool.executions.load(Ordering::SeqCst), 1);
+    assert_eq!(host.reviews.load(Ordering::SeqCst), 0);
+    assert_eq!(host.preparations.load(Ordering::SeqCst), 0);
+    assert_eq!(provider.requests.lock().unwrap().len(), 1);
+    let persisted: TaskOutcome =
+        serde_json::from_slice(&std::fs::read(evidence.join("outcome.json")).unwrap()).unwrap();
+    assert_eq!(persisted.unknown_effects, outcome.unknown_effects);
 }
 
 #[tokio::test]

@@ -52,6 +52,28 @@ impl HarnessHost for ArtifactHost {
         basis: ReviewBasis,
         _cancellation: CancellationToken,
     ) -> Result<Vec<ArtifactReceiptRef>> {
+        let existing = read_tool_artifacts(basis.events_path.parent().unwrap())?;
+        assert!(
+            existing.iter().any(|artifact| {
+                artifact.artifact_id.starts_with("journal-")
+                    && artifact.task_id == basis.task_id
+                    && artifact.session_id == basis.session_id
+                    && artifact.run_id == basis.run_id
+                    && artifact.status == ArtifactStatus::Candidate
+            }),
+            "Harness must derive a journal-backed candidate before Host artifact review"
+        );
+        let journal_candidate = existing
+            .iter()
+            .find(|artifact| {
+                artifact.artifact_id.starts_with("journal-")
+                    && artifact.task_id == basis.task_id
+                    && artifact.session_id == basis.session_id
+                    && artifact.run_id == basis.run_id
+                    && artifact.status == ArtifactStatus::Candidate
+            })
+            .cloned()
+            .unwrap();
         let artifact = ToolArtifact {
             version: ToolArtifact::VERSION,
             artifact_id: "artifact-1".into(),
@@ -73,15 +95,15 @@ impl HarnessHost for ArtifactHost {
                 append_tool_artifact(basis.events_path.parent().unwrap(), &artifact)?;
             }
             ArtifactMode::Verified => {
-                let verified = artifact.verify(HostArtifactReceipt {
+                let verified = journal_candidate.verify(HostArtifactReceipt {
                     receipt_id: "receipt-1".into(),
-                    artifact_id: artifact.artifact_id.clone(),
-                    task_id: artifact.task_id.clone(),
-                    session_id: artifact.session_id.clone(),
-                    run_id: artifact.run_id.clone(),
-                    native_call_id: artifact.native_call_id.clone(),
-                    input_sha256: artifact.input_sha256.clone(),
-                    output_sha256: artifact.output_sha256.clone(),
+                    artifact_id: journal_candidate.artifact_id.clone(),
+                    task_id: journal_candidate.task_id.clone(),
+                    session_id: journal_candidate.session_id.clone(),
+                    run_id: journal_candidate.run_id.clone(),
+                    native_call_id: journal_candidate.native_call_id.clone(),
+                    input_sha256: journal_candidate.input_sha256.clone(),
+                    output_sha256: journal_candidate.output_sha256.clone(),
                     verifier: "artifact-test-host".into(),
                     verifier_version: "1".into(),
                     verified_at: "2026-11-10T10:01:00Z".into(),

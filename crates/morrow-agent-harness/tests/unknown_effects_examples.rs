@@ -48,6 +48,9 @@ async fn builtin_exec_timeout_is_unknown_through_structured_status_only() {
     let records: Vec<_> = outcome.unknown_effects.iter().filter(|record| record.native_call_id == "exec-1").collect();
     assert_eq!(records.len(), 1, "{outcome:?}");
     assert_eq!((records[0].run_id.as_str(), records[0].tool.as_str()), ("exec-run", "exec"));
+    let artifacts = read_tool_artifacts(&root.join("exec")).unwrap();
+    assert_eq!(artifacts.len(), 1, "automatic artifact evidence should survive the unknown-effect stop");
+    assert_eq!(artifacts[0].status, core::artifact_provenance::ArtifactStatus::Unknown);
     // When the result is durable, its typed status is Core's builtin contract.
     if let EffectEvidence::Journal { session_path, raw_index, .. } = &records[0].receipt_ref.evidence {
         let messages =

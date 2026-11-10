@@ -45,10 +45,11 @@ workspace test run.
 ## Design direction
 
 Morrow keeps a stable execution boundary while the host supplies business
-capabilities. Reusable tool artifacts now have an experimental review sidecar:
-the Host returns structured references, Harness rechecks the matching
-`tool-artifacts.jsonl` records, and accepted references are written to
-`TaskOutcome.artifacts`. Immutable authorization snapshots are also present.
+capabilities. Harness now derives journal-backed candidate tool artifacts from
+the exact ToolCall/ToolResult range before Host review. The Host supplies
+business receipts, Harness rechecks matching `tool-artifacts.jsonl` records, and
+accepted references are written to `TaskOutcome.artifacts`. Immutable
+authorization snapshots are also present.
 Explicit Trigger/Task/Run identities, context retrieval across compaction, and
 bounded watchdog recovery remain future work; each needs executable evidence
 and host-level acceptance.
