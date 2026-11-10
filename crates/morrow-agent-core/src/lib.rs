@@ -1,6 +1,7 @@
 //! Compact embeddable Agent runtime. Hosts own identity, authorization, paths and scheduling.
 pub mod agent;
 pub mod analysis_tools;
+pub mod artifact_provenance;
 pub mod call_hooks;
 pub mod compaction_refresh;
 pub mod completion_gate;

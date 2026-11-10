@@ -1,0 +1,281 @@
+use std::{
+    collections::HashSet,
+    fs::{self, File, OpenOptions},
+    io::{Read, Write},
+    path::{Path, PathBuf},
+};
+
+use anyhow::{ensure, Context, Result};
+use fs2::FileExt;
+use morrow_agent_core::artifact_provenance::{ArtifactStatus, SkillProvenance, SkillProvenanceStatus, ToolArtifact};
+use serde::de::DeserializeOwned;
+use serde::Serialize;
+
+use crate::storage;
+
+const MAX_FILE_BYTES: u64 = 8 * 1024 * 1024;
+const MAX_LINE_BYTES: usize = 1024 * 1024;
+const TOOL_ARTIFACTS_FILE: &str = "tool-artifacts.jsonl";
+const SKILL_PROVENANCE_FILE: &str = "skill-provenance.jsonl";
+
+pub fn tool_artifacts_path(evidence_dir: &Path) -> PathBuf {
+    evidence_dir.join(TOOL_ARTIFACTS_FILE)
+}
+
+pub fn skill_provenance_path(evidence_dir: &Path) -> PathBuf {
+    evidence_dir.join(SKILL_PROVENANCE_FILE)
+}
+
+fn read_records<T: DeserializeOwned>(path: &Path) -> Result<Vec<T>> {
+    if !path.exists() {
+        return Ok(Vec::new());
+    }
+    let metadata = fs::metadata(path)?;
+    ensure!(metadata.is_file() && metadata.len() <= MAX_FILE_BYTES, "provenance file exceeds byte limit");
+    let mut bytes = Vec::new();
+    fs::File::open(path)?.take(MAX_FILE_BYTES + 1).read_to_end(&mut bytes)?;
+    ensure!(bytes.len() as u64 <= MAX_FILE_BYTES, "provenance file exceeds byte limit");
+    let mut records = Vec::new();
+    for line in bytes.split(|byte| *byte == b'\n') {
+        if line.is_empty() {
+            continue;
+        }
+        ensure!(line.len() <= MAX_LINE_BYTES, "provenance record exceeds byte limit");
+        records.push(serde_json::from_slice(line).context("invalid provenance JSONL record")?);
+    }
+    Ok(records)
+}
+
+fn append_record<T: Serialize>(path: &Path, record: &T) -> Result<()> {
+    let bytes = serde_json::to_vec(record)?;
+    ensure!(bytes.len() <= MAX_LINE_BYTES, "provenance record exceeds byte limit");
+    let current = fs::metadata(path).map(|metadata| metadata.len()).unwrap_or(0);
+    ensure!(current.saturating_add(bytes.len() as u64 + 1) <= MAX_FILE_BYTES, "provenance file exceeds byte limit");
+    let mut line = bytes;
+    line.push(b'\n');
+    let mut file = OpenOptions::new().create(true).append(true).open(path)?;
+    file.write_all(&line)?;
+    file.sync_all()?;
+    storage::sync_parent(path)
+}
+
+fn lock(evidence_dir: &Path) -> Result<File> {
+    let path = evidence_dir.join(".morrow-provenance.lock");
+    let file = OpenOptions::new().read(true).write(true).create(true).truncate(false).open(path)?;
+    file.try_lock_exclusive().context("provenance evidence is busy; retry later")?;
+    Ok(file)
+}
+
+fn read_tool_artifacts_unlocked(evidence_dir: &Path) -> Result<Vec<ToolArtifact>> {
+    let artifacts: Vec<ToolArtifact> = read_records(&tool_artifacts_path(evidence_dir))?;
+    let mut ids = HashSet::new();
+    for artifact in &artifacts {
+        artifact.validate()?;
+        ensure!(ids.insert(artifact.artifact_id.as_str()), "duplicate ToolArtifact ID");
+    }
+    Ok(artifacts)
+}
+
+pub fn read_tool_artifacts(evidence_dir: &Path) -> Result<Vec<ToolArtifact>> {
+    ensure!(evidence_dir.is_dir(), "evidence directory does not exist");
+    let _guard = lock(evidence_dir)?;
+    read_tool_artifacts_unlocked(evidence_dir)
+}
+
+pub fn append_tool_artifact(evidence_dir: &Path, artifact: &ToolArtifact) -> Result<()> {
+    ensure!(evidence_dir.is_dir(), "evidence directory does not exist");
+    let _guard = lock(evidence_dir)?;
+    artifact.validate()?;
+    let artifacts = read_tool_artifacts_unlocked(evidence_dir)?;
+    ensure!(artifacts.iter().all(|existing| existing.artifact_id != artifact.artifact_id), "duplicate ToolArtifact ID");
+    append_record(&tool_artifacts_path(evidence_dir), artifact)
+}
+
+fn validate_sources(provenance: &SkillProvenance, artifacts: &[ToolArtifact]) -> Result<()> {
+    for artifact_id in &provenance.source_artifact_ids {
+        let artifact = artifacts
+            .iter()
+            .find(|artifact| &artifact.artifact_id == artifact_id)
+            .context("Skill source artifact is missing")?;
+        ensure!(artifact.status == ArtifactStatus::Verified, "Skill source artifact is not verified");
+        ensure!(artifact.task_id == provenance.task_id, "Skill source Task does not match provenance");
+        ensure!(artifact.session_id == provenance.session_id, "Skill source Session does not match provenance");
+        ensure!(artifact.run_id == provenance.run_id, "Skill source Run does not match provenance");
+        let host_receipt = artifact.host_receipt.as_ref().context("verified Skill source receipt is missing")?;
+        let binding = provenance
+            .validation_receipts
+            .iter()
+            .flat_map(|receipt| receipt.source_artifacts.iter())
+            .find(|binding| binding.artifact_id == *artifact_id)
+            .context("Skill source binding is missing")?;
+        ensure!(host_receipt.receipt_id == binding.host_receipt_id, "Skill source Host receipt changed");
+        ensure!(artifact.input_sha256 == binding.input_sha256, "Skill source input hash changed");
+        ensure!(artifact.output_sha256 == binding.output_sha256, "Skill source output hash changed");
+    }
+    Ok(())
+}
+
+fn read_skill_provenance_unlocked(evidence_dir: &Path) -> Result<Vec<SkillProvenance>> {
+    let provenance: Vec<SkillProvenance> = read_records(&skill_provenance_path(evidence_dir))?;
+    let artifacts = read_tool_artifacts_unlocked(evidence_dir)?;
+    for record in &provenance {
+        record.validate()?;
+        validate_sources(record, &artifacts)?;
+    }
+    Ok(provenance)
+}
+
+pub fn read_skill_provenance(evidence_dir: &Path) -> Result<Vec<SkillProvenance>> {
+    ensure!(evidence_dir.is_dir(), "evidence directory does not exist");
+    let _guard = lock(evidence_dir)?;
+    read_skill_provenance_unlocked(evidence_dir)
+}
+
+pub fn append_skill_provenance(evidence_dir: &Path, provenance: &SkillProvenance) -> Result<()> {
+    ensure!(evidence_dir.is_dir(), "evidence directory does not exist");
+    let _guard = lock(evidence_dir)?;
+    provenance.validate()?;
+    ensure!(provenance.status == SkillProvenanceStatus::Verified, "only verified Skill provenance can be persisted");
+    let artifacts = read_tool_artifacts_unlocked(evidence_dir)?;
+    validate_sources(provenance, &artifacts)?;
+    let existing = read_skill_provenance_unlocked(evidence_dir)?;
+    ensure!(
+        existing
+            .iter()
+            .all(|record| record.skill_name != provenance.skill_name || record.bundle_hash != provenance.bundle_hash),
+        "duplicate Skill provenance"
+    );
+    append_record(&skill_provenance_path(evidence_dir), provenance)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use morrow_agent_core::artifact_provenance::{
+        ArtifactStatus, HostArtifactReceipt, SkillArtifactBinding, SkillProvenance, SkillProvenanceStatus,
+        SkillValidationReceipt, ToolArtifact,
+    };
+
+    fn candidate() -> ToolArtifact {
+        ToolArtifact {
+            version: ToolArtifact::VERSION,
+            artifact_id: "artifact-1".into(),
+            task_id: "task-1".into(),
+            session_id: "session-1".into(),
+            run_id: "run-1".into(),
+            native_call_id: "call-1".into(),
+            tool: "exec".into(),
+            input_sha256: "a".repeat(64),
+            output_sha256: "b".repeat(64),
+            artifact_ref: "output.bin".into(),
+            status: ArtifactStatus::Candidate,
+            created_at: "2026-11-10T10:00:00Z".into(),
+            host_receipt: None,
+        }
+    }
+
+    fn verified() -> ToolArtifact {
+        let receipt = HostArtifactReceipt {
+            receipt_id: "receipt-1".into(),
+            artifact_id: "artifact-1".into(),
+            task_id: "task-1".into(),
+            session_id: "session-1".into(),
+            run_id: "run-1".into(),
+            native_call_id: "call-1".into(),
+            input_sha256: "a".repeat(64),
+            output_sha256: "b".repeat(64),
+            verifier: "host".into(),
+            verifier_version: "1".into(),
+            verified_at: "2026-11-10T10:01:00Z".into(),
+            committed: true,
+            settled: true,
+        };
+        candidate().verify(receipt).unwrap()
+    }
+
+    fn validation_receipt() -> SkillValidationReceipt {
+        SkillValidationReceipt {
+            receipt_id: "validation-1".into(),
+            skill_name: "build-skill".into(),
+            bundle_hash: "c".repeat(64),
+            source_artifacts: vec![SkillArtifactBinding {
+                artifact_id: "artifact-1".into(),
+                host_receipt_id: "receipt-1".into(),
+                input_sha256: "a".repeat(64),
+                output_sha256: "b".repeat(64),
+            }],
+            task_id: "task-1".into(),
+            session_id: "session-1".into(),
+            run_id: "run-1".into(),
+            verifier: "host".into(),
+            verifier_version: "1".into(),
+            verified_at: "2026-11-10T10:02:00Z".into(),
+            committed: true,
+            settled: true,
+        }
+    }
+
+    #[test]
+    fn tool_artifact_jsonl_roundtrip_rejects_duplicate_ids() {
+        let directory = tempfile::tempdir().unwrap();
+        append_tool_artifact(directory.path(), &candidate()).unwrap();
+        assert_eq!(read_tool_artifacts(directory.path()).unwrap().len(), 1);
+        assert!(append_tool_artifact(directory.path(), &candidate()).is_err());
+        let path = tool_artifacts_path(directory.path());
+        let mut line = std::fs::read_to_string(&path).unwrap();
+        line = line.replace("artifact-1", "artifact-2");
+        std::fs::write(path, line).unwrap();
+        assert_eq!(read_tool_artifacts(directory.path()).unwrap()[0].artifact_id, "artifact-2");
+
+        let verified_directory = tempfile::tempdir().unwrap();
+        append_tool_artifact(verified_directory.path(), &verified()).unwrap();
+        let path = tool_artifacts_path(verified_directory.path());
+        let mut tampered = std::fs::read_to_string(&path).unwrap();
+        tampered = tampered.replacen(
+            &format!("\"output_sha256\":\"{}\"", "b".repeat(64)),
+            &format!("\"output_sha256\":\"{}\"", "c".repeat(64)),
+            1,
+        );
+        std::fs::write(path, tampered).unwrap();
+        assert!(read_tool_artifacts(verified_directory.path()).is_err());
+    }
+
+    #[test]
+    fn only_verified_same_run_artifacts_can_be_persisted_as_skill_provenance() {
+        let directory = tempfile::tempdir().unwrap();
+        let artifact = verified();
+        append_tool_artifact(directory.path(), &artifact).unwrap();
+        let provenance = SkillProvenance::verified(
+            "build-skill".into(),
+            "c".repeat(64),
+            &[artifact],
+            vec![validation_receipt()],
+            "host".into(),
+            "1".into(),
+            "2026-11-10T10:02:00Z".into(),
+        )
+        .unwrap();
+        append_skill_provenance(directory.path(), &provenance).unwrap();
+        assert_eq!(read_skill_provenance(directory.path()).unwrap(), vec![provenance.clone()]);
+        assert!(append_skill_provenance(directory.path(), &provenance).is_err());
+        let artifact_path = tool_artifacts_path(directory.path());
+        let tampered_artifact = std::fs::read_to_string(&artifact_path)
+            .unwrap()
+            .replace("\"status\":\"verified\"", "\"status\":\"revoked\"");
+        std::fs::write(artifact_path, tampered_artifact).unwrap();
+        assert!(read_skill_provenance(directory.path()).is_err());
+        let mut candidate_provenance = provenance;
+        candidate_provenance.status = SkillProvenanceStatus::Candidate;
+        candidate_provenance.verified_hash = None;
+        candidate_provenance.verified_at = None;
+        assert!(append_skill_provenance(directory.path(), &candidate_provenance).is_err());
+    }
+
+    #[test]
+    fn old_evidence_without_provenance_files_remains_readable() {
+        let directory = tempfile::tempdir().unwrap();
+        std::fs::write(directory.path().join("task.json"), br#"{"version":1}"#).unwrap();
+        assert!(read_tool_artifacts(directory.path()).unwrap().is_empty());
+        assert!(read_skill_provenance(directory.path()).unwrap().is_empty());
+    }
+}

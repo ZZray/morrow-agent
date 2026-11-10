@@ -8,6 +8,7 @@
 //! supplies no automatic fence reset or replay operation. `resume` continues such a
 //! Task only after the Host committed a settled reconciliation of what it left behind.
 
+mod provenance;
 mod runner;
 mod snapshot;
 mod stop_review;
@@ -16,6 +17,10 @@ pub mod task_set;
 mod types;
 
 pub use morrow_agent_core as core;
+pub use provenance::{
+    append_skill_provenance, append_tool_artifact, read_skill_provenance, read_tool_artifacts, skill_provenance_path,
+    tool_artifacts_path,
+};
 pub use runner::{resume, resume_checked, start, start_with_options, TaskHandle};
 pub use snapshot::{authorization_snapshot_path, budget_review_index_path, budget_snapshot_path};
 pub use stop_review::{stop_review_index_path, stop_snapshot_path};
