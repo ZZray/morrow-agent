@@ -5,6 +5,7 @@ use async_trait::async_trait;
 use fs2::FileExt;
 use rpi_agent::{AgentError, AgentTool, AgentToolResult, ToolResultPartial};
 use rpi_ai::{Schema, Tool};
+use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use std::{
@@ -26,6 +27,36 @@ const BUILTINS: [(&str, &str); 2] = [
     ("skill-installer", include_str!("builtin_skills/skill-installer/SKILL.md")),
 ];
 type Evidence = Arc<dyn Fn(&[String]) -> Result<Value> + Send + Sync>;
+
+/// Current owned bundle content and its stored native execution evidence.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct SkillVerification {
+    pub name: String,
+    pub scope: String,
+    pub bundle_id: String,
+    pub bundle_hash: String,
+    pub verified_hash: Option<String>,
+    pub verified_run: Option<String>,
+    pub verified_at: Option<String>,
+    pub evidence: Option<SkillVerificationEvidence>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct SkillVerificationEvidence {
+    pub source: String,
+    pub run: String,
+    pub receipts: Vec<SkillExecutionReceipt>,
+}
+
+/// The metadata-only receipt emitted by `experience::library_evidence`.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct SkillExecutionReceipt {
+    pub source: String,
+    pub tool_call_id: String,
+    pub tool_name: String,
+    pub is_error: bool,
+    pub output_hash: String,
+}
 
 pub fn tools(roots: Roots, run_id: String, grant: String, evidence: Evidence) -> Vec<Arc<dyn AgentTool>> {
     let scope = json!({"type":"string","enum":["project","global","builtin"]});
@@ -392,12 +423,20 @@ fn scope_root<'a>(roots: &'a Roots, scope: &str) -> Result<&'a Path> {
         _ => bail!("scope must be project or global; builtin is read-only"),
     }
 }
-fn lock(base: &Path) -> Result<File> {
+enum LockMode {
+    Shared,
+    Exclusive,
+}
+fn lock(base: &Path, mode: LockMode) -> Result<File> {
     create_dir(base)?;
     let path = base.join(".handwave-skills.lock");
     no_links(&path)?;
     let file = OpenOptions::new().read(true).write(true).create(true).truncate(false).open(path)?;
-    FileExt::try_lock_exclusive(&file).context("skill library busy; retry later")?;
+    match mode {
+        LockMode::Shared => FileExt::try_lock_shared(&file),
+        LockMode::Exclusive => FileExt::try_lock_exclusive(&file),
+    }
+    .context("skill library busy; retry later")?;
     Ok(file)
 }
 fn metadata(path: &Path) -> Option<Value> {
@@ -408,6 +447,81 @@ fn owned(meta: &Value, name: &str, scope: &str) -> bool {
         && meta["name"] == name
         && meta["scope"] == scope
         && meta["id"].as_str().is_some_and(|s| s.len() == 32 && s.bytes().all(|c| c.is_ascii_hexdigit()))
+}
+
+/// Read one coherent snapshot under the same lock used by library mutations.
+/// A retained verified hash can differ from the current bundle hash after edits.
+pub fn read_verification(roots: &Roots, scope: &str, name: &str) -> Result<SkillVerification> {
+    if !valid_name(name) {
+        bail!("invalid skill name");
+    }
+    let base = scope_root(roots, scope)?;
+    let _guard = lock(base, LockMode::Shared)?;
+    let dir = base.join(name);
+    let files = scan(&dir, &CancellationToken::new())?;
+    let (actual, _) = header(files.get("SKILL.md").context("missing SKILL.md")?)?;
+    if actual != name {
+        bail!("skill name does not match directory");
+    }
+    let meta = metadata(&dir).context("skill has no owned metadata")?;
+    if !owned(&meta, name, scope) {
+        bail!("skill metadata ownership mismatch");
+    }
+    #[derive(Deserialize)]
+    struct StoredVerification {
+        id: String,
+        verified_hash: Option<String>,
+        verified_run: Option<String>,
+        verified_at: Option<String>,
+        evidence: Option<SkillVerificationEvidence>,
+    }
+    let stored: StoredVerification = serde_json::from_value(meta).context("invalid skill verification metadata")?;
+    match (&stored.verified_hash, &stored.verified_run, &stored.verified_at, &stored.evidence) {
+        (None, None, None, None) => {}
+        (Some(hash), Some(run), Some(at), Some(evidence)) => {
+            let identifier = |value: &str| {
+                !value.is_empty() && value.len() <= 256 && value.trim() == value && !value.chars().any(char::is_control)
+            };
+            let sha256 = |value: &str| {
+                value.len() == 64 && value.bytes().all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+            };
+            if !sha256(hash)
+                || !identifier(run)
+                || chrono::DateTime::parse_from_rfc3339(at).is_err()
+                || evidence.source != "native_current_run"
+                || evidence.run != *run
+                || !(1..=8).contains(&evidence.receipts.len())
+            {
+                bail!("invalid skill verification identity or evidence");
+            }
+            let mut ids = std::collections::HashSet::new();
+            for receipt in &evidence.receipts {
+                if receipt.source != "native_tool_result"
+                    || !identifier(&receipt.tool_call_id)
+                    || !ids.insert(&receipt.tool_call_id)
+                    || !identifier(&receipt.tool_name)
+                    || receipt.is_error
+                    || !sha256(&receipt.output_hash)
+                {
+                    bail!("invalid skill native execution receipt");
+                }
+            }
+            if !evidence.receipts.iter().any(|receipt| matches!(receipt.tool_name.as_str(), "exec" | "run_script")) {
+                bail!("skill verification requires native exec/run_script evidence");
+            }
+        }
+        _ => bail!("incomplete skill verification metadata"),
+    }
+    Ok(SkillVerification {
+        name: name.into(),
+        scope: scope.into(),
+        bundle_id: stored.id,
+        bundle_hash: bundle_hash(&files),
+        verified_hash: stored.verified_hash,
+        verified_run: stored.verified_run,
+        verified_at: stored.verified_at,
+        evidence: stored.evidence,
+    })
 }
 fn item(name: &str, description: &str, scope: &str, hash: &str, meta: Option<&Value>) -> Value {
     json!({"name":name,"description":description,"scope":scope,"content_hash":hash,"status":if scope=="builtin" {"builtin"} else if meta.is_some_and(|m|m["verified_hash"]==hash) {"execution_evidence_attached"} else {"unverified"},"source":meta.and_then(|m|m.get("source")).cloned().unwrap_or_else(||json!(if scope=="builtin" {"embedded"} else {"local_directory"}))})
@@ -518,7 +632,7 @@ impl SkillTool {
             return Ok(result);
         }
         let base = scope_root(&self.roots, scope)?;
-        let _guard = if is_read { None } else { Some(lock(base)?) };
+        let _guard = if is_read { None } else { Some(lock(base, LockMode::Exclusive)?) };
         if self.schema.name == "skill_install" {
             let input = arg(&args, "source_dir")?;
             if input.len() > 4096 {

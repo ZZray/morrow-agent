@@ -52,7 +52,7 @@ pub(crate) fn persist_run(
     Ok(artifacts)
 }
 
-fn derive_range(
+pub(crate) fn derive_range(
     journal: &Journal,
     task_id: &str,
     session_id: &str,

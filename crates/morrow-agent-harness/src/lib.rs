@@ -11,6 +11,7 @@
 mod auto_artifacts;
 mod provenance;
 mod runner;
+mod skill_provenance;
 mod snapshot;
 mod stop_review;
 mod storage;
@@ -25,6 +26,9 @@ pub use provenance::{
     tool_artifacts_path,
 };
 pub use runner::{resume, resume_checked, start, start_with_options, TaskHandle};
+pub use skill_provenance::{
+    query_skill_provenance, record_skill_verification, verified_skill_provenance, SkillProvenanceQuery,
+};
 pub use snapshot::{authorization_snapshot_path, budget_review_index_path, budget_snapshot_path};
 pub use stop_review::{stop_review_index_path, stop_snapshot_path};
 pub use types::*;

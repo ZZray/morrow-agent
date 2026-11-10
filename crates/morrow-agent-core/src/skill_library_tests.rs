@@ -140,6 +140,166 @@ fn skill_verify_requires_current_native_exec_and_exact_hash() {
 }
 
 #[test]
+fn verification_snapshot_reads_created_and_verified_bundle_without_changing_metadata() {
+    use rpi_agent::AgentMessage;
+    use rpi_ai::{Api, AssistantMessage, Content, ToolCall, ToolCallType, ToolResultMessage};
+
+    let f = Fixture::new();
+    let created = f.create();
+    let initial = read_verification(&f.roots, "project", "hello-tool").unwrap();
+    assert_eq!(initial.name, "hello-tool");
+    assert_eq!(initial.scope, "project");
+    assert_eq!(initial.bundle_hash, created["content_hash"]);
+    assert!(initial.verified_hash.is_none());
+    assert!(initial.verified_run.is_none());
+    assert!(initial.verified_at.is_none());
+    assert!(initial.evidence.is_none());
+
+    let mut assistant = AssistantMessage::empty(Api::OpenaiCompletions, "fixture", "fixture", 0);
+    assistant.content.push(Content::ToolCall(ToolCall {
+        kind: ToolCallType,
+        id: "call-real".into(),
+        name: "run_script".into(),
+        arguments: json!({"script":"echo hello"}),
+        thought_signature: None,
+        namespace: None,
+    }));
+    let messages = vec![
+        AgentMessage::Assistant(Box::new(assistant)),
+        AgentMessage::ToolResult(Box::new(ToolResultMessage {
+            role: Default::default(),
+            tool_call_id: "call-real".into(),
+            tool_name: "run_script".into(),
+            content: vec![Content::text("hello")],
+            details: None,
+            usage: None,
+            added_tool_names: vec![],
+            is_error: false,
+            timestamp: 0,
+        })),
+    ];
+    let mut verifier = f.tool("skill_verify");
+    verifier.evidence = Arc::new(move |ids| crate::experience::library_evidence("run-test", ids, &messages));
+    verifier
+        .apply(
+            json!({"scope":"project","name":"hello-tool","expected_hash":initial.bundle_hash,"evidence_ids":["call-real"]}),
+            &CancellationToken::new(),
+        )
+        .unwrap();
+    let dir = f.roots.project_skills.join("hello-tool");
+    let before = fs::read(dir.join(META)).unwrap();
+    let verified = read_verification(&f.roots, "project", "hello-tool").unwrap();
+    assert_eq!(verified.bundle_id, initial.bundle_id);
+    assert_eq!(verified.verified_hash.as_deref(), Some(initial.bundle_hash.as_str()));
+    assert_eq!(verified.verified_run.as_deref(), Some("run-test"));
+    assert!(chrono::DateTime::parse_from_rfc3339(verified.verified_at.as_deref().unwrap()).is_ok());
+    let evidence = verified.evidence.as_ref().unwrap();
+    assert_eq!(evidence.source, "native_current_run");
+    assert_eq!(evidence.run, "run-test");
+    assert_eq!(evidence.receipts.len(), 1);
+    assert_eq!(evidence.receipts[0].source, "native_tool_result");
+    assert_eq!(evidence.receipts[0].tool_call_id, "call-real");
+    assert_eq!(evidence.receipts[0].tool_name, "run_script");
+    assert_eq!(evidence.receipts[0].output_hash, format!("{:x}", Sha256::digest(b"hello")));
+    assert!(!evidence.receipts[0].is_error);
+    assert_eq!(fs::read(dir.join(META)).unwrap(), before);
+    fs::write(dir.join("scripts/hello.sh"), "echo changed").unwrap();
+    let changed = read_verification(&f.roots, "project", "hello-tool").unwrap();
+    assert_ne!(changed.bundle_hash, verified.bundle_hash);
+    assert_eq!(changed.verified_hash, verified.verified_hash);
+    assert_eq!(changed.bundle_id, verified.bundle_id);
+    assert_eq!(fs::read(dir.join(META)).unwrap(), before);
+}
+
+#[test]
+fn verification_snapshot_supports_unverified_legacy_metadata_and_library_lock() {
+    let f = Fixture::new();
+    f.create();
+    let file = f.roots.project_skills.join("hello-tool").join(META);
+    let mut meta: Value = serde_json::from_slice(&fs::read(&file).unwrap()).unwrap();
+    meta.as_object_mut().unwrap().remove("verified_hash");
+    meta["host_extension"] = json!({"preserve":"legacy data"});
+    fs::write(&file, serde_json::to_vec(&meta).unwrap()).unwrap();
+    let before = fs::read(&file).unwrap();
+    let first = read_verification(&f.roots, "project", "hello-tool").unwrap();
+    assert!(first.verified_hash.is_none() && first.evidence.is_none());
+    let guard = lock(&f.roots.project_skills, LockMode::Exclusive).unwrap();
+    assert!(read_verification(&f.roots, "project", "hello-tool").unwrap_err().to_string().contains("busy"));
+    drop(guard);
+    let reopened = read_verification(&f.roots, "project", "hello-tool").unwrap();
+    assert_eq!(serde_json::to_value(first).unwrap(), serde_json::to_value(reopened).unwrap());
+    assert_eq!(fs::read(file).unwrap(), before);
+}
+
+#[test]
+fn verification_snapshot_rejects_unowned_partial_or_malformed_verification() {
+    let f = Fixture::new();
+    let created = f.create();
+    let file = f.roots.project_skills.join("hello-tool").join(META);
+    let mut valid: Value = serde_json::from_slice(&fs::read(&file).unwrap()).unwrap();
+    valid["verified_hash"] = created["content_hash"].clone();
+    valid["verified_run"] = json!("run-test");
+    valid["verified_at"] = json!("2026-11-11T00:00:00Z");
+    valid["evidence"] = json!({"source":"native_current_run","run":"run-test","boundary":"existing extra field",
+        "receipts":[{"source":"native_tool_result","tool_call_id":"call-1","tool_name":"exec","is_error":false,"output_hash":"a".repeat(64)}]});
+    fs::write(&file, serde_json::to_vec(&valid).unwrap()).unwrap();
+    assert!(read_verification(&f.roots, "project", "hello-tool").is_ok());
+    for (pointer, value) in [
+        ("/id", json!("not-owned")),
+        ("/scope", json!("global")),
+        ("/name", json!("other-name")),
+        ("/format", json!("other-format")),
+        ("/verified_hash", json!(false)),
+        ("/verified_hash", json!("bad-hash")),
+        ("/verified_run", Value::Null),
+        ("/verified_at", json!("not-a-date")),
+        ("/evidence", Value::Null),
+        ("/evidence/source", json!("host-verified")),
+        ("/evidence/run", json!("different-run")),
+        ("/evidence/receipts", json!([])),
+        ("/evidence/receipts/0/source", json!("unknown")),
+        ("/evidence/receipts/0/is_error", json!(true)),
+        ("/evidence/receipts/0/output_hash", json!("invalid")),
+        ("/evidence/receipts/0/tool_name", json!("read_file")),
+    ] {
+        let mut changed = valid.clone();
+        *changed.pointer_mut(pointer).unwrap() = value;
+        let bytes = serde_json::to_vec(&changed).unwrap();
+        fs::write(&file, &bytes).unwrap();
+        assert!(read_verification(&f.roots, "project", "hello-tool").is_err(), "{pointer}");
+        assert_eq!(fs::read(&file).unwrap(), bytes);
+    }
+    assert!(read_verification(&f.roots, "builtin", "skill-creator").is_err());
+    assert!(read_verification(&f.roots, "project", "../hello-tool").is_err());
+    fs::remove_file(&file).unwrap();
+    assert!(read_verification(&f.roots, "project", "hello-tool").is_err());
+}
+
+#[test]
+fn verification_snapshot_allows_parallel_readers_and_excludes_writers() {
+    let f = Fixture::new();
+    let created = f.create();
+    let first_reader = lock(&f.roots.project_skills, LockMode::Shared).unwrap();
+    let second_reader = lock(&f.roots.project_skills, LockMode::Shared).unwrap();
+    let snapshot = read_verification(&f.roots, "project", "hello-tool").unwrap();
+    assert_eq!(snapshot.bundle_hash, created["content_hash"]);
+    let remove = json!({"scope":"project","name":"hello-tool","expected_hash":snapshot.bundle_hash});
+    assert!(f
+        .tool("skill_remove")
+        .apply(remove.clone(), &CancellationToken::new())
+        .unwrap_err()
+        .to_string()
+        .contains("busy"));
+    drop(first_reader);
+    assert!(lock(&f.roots.project_skills, LockMode::Exclusive).is_err());
+    drop(second_reader);
+    let writer = lock(&f.roots.project_skills, LockMode::Exclusive).unwrap();
+    assert!(read_verification(&f.roots, "project", "hello-tool").unwrap_err().to_string().contains("busy"));
+    drop(writer);
+    assert!(f.tool("skill_remove").apply(remove, &CancellationToken::new()).is_ok());
+}
+
+#[test]
 fn skill_remove_preserves_owned_files_and_unknown_is_refused() {
     let f = Fixture::new();
     let created = f.create();
@@ -247,7 +407,7 @@ fn skill_cancellation_before_mutation_and_lock_contention() {
     signal.cancel();
     assert!(f.tool("skill_create").apply(json!({"scope":"project","name":"test"}), &signal).is_err());
     assert!(!f.root.exists());
-    let _guard = lock(&f.roots.project_skills).unwrap();
+    let _guard = lock(&f.roots.project_skills, LockMode::Exclusive).unwrap();
     assert!(f
         .tool("skill_create")
         .apply(

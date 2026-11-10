@@ -238,6 +238,27 @@ impl SkillValidationReceipt {
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
+pub struct SkillLibraryBinding {
+    pub scope: String,
+    pub bundle_id: String,
+    pub skill_verify_call_id: String,
+    pub native_evidence_sha256: String,
+}
+
+impl SkillLibraryBinding {
+    pub fn validate(&self) -> Result<()> {
+        ensure!(matches!(self.scope.as_str(), "project" | "global"), "invalid Skill library scope");
+        ensure!(
+            self.bundle_id.len() == 32 && self.bundle_id.bytes().all(|byte| byte.is_ascii_hexdigit()),
+            "invalid owned Skill bundle ID"
+        );
+        ensure!(hash(&self.native_evidence_sha256), "invalid native Skill evidence hash");
+        bounded(&self.skill_verify_call_id, MAX_IDENTIFIER_BYTES, "Skill verification call ID")
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct SkillProvenance {
     pub version: u32,
     pub skill_name: String,
@@ -257,6 +278,8 @@ pub struct SkillProvenance {
     pub verified_hash: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub verified_at: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub library_binding: Option<SkillLibraryBinding>,
 }
 
 impl SkillProvenance {
@@ -264,6 +287,9 @@ impl SkillProvenance {
 
     pub fn validate(&self) -> Result<()> {
         ensure!(self.version == Self::VERSION, "unsupported SkillProvenance version");
+        if let Some(binding) = &self.library_binding {
+            binding.validate()?;
+        }
         bounded(&self.skill_name, MAX_IDENTIFIER_BYTES, "Skill name")?;
         ensure!(hash(&self.bundle_hash), "Skill bundle hash is invalid");
         unique_ids(&self.source_artifact_ids)?;
@@ -360,6 +386,7 @@ impl SkillProvenance {
             observed_bundle_hash: None,
             verified_hash: Some(bundle_hash),
             verified_at: Some(verified_at),
+            library_binding: None,
         };
         for artifact in artifacts.iter().skip(1) {
             ensure!(artifact.task_id == provenance.task_id, "Skill source artifacts use different Tasks");

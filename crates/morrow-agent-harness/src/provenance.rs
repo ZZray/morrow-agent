@@ -59,10 +59,11 @@ fn append_record<T: Serialize>(path: &Path, record: &T) -> Result<()> {
     storage::sync_parent(path)
 }
 
-fn lock(evidence_dir: &Path) -> Result<File> {
+fn lock(evidence_dir: &Path, exclusive: bool) -> Result<File> {
     let path = evidence_dir.join(".morrow-provenance.lock");
     let file = OpenOptions::new().read(true).write(true).create(true).truncate(false).open(path)?;
-    file.try_lock_exclusive().context("provenance evidence is busy; retry later")?;
+    if exclusive { FileExt::try_lock_exclusive(&file) } else { FileExt::try_lock_shared(&file) }
+        .context("provenance evidence is busy; retry later")?;
     Ok(file)
 }
 
@@ -115,13 +116,13 @@ fn validate_artifact_transition(previous: &ToolArtifact, next: &ToolArtifact) ->
 
 pub fn read_tool_artifacts(evidence_dir: &Path) -> Result<Vec<ToolArtifact>> {
     ensure!(evidence_dir.is_dir(), "evidence directory does not exist");
-    let _guard = lock(evidence_dir)?;
+    let _guard = lock(evidence_dir, false)?;
     read_tool_artifacts_unlocked(evidence_dir)
 }
 
 pub fn append_tool_artifact(evidence_dir: &Path, artifact: &ToolArtifact) -> Result<()> {
     ensure!(evidence_dir.is_dir(), "evidence directory does not exist");
-    let _guard = lock(evidence_dir)?;
+    let _guard = lock(evidence_dir, true)?;
     artifact.validate()?;
     let artifacts = read_tool_artifacts_unlocked(evidence_dir)?;
     if let Some(existing) = artifacts.iter().find(|existing| existing.artifact_id == artifact.artifact_id) {
@@ -130,7 +131,7 @@ pub fn append_tool_artifact(evidence_dir: &Path, artifact: &ToolArtifact) -> Res
     append_record(&tool_artifacts_path(evidence_dir), artifact)
 }
 
-fn validate_sources(provenance: &SkillProvenance, artifacts: &[ToolArtifact]) -> Result<()> {
+pub(crate) fn validate_sources(provenance: &SkillProvenance, artifacts: &[ToolArtifact]) -> Result<()> {
     for artifact_id in &provenance.source_artifact_ids {
         let artifact = artifacts
             .iter()
@@ -141,49 +142,92 @@ fn validate_sources(provenance: &SkillProvenance, artifacts: &[ToolArtifact]) ->
         ensure!(artifact.session_id == provenance.session_id, "Skill source Session does not match provenance");
         ensure!(artifact.run_id == provenance.run_id, "Skill source Run does not match provenance");
         let host_receipt = artifact.host_receipt.as_ref().context("verified Skill source receipt is missing")?;
-        let binding = provenance
-            .validation_receipts
-            .iter()
-            .flat_map(|receipt| receipt.source_artifacts.iter())
-            .find(|binding| binding.artifact_id == *artifact_id)
-            .context("Skill source binding is missing")?;
-        ensure!(host_receipt.receipt_id == binding.host_receipt_id, "Skill source Host receipt changed");
-        ensure!(artifact.input_sha256 == binding.input_sha256, "Skill source input hash changed");
-        ensure!(artifact.output_sha256 == binding.output_sha256, "Skill source output hash changed");
+        for receipt in &provenance.validation_receipts {
+            let binding = receipt
+                .source_artifacts
+                .iter()
+                .find(|binding| binding.artifact_id == *artifact_id)
+                .context("Skill source binding is missing")?;
+            ensure!(host_receipt.receipt_id == binding.host_receipt_id, "Skill source Host receipt changed");
+            ensure!(artifact.input_sha256 == binding.input_sha256, "Skill source input hash changed");
+            ensure!(artifact.output_sha256 == binding.output_sha256, "Skill source output hash changed");
+        }
     }
     Ok(())
 }
 
 fn read_skill_provenance_unlocked(evidence_dir: &Path) -> Result<Vec<SkillProvenance>> {
-    let provenance: Vec<SkillProvenance> = read_records(&skill_provenance_path(evidence_dir))?;
-    let artifacts = read_tool_artifacts_unlocked(evidence_dir)?;
-    for record in &provenance {
+    let records: Vec<SkillProvenance> = read_records(&skill_provenance_path(evidence_dir))?;
+    let mut provenance: Vec<SkillProvenance> = Vec::new();
+    for record in records {
         record.validate()?;
-        validate_sources(record, &artifacts)?;
+        if let Some(previous) = provenance.iter_mut().find(|previous| same_skill(previous, &record)) {
+            validate_skill_transition(previous, &record)?;
+            *previous = record;
+        } else {
+            ensure!(record.status == SkillProvenanceStatus::Verified, "Skill history must start verified");
+            provenance.push(record);
+        }
     }
     Ok(provenance)
 }
 
 pub fn read_skill_provenance(evidence_dir: &Path) -> Result<Vec<SkillProvenance>> {
+    let (provenance, artifacts) = skill_snapshot(evidence_dir)?;
+    for record in &provenance {
+        validate_sources(record, &artifacts)?;
+    }
+    Ok(provenance)
+}
+
+pub(crate) fn skill_snapshot(evidence_dir: &Path) -> Result<(Vec<SkillProvenance>, Vec<ToolArtifact>)> {
     ensure!(evidence_dir.is_dir(), "evidence directory does not exist");
-    let _guard = lock(evidence_dir)?;
-    read_skill_provenance_unlocked(evidence_dir)
+    let _guard = lock(evidence_dir, false)?;
+    Ok((read_skill_provenance_unlocked(evidence_dir)?, read_tool_artifacts_unlocked(evidence_dir)?))
+}
+
+fn same_skill(left: &SkillProvenance, right: &SkillProvenance) -> bool {
+    left.skill_name == right.skill_name
+        && left.bundle_hash == right.bundle_hash
+        && left.task_id == right.task_id
+        && left.session_id == right.session_id
+        && left.run_id == right.run_id
+        && left
+            .library_binding
+            .as_ref()
+            .map(|binding| (&binding.scope, &binding.bundle_id, &binding.skill_verify_call_id))
+            == right
+                .library_binding
+                .as_ref()
+                .map(|binding| (&binding.scope, &binding.bundle_id, &binding.skill_verify_call_id))
+}
+
+fn validate_skill_transition(previous: &SkillProvenance, next: &SkillProvenance) -> Result<()> {
+    ensure!(
+        previous.status == SkillProvenanceStatus::Verified && next.status == SkillProvenanceStatus::Revoked,
+        "invalid Skill provenance status transition"
+    );
+    let mut expected = previous.clone();
+    expected.status = next.status;
+    expected.observed_bundle_hash = next.observed_bundle_hash.clone();
+    ensure!(expected == *next, "Skill revocation changed immutable provenance");
+    Ok(())
 }
 
 pub fn append_skill_provenance(evidence_dir: &Path, provenance: &SkillProvenance) -> Result<()> {
     ensure!(evidence_dir.is_dir(), "evidence directory does not exist");
-    let _guard = lock(evidence_dir)?;
+    let _guard = lock(evidence_dir, true)?;
     provenance.validate()?;
-    ensure!(provenance.status == SkillProvenanceStatus::Verified, "only verified Skill provenance can be persisted");
-    let artifacts = read_tool_artifacts_unlocked(evidence_dir)?;
-    validate_sources(provenance, &artifacts)?;
     let existing = read_skill_provenance_unlocked(evidence_dir)?;
-    ensure!(
-        existing
-            .iter()
-            .all(|record| record.skill_name != provenance.skill_name || record.bundle_hash != provenance.bundle_hash),
-        "duplicate Skill provenance"
-    );
+    if let Some(previous) = existing.iter().find(|record| same_skill(record, provenance)) {
+        validate_skill_transition(previous, provenance)?;
+    } else {
+        ensure!(provenance.status == SkillProvenanceStatus::Verified, "Skill history must start verified");
+    }
+    if provenance.status == SkillProvenanceStatus::Verified {
+        let artifacts = read_tool_artifacts_unlocked(evidence_dir)?;
+        validate_sources(provenance, &artifacts)?;
+    }
     append_record(&skill_provenance_path(evidence_dir), provenance)
 }
 

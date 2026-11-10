@@ -19,6 +19,26 @@ morrow-agent-harness = { git = "https://github.com/ZZray/morrow-agent.git", rev 
 Pin a commit in the consuming product and verify the package name, source, and
 lockfile entry with `cargo metadata`.
 
+### Skill verification
+
+`core::skill_library::read_verification(&roots, scope, name)` returns the current
+owned bundle hash and its saved native execution evidence. The existing
+`skill_verify` tool records that execution association.
+
+After checking the business result and confirming the source ToolArtifacts,
+the Host can call `record_skill_verification` with the evidence directory,
+ReviewBasis, library Roots, scope, Skill name, native `skill_verify` call ID and
+its SkillValidationReceipts. Harness checks the actual Journal calls, results
+and bundle before persisting the association. The library binding retains the
+installation ID and native evidence digest.
+
+`query_skill_provenance` filters historical records by Task, Session, Skill,
+bundle hash, Run, source artifact and library identity. It includes legal
+revocations. `verified_skill_provenance` also reads the current library bundle
+and checks its source artifacts. A changed bundle, replacement installation,
+changed native evidence or revoked source causes that availability check to fail.
+Hosts continue to decide business Task acceptance.
+
 ## JSONL host
 
 Python and Node hosts can launch `morrow-agent-jsonl` as a sidecar. The model

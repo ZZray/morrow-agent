@@ -59,13 +59,15 @@ receipt 可以把同一组来源标识和摘要的候选产物提升为 `verifie
   Task/Session/Run、验证者版本和 `committed`/`settled`。
 - `verifier` 和 `verifier_version`。
 - `status`、`verified_hash`、`verified_at`。
+- 可选 `library_binding` 保存库 scope、owned bundle ID、`skill_verify` native
+  call ID 和五字段 native evidence 的 SHA-256。旧的 Host 记录可以缺少此字段。
 
 `verified` 记录必须满足 `verified_hash == bundle_hash`，并且至少有一个来源
 产物和一个与 bundle hash、来源产物 ID 完全匹配的已提交回执。读取到新的
 bundle hash 后，Host 应调用 `refresh_status`。Hash 变化会保留原始
 `bundle_hash` 和 `verified_hash`，把当前观察到的 hash 写入
 `observed_bundle_hash`，状态变为 `revoked`。
-只有 `verified` 记录可以写入 Harness 的 provenance JSONL。
+新身份的首条记录必须为 `verified`，之后可追加来源不变的 `revoked` 记录。
 
 ## 持久化边界
 
@@ -122,13 +124,68 @@ artifact ID 保留首次出现的位置和最后一个状态，因此追加的�
 reader 无法读取包含状态转移的文件，使用这些文件的 Host 需升级 Harness reader。
 旧的唯一 ID 文件仍可读取。记录一致性检查无法检测攻击者对文件及全部对应回执的
 一致重写，业务存储的访问控制仍由 Host 提供。`append_skill_provenance` 会读取同目录的
-ToolArtifact 记录，确认所有来源 ID 都是 `verified`，并逐项核对 Host receipt ID 与输入输出摘要，再追加 Skill 记录。读取 Skill provenance 时也会重新执行这组核对。Core
-不自动创建这些记录，也不把它们接入 Agent 主循环。
+ToolArtifact 记录，确认所有来源 ID 都是 `verified`，并逐份核对所有 validation
+receipt 中的 Host receipt ID 与输入输出摘要，再追加 Skill 验证记录。
+`read_skill_provenance` 保留严格来源检查，`query_skill_provenance` 返回合法历史
+的最新状态，包含撤销记录。`verified_skill_provenance` 对查询选中的来源和当前
+Skill library 内容执行完整复核。
 
 现有 `experience.json`、Skill metadata 和旧 evidence 文件继续按原格式读取。
 缺少本设计字段的旧记录不会被推断为产物或验证过的 Skill。Skill metadata
 中的 `verified_hash` 仍表示现有 `skill_verify` 的当前 Run 回执绑定，新的
 Harness provenance 是额外的 Host 证据，不覆盖旧字段。
+
+## Skill library 接线
+
+本阶段把现有 `skill_verify` 执行记录与 Host provenance 关联。当前实现状态以
+对应测试和提交为准。
+
+### 需求
+
+- S1　Host 能读取 owned Skill 的当前 bundle hash、保存的 `verified_hash`、
+  验证 Run 和 native 收据。旧的未验证 metadata 可读取，缺少验证记录时返回
+  未验证状态。
+- S2　登记时必须找到同一 Task、Session、Run 中实际成功的 `skill_verify`
+  调用，并核对 scope、name、expected hash 和 evidence IDs。来源 ToolArtifact
+  必须经 Host 验证，SkillValidationReceipt 必须已提交且已结算。
+- S3　按 Skill、bundle hash、Task、Run 和来源 artifact 查询。当前可用查询
+  还需检查实际 Skill 的 scope、owned bundle identity、当前 hash 和来源状态。
+- S4　持久化撤销保留原始身份和证据，重启后可还原最新状态。Hash 改变、来源
+  撤销和跨 Task 引用均不能通过当前可用查询。
+- S5　并发读取遵守现有 Skill 和 provenance 文件锁，读取期间能够获得一致
+  记录，锁冲突明确返回调用方处理。
+
+### 设计
+
+Core 从现有 `Roots`、scope、name 定位 Skill，复用库锁、bundle 扫描、hash
+算法与 owned metadata 校验，公开类型化的验证快照。现有 metadata 中的 native
+收据保存 source、tool call ID、tool name、is_error 和文本 output hash。
+
+Harness 的登记入口读取该快照与 ReviewBasis 指定的 Journal 范围。它先校验
+Journal 来源，再核对 `skill_verify` 参数、成功结果及所引用的早期 native
+调用，并关联同一 Run 的 journal-backed ToolArtifact。文本 output hash 和
+typed ToolResult hash 各按原有算法验证。
+
+登记后的 SkillProvenance 保存 scope、owned bundle ID、`skill_verify`
+native call ID 和完整 native evidence 摘要。已有纯 Host provenance 可继续读取。当前 Skill library 可用
+查询要求具备这组绑定，避免将同名同 hash 的不同安装当作同一个 Skill。
+
+Provenance 日志按完整身份处理 Verified 到 Revoked 的追加转移。历史查询可
+返回合法撤销记录，当前可用查询重新核对所选记录的来源、metadata 和 bundle
+内容。无关历史来源的撤销不应阻断其他记录的历史检索。
+
+### 验证任务
+
+- [x] S1　Core 快照覆盖正常工具入口、未验证旧 metadata、hash 改变和锁冲突。
+- [x] S2　通过 Agent 执行 `skill_create`、`exec/run_script`、`skill_verify`，
+  由 Host 确认来源并调用登记入口，检查落盘记录。
+- [x] S2、S3　覆盖伪造调用、错误 receipt binding、不同 Task/Run/scope 和重装
+  bundle 的拒绝行为。
+- [x] S3、S4　覆盖查询维度、撤销转移、内容变化与重新读取。
+- [x] S4、S5　覆盖进程重启读取及并发访问，保留失败和锁忙结果。
+- [x] S1–S5　完成针对性检查和独立 diff review。
+
+执行结果与边界记录在 [Skill provenance 验证记录](../evidence/skill-provenance-20261111.md)。
 
 ## 验收
 
