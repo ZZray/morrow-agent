@@ -30,6 +30,15 @@ to recover.
 The JSONL protocol is documented in
 [`crates/morrow-agent-jsonl/docs/protocol-v1.md`](../crates/morrow-agent-jsonl/docs/protocol-v1.md).
 
+Set `artifact_review: true` in the start frame to review structured tool
+artifacts. Python hosts implement `review_artifacts(review, cancelled)`. Node
+hosts implement `reviewArtifacts(review, { signal, frame })`. The payload carries
+the current review basis and its candidate ToolArtifact records. The callback
+returns records with Host receipts after checking the actual business output.
+Rust validates and persists those records. Accepted references are available in
+the original outcome's `artifacts` array. Hosts that omit the option continue
+using the existing review callbacks.
+
 ## MCP host
 
 `morrow-agent-mcp` reads the Claude Code `.mcp.json` shape for stdio and

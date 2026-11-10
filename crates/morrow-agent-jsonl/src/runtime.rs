@@ -16,8 +16,9 @@ use morrow_agent_harness::{
         steering::SteeringBuffer,
         RunMode, RunRequest, RuntimePaths, ToolRegistration,
     },
-    BudgetStopContinuation, BudgetStopReviewPolicy, BudgetStopSnapshot, Candidate, Continuation, HarnessHost,
-    LengthStopReviewPolicy, ResumeReceipt, ResumeReview, ReviewReceipt, Settlement, StopContinuation, StopSnapshot,
+    ArtifactReceiptRef, BudgetStopContinuation, BudgetStopReviewPolicy, BudgetStopSnapshot, Candidate, Continuation,
+    HarnessHost, LengthStopReviewPolicy, ResumeReceipt, ResumeReview, ReviewBasis, ReviewReceipt, Settlement,
+    StopContinuation, StopSnapshot,
 };
 use morrow_agent_mcp::{McpConfig, McpOptions, McpSession};
 use serde_json::{json, Value};
@@ -398,10 +399,57 @@ impl AgentTool for BusinessTool {
 pub struct ExternalHost {
     pub template: Template,
     pub bridge: Arc<Bridge>,
+    pub artifact_review: bool,
 }
 
 #[async_trait]
 impl HarnessHost for ExternalHost {
+    async fn review_artifacts(
+        &self,
+        basis: ReviewBasis,
+        cancellation: CancellationToken,
+    ) -> Result<Vec<ArtifactReceiptRef>> {
+        if !self.artifact_review {
+            return Ok(Vec::new());
+        }
+        let result = async {
+            ensure!(basis.task_id == self.bridge.task_id, "artifact_review_task_mismatch");
+            ensure!(
+                basis.events_path.parent().map(std::path::Path::canonicalize).transpose()?
+                    == Some(self.bridge.evidence_dir.canonicalize()?),
+                "artifact_review_evidence_mismatch"
+            );
+            let artifacts: Vec<_> = harness::read_tool_artifacts(&self.bridge.evidence_dir)?
+                .into_iter()
+                .filter(|artifact| {
+                    artifact.task_id == basis.task_id
+                        && artifact.session_id == basis.session_id
+                        && artifact.run_id == basis.run_id
+                })
+                .collect();
+            let payload = json!({"basis":basis,"artifacts":artifacts});
+            let path = self.bridge.evidence_dir.join(format!("jsonl-artifact-review-{}.json", basis.run_number));
+            let reference = evidence::write_new(&path, &payload)?;
+            evidence::checked_value(&path, &payload)?;
+            let mut body = json!({"review":payload});
+            let mut worst = with_worst_header(body.clone(), &self.bridge.task_id, &basis.run_id);
+            worst["kind"] = json!("review_artifacts_request");
+            if self.bridge.output.needs_reference(&worst)? {
+                body = json!({"review_ref":reference});
+            }
+            let reply =
+                self.bridge.call("review_artifacts_request", basis.run_id.clone(), body, None, cancellation).await;
+            let after = evidence::checked_value(&path, &payload)?;
+            ensure!(after.sha256 == reference.sha256, "artifact_review_changed_during_callback");
+            let Reply::Artifacts(artifacts) = reply? else {
+                anyhow::bail!("review_artifacts_reply_kind");
+            };
+            evidence::append_review_artifacts(&self.bridge.evidence_dir, &basis, artifacts)
+        }
+        .await;
+        result.inspect_err(|_| self.bridge.fail())
+    }
+
     async fn verify_budget_snapshot(
         &self,
         snapshot: BudgetStopSnapshot,
@@ -625,4 +673,42 @@ fn with_worst_budget_header(value: Value, task: &str, run: &str) -> Value {
     let mut value = with_worst_header(value, task, run);
     value["kind"] = json!("prepare_budget_request");
     value
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn disabled_artifact_review_never_opens_an_rpc_or_creates_evidence() {
+        let root = std::env::temp_dir().join(format!("morrow-disabled-artifact-{}", harness::core::fresh_id()));
+        let config: RunConfig = serde_json::from_value(json!({
+            "run_id":"run-1","objective":"test","cwd":root,"session_path":root.join("session.json"),
+            "environment_state":root.join("environment"),"device_fp":"device","session_key":"session-1",
+            "mode":"execute","endpoint":"http://127.0.0.1:9/v1","model":"fixture","max_calls":1,
+            "max_seconds":1,"max_output":512,"model_resolution":{"kind":"catalog"},"tools":[]
+        }))
+        .unwrap();
+        let bridge = Arc::new(Bridge::new(
+            crate::transport::Output::stdout("test-token".into()),
+            "task-1".into(),
+            root.clone(),
+            "run-1".into(),
+            1000,
+        ));
+        let template = Template::new(config, "test-token".into(), bridge.clone(), Vec::new());
+        let host = ExternalHost { template, bridge: bridge.clone(), artifact_review: false };
+        let basis: ReviewBasis = serde_json::from_value(json!({
+            "task_id":"task-1","criteria_revision":"c1","authorization_revision":"a1","session_id":"session-1",
+            "run_id":"run-1","run_number":1,"session_path":root.join("session.json"),
+            "events_path":root.join("run-1-events.jsonl"),"events_sha256":"a".repeat(64),"event_count":1,
+            "run_calls":1,"total_calls":1,"journal_head_sha256":"b".repeat(64),"raw_start":0,"raw_end":1,
+            "raw_proof":"proof"
+        }))
+        .unwrap();
+        assert!(host.review_artifacts(basis, CancellationToken::new()).await.unwrap().is_empty());
+        assert_eq!(bridge.pending_count(), 0);
+        assert!(!bridge.fault.is_cancelled());
+        assert!(!root.exists(), "default path must not create the artifact payload or RPC evidence");
+    }
 }

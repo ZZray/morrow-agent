@@ -9,7 +9,7 @@ use std::{
 };
 
 use anyhow::{bail, ensure, Context, Result};
-use morrow_agent_harness::{ResumeReceipt, ReviewReceipt};
+use morrow_agent_harness::{core::artifact_provenance::ToolArtifact, ResumeReceipt, ReviewReceipt};
 use serde_json::{json, Value};
 use tokio::sync::{oneshot, Notify};
 use tokio_util::sync::CancellationToken;
@@ -38,6 +38,7 @@ pub enum Reply {
     Verify(Box<ReviewReceipt>),
     Prepare { run_id: String, objective: String },
     Reconcile(Box<ResumeReceipt>),
+    Artifacts(Vec<ToolArtifact>),
 }
 
 /// Failure categories of a received frame (10.5). A reply that fails either
@@ -291,6 +292,15 @@ impl Bridge {
                 strict_receipt(&raw["receipt"]).map_err(|_| INVALID_REPLY_FIELDS)?;
                 (version, rpc_id, task_id, run_id, "verify_request", None, Reply::Verify(Box::new(receipt)))
             }
+            Incoming::ReviewArtifactsReply { version, rpc_id, task_id, run_id, artifacts } => {
+                let mut ids = std::collections::HashSet::new();
+                for artifact in &artifacts {
+                    artifact.validate().map_err(|_| INVALID_REPLY_FIELDS)?;
+                    check(artifact.task_id == task_id && artifact.run_id == run_id, INVALID_REPLY_FIELDS)?;
+                    check(ids.insert(artifact.artifact_id.as_str()), INVALID_REPLY_FIELDS)?;
+                }
+                (version, rpc_id, task_id, run_id, "review_artifacts_request", None, Reply::Artifacts(artifacts))
+            }
             Incoming::VerifyBudgetReply { version, rpc_id, task_id, run_id, receipt } => {
                 strict_receipt(&raw["receipt"]).map_err(|_| INVALID_REPLY_FIELDS)?;
                 (version, rpc_id, task_id, run_id, "verify_budget_request", None, Reply::Verify(Box::new(receipt)))
@@ -480,6 +490,10 @@ mod tests {
 
     impl Fixture {
         fn new() -> Self {
+            Self::for_kind("reconcile_request")
+        }
+
+        fn for_kind(kind: &'static str) -> Self {
             let directory = std::env::temp_dir().join(format!(
                 "ara-jsonl-reconcile-prop-{}-{}",
                 std::process::id(),
@@ -494,7 +508,7 @@ mod tests {
                 1000,
             );
             let (sender, receiver) = oneshot::channel();
-            let expected = Expected { kind: "reconcile_request", run_id: "run-1".into(), tool: None };
+            let expected = Expected { kind, run_id: "run-1".into(), tool: None };
             bridge.pending.lock().unwrap().insert("rpc-1".into(), Pending { expected, sender });
             Self { directory, bridge, receiver }
         }
@@ -593,6 +607,114 @@ mod tests {
         let other = Fixture::new();
         other.bridge.fail();
         assert_eq!(other.bridge.failure_category(), Some(CALLBACK_UNKNOWN));
+    }
+
+    fn artifact_reply() -> Value {
+        json!({"kind":"review_artifacts_reply","version":1,"rpc_id":"rpc-1","task_id":"task-1","run_id":"run-1",
+            "artifacts":[{"version":1,"artifact_id":"artifact-1","task_id":"task-1","session_id":"session-1",
+                "run_id":"run-1","native_call_id":"call-1","tool":"write_answer","input_sha256":"a".repeat(64),
+                "output_sha256":"b".repeat(64),"artifact_ref":"answer.txt","status":"candidate","created_at":"1"}]})
+    }
+
+    #[test]
+    fn artifact_reply_requires_real_pending_kind_and_all_correlation_fields() {
+        for changed in ["valid", "version", "rpc_id", "task_id", "run_id", "kind"] {
+            let mut fixture =
+                Fixture::for_kind(if changed == "kind" { "verify_request" } else { "review_artifacts_request" });
+            let mut raw = artifact_reply();
+            match changed {
+                "version" => raw["version"] = json!(2),
+                "rpc_id" => raw["rpc_id"] = json!("other-rpc"),
+                "task_id" => {
+                    raw["task_id"] = json!("other-task");
+                    raw["artifacts"][0]["task_id"] = json!("other-task");
+                }
+                "run_id" => {
+                    raw["run_id"] = json!("other-run");
+                    raw["artifacts"][0]["run_id"] = json!("other-run");
+                }
+                _ => {}
+            }
+            let bytes = serde_json::to_vec(&raw).unwrap();
+            let (incoming, raw) = decode(&bytes).unwrap();
+            let result = fixture.bridge.receive(incoming, &raw);
+            let reply_path = evidence::rpc_path(&fixture.directory, "rpc-1", "reply");
+            if changed == "valid" {
+                assert_eq!(result, Ok(()));
+                let stored: Value = serde_json::from_slice(&std::fs::read(&reply_path).unwrap()).unwrap();
+                assert_eq!(stored, raw);
+                let Ok(Ok(Reply::Artifacts(artifacts))) = fixture.receiver.try_recv() else {
+                    panic!("reply not delivered")
+                };
+                assert_eq!(artifacts.len(), 1);
+                assert_eq!(artifacts[0].artifact_id, "artifact-1");
+                let (duplicate, raw) = decode(&bytes).unwrap();
+                assert_eq!(fixture.bridge.receive(duplicate, &raw), Err(RPC_MISMATCH));
+            } else {
+                assert_eq!(result, Err(RPC_MISMATCH), "{changed}");
+                assert!(!reply_path.exists());
+                assert!(fixture.receiver.try_recv().is_err());
+                assert_eq!(fixture.bridge.pending_count(), 1);
+            }
+        }
+        let mut unsolicited = Fixture::for_kind("review_artifacts_request");
+        unsolicited.bridge.pending.lock().unwrap().clear();
+        let (incoming, raw) = decode(&serde_json::to_vec(&artifact_reply()).unwrap()).unwrap();
+        assert_eq!(unsolicited.bridge.receive(incoming, &raw), Err(RPC_MISMATCH));
+        assert!(!evidence::rpc_path(&unsolicited.directory, "rpc-1", "reply").exists());
+        assert!(unsolicited.receiver.try_recv().is_err());
+    }
+
+    #[test]
+    fn artifact_reply_rejects_malformed_nested_records_without_delivery() {
+        for changed in [
+            "missing",
+            "list_type",
+            "unknown_frame",
+            "unknown_artifact",
+            "unknown_receipt",
+            "receipt_type",
+            "bad_hash",
+            "empty_call",
+            "wrong_task",
+            "wrong_run",
+            "duplicate_id",
+            "verified_without_receipt",
+        ] {
+            let mut fixture = Fixture::for_kind("review_artifacts_request");
+            let mut raw = artifact_reply();
+            match changed {
+                "missing" => {
+                    raw.as_object_mut().unwrap().remove("artifacts");
+                }
+                "list_type" => raw["artifacts"] = json!({}),
+                "unknown_frame" => raw["extra"] = json!(1),
+                "unknown_artifact" => raw["artifacts"][0]["extra"] = json!(1),
+                "unknown_receipt" => raw["artifacts"][0]["host_receipt"] = json!({"extra":1}),
+                "receipt_type" => raw["artifacts"][0]["host_receipt"] = json!(true),
+                "bad_hash" => raw["artifacts"][0]["output_sha256"] = json!("bad"),
+                "empty_call" => raw["artifacts"][0]["native_call_id"] = json!(""),
+                "wrong_task" => raw["artifacts"][0]["task_id"] = json!("other-task"),
+                "wrong_run" => raw["artifacts"][0]["run_id"] = json!("other-run"),
+                "duplicate_id" => {
+                    let duplicate = raw["artifacts"][0].clone();
+                    raw["artifacts"].as_array_mut().unwrap().push(duplicate);
+                }
+                "verified_without_receipt" => raw["artifacts"][0]["status"] = json!("verified"),
+                _ => unreachable!(),
+            }
+            let result = decode(&serde_json::to_vec(&raw).unwrap())
+                .ok_or(INVALID_REPLY_FIELDS)
+                .and_then(|(message, value)| fixture.bridge.receive(message, &value));
+            assert_eq!(result, Err(INVALID_REPLY_FIELDS), "{changed}");
+            assert_eq!(fixture.bridge.pending_count(), 1);
+            assert!(fixture.receiver.try_recv().is_err());
+            assert!(!evidence::rpc_path(&fixture.directory, "rpc-1", "reply").exists());
+        }
+        let mut duplicate_keys = serde_json::to_vec(&artifact_reply()).unwrap();
+        duplicate_keys.pop();
+        duplicate_keys.extend_from_slice(b",\"artifacts\":[]}");
+        assert!(decode(&duplicate_keys).is_none());
     }
 
     #[test]

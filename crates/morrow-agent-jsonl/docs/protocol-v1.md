@@ -137,11 +137,43 @@ Host 原样复制完整 basis 到 `receipt.basis`，实际保存证据后返回�
 `next_run_number`、`remaining_calls` 和原 `deadline_unix_ms`。
 Host 的新 objective 应包含实际失败反馈；reply 无法更换其余配置。
 
+## ToolArtifact 回调
+
+初始帧可设置 `artifact_review: true` 启用结构化产物检查。缺省或 `false` 时
+沿用原有回调。字段必须是布尔值。Python Host 提供异步
+`review_artifacts(review, cancelled)`，Node callbacks 提供
+`reviewArtifacts(review, { signal, frame })`。两者返回 ToolArtifact 记录数组。
+
+| sidecar 请求 | 内容 | Host 回复 |
+| --- | --- | --- |
+| `review_artifacts_request` | `review` 或 `review_ref`，二选一 | `review_artifacts_reply`，包含 `artifacts` |
+
+`review` 包含当前 `basis` 和同一 Task/Session/Run 的 `artifacts`。每项使用
+Core 的 ToolArtifact 版本 1 格式。输入摘要使用 canonical JSON 参数，输出摘要
+覆盖完整 typed ToolResult。Host 检查业务产物后可返回原 candidate、同 ID 的
+verified/revoked 转移记录或自己的业务产物记录。验证原 candidate 时保留来源字段，
+在 `host_receipt` 写入匹配的来源标识、摘要、验证者、时间和已提交/已结算标记。
+
+Rust Bridge 核对请求与回复的 `version/rpc_id/task_id/run_id`，Harness 检查来源、
+状态和回执绑定。Rust 负责持久化返回的记录，Python/Node Host 通过回调提交结果。
+完全相同的已有记录可作为引用返回，合法状态转移追加到 provenance 日志。
+失败保留原 RPC 收据和 fence，部分追加保留已经写入的现场证据。
+
+超限请求使用 `review_ref` 指向当前 evidence 目录中的
+`jsonl-artifact-review-N.json`，其中 N 为累计 Run 编号。引用沿用原件路径与
+实际字节 SHA-256 校验，原件上限为 16 MiB。回复仍受 262144 字节帧限制。调用异常和取消沿用
+既有 Host 操作收据及 callback cancellation 流程。
+
+普通、预算、长度和恢复后的 Run 共享此回调。最终已接受的引用通过原
+`outcome_ref` 指向的 `TaskOutcome.artifacts` 返回，原 ReviewReceipt 字段和
+task_result 帧保持原契约。启用该字段的消费者需使用支持它的 sidecar 和客户端。
+
 ## 原件引用与终态
 
 超限候选和续作使用 `{ "path": "absolute-original-path", "sha256": "actual-bytes-sha256" }`
 引用。客户端只接受原 Task 证据目录内、实际字节 hash 匹配的文件。Python 客户端
-读取上限为 8 MiB，Node 默认为 16 MiB；Rust 原件读取函数没有该 SDK 限额。
+和 Node 客户端的引用读取上限均为 16 MiB。Rust 的 artifact、budget 和 stop
+固定原件检查也使用 16 MiB 上限，通用候选原件读取函数沿用已有行为。
 这些检查不构成不可信文件系统沙箱。引用中的完整 JSON 必须与本地权威对象一致。
 
 `task_result` 总是包含 `outcome_ref`，并附 `task_id/stop/task_accepted/runs/observed_calls/`

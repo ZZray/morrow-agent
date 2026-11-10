@@ -14,6 +14,7 @@ from typing import Any, Protocol
 
 FRAME_BYTES = 262144
 RESULT_BYTES = 131072
+REFERENCE_BYTES = 16 * 1024 * 1024
 
 
 class ReconciliationRequired(RuntimeError):
@@ -38,6 +39,10 @@ class LengthStopHost(Host, Protocol):
 
 class ResumeHost(Host, Protocol):
     async def reconcile_resume(self, review: dict, cancelled: asyncio.Event) -> dict: ...
+
+
+class ArtifactReviewHost(Host, Protocol):
+    async def review_artifacts(self, review: dict, cancelled: asyncio.Event) -> list[dict]: ...
 
 
 # Failure categories of the `reconcile_resume` callback (11.2); each is the
@@ -179,9 +184,12 @@ def read_reference(reference: dict, evidence_dir: Path) -> dict:
             raise ReconciliationRequired('invalid artifact reference')
         root = evidence_dir.resolve(strict=True)
         path = Path(reference['path']).resolve(strict=True)
-        if not _comparison_path(path).is_relative_to(_comparison_path(root)) or not path.is_file() or path.stat().st_size > 8 * 1024 * 1024:
+        if not _comparison_path(path).is_relative_to(_comparison_path(root)) or not path.is_file() or path.stat().st_size > REFERENCE_BYTES:
             raise ReconciliationRequired('artifact reference is outside the Task evidence scope')
-        raw = path.read_bytes()
+        with path.open('rb') as stream:
+            raw = stream.read(REFERENCE_BYTES + 1)
+        if len(raw) > REFERENCE_BYTES:
+            raise ReconciliationRequired('artifact reference grew beyond byte bound')
         if hashlib.sha256(raw).hexdigest() != reference['sha256']:
             raise ReconciliationRequired('artifact reference bytes changed')
         return json.loads(raw.decode('utf-8'))
@@ -200,14 +208,14 @@ def _budget_termination(value):
 def _budget_file(value, evidence: Path, name: str, reference=None):
     """Check the exact persisted view even when its control payload is inline."""
     path = evidence / name
-    if path.is_symlink() or not path.is_file() or path.stat().st_size > 8 * 1024 * 1024:
+    if path.is_symlink() or not path.is_file() or path.stat().st_size > REFERENCE_BYTES:
         raise ReconciliationRequired('budget record must be an original bounded file')
     real = path.resolve(strict=True)
     if not _comparison_path(real).is_relative_to(_comparison_path(evidence.resolve(strict=True))):
         raise ReconciliationRequired('budget record escaped original evidence directory')
     with real.open('rb') as stream:
-        raw = stream.read(8 * 1024 * 1024 + 1)
-    if len(raw) > 8 * 1024 * 1024:
+        raw = stream.read(REFERENCE_BYTES + 1)
+    if len(raw) > REFERENCE_BYTES:
         raise ReconciliationRequired('budget record grew beyond byte bound')
     actual = {'path': str(path.resolve(strict=True)), 'sha256': hashlib.sha256(raw).hexdigest()}
     if reference is not None and (_comparison_path(Path(reference['path']).resolve(strict=True))
@@ -240,6 +248,74 @@ def _checked_stop_snapshot(snapshot, frame, task_spec, evidence):
             or not isinstance(snapshot['evidence'], dict)):
         raise ReconciliationRequired('invalid stop snapshot identity, evidence or diagnostic output')
     return _budget_file(snapshot, evidence, f'run-{number}-stop-snapshot.json')
+
+
+def _artifact_string(value, limit=256):
+    return (isinstance(value, str) and 0 < len(value.encode('utf-8')) <= limit
+            and value.strip() == value and not any(ord(c) < 32 or 127 <= ord(c) <= 159 for c in value))
+
+
+def _artifact_hash(value):
+    return isinstance(value, str) and len(value) == 64 and all(c in '0123456789abcdef' for c in value)
+
+
+def validate_tool_artifacts(records, basis):
+    """Validate the Core ToolArtifact wire contract and this callback's source identity."""
+    if not isinstance(records, list):
+        raise ReconciliationRequired('artifact reply must contain a list of ToolArtifact records')
+    fields = {'version', 'artifact_id', 'task_id', 'session_id', 'run_id', 'native_call_id', 'tool',
+              'input_sha256', 'output_sha256', 'artifact_ref', 'status', 'created_at'}
+    bindings = ('artifact_id', 'task_id', 'session_id', 'run_id', 'native_call_id', 'input_sha256', 'output_sha256')
+    receipt_fields = set(bindings) | {'receipt_id', 'verifier', 'verifier_version', 'verified_at', 'committed', 'settled'}
+    seen = set()
+    for artifact in records:
+        if (not isinstance(artifact, dict) or set(artifact) not in (fields, fields | {'host_receipt'})
+                or type(artifact['version']) is not int or artifact['version'] != 1):
+            raise ReconciliationRequired('invalid ToolArtifact fields or version')
+        if any(not _artifact_string(artifact[key]) for key in
+               ('artifact_id', 'task_id', 'session_id', 'run_id', 'native_call_id', 'tool', 'created_at')):
+            raise ReconciliationRequired('invalid ToolArtifact identifier')
+        if any(artifact[key] != basis[key] for key in ('task_id', 'session_id', 'run_id')):
+            raise ReconciliationRequired('ToolArtifact identity differs from review basis')
+        if artifact['artifact_id'] in seen:
+            raise ReconciliationRequired('duplicate ToolArtifact ID')
+        seen.add(artifact['artifact_id'])
+        if not all(_artifact_hash(artifact[key]) for key in ('input_sha256', 'output_sha256')):
+            raise ReconciliationRequired('invalid ToolArtifact hash')
+        reference = artifact['artifact_ref']
+        if (not _artifact_string(reference, 4096) or '\\' in reference or '://' in reference
+                or '?' in reference or '#' in reference
+                or any(part in ('', '.', '..') for part in reference.split('/'))
+                or (len(reference) >= 2 and reference[0] in 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+                    and reference[1] == ':')):
+            raise ReconciliationRequired('invalid ToolArtifact reference')
+        status, receipt = artifact['status'], artifact.get('host_receipt')
+        if status not in ('candidate', 'verified', 'revoked', 'unknown'):
+            raise ReconciliationRequired('invalid ToolArtifact status')
+        if (status == 'verified' and receipt is None) or (status == 'candidate' and receipt is not None):
+            raise ReconciliationRequired('ToolArtifact status requires a different Host receipt state')
+        if receipt is not None:
+            if (not isinstance(receipt, dict) or set(receipt) != receipt_fields
+                    or receipt['committed'] is not True or receipt['settled'] is not True
+                    or any(receipt[key] != artifact[key] for key in bindings)
+                    or any(not _artifact_string(receipt[key]) for key in
+                           ('receipt_id', 'verifier', 'verifier_version', 'verified_at'))):
+                raise ReconciliationRequired('ToolArtifact Host receipt is invalid or bound to another artifact')
+
+
+def _checked_artifact_review(review, frame, config, evidence):
+    if not isinstance(review, dict) or set(review) != {'basis', 'artifacts'}:
+        raise ReconciliationRequired('invalid artifact review fields')
+    validate_candidate_identity(review, frame, config['task'])
+    basis = review['basis']
+    if (basis.get('session_id') != config['run']['session_key']
+            or type(basis.get('run_number')) is not int or basis['run_number'] < 1
+            or not isinstance(basis.get('session_path'), str)
+            or _comparison_path(Path(basis['session_path']).resolve(strict=True))
+                != _comparison_path(Path(config['run']['session_path']).resolve(strict=True))):
+        raise ReconciliationRequired('artifact review Session or Run number differs')
+    validate_tool_artifacts(review['artifacts'], basis)
+    return _budget_file(review, evidence, f"jsonl-artifact-review-{basis['run_number']}.json", frame.get('review_ref'))
 
 
 def _checked_budget_continuation(value, frame, task_spec, evidence, check_snapshot=_checked_snapshot,
@@ -300,6 +376,13 @@ async def run_task(binary: str | Path, config: dict, host: Host, *, token: str,
         raise ValueError('an existing executable and a nonempty model grant are required')
     if config.get('kind') != 'start_task' or config.get('version') != 1:
         raise ValueError('start_task protocol version 1 is required')
+    artifact_enabled = config.get('artifact_review', False)
+    if type(artifact_enabled) is not bool:
+        raise ValueError('artifact_review must be a boolean')
+    artifact_callback = getattr(host, 'review_artifacts', None)
+    if artifact_enabled and not (inspect.iscoroutinefunction(artifact_callback)
+            or inspect.iscoroutinefunction(getattr(artifact_callback, '__call__', None))):
+        raise ValueError('artifact_review opt-in requires an async review_artifacts Host callback')
     budget_policy = config.get('budget_stop_review', 'reject')
     if budget_policy not in ('reject', 'review_closed_tool_round'):
         raise ValueError('invalid budget_stop_review policy')
@@ -406,6 +489,16 @@ async def run_task(binary: str | Path, config: dict, host: Host, *, token: str,
                 if receipt.get('basis') != candidate['basis']:
                     raise ValueError('Host review basis changed')
                 reply = {'kind': 'verify_reply', **base, 'receipt': receipt}
+            elif kind == 'review_artifacts_request':
+                review = body(frame, 'review')
+                before = _checked_artifact_review(review, frame, config, evidence)
+                basis = dict(review['basis'])
+                artifacts = await host.review_artifacts(review, signal)
+                if before != _checked_artifact_review(review, frame, config, evidence):
+                    raise ValueError('artifact review changed during the Host callback')
+                validate_tool_artifacts(artifacts, basis)
+                reply = {'kind': 'review_artifacts_reply', **base, 'artifacts': artifacts}
+                record(frame, 'artifact-review-checked', review_ref=before)
             elif kind == 'verify_budget_request':
                 snapshot = body(frame, 'snapshot')
                 before = _checked_snapshot(snapshot, frame, config['task'], evidence)
@@ -590,8 +683,12 @@ async def run_task(binary: str | Path, config: dict, host: Host, *, token: str,
                     pending[rpc_id] = (signal, asyncio.create_task(reconcile(frame, signal)))
                     continue
                 if kind not in ('tool_call', 'verify_request', 'prepare_request', 'verify_budget_request', 'prepare_budget_request',
-                                'verify_stop_request', 'prepare_stop_request'):
+                                'verify_stop_request', 'prepare_stop_request', 'review_artifacts_request'):
                     raise ReconciliationRequired('unexpected runtime control frame')
+                if kind == 'review_artifacts_request':
+                    header = {'kind', 'version', 'rpc_id', 'task_id', 'run_id'}
+                    if not artifact_enabled or set(frame) not in (header | {'review'}, header | {'review_ref'}):
+                        raise ReconciliationRequired('unsolicited or invalid artifact review request')
                 if kind in ('verify_budget_request', 'prepare_budget_request') and not budget_enabled:
                     raise ReconciliationRequired('budget callback without explicit opt-in')
                 if kind in ('verify_stop_request', 'prepare_stop_request') and not length_enabled:

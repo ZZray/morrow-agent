@@ -100,6 +100,41 @@ function validateReceipt(receipt, candidate) {
       && typeof verdict.NeedsChanges.feedback === 'string'), 'invalid Harness verdict encoding');
 }
 
+function validateArtifacts(artifacts, basis) {
+  requireValue(Array.isArray(artifacts), 'artifact callback must return an array');
+  const fields = ['version','artifact_id','task_id','session_id','run_id','native_call_id','tool',
+    'input_sha256','output_sha256','artifact_ref','status','created_at'];
+  const binding = ['artifact_id','task_id','session_id','run_id','native_call_id','input_sha256','output_sha256'];
+  const identifier = (value) => nonempty(value) && value.trim() === value
+    && Buffer.byteLength(value) <= 256 && !/\p{Cc}/u.test(value);
+  const seen = new Set();
+  for (const artifact of artifacts) {
+    requireValue((exact(artifact, fields) || exact(artifact, [...fields, 'host_receipt']))
+      && artifact.version === 1, 'invalid ToolArtifact fields/version');
+    requireValue(['artifact_id','task_id','session_id','run_id','native_call_id','tool','created_at']
+      .every((key) => identifier(artifact[key]))
+      && sha(artifact.input_sha256) && sha(artifact.output_sha256), 'invalid ToolArtifact identity/hash');
+    requireValue(['task_id','session_id','run_id'].every((key) => artifact[key] === basis[key])
+      && !seen.has(artifact.artifact_id), 'artifact source binding mismatch or duplicate ID');
+    seen.add(artifact.artifact_id);
+    const reference = artifact.artifact_ref;
+    requireValue(nonempty(reference) && reference.trim() === reference && Buffer.byteLength(reference) <= 4096
+      && !/\p{Cc}/u.test(reference) && !reference.includes('\\') && !reference.includes('://')
+      && !/^[a-z]:/i.test(reference) && !/[?#]/.test(reference)
+      && reference.split('/').every((part) => part !== '' && part !== '.' && part !== '..'), 'invalid artifact reference');
+    requireValue(['candidate','verified','revoked','unknown'].includes(artifact.status), 'invalid artifact status');
+    const receipt = artifact.host_receipt;
+    requireValue((artifact.status !== 'candidate' || receipt == null)
+      && (artifact.status !== 'verified' || receipt != null), 'artifact status/receipt mismatch');
+    if (receipt != null) {
+      requireValue(exact(receipt, [...binding, 'receipt_id','verifier','verifier_version','verified_at','committed','settled'])
+        && binding.every((key) => receipt[key] === artifact[key])
+        && ['receipt_id','verifier','verifier_version','verified_at'].every((key) => identifier(receipt[key]))
+        && receipt.committed === true && receipt.settled === true, 'invalid Host artifact receipt binding');
+    }
+  }
+}
+
 function budgetTermination(value) {
   requireValue(exact(value, ['version','cause','native_round_closed','model_final_stop'])
     && value.version === 1 && value.cause === 'call_budget_exhausted'
@@ -300,6 +335,9 @@ export async function startTask({ binary, start, modelToken, operationDirectory,
     && ['verifyStopSnapshot','prepareStopContinuation'].every((key) => typeof callbacks[key] === 'function')),
   'Execute length-stop opt-in requires both dedicated callbacks');
   const mcpEnabled = Object.hasOwn(start, 'mcp_servers');
+  requireValue(!Object.hasOwn(start, 'artifact_review') || typeof start.artifact_review === 'boolean', 'invalid artifact_review policy');
+  const artifactEnabled = start.artifact_review === true;
+  requireValue(!artifactEnabled || typeof callbacks.reviewArtifacts === 'function', 'artifact_review requires reviewArtifacts callback');
   // 12.1: `resume` needs the settlement callback; without `resume` it is optional and unused.
   const resumeEnabled = Object.hasOwn(start, 'resume');
   if (resumeEnabled && typeof callbacks.reconcileResume !== 'function') throw new Error('reconcile_callback_missing');
@@ -372,6 +410,29 @@ export async function startTask({ binary, start, modelToken, operationDirectory,
         reply = { ...envelope(frame, 'tool_reply'), native_call_id: frame.native_call_id,
           tool_name: frame.tool_name, args_sha256: frame.args_sha256, result };
         if (result.settlement === 'Unknown') stage = 'unknown';
+      } else if (frame.kind === 'review_artifacts_request') {
+        const review = await candidateOf(frame, 'review');
+        requireValue(exact(review, ['basis','artifacts']), 'invalid artifact review payload');
+        checkBasisIdentity(review.basis, frame);
+        requireValue(nonempty(start.run.session_key) && review.basis.session_id === start.run.session_key
+          && typeof review.basis.session_path === 'string' && path.isAbsolute(review.basis.session_path)
+          && typeof start.run.session_path === 'string' && path.isAbsolute(start.run.session_path)
+          && operationalPath(await fs.realpath(review.basis.session_path)) === operationalPath(await fs.realpath(start.run.session_path))
+          && Number.isSafeInteger(review.basis.run_number) && review.basis.run_number > 0,
+        'artifact review Session or Run number mismatch');
+        validateArtifacts(review.artifacts, review.basis);
+        const reviewName = `jsonl-artifact-review-${review.basis.run_number}.json`;
+        const before = await budgetFile(review, start.task.evidence_dir, reviewName, frame.review_ref);
+        const originalBasis = structuredClone(review.basis);
+        const replyEnvelope = envelope(frame, 'review_artifacts_reply');
+        const artifacts = await callbacks.reviewArtifacts(review, { signal: item.controller.signal, frame });
+        requireValue(!item.controller.signal.aborted, 'artifact callback cancelled');
+        validateArtifacts(artifacts, originalBasis);
+        const after = await budgetFile(review, start.task.evidence_dir, reviewName, frame.review_ref);
+        requireValue(digest(before) === digest(after), 'artifact review changed during callback');
+        await receipts.operation(frame, 'artifact-review-checked', { review_ref: before });
+        reply = { ...replyEnvelope, artifacts };
+        requireValue(Buffer.byteLength(`${JSON.stringify(reply)}\n`) <= FRAME_BYTES, 'artifact reply exceeds protocol bound');
       } else if (frame.kind === 'verify_request') {
         const candidate = await candidateOf(frame, 'candidate');
         checkBasisIdentity(candidate?.basis, frame);
@@ -528,18 +589,19 @@ export async function startTask({ binary, start, modelToken, operationDirectory,
       item.controller.abort(); return;
     }
     requireValue(['tool_call', 'verify_request', 'prepare_request', 'verify_budget_request', 'prepare_budget_request',
-      'verify_stop_request', 'prepare_stop_request'].includes(frame.kind)
+      'verify_stop_request', 'prepare_stop_request', 'review_artifacts_request'].includes(frame.kind)
       && !state.terminal && !state.fault && active.size < 8, 'unknown or out-of-state callback');
     correlation(frame);
     requireValue(!['verify_budget_request','prepare_budget_request'].includes(frame.kind) || budgetEnabled, 'budget callback without opt-in');
     requireValue(!['verify_stop_request','prepare_stop_request'].includes(frame.kind) || lengthEnabled, 'stop snapshot callback without opt-in');
+    requireValue(frame.kind !== 'review_artifacts_request' || artifactEnabled, 'artifact callback without opt-in');
     requireValue(!seen.has(frame.rpc_id), 'duplicate RPC request');
     if (frame.kind === 'tool_call') requireValue(exact(frame, ['kind','version','rpc_id','task_id','run_id','native_call_id','tool_name','args_sha256','arguments'])
       && nonempty(frame.native_call_id) && nonempty(frame.tool_name)
       && allowedTools.has(frame.tool_name) && sha(frame.args_sha256) && object(frame.arguments), 'invalid or ungranted tool correlation/arguments');
-    if (['verify_request','prepare_request','verify_budget_request','prepare_budget_request','verify_stop_request','prepare_stop_request'].includes(frame.kind)) {
+    if (['verify_request','prepare_request','verify_budget_request','prepare_budget_request','verify_stop_request','prepare_stop_request','review_artifacts_request'].includes(frame.kind)) {
       const payload = ({ verify_request:'candidate',prepare_request:'continuation',verify_budget_request:'snapshot',prepare_budget_request:'budget_continuation',
-        verify_stop_request:'snapshot',prepare_stop_request:'stop_continuation' })[frame.kind];
+        verify_stop_request:'snapshot',prepare_stop_request:'stop_continuation',review_artifacts_request:'review' })[frame.kind];
       requireValue(exact(frame, ['kind','version','rpc_id','task_id','run_id',payload])
         || exact(frame, ['kind','version','rpc_id','task_id','run_id',`${payload}_ref`]), 'invalid callback payload fields');
     }

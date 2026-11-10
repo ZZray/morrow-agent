@@ -1,5 +1,6 @@
 use crate::protocol::Reference;
 use anyhow::{ensure, Context, Result};
+use morrow_agent_harness::{core::artifact_provenance::ToolArtifact, ArtifactReceiptRef, ReviewBasis};
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 use std::{
@@ -59,6 +60,46 @@ pub fn checked_value(path: &Path, expected: &Value) -> Result<Reference> {
     let (reference, bytes) = bounded_reference(path)?;
     ensure!(serde_json::from_slice::<Value>(&bytes)? == *expected, "budget_reference_content_mismatch");
     Ok(reference)
+}
+
+/// Persist Host artifact declarations under the same review authority. An
+/// already-identical record is a reference, not another ledger transition.
+/// Earlier valid appends remain available if a later transition is refused.
+pub fn append_review_artifacts(
+    directory: &Path,
+    basis: &ReviewBasis,
+    artifacts: Vec<ToolArtifact>,
+) -> Result<Vec<ArtifactReceiptRef>> {
+    let mut ids = std::collections::HashSet::new();
+    for artifact in &artifacts {
+        artifact.validate()?;
+        ensure!(ids.insert(artifact.artifact_id.as_str()), "duplicate_review_artifact");
+        ensure!(
+            artifact.task_id == basis.task_id
+                && artifact.session_id == basis.session_id
+                && artifact.run_id == basis.run_id,
+            "review_artifact_binding_mismatch"
+        );
+    }
+    let existing = morrow_agent_harness::read_tool_artifacts(directory)?;
+    let mut references = Vec::with_capacity(artifacts.len());
+    for artifact in artifacts {
+        if !existing.iter().any(|record| record == &artifact) {
+            morrow_agent_harness::append_tool_artifact(directory, &artifact)?;
+        }
+        references.push(ArtifactReceiptRef {
+            artifact_id: artifact.artifact_id,
+            artifact_ref: artifact.artifact_ref,
+            task_id: artifact.task_id,
+            session_id: artifact.session_id,
+            run_id: artifact.run_id,
+            native_call_id: artifact.native_call_id,
+            input_sha256: artifact.input_sha256,
+            output_sha256: artifact.output_sha256,
+            status: artifact.status,
+        });
+    }
+    Ok(references)
 }
 
 pub fn checked_budget_snapshot(snapshot: &morrow_agent_harness::BudgetStopSnapshot) -> Result<Reference> {
@@ -300,5 +341,58 @@ mod tests {
         std::fs::write(&path, b"{\"remaining_calls\":99,\"deadline_unix_ms\":1234}").unwrap();
         assert!(checked_value(&path, &payload).is_err());
         std::fs::remove_file(path).unwrap();
+    }
+
+    fn artifact(basis: &ReviewBasis, id: &str) -> ToolArtifact {
+        serde_json::from_value(json!({"version":1,"artifact_id":id,"task_id":basis.task_id,
+            "session_id":basis.session_id,"run_id":basis.run_id,"native_call_id":"call-1","tool":"write_answer",
+            "input_sha256":"a".repeat(64),"output_sha256":"b".repeat(64),"artifact_ref":"answer.txt",
+            "status":"candidate","created_at":"1"}))
+        .unwrap()
+    }
+
+    #[test]
+    fn artifact_append_binds_scope_skips_identical_records_and_preserves_valid_transitions() {
+        use morrow_agent_harness::{append_tool_artifact, read_tool_artifacts, tool_artifacts_path};
+        let mut fixture = Fixture::new();
+        fixture.candidate.basis.session_id = "session-1".into();
+        let basis = &fixture.candidate.basis;
+        let candidate = artifact(basis, "artifact-1");
+        append_tool_artifact(&fixture.directory, &candidate).unwrap();
+        let path = tool_artifacts_path(&fixture.directory);
+        let original = std::fs::read(&path).unwrap();
+        let refs = append_review_artifacts(&fixture.directory, basis, vec![candidate.clone()]).unwrap();
+        assert_eq!(refs.len(), 1);
+        assert_eq!(std::fs::read(&path).unwrap(), original);
+        let receipt = serde_json::from_value(json!({"receipt_id":"receipt-1","artifact_id":candidate.artifact_id,
+            "task_id":basis.task_id,"session_id":basis.session_id,"run_id":basis.run_id,
+            "native_call_id":candidate.native_call_id,"input_sha256":candidate.input_sha256,
+            "output_sha256":candidate.output_sha256,"verifier":"host","verifier_version":"1",
+            "verified_at":"1","committed":true,"settled":true}))
+        .unwrap();
+        let verified = candidate.verify(receipt).unwrap();
+        let refs = append_review_artifacts(&fixture.directory, basis, vec![verified.clone()]).unwrap();
+        assert_eq!(refs[0].status, morrow_agent_harness::core::artifact_provenance::ArtifactStatus::Verified);
+        let committed = std::fs::read(&path).unwrap();
+        append_review_artifacts(&fixture.directory, basis, vec![verified.clone()]).unwrap();
+        assert_eq!(std::fs::read(&path).unwrap(), committed);
+        assert!(append_review_artifacts(&fixture.directory, basis, vec![candidate]).is_err());
+        for field in ["task_id", "session_id", "run_id"] {
+            let mut changed = serde_json::to_value(&verified).unwrap();
+            changed[field] = json!("other");
+            changed["host_receipt"][field] = json!("other");
+            let changed = serde_json::from_value(changed).unwrap();
+            assert!(append_review_artifacts(&fixture.directory, basis, vec![changed]).is_err(), "{field}");
+            assert_eq!(std::fs::read(&path).unwrap(), committed);
+        }
+        assert!(append_review_artifacts(&fixture.directory, basis, vec![verified.clone(), verified.clone()]).is_err());
+        let fresh = artifact(basis, "new-business-artifact");
+        let mut invalid_transition = verified.clone();
+        invalid_transition.artifact_ref = "changed.txt".into();
+        assert!(append_review_artifacts(&fixture.directory, basis, vec![fresh.clone(), invalid_transition]).is_err());
+        let persisted = read_tool_artifacts(&fixture.directory).unwrap();
+        assert_eq!(persisted, vec![verified, fresh], "valid prefix appends are retained after a later refusal");
+        std::fs::remove_file(path).unwrap();
+        std::fs::remove_file(fixture.directory.join(".morrow-provenance.lock")).unwrap();
     }
 }

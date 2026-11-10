@@ -2,6 +2,7 @@ use std::path::PathBuf;
 
 use morrow_agent_harness::{
     core::{
+        artifact_provenance::ToolArtifact,
         model::{GenerationPolicy, LengthRecoveryPolicy},
         model_caps::ModelCaps,
     },
@@ -29,6 +30,9 @@ pub struct Start {
     pub cancel_grace_ms: u64,
     #[serde(default)]
     pub emit_events: bool,
+    /// Explicit Host opt-in. Absent/false preserves the legacy callback sequence.
+    #[serde(default)]
+    pub artifact_review: bool,
     /// Claude Code `mcpServers` map (42.9); parsed by `morrow-agent-mcp`.
     #[serde(default)]
     pub mcp_servers: Option<Value>,
@@ -197,6 +201,13 @@ pub enum Incoming {
         task_id: String,
         run_id: String,
         receipt: ReviewReceipt,
+    },
+    ReviewArtifactsReply {
+        version: u32,
+        rpc_id: String,
+        task_id: String,
+        run_id: String,
+        artifacts: Vec<ToolArtifact>,
     },
     PrepareReply {
         version: u32,
@@ -377,6 +388,27 @@ mod tests {
         assert!(!admitted(&frame(Some(0), 1, "none")));
         assert!(admitted(&frame(Some(16), 16, "none")));
         assert!(!admitted(&frame(Some(16), 17, "none")));
+    }
+
+    #[test]
+    fn artifact_review_is_explicit_boolean_and_defaults_off() {
+        let mut value = frame(None, 512, "none");
+        assert!(!serde_json::from_value::<Start>(value.clone()).unwrap().artifact_review);
+        for enabled in [false, true] {
+            value["artifact_review"] = json!(enabled);
+            let start: Start = serde_json::from_value(value.clone()).unwrap();
+            assert_eq!(start.artifact_review, enabled);
+            assert!(crate::runtime::validate(&start).is_ok());
+        }
+        for invalid in [Value::Null, json!("true"), json!(1), json!([]), json!({})] {
+            value["artifact_review"] = invalid;
+            assert!(serde_json::from_value::<Start>(value.clone()).is_err());
+        }
+        value.as_object_mut().unwrap().remove("artifact_review");
+        let mut bytes = serde_json::to_vec(&value).unwrap();
+        bytes.pop();
+        bytes.extend_from_slice(b",\"artifact_review\":true,\"artifact_review\":false}");
+        assert!(serde_json::from_slice::<Start>(&bytes).is_err());
     }
 
     fn capped(resolution: Value) -> Value {

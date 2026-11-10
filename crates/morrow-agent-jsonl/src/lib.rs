@@ -114,6 +114,7 @@ async fn prepare(
     let emit_events = start.emit_events;
     let budget_stop_review = start.budget_stop_review;
     let length_stop_review = start.length_stop_review;
+    let artifact_review = start.artifact_review;
     let output = Output::stdout(token.clone());
     let spec: TaskSpec = start.task.into();
     if let Some(mut frame) = mcp_status {
@@ -131,7 +132,7 @@ async fn prepare(
     ));
     let template = Template::new(start.run, token, bridge.clone(), mcp_tools);
     let initial = template.initial();
-    let host = Arc::new(ExternalHost { template, bridge: bridge.clone() });
+    let host = Arc::new(ExternalHost { template, bridge: bridge.clone(), artifact_review });
     let options = TaskOptions { budget_stop_review, length_stop_review };
     Ok((Prepared { emit_events, budget_stop_review, output, spec, bridge }, (initial, host, options)))
 }
