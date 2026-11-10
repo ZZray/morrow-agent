@@ -1,0 +1,26 @@
+[package]
+name = "morrow-agent-mcp"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "MCP tool source (Claude Code .mcp.json compatible) for Morrow Agent hosts"
+[dependencies]
+morrow-agent-core = { version = "=0.1.1", path = "../morrow-agent-core" }
+anyhow = "1"
+async-trait = "0.1"
+base64 = "0.22"
+futures = "0.3"
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "stream", "socks"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "time", "fs", "process", "sync", "io-util", "net", "signal"] }
+tokio-util = { version = "0.7", features = ["rt"] }
+url = "2"
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_Security", "Win32_System_JobObjects", "Win32_System_Threading"] }
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
+[dev-dependencies]
+morrow-agent-harness = { version = "=0.1.0", path = "../morrow-agent-harness" }
+proptest = { version = "=1.11.0", default-features = false, features = ["std"] }
+tempfile = "3"

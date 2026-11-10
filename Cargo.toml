@@ -1,0 +1,19 @@
+[workspace]
+members = [
+  "crates/morrow-agent-core",
+  "crates/morrow-agent-harness",
+  "crates/morrow-agent-jsonl",
+  "crates/morrow-agent-mcp",
+]
+resolver = "3"
+
+[workspace.package]
+license = "MIT"
+publish = false
+
+[profile.dev]
+debug = "line-tables-only"
+incremental = false
+
+[profile.dev.package."*"]
+debug = false

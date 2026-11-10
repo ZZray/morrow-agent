@@ -1,0 +1,395 @@
+# 宿主边界与兼容
+
+2026-10-21。来源：从 HandWave 0.2.8 提取运行库时，对当前源码、独立宿主和
+HandWave 回归的核查。具体执行版本与结果以交付收据为准。
+
+## 状态与授权
+
+宿主选择会话文件、运行环境状态和工作目录，并在调用 Core 前验证业务授权。
+Core 保留原生历史、调用与工具收据、取消、预算、Goal 进度和待处理状态。
+成功 Run 仍需宿主对照业务任务验收；Core 不自动接受 Task。
+未知副作用、未完成原生会话和已完成 Run 不能通过换会话、换 ID 或重试来掩盖。
+
+`enable_local_tools` 默认关闭，构造器默认 Plan。业务工具由宿主注册；
+Plan 工具许可是宿主声明，不是操作系统只读保证。内置名称在关闭时也保留，
+避免业务工具覆盖 `exec`、知识与记忆工具等名称。
+
+模型解析发生在原有 Run 准入顺序中。`ModelHost` 提供 route、client、能力和 headers；
+HandWave 的 grant、binding header、设备连接和调度留在 HandWave。
+原 route 的四个序列化字段保持不变，以保留旧会话的模型与绑定连续性。
+
+## 四方职责与依赖方向
+
+下面四节按需求 27.4 划分 Lite_Core、Harness_Lite、JSONL_Sidecar 与 Host 的职责，每个事项只归一方负责。agent loop 只在 Lite_Core 中实现；Harness_Lite、JSONL_Sidecar 和 Host 都通过 Core 的 `execute` 运行它，不各自实现“模型调用—工具执行—结果回填”循环。哪些接口可长期依赖见 [稳定性规则](../stability.md)。
+
+依赖方向（需求 27.1、27.2）：
+
+```text
+Rust Host ──Cargo──> Harness_Lite ──path──> Lite_Core
+跨语言 Host ══v1 帧══> JSONL_Sidecar ──path──> Harness_Lite
+JSONL_Sidecar ──path──> morrow-agent-mcp ──path──> Lite_Core
+```
+
+`morrow-agent-mcp`（需求 42）是可选的工具来源库，它把 MCP server 的工具包装成普通 `AgentTool`，不构成第五方。经 JSONL 的 `mcp_servers` 使用时，连接与转发归 JSONL_Sidecar；Rust Host 直接调用 `McpSession::connect` 时，配置、连接生命周期与关闭归 Host。
+
+- Lite_Core 只依赖 crates.io 包和固定提交的 `rpi-ai`、`rpi-agent`（同一 rev 带入 `rpi-telemetry`）。它的 normal、build、dev 依赖中都没有 Harness_Lite、JSONL_Sidecar、`morrow-agent-mcp`、产品 crate，也没有 Core 工作区之外的 path 依赖。
+- Harness_Lite 以 path 依赖引用 `crates/morrow-agent-core`，只使用其公共 API。它的依赖图中只有这一个 Core 实例，不存在 git 或 crates.io 来源的副本。JSONL_Sidecar 与 `morrow-agent-mcp` 同样只有一个 path 来源的 Core 实例。
+- 2026-10-29 在 `dev` @ `c061062`（含未提交改动）上，对 Core、Harness、JSONL、MCP 四个工作区分别运行 `cargo metadata --locked --offline --format-version 1`，四个都成功，结果符合以上两条：Core 图有 253 个包，ARA 包只有 Core 自身，git 包只有上述三个固定 rev；Harness、JSONL、MCP 图中的 Core 都是 `crates/morrow-agent-core` 的单一 path 实例。这是一次手工核对，不能代替任务 34.2 的 Dependency_Check_Test（`tools/lite-eval/tests/dependency_direction.rs`，尚未实现）。
+
+### Lite_Core
+
+- 运行 agent loop：模型请求、流式解析、工具调度与结果回填、Length 恢复、上下文压缩与摘要。
+- Run 准入：模式（Plan／Execute／Goal）对应的工具许可、内置工具名保留、自定义工具名校验、单 Run 调用与时间预算、输出上限。
+- 原生 Session 与 Journal 的持久化、未完成 Run 的 fence 标记、按 Host 结算关闭中断 Run。
+- 可选的内置本机工具、后台 Job、知识与 Skills 工具；默认关闭，只在 Host 授权时启用。
+- 事件发送（JSON 值与 `LiteEvent` 类型）、工具结果中结构化未知副作用的标注、闭合预算与停止证据。
+- P2 的可选 Run 策略（Completion_Gate、Stuck_Detector、Compaction_Refresh）在 Core 循环内执行，由 Host 注册与配置。
+
+### Harness_Lite
+
+- 把一个业务 Task 拆成有界的多个 Run：Task 调用预算与绝对截止时间跨 Run 累计，不退还。
+- 每个 Run 的准入记录、事件文件与观察记录；候选产物交 Host 复核，按复核结论续写或停止。
+- 续写时核对 authority 不变：同一 Session、ModelHost、steering、工具 Arc 与授权字段；拒绝重复 Run ID。
+- 跨 Run 的 Session 所有权、fence 文件与 `ReconciliationRequired` 停止；`resume`／`resume_checked` 在调用 Host 前做的条款、哈希与预算检查。
+- 可选的预算停止快照、Length／NoProgress 停止快照复核流程，以及 `TaskOutcome` 中的未知副作用记录。
+- 不执行模型调用或工具，不判定业务 Task 是否验收（`task_accepted` 恒为 false）。
+
+### JSONL_Sidecar
+
+- v1 协议帧的读写、帧大小与 UTF-8 校验、请求关联字段（`rpc_id`、`task_id`、`run_id`）核对。
+- 把 Host 进程的工具调用、复核、续写、停止复核与 resume 结算转发为帧，并把回复交给 Harness_Lite。
+- start 帧配置的准入校验（含 `generation_policy`、`length_recovery`、`mcp_servers`、`resume`），拒绝时不发上游请求。
+- 证据目录中的 sidecar 记录（`jsonl-resume-rejected.json`、未知分支的 `receipt_ref` 等）。
+- 按 start 帧的 `mcp_servers` 建立 MCP 连接、报告 `mcp_status`，并把连接得到的工具作为普通工具交给 Harness_Lite。
+- Python 与 Node 客户端只是帧的编解码与回调封装，同样属于这一方。
+
+### Host
+
+Host 集成时必须自行实现以下事项，Lite 不代为完成：
+
+- 用户、设备与租户身份，业务授权判断，以及据此选择的 `session_key`、`device_fp`、模式与工具授权。
+- 模型凭据的获取与保管、端点与模型选择；需要非目录模型时自行实现 `ModelHost`。
+- 所有路径的选择与隔离：工作目录、Session 文件、环境状态、证据目录、知识根目录；多租户的账户或容器隔离。
+- 业务工具的实现与授权（经 `rpi_agent::AgentTool` 注册），包括参数在执行端的校验和取消处理；内置工具的允许名单不是 OS 沙箱。
+- 产物复核：`HarnessHost::verify` 依据实际文件、测试或外部系统状态给出回执，不以模型自述为依据；续写目标与反馈的内容。
+- 外部副作用结算：效果未知的调用由 Host 依据自己的操作回执判断，结算期间不重放；resume 前提交结算回执（见下一节）。
+- 业务 Task 的最终验收、事件展示、队列与调度、跨进程的 Session 串行。
+- 选用 MCP 时提供 `mcpServers` 配置及其中的凭据环境变量，决定哪些 server 为 `required`；Rust Host 直接使用 `morrow-agent-mcp` 时还要负责连接与关闭。
+
+## resume 结算义务
+
+Harness `resume`／`resume_checked`（JSONL 的 `resume` start 字段走同一入口）在接管 fence
+之前调用一次 `HarnessHost::reconcile_resume(ResumeReview)`。Host 只依据自己的操作回执、
+产物和外部系统状态回答，返回的 `ResumeReceipt` 必须满足五项义务：
+
+1. `committed` 为 true：Host 已把这次结算保存到自己的记录。
+2. 每个开放调用的结算为 Settled：`settlement` 为 `Settled`，每个调用都有确定结果
+   （`not_executed`、`completed` 或 `failed`），不能是 `Unknown`。
+3. 证据非空：`evidence` 至少列出一条 Host 自己的操作回执引用。
+4. 回执与开放调用逐一对应：`tool_calls` 与 `ResumeReview.interrupted_run.open_tool_calls`
+   数量相同、顺序一致，`call_id` 逐条等于对应调用的 `id`；没有开放调用时为空数组。
+5. 结算过程中不执行、不重放效果未知的调用：只查收据和状态，不为“确认”而再做一次操作。
+
+违反前四项中任一项时，Harness 拒绝 resume（`ResumeRefusal` 依次为 `ReceiptUncommitted`、
+`SettlementUnknown`、`EvidenceEmpty`、`CallMismatch`），不接管 fence；fence 文件与原有回执
+保持不变，上游 HTTP 请求数为零，Session 的 pending_run 保留。JSONL 在新证据目录写
+`jsonl-resume-rejected.json`，类别与上述四种拒绝同名。第 5 项无法从回执检查，
+由 Host 自己保证；违反时产生的重复外部效果，Core 和 Harness 都无法撤回。
+
+接受的回执作为该调用唯一的 ToolResult（`details.source=host_reconciled_interrupted_run`）
+写入原 Session，工具不再执行；被中断 Run 按准入上限全额计入消耗。真实进程中断与七种拒绝
+条件的验证见 `crates/morrow-agent-jsonl/tests/test_resume_process.py`。
+
+## 后台 Worker
+
+原精简端可重启自身进入 Worker。通用库无法推断任意业务 EXE 是否支持这个入口，
+因此要求宿主提供 `worker_executable`，且目标程序在正常启动前处理 Worker 参数。
+未配置时不注册启动能力，直接 `Manager::start` 也在写入启动意图前拒绝。
+
+作业目录、`op_id`、输入回执和未知结果规则保持原实现。同一操作读取原收据，
+不会因为新 Run 或新模型回复而重新执行。事件通道在 Run 期间必须被消费；
+通道关闭或取消不能证明外部效果已经撤销。
+
+## 存储与外部记忆
+
+本轮保留原 Session、Journal、Goal、知识索引和 Skill 格式。
+`.handwave` 目录及相关版本字符串作为兼容标识继续存在。移除这些名称会形成
+额外的数据迁移，不能当作代码抽取的一部分悄悄执行。
+
+运行环境和项目的知识／技能根目录由宿主路径或显式 `knowledge_roots` 控制。
+跨用户隔离应由宿主配置不同状态和知识目录。外部快照作为有来源的数据注入，
+仍检查身份、范围、哈希和大小；不能授权工具、采纳记忆或取消撤销规则。
+HandWave 专用消息分隔符仅由其宿主解析。
+
+2026-10-20 的真实模型测试未证明新会话读取已沉淀的知识正文。
+本次提取保留这个缺口；独立宿主的工具和进程验证不代表它已经关闭。
+
+## 依赖修复
+
+提取时的依赖审计报告 RUSTSEC-2026-0381 与 RUSTSEC-2026-0382，涉及
+`webpki-roots 1.0.9` 和 `rustls-webpki 0.103.15` 的证书信任问题。
+Core 将修复版本作为解析下界，避免嵌入已有旧锁文件的业务时再次选中这些版本。
+完整版 ARA 的锁文件不属于本次修改范围。
+
+## CASE-20261022：普通进程输出的证据保留
+
+长编译或分析输出的中段可能被模型返回限额丢弃。原执行器会继续读走这些字节，
+因此后续回读无法恢复；这能从 `drain` 的保留逻辑确认，但不能据此认定所有编码失败
+都由日志缺失造成。Managed Job 的日志是另一条所属和配额链路，不代表普通执行已有归档。
+
+2026-10-22 的首批增强只给普通 `exec/run_script` 增加显式 `capture_dir`。
+父目录现存、最终目录独占创建，按流保留最多 8 MiB 原字节，摘要和收据分开。
+完整性、已知退出状态和未知副作用分别表达；超额继续排空，不为取日志重放原操作。
+现有编辑、Run/Job、身份、权限、模型及固定 OMP marker 不随本点改变。
+
+收据 hash 以当时实际文件回读为依据，不是文件不可变、原子写入、脱敏或断电持久化保证。
+取消可能沿原 `Abort` 丢失工具文本收据，原文件仍在调用参数给出的目录；硬终止还可能
+留下部分文件。同步磁盘 I/O 没有独立硬截止，日志留存、清理和宿主隔离由调用者负责。
+
+验证与独立审查见 [本次增强记录](../evidence/coding-reverse-enhancement-20261022.html)。
+中段回读的受控 Host 任务与真实模型结果分开记录；任务未验收、日志超额和失败不会被
+归档机制改成成功。静态反编译、动态调试和一般编码成功率仍需要各自的留出任务与成对实验。
+
+本次验收也暴露了三个容易误判的前置条件：Python 临时脚本的模块搜索路径不自动等于
+工作目录；Windows `\\?\` 与普通路径可指向同一对象，应核实际文件身份；工具允许的
+128 KiB 预览可能超过小上下文声明下的保守字节预算。当前 Run 的完整工具结果不能靠
+删除或改写活跃证据来压缩过关。最大预览测试因此明确使用受控 1M 模型目录，并检查
+Host 观察到该声明；这没有放宽生产预算，也不接受较小声明下同样预览可以继续。
+
+## CASE-20261023：静态分析的 Windows 路径与空结果
+
+来源为 2026-10-22 至 23 日的自有样本与真实 Ctags/GNU 后端验证，范围是独立 Lite
+宿主，不代表完整版 OMP 或产品验收。首轮 Host 仅 15/23 通过；原始失败保留。
+
+同一份快照使用 Windows `\\?\` 绝对参数时，Ctags 可退出 0 却没有任何定义，
+GNU objdump/nm 则报文件不存在。独立对照确认快照 SHA 未变、目录指向同一对象：
+Ctags 使用普通目录表示和固定 ASCII 文件名后返回 4 个实际定义；GNU 工具也能读取
+样本。可执行文件使用普通或规范路径的结果相同，问题在后端对目标与工作目录的处理。
+因此不能把空结果或进程退出 0 单独作为“文件已分析且无符号”的证据。
+
+修复保留 Host 提供的绝对 `artifact_root` 表示，并核对规范路径身份。
+分析目录由这个根和新归档目录名组成，执行前再次核对它就是收据目录；
+后端仅读取该目录中的固定 ASCII 快照名。原文件路径、快照路径和哈希仍保留在结果中。
+不删除路径前缀，也不切换到猜测目录；Host 本身提供不兼容路径时仍可能明确失败。
+
+同批审查还发现：原字段字节预算允许的记录，在 JSON 转义后可能超过整页预算。
+若预算循环退到零条却仍返回原游标，调用者会反复取得同一空页。现在该情况明确失败，
+保留原件与收据；真正没有记录的结果另行处理。源码修复已独立复审，执行结果与
+后续任务级验证见 [增强记录](../evidence/coding-reverse-enhancement-20261022.html)。
+
+## CASE-20261023：关闭思考的本地枚举与实际请求
+
+原 R1 两次真实逆向 Run 的末次响应均为 `finish_reason:length`，没有最终正文；
+服务端报告的 4096 completion tokens 全部计入 reasoning。固定 rpi 提交
+`8ec462672d90e62712d96074638efef89436cebe` 的 OpenAI adapter 将
+`ThinkingLevel::Off` 映射为省略 `reasoning_effort`。实际请求也没有 `thinking` 字段，
+因此本地 Off 不能作为该服务已关闭思考的证据。
+
+DeepSeek 的 [Thinking Mode 协议](https://api-docs.deepseek.com/guides/thinking_mode/)
+使用请求根字段 `thinking.type=disabled`。Lite 通过宿主显式策略发送这个固定字段，
+默认请求保持原样。该契约需宿主确认服务支持，不能只根据模型名称自动套用。
+字段存在也只证明发送行为，模型能否完成任务仍看最终提交与独立检查。
+
+上下文摘要已有独立模型配置，其输出上限最多 4096，并在部分既定路由发送 disabled。
+诊断主任务策略时必须按 `model_call.call/phase` 对应实际请求；若对摘要套用主任务的
+输出预算或字段预期，会把合法摘要误报成策略失效。摘要仍计入同一 Run 调用预算。
+
+增加输出额度也不能补齐 thinking 模式的工具历史回放。官方协议要求相关轮次保留
+`reasoning_content`，当前 adapter 的普通 assistant 投影没有这一字段；
+本点只验证显式禁用契约，没有接受 thinking-enabled 工具回放。
+原失败与新实验分别保留，见 [增强记录](../evidence/coding-reverse-enhancement-20261022.html)。
+
+## CASE-20261023：nullable schema 与原生工具实参
+
+H2-G 的原始服务响应填入了互斥的全部可选字段，本地 adapter 没有补参。
+当时的 outbound schema 只要求 `path` 或 `path/action`，因此现有证据还不能区分
+服务端转换与模型主动选参。保留原工具错误及后续服务过载，不据此认定模型能力差。
+
+固定 rpi 提交 `8ec462672d90e62712d96074638efef89436cebe` 的
+`rpi-ai/src/schema.rs` 会先移除 schema 不接受的 optional null，再做类型转换和验证。
+把字段改为 nullable 后，这些 null 会保留并进入工具。只修改 schema 可能让原先未到达
+工具的参数直接触发冲突；当前实现因此在三个指定工具入口按专属白名单移除 null，
+其余字段交回原校验。未知字段不能用全局“删除所有 null”掩盖。
+
+直接调用工具的测试和真实 AgentLoop 的行为也要分开：例如编辑工具的可选 null
+可能被 rpi 先变成省略，不能根据直接 parser 会拒绝 null 就推断模型调用一定被拒绝。
+必填字段还有既有类型转换，拒绝阶段应按原生回执记录。这一点未通过修改共享编辑
+解析器或 rpi 来统一处理。
+
+2026-10-23 的 v6 原生契约检查保留了旧非空冲突、错误指纹和分页保护。
+首批有一组本地连接失败，5 个通过组与新会话中单独通过的 1 个组显式组合，原 FAIL
+不覆盖。机制验证与真实模型是否采用 null 分开，见
+[契约证据](../evidence/coding-nullable-20261023.result.json)。
+
+## CASE-20261023：请求预算、Host 额度与真实 C++ 产物
+
+S3 的两个诊断请求写入 `max_calls:40`，但固定 v6 的 `business_host.rs`
+先将它裁剪到 32，再构造 Core 请求。原生模型请求中的预算观察始终显示
+`call_limit:32`：基础组末次为剩余 1 次，符号工具组末次为剩余 2 次。
+harness 与 PRE 漏核了示例入口的限制；原计划保留，请求 40 和实际 32 分账，
+不能据此认定模型在还有 8 次额度时无故停止。此限制属于示例 Host，不代表 Core
+固定只允许 32 次，也没有在本轮放宽它。
+
+两次 Run 都正常结束，模型正文明确报告未完成。独立评估封存候选源码和模型收据，
+在全新目录配置和编译，公开 10 项分别通过 5 项和 0 项，留出 48 项分别通过
+4 项和 0 项。实际失败反馈已进入后续模型请求，因此不能把“读到了测试结果”当成
+已经完成正确修复。第二组提出的旧对象文件解释也被干净重编译反证。
+
+同次 PRE 还发现：取消或 deadline 后，Host 可以输出业务终态，而 Core 明确报告
+`partial effects may remain`。仅判断进程退出和业务 result 存在，会错误放行隐藏评估。
+当前 S3 harness 另外检查原生 `agent_end`、已知未知状态以及五类本地副作用工具的
+start/end 配对。44 项受控自测覆盖这条门禁；任意外部副作用仍不在穷尽观察范围内。
+这没有改变 Core 取消或 Run 生命周期，也不是操作系统隔离证明。
+
+两组均未调用新增的 `source_symbols`，也未观察到可选 null 实参；不能将结果归因于
+符号工具或 nullable 契约。原失败、版本指纹和检查边界见
+[C++ 任务记录](../evidence/coding-stream-cpp-20261023.result.json)。
+
+## CASE-20261025：大来源整篇读取耗尽当前 Run 上下文
+
+公共 `/reference correct` 保存更正原文及来源版本，不把更正正文追加到原生消息。
+因此，原文只存在于来源库时，不能依靠 `history_read` 恢复它。旧 `reference_search`
+虽然能匹配深处字面量，却只返回正文开头的摘录；旧 `reference_read` 则返回整篇。
+
+实际公共 Core 消费者复现了这一链路：49,152 字节的更正来源，关键字段位于
+24 KiB 之后；受控目录声明 context 32,768、请求输出 512，对应 request 28,160
+和 projection 14,080 字节预算。读取工具成功返回整篇，下一模型调用前的投影检查
+失败。来源及 Session 没有损坏，失败是整篇工具结果不能装入当前 Run。
+
+同一来源、任务和 3 次调用额度下，分窗版本通过检索偏移直接读回 4 KiB 原文，
+得到正确原生答案，由 Host 原样保存并独立核对。另有 7 项实际进程故障检查覆盖
+UTF-8 非法偏移、非法长度、EOF 和来源更正／撤销；6 项新库测试覆盖窗口重组、
+整篇哈希、元数据和较长 Unicode 命中。这些均使用受控 provider，不能证明模型智能提升。
+
+默认 8 KiB 窗口改变了大来源的响应范围。全文哈希与分页状态必须分别处理；
+尾页的 `truncated` 仍为 true，是否继续取页应比较 `next_offset < bytes`。
+来源窗口不会绕过上下文保护，也不保证顺序读完整篇后累计历史仍装得下。
+参数及兼容规则见 [来源读取接口](../ai-integration.md#56-原始来源检索与分窗读取)。
+
+同日单次真实模型试验未通过。模型成功检索来源并完成三次窗口读取，但没有读取
+包含随机目标值的区间；主任务用了 5/6 次调用后返回三个 null。原生 Run 正常结束，
+独立任务校验仍判 FAIL。未观察到上下文超限、长度截断或工具错误，也没有重跑该例。
+这条证据保留为自主取证与完成判断的缺口；不能用增加调用额度或接受空答案消除失败。
+
+## CASE-20261025：生成策略接线、空提交反馈与预算停止交接
+
+Core 已有的封闭 `GenerationPolicy` 需要由公共 JSONL 入口显式透传。当前工作区
+支持可选 `run.generation_policy`，默认仍为 provider_default；配置和同一个模型 Host
+沿整个 Task 复用。产品 Relay 的 provider 字段白名单是另一条边界：AI Code Review
+当前 Relay 不转发 thinking，且产品仍固定旧 Core。本点不代表产品迁移或线上生效。
+
+公共 AI Code Review 示例原先直接调用 Workspace.checks 验收空补丁，触发检查前提
+异常，无法给模型反馈。示例现仅对“没有补丁”这一已知前提保存 NeedsChanges，
+明确测试进程没有启动；意外错误与未知结果继续阻断。相同两次错误提交在旧版只执行
+一个 Run 并保留 fence，当前版保存两次反馈后按原预算停止，不能将空产物接受为成功。
+
+同次真实模型试验使用固定历史故障副本；当前产品 HEAD 已修复该问题。模型在
+24 次调用内执行了 8 次源码替换，最后一次调用完成最终修改，随后因调用预算耗尽
+停止，没有普通最终答复。Host 没有收到候选，原 Task 仍为 ReconciliationRequired。
+在全新目录独立检查冻结的最终源码，七项原测试全部通过，原 Workspace 和失败收据未改写。
+最终补丁通过了这七项固定回归，原任务仍未验收，预算停止后的交接缺口保留。
+
+Core 的 budget_hit 不只在闭合工具轮次设置，模型调用准入失败也可能设置它。
+Session 的 pending_run 为空或错误文本包含 budget，都不足以证明可安全交接。
+后续需分别评审原生闭合证据、明确停止原因、实际副作用结算和 Host 独立验收，
+保留取消、超时、持久化失败及未知工具效果的阻断。
+上述失败对应[策略与历史修复验证](../../../morrow-agent-jsonl/docs/evidence/generation-policy-20261025.html)
+时点，原 Task 和 fence 不因后续实现改写。
+
+后续实现把预算原因、闭合工具轮次和成功持久化同时绑定到唯一 `agent_end` 的可选
+`termination`，保留原 Run 的失败与公开 `RunResult` 字段。Harness 默认拒绝；显式
+启用的 Execute Host 使用独立快照、专用复核和完整 typed continuation，不构造普通
+Candidate。快照检查对同一次有界读取的 bytes 验证大小、哈希及 JSON 内容，并在回调
+前后复查来源。可信索引只引用当前已提交、已结算的收据。
+
+原生闭合与外部结算必须分开：JSONL 可先取得完整原生 ToolResult，内含外部效果未知的
+标记；此时 Core 可能仍能证明原生轮次闭合，Harness 必须继续拒绝快照。取消任务与
+原生未知效果扫描的调度先后可分别产生 `Cancelled` 或 `ReconciliationRequired`，
+两条路径都要绑定原始未知收据、保留 fence，且不得调用复核或重放工具。测试不能只接受
+两个状态名，也不能要求 Core 的闭合标记替代外部结算。
+
+当前受控与真实模型结果、保留的测试预期失败和未强制覆盖的组合见
+[预算停止复核记录](../../../morrow-agent-jsonl/docs/evidence/closed-budget-snapshot-20261025.html)。
+
+## CASE-20261101：TaskSet 消息准入与重复投递判据
+
+来源：`e229fb9ab8` 基线上的 TaskSet 工作区实现及
+[2026-11-01 验证记录](../../../morrow-agent-harness/docs/evidence/task-set-20261101.md)。
+
+原 Core/Harness 不自动 `finish` Host steering。补充消息可能在模型 Run 停止后、
+Host 验收尚未结束时到达；只检查 Task 是否已有 outcome 不能保证消息还会进入模型。
+TaskSet 因此只承诺 `Queued`，在原 Task 和回调结算后清理 pending，并分别返回
+`AppliedToContext`、`Unapplied` 或 `Unknown`。前者也只证明上下文准入；Host 不能据此
+宣称模型已经处理了新要求，更不能自动将它变为新 Run。各任务独立 buffer、原续作
+沿用原 Arc；长生命周期的去重和恢复由 Host 的持久协调层负责。
+
+本轮首次幂等测试用整个 wire JSON 的原文出现次数断言“只投递一次”，实际得到两次。
+回源与独立审查确认：同一 steering 既进入原生 user 消息，也成为原始来源引用；
+上下文目录会带来源 excerpt。两处可见不代表两次投递。最终测试分别检查原文 user
+消息、同 Run 的 steering 引用和终态回执各自唯一，并核对另一 Task 的请求与来源
+均不含该消息。产品契约没有放宽，Core 投影没有因此修改。
+
+受控屏障测试还覆盖 Host 验收期间入队后成为 `Unapplied`、取消完成等待后仍可收割、
+原工具结算前不能报告取消完成，以及未知副作用仍保留 fence。该证据不覆盖持久
+消息队列、跨进程去重或真实产品部署；两次真实模型排程任务不构成性能提升对照。
+
+## CASE-20261101：持久 Host 与原生恢复边界
+
+来源：`e229fb9ab8` 基线上的可选 `Morrow persistence Host (planned)-host`，见
+[实现与进程验证](../../../../docs/integration.md)。
+原 ara-lite 协调消息保留 24 小时，不能作为长期输入去重依据。Host 使用自己的持久
+事件身份与完整 payload 摘要；业务 Task、worker 和 generation 仍归原 Store，
+模型循环、Session、预算与效果结算仍归 Harness/Core。
+
+投递意图必须早于 steering 调用持久化。崩溃使 Dispatching 变为 Unknown，不能从
+内存回执缺失推断未应用，也不能重投来试。启动意图同样必须早于模型准入；否则
+模型回调已经保存 WaitingHuman/ReadyForReview 后，旧 Running 会覆盖真实阶段。
+准入后立即保留原 TaskHandle，持久化失败也不能丢失运行中的所有权。
+
+人审崩溃恢复须核对原候选、委托实物检查收据、事件 hash、闭合原生 Run 和工作区
+snapshot。审核 pass 可形成独立 recovered_human_review 业务交接，原生 fence 保留，
+不生成 Harness TaskOutcome 或 Released，也不再次启动该 Session。返工才沿原预算
+明确恢复。事件对账、通知 ACK 和业务审核是三种操作，普通 answer 不能替代它们。
+
+原生试验发现 heartbeat 与 submit 会竞争协调 version；两者必须在实际修改边界
+协调。Windows 心跳原子替换还会遇到短暂共享冲突，最终实现仅对已观察的 OS 5/32/33
+做有界重试，保留持续错误，并用真实拒绝删除句柄验证。不同平台的 rename 和锁行为
+需各自验收，不能将 Windows 通过外推为跨平台结论。
+
+## CASE-20261101：视觉输入与能力后端的边界
+
+来源：`a8aa9f4` 基线上的 Core 视觉修复，执行证据见
+[视觉验证记录](../evidence/vision-20261101.md)。原实现已解析 `ModelCaps.input`，
+但构造实际 `Model` 时遗漏了映射；固定 Chat provider 因此不附加工具图片。
+接上图片工具并不能单独证明模型收到或理解了图片。
+
+Core 现在把可信模型声明中的 `text/image` 传给 provider。未声明模态时保留旧文本
+兼容行为，但不推定支持图片。每次 Agent 或摘要请求在调用预算预留前检查实际内容；
+图片遇到未声明视觉能力的模型会明确失败。当前固定 provider 不编码 Assistant
+图片，因此该角色的图片在 Agent 请求中也明确拒绝，不静默省略。
+
+需要压缩的旧图片随摘要请求作为真正的图片块发送。JSON 转录中的图片位置改为
+`summary_image` 标签，包含绝对 `message_index`、`content_index`、MIME 和
+`base64_sha256`；相同标签放在对应附件之前。这里的 hash 是原 base64 字符串的
+SHA256，不是解码图像字节的 hash。转换仅作用于摘要用的克隆，原始 Session/journal
+保持不变。历史引用撤销与未采纳记忆过滤继续先于摘要附件提取。
+
+无图片时仍走原文本摘要及预算语义。旧 `summary_input_with_limit` 文本接口保持
+签名，对图片摘要显式拒绝；运行时使用内部多模态接口。图片附件计入现有序列化字节
+上限，完整请求仍需通过预算检查；这不是图像 token 估算，也不保证供应商的图像
+计费或上下文限制。摘要是模型生成的工作记忆，不能替代原图或业务验证。
+
+能力扩展按以下职责接入：
+
+| 层 | 职责 | Computer Use / QSpin 示例 |
+|---|---|---|
+| Core | 唯一 Agent 循环、通用模态与工具收据、Run 预算和原生历史 | 消费图片，调用普通 AgentTool；不认识 Windows 窗口或 QSpin 方法 |
+| Harness | 跨 Run 预算、验证回调、续作、恢复与未知效果阻断 | 调用 Host 检查实际结果，依据回执推进任务 |
+| Host | 身份授权、能力选择、生命周期、存储位置、脱敏与业务验收 | 启动授权用户会话内的 Windows 后端，限定窗口/设备/操作，验证后置状态 |
+| 工具后端及适配器 | 实现具体能力并遵守执行端授权 | 开源 Windows MCP、QSpin V2/V3 MCP、日志工具；通过 extra_tools 接入 |
+
+插件是工具的交付方式，Host 是选择、授权和管理它的责任方。当前已有 MCP 到
+AgentTool 的适配，不为新增能力另建 Agent 循环或通用插件框架。MCP 错误到产品
+未知效果的语义映射、Windows 用户会话、截图脱敏和 QSpin 验收仍由相应 Host 实现；
+本次视觉修复不自动补齐这些产品接线。普通 JSONL 外部 `tool_reply` 的文本限制也
+不因本次修改改变，图片工具须使用已有保留图片的 MCP/原生工具路径。
