@@ -9,7 +9,18 @@
   "historicalFixtureFiles": 15,
   "sharedAdapterPortFiles": 4,
   "sourceSnapshotsVerified": true,
-  "stagedFilesBeforeSummary": 848,
+  "integratedOnto": "a0c30e0dfb92ac6825d71b9e39cdad69a23a2e5d",
+  "postRebaseVerification": {
+    "base": "a0c30e0dfb92ac6825d71b9e39cdad69a23a2e5d",
+    "sidecarBuild": true,
+    "desktopPassed": 7,
+    "focusedMcpPassed": 13,
+    "mcpClippyDenyWarnings": true,
+    "rootFormatting": true,
+    "actualNodeFileTaskPassed": 1,
+    "actualNodeSkipped": 0,
+    "realOrganizationModel": false
+  },
   "checks": [
     {
       "name": "Reach Node tests",
@@ -76,7 +87,7 @@
     {
       "name": "authored entry and handoff document links",
       "documents": 8,
-      "localLinks": 59,
+      "localLinks": 61,
       "brokenLinks": 0
     },
     {
@@ -95,8 +106,8 @@
     }
   ],
   "actualNode": {
-    "localOnlyEvidence": "apps/reach/work/agent-node-e0fe6647-905c-44a3-94d5-d61dae8170db/asserted.json",
-    "evidenceSha256": "260a2f4ee3faffa09ab89972cd62a26f557a1ab5bea2cfe4ea9b70c03d67ff6b",
+    "localOnlyEvidence": "apps/reach/work/agent-node-3745868d-0089-47a6-9a44-e2f07f9f1651/asserted.json",
+    "evidenceSha256": "1f086a1e482885442fc753b31468900e4f7acc4266799e3a2c6f948eedc7aa85",
     "childOperations": 2,
     "modelRequests": 3,
     "status": "awaiting_review",
@@ -109,7 +120,7 @@
     },
     "morrow-agent-jsonl.exe": {
       "localOnly": true,
-      "sha256": "fbcc0b653464c1ed9d9061021c4d80e94c8dddf172d22082fd8d8722bb05a1f5"
+      "sha256": "f69e7a52a6927b7e3d9d6dc0ef3196a4813fadc9274885a8505394833a25d838"
     }
   },
   "independentReview": {
@@ -210,6 +221,36 @@
       "localOnly": true,
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "bytes": 0
+    },
+    {
+      "path": "tmp/reach-migration-20261113/sidecar-build-upstream.log",
+      "localOnly": true,
+      "sha256": "e9f58eb9ceb259da761e24d073e3c14aac04e7190f35622e0d4be7b1b7297a43",
+      "bytes": 591
+    },
+    {
+      "path": "tmp/reach-migration-20261113/desktop-tests-upstream.log",
+      "localOnly": true,
+      "sha256": "9e0ca19c3419852d985da38271b70ed6940f601d6df388463d37b8d9b268a58f",
+      "bytes": 2020
+    },
+    {
+      "path": "tmp/reach-migration-20261113/mcp-tests-upstream.log",
+      "localOnly": true,
+      "sha256": "fa0ddf0728440d293ff0b88a51d199cab98d7c4b8bf1623f4158c1362e349d17",
+      "bytes": 1390
+    },
+    {
+      "path": "tmp/reach-migration-20261113/mcp-clippy-upstream.log",
+      "localOnly": true,
+      "sha256": "137873937e1e1507cf750a7fd86a155eed27e050a7602ecfb3461594225935f8",
+      "bytes": 341
+    },
+    {
+      "path": "tmp/reach-migration-20261113/node-morrow-integration-upstream.log",
+      "localOnly": true,
+      "sha256": "e84fd07f89cec9a853b2f4cfd72f56b0ccf7a3f74042e67138d201c81bd330b1",
+      "bytes": 361
     }
   ]
 }

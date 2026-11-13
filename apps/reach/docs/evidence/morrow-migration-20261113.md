@@ -2,7 +2,7 @@
 
 作者：Ray Zhang（Ray）。日期：2026-11-13（Asia/Hong_Kong）。
 
-范围：源码迁入、包名/路径/环境变量与独立构建；不是首版、安装、真实模型或 R06 图片恢复验收。父仓基线 `a3e4f2a`，源码来源与逐文件摘要见[迁移清单](../../provenance/migration-20261113.json)。
+范围：源码迁入、包名/路径/环境变量与独立构建；不是首版、安装、真实模型或 R06 图片恢复验收。初始父仓基线 `a3e4f2a`，推送前已接到新增的 `a0c30e0`；原检查及重基后的检查分列，源码来源与逐文件摘要见[迁移清单](../../provenance/migration-20261113.json)。
 
 ## 当前执行记录
 
@@ -36,6 +36,10 @@ node --test --test-concurrency=1 tests/service.test.ts tests/service-process.tes
 
 ## 独立复核与原件
 
+推送前发现远端新增 `a0c30e0`（goal lifecycle / persistent Host management），已将迁移提交接在其后，保留该提交全部源码。对这一基线重新构建侧车，桌面 Host 7/7、MCP stdio/result 属性重点回归 13/13、MCP Clippy `-D warnings`、根库格式检查及真实 Node 文件闭环 1/1 均通过。新实际 Node 原件为 `apps/reach/work/agent-node-3745868d-0089-47a6-9a44-e2f07f9f1651/`；Node 源码与其 23 项检查、服务源码、依赖锁及审计策略未被该上游提交改变。上述数字不与旧基线的测试相加。
+
+未执行父仓整个 Core/Harness/JSONL 全测试或 Reach 全部集成矩阵；不能称完整 workspace/package 或产品验收通过。
+
 独立 Codex 复核 `/root/reach_migration_review` 检查 MCP 原件回执、普通 basis 的 Session 绑定、活动依赖路径、打包脚本和交接范围。发现 Agent 审计仍按成员目录找锁文件；主任务修为根 `../../Cargo.lock`，复核者回查修复后未报告新的高置信缺陷。主任务随后执行真实 Cargo metadata、8 项审计回归及四组完整依赖审计。该结论限于迁移差异，不是完整产品审查。
 
-原始日志保留在本次本机 `tmp/reach-migration-20261113/`；通过的实际 Node 原件在 `apps/reach/work/agent-node-e0fe6647-905c-44a3-94d5-d61dae8170db/`。没有把运行身份、请求/数据库或本机凭据加入 Git。提交内[机器摘要](morrow-migration-20261113.json)记录日志摘要、二进制与检查范围；[迁移清单](../../provenance/migration-20261113.json)记录源字节 SHA 与最终 Git blob SHA，换行转换不冒充字节相同。旧截图崩溃恢复仍为失败/未完成，见[交接](../handoffs/2026-11-13-morrow-subproject.md)。
+原始日志保留在本次本机 `tmp/reach-migration-20261113/`；初始基线通过的实际 Node 原件在 `apps/reach/work/agent-node-e0fe6647-905c-44a3-94d5-d61dae8170db/`，最新基线原件如上。没有把运行身份、请求/数据库或本机凭据加入 Git。提交内[机器摘要](morrow-migration-20261113.json)记录日志摘要、当前二进制与检查范围；[迁移清单](../../provenance/migration-20261113.json)记录源字节 SHA 与最终 Git blob SHA，换行转换不冒充字节相同。旧截图崩溃恢复仍为失败/未完成，见[交接](../handoffs/2026-11-13-morrow-subproject.md)。

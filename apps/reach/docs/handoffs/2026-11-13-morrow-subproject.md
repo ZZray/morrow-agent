@@ -6,7 +6,7 @@
 
 Reach 现在位于 **`ZZray/morrow-agent` 的 `apps/reach/`**，是 Morrow Agent 的远程协助子项目和实际业务用例。后续在这里维护；旧 `E:/repos/ara/apps/reach` 原件保留供核对。本次是源码迁移与 WIP 交接，不是首版交付。基础任务仍为 **0/52**，Desk 选装仍为 **0/5**，以[清单](../task-checklist.md)为准。
 
-当前本地目录 `E:/repos/morrow-agent`，迁移分支 `codex/reach-subproject`，目标远端 `https://github.com/ZZray/morrow-agent.git`，父仓基线 `a3e4f2a`。用户先要求“写一个交接文档 然后提交推送 reach项目”，随后改为迁入 Morrow，并明确上述推送仓库。这覆盖本次迁移、提交和推送的旧限制；服务器访问、远端模型探测、安装、上线仍暂停。
+当前本地目录 `E:/repos/morrow-agent`，迁移分支 `codex/reach-subproject`，目标远端 `https://github.com/ZZray/morrow-agent.git`。初始父仓基线 `a3e4f2a`；推送前发现新增的 goal/management 提交，已将迁移接到 `a0c30e0` 并针对当前侧车重新验证。用户先要求“写一个交接文档 然后提交推送 reach项目”，随后改为迁入 Morrow，并明确上述推送仓库。这覆盖本次迁移、提交和推送的旧限制；服务器访问、远端模型探测、安装、上线仍暂停。
 
 用户最初给出的 `youyuwangzi0001/Morrow` 是另一套 Electron 项目，本次最终提交不包含它的源码、依赖或分支历史。
 
