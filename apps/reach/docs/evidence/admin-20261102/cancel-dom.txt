@@ -1,0 +1,85 @@
+- link "跳到内容":
+  - /url: "#main"
+- complementary:
+  - generic: ↗
+  - generic: Reach
+  - navigation "Reach 导航":
+    - button "设备连接"
+    - button "操作记录"
+  - generic: reach-browser-test
+  - generic: Reach · RY
+  - button "退出登录"
+- banner:
+  - generic: RAY / REACH
+  - generic: 设备与运行管理
+- main:
+  - button "← 返回操作记录"
+  - heading "command.run" [level=1]
+  - paragraph: 设备：Reach 浏览器验收机
+  - button "刷新记录"
+  - term: 操作 ID
+  - definition: e7797a74-42a2-4de5-92ca-cca5a136ab87
+  - term: 请求 ID
+  - definition: 1a031b5c-7bc0-4abc-b7dc-c7f3d072a251
+  - term: 执行状态
+  - definition: 结果未知
+  - term: 投递状态
+  - definition: 已收到回执
+  - term: 取消请求
+  - definition: 已请求（不代表已停止）
+  - term: 发起时间
+  - definition: 2026/11/2 15:19:30
+  - term: 最近更新
+  - definition: 2026/11/2 15:19:52
+  - paragraph: 原操作的实际结果尚未确定。请结合现场和原始证据核对；Reach 不会重新执行这个操作。
+  - heading "原始请求" [level=3]
+  - button "下载原始内容"
+  - generic: "{ \"kind\": \"command.run\", \"command\": \"Write-Output 'browser-cancel-started'; Start-Sleep -Seconds 90\", \"timeoutMs\": 120000 }"
+  - heading "结果记录" [level=3]
+  - button "下载原始内容"
+  - generic: "{ \"effectsMayHaveOccurred\": true, \"processTreeStopped\": true, \"reason\": \"cancel_requested_or_control_lost\" }"
+  - heading "原始回执" [level=2]
+  - generic: 按服务接收顺序 · 不触发重执行
+  - article:
+    - strong: "#1 · 已接收"
+    - generic: 2026/11/2 15:19:31
+    - text: 68c5aad8-e542-48ac-9650-c2025011c27d
+    - heading "回执内容" [level=3]
+    - button "下载原始内容"
+    - generic: "{ \"durable\": true }"
+  - article:
+    - strong: "#2 · 执行中"
+    - generic: 2026/11/2 15:19:32
+    - text: 984eff3a-f62f-44c9-b97a-f8f7ba56a1e6
+    - heading "回执内容" [level=3]
+    - button "下载原始内容"
+    - generic: "{ \"executionIntentSaved\": true }"
+  - article:
+    - strong: "#3 · 输出"
+    - generic: 2026/11/2 15:19:32
+    - text: 844d99ac-ba55-4526-86a0-f68467c992c5
+    - heading "回执内容" [level=3]
+    - button "下载原始内容"
+    - generic: "{ \"pid\": 37852, \"processStarted\": true }"
+  - article:
+    - strong: "#4 · 输出"
+    - generic: 2026/11/2 15:19:32
+    - text: 80cdd4fe-edbe-4f3b-a226-2960b033f407
+    - heading "输出片段" [level=3]
+    - button "下载原始内容"
+    - generic: browser-cancel-started
+  - article:
+    - strong: "#5 · 输出"
+    - generic: 2026/11/2 15:19:33
+    - text: 3caa6984-2734-4ef5-bf9f-640ce113c257
+    - heading "输出片段" [level=3]
+    - button "下载原始内容"
+  - article:
+    - strong: "#6 · 结果未知"
+    - generic: 2026/11/2 15:19:52
+    - text: b7d3ed1f-e846-47f8-87f8-28bb5ccca25f
+    - heading "回执内容" [level=3]
+    - button "下载原始内容"
+    - generic: "{ \"effectsMayHaveOccurred\": true, \"processTreeStopped\": true, \"reason\": \"cancel_requested_or_control_lost\" }"
+  - button "查询新回执"
+  - generic: "当前 #1–6 · 已读至当前末尾"

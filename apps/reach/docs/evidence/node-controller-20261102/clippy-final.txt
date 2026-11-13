@@ -1,0 +1,12 @@
+    Checking tokio v1.53.3
+    Checking rustls-webpki v0.103.16
+    Checking rustls v0.23.46
+    Checking hyper v1.11.1
+    Checking tokio-rustls v0.26.5
+    Checking tower v0.5.3
+    Checking hyper-util v0.1.21
+    Checking tower-http v0.6.11
+    Checking hyper-rustls v0.27.10
+    Checking reqwest v0.12.28
+    Checking ry-reach-node v0.1.0 (E:\repos\ara\apps\reach)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 5.14s

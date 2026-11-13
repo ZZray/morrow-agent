@@ -1,0 +1,14 @@
+{
+  "tls_verified": true,
+  "connect_address": "127.0.0.1:8443",
+  "certificate_name": "118.25.103.226",
+  "public_reachability": false,
+  "anonymous_nodes": 401,
+  "login": 200,
+  "overview": 200,
+  "logout": 200,
+  "logged_out_token": 401,
+  "cookie_jar_used": false,
+  "bootstrap_removed": true,
+  "workbench_modified": false
+}

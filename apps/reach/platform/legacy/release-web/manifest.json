@@ -1,0 +1,15 @@
+{
+  "archive": "stable-web-f2a01bedb53562b8.tar.gz",
+  "sha256": "f2a01bedb53562b86b5e410950f7c7c2363079a5e348a91c83edd92591e05511",
+  "source": "public embedded assets exported from previously running Hub image 8f9d7b28a4b69faba93903d505546fef72638bfbcaeb966ad552115e3f41a025; no runtime state",
+  "files": {
+    "app.js": "32bcc87d876da5b351973bccf7a53300c3fbb1c16ea11f59105c60e449d81673",
+    "home.html": "e21f34c75d92336d8b80695b22aa5472a76949f4fe8eea3df0451623c4185064",
+    "index.html": "de0edd9422cec7dae5694e460ff3d650f7bc4a24aa6def025380cd883194be2c",
+    "login.html": "ab87f3d0f9446b2003aa8872706c33aae926680b48a37c32ec65ffcbe64e06af",
+    "render.js": "5365420e5642562916b264fe98ad07fabc0c06cf63f0ca76796c0ba9e5d9a762",
+    "skills-ui.css": "4e4f954a9c7607f024cc275c80fbd3630eab5774b351ec3c30744eb6eb900ddd",
+    "skills-ui.js": "69577bed52b5f1ebf87cedaefc33abf2270083c6182b92138d0acd9de3e80d34",
+    "style.css": "c36fac69716c44e371f97c5f758da61d3033e0b9d3203dbf4e2c055605a6fd4e"
+  }
+}

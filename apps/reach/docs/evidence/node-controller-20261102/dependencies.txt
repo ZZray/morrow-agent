@@ -1,0 +1,2 @@
+2026-11-02 06:26:59 [ERROR] failed to fetch crates: failed to run cargo: program not found
+2026-11-02 06:26:59 [ERROR] failed to start `cargo metadata`: program not found: program not found

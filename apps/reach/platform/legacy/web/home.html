@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" id="hwThemeColor" content="#0a0d13">
+<title>Ray 的工具箱</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+/* 大气居中门户：品牌 → 搜索 → 卡片 */
+:root{
+  --bg:#f3f5f8; --bg2:#e8ecf2; --ink:#12151c; --soft:#3d4453; --mute:#6b7385;
+  --card:#ffffff; --line:rgba(18,21,28,.10); --line2:rgba(18,21,28,.06);
+  --accent:#1a6b84; --accent-soft:rgba(26,107,132,.12); --glow:rgba(26,107,132,.28);
+  --ok:#1f9d6a; --bad:#c23b3b; --ease:cubic-bezier(.32,.72,0,1);
+  --display:'Outfit',system-ui,sans-serif; --sans:'Instrument Sans',system-ui,sans-serif;
+  --shadow:0 24px 50px -28px rgba(18,21,28,.28), 0 6px 16px -10px rgba(18,21,28,.12);
+}
+html[data-theme="dark"]{
+  --bg:#090b10; --bg2:#10141c; --ink:#eef1f6; --soft:#b8bfcd; --mute:#8a93a5;
+  --card:#151a24; --line:rgba(238,241,246,.10); --line2:rgba(238,241,246,.06);
+  --accent:#7eb8d4; --accent-soft:rgba(126,184,212,.14); --glow:rgba(126,184,212,.22);
+  --ok:#4ec9a0; --bad:#ef6b6b;
+  --shadow:0 28px 60px -28px rgba(0,0,0,.7), 0 8px 18px -12px rgba(0,0,0,.45);
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body.home-page{
+  min-height:100dvh; color:var(--ink); font:15px/1.55 var(--sans);
+  background:
+    radial-gradient(1200px 640px at 50% -18%, color-mix(in srgb,var(--accent) 18%,transparent), transparent 62%),
+    radial-gradient(900px 520px at 85% 100%, color-mix(in srgb,var(--accent) 8%,transparent), transparent 55%),
+    linear-gradient(180deg, var(--bg), var(--bg2));
+  overflow-x:hidden;
+}
+.hw-noise{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.35;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+  background-size:160px; mix-blend-mode:multiply}
+html[data-theme="dark"] .hw-noise{opacity:.18; mix-blend-mode:soft-light}
+
+.hw-theme{
+  position:fixed; top:max(16px,env(safe-area-inset-top)); right:max(16px,env(safe-area-inset-right));
+  z-index:5; width:44px; height:44px; border-radius:999px; cursor:pointer;
+  display:grid; place-items:center; color:var(--ink);
+  background:color-mix(in srgb,var(--card) 88%,transparent); border:1px solid var(--line);
+  box-shadow:var(--shadow); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
+  font:600 15px/1 var(--sans); transition:transform .45s var(--ease), border-color .45s var(--ease);
+}
+.hw-theme:hover{transform:scale(1.05); border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+.hw-theme:active{transform:scale(.96)}
+
+.home-wrap{
+  position:relative; z-index:1; width:min(920px, calc(100% - 36px));
+  margin:0 auto; min-height:100dvh;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:28px; padding:88px 0 calc(48px + env(safe-area-inset-bottom,0px));
+  text-align:center;
+}
+
+.home-hero{animation:hw-rise .8s var(--ease) both}
+.home-kicker{
+  display:inline-flex; align-items:center; gap:8px; margin:0 0 18px;
+  padding:6px 12px; border-radius:999px; border:1px solid var(--line);
+  background:color-mix(in srgb,var(--card) 80%,transparent); color:var(--mute);
+  font:600 11px/1 var(--sans); letter-spacing:.14em; text-transform:uppercase;
+}
+.home-kicker i{width:6px;height:6px;border-radius:50%;background:var(--accent)}
+.home-hero h1{
+  margin:0; font:800 clamp(44px, 8vw, 76px)/.95 var(--display);
+  letter-spacing:-.045em; color:var(--ink);
+}
+.home-hero h1 em{
+  font-style:normal; display:inline;
+  background:linear-gradient(105deg, var(--ink) 15%, var(--accent) 95%);
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+.home-hero p{
+  margin:16px auto 0; max-width:42ch; color:var(--soft); font-size:16px; font-weight:500; line-height:1.7;
+}
+.hw-pill{
+  display:inline-flex; align-items:center; gap:8px; margin-top:18px;
+  padding:8px 14px 8px 12px; border-radius:999px;
+  background:var(--card); border:1px solid var(--line); color:var(--mute);
+  font:600 12px/1 var(--sans); box-shadow:0 1px 0 var(--line2);
+}
+.hw-pill b{width:8px;height:8px;border-radius:50%;background:var(--ok);
+  box-shadow:0 0 0 0 color-mix(in srgb,var(--ok) 50%,transparent); animation:hw-pulse 1.9s var(--ease) infinite}
+.hw-pill.is-bad b{background:var(--bad); animation:none; box-shadow:none}
+.hw-pill.is-bad{color:color-mix(in srgb,var(--bad) 65%,var(--mute))}
+
+/* ---- 中间搜索框 ---- */
+.home-search{
+  width:min(640px,100%); position:relative; animation:hw-rise .85s .06s var(--ease) both;
+}
+.home-search label{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0)}
+.home-search-shell{
+  display:flex; align-items:center; gap:12px;
+  padding:6px 6px 6px 18px; border-radius:999px;
+  background:var(--card); border:1px solid var(--line); box-shadow:var(--shadow);
+  transition:border-color .4s var(--ease), box-shadow .4s var(--ease);
+}
+.home-search-shell:focus-within{
+  border-color:color-mix(in srgb,var(--accent) 45%,var(--line));
+  box-shadow:0 0 0 4px var(--glow), var(--shadow);
+}
+.home-search-shell svg{flex:0 0 auto; width:20px; height:20px; color:var(--mute); stroke:currentColor; fill:none; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round}
+#hwSearch{
+  flex:1; min-width:0; border:0; outline:0; background:transparent;
+  color:var(--ink); font:500 16px/1.4 var(--sans); padding:12px 0;
+}
+#hwSearch::placeholder{color:var(--mute)}
+.home-search-go{
+  flex:0 0 auto; height:44px; padding:0 18px; border:0; border-radius:999px; cursor:pointer;
+  background:var(--ink); color:var(--bg); font:700 13px/1 var(--sans);
+  transition:transform .35s var(--ease), opacity .35s var(--ease);
+}
+html[data-theme="dark"] .home-search-go{color:#090b10}
+.home-search-go:hover{transform:scale(1.03)}
+.home-search-go:active{transform:scale(.97)}
+.home-search-hint{margin:10px 0 0; color:var(--mute); font:500 12px/1.4 var(--sans)}
+
+/* ---- 下方卡片 ---- */
+.home-grid{
+  width:100%; display:grid; grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:14px; animation:hw-rise .9s .12s var(--ease) both;
+}
+.home-card{
+  display:flex; flex-direction:column; align-items:flex-start; gap:10px; text-align:left;
+  padding:22px 20px 18px; text-decoration:none; color:inherit;
+  border-radius:22px; background:var(--card); border:1px solid var(--line);
+  box-shadow:var(--shadow);
+  transition:transform .5s var(--ease), border-color .5s var(--ease), box-shadow .5s var(--ease), opacity .35s var(--ease);
+}
+.home-card:hover{
+  transform:translateY(-5px);
+  border-color:color-mix(in srgb,var(--accent) 35%,var(--line));
+  box-shadow:0 32px 64px -30px color-mix(in srgb,var(--accent) 30%,rgba(18,21,28,.35));
+}
+.home-card.is-hidden{display:none}
+.home-card.is-active{border-color:color-mix(in srgb,var(--accent) 55%,var(--line)); box-shadow:0 0 0 3px var(--glow), var(--shadow)}
+.hw-ico{
+  width:44px; height:44px; border-radius:14px; display:grid; place-items:center;
+  background:var(--accent-soft); color:var(--accent); border:1px solid color-mix(in srgb,var(--accent) 20%,transparent);
+}
+.hw-ico svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.65;stroke-linecap:round;stroke-linejoin:round}
+.home-card b{font:700 16px/1.25 var(--display); letter-spacing:-.02em; color:var(--ink)}
+.home-card small{color:var(--mute); font-size:13px; line-height:1.55; font-weight:500}
+.home-card em{font-style:normal; margin-top:auto; padding-top:8px; font:600 12px/1 var(--sans); color:var(--accent)}
+
+.home-empty{
+  display:none; width:100%; padding:28px 18px; border-radius:18px; border:1px dashed var(--line);
+  color:var(--mute); font:500 14px/1.5 var(--sans); animation:hw-rise .4s var(--ease) both;
+}
+.home-empty.is-show{display:block}
+
+.home-foot{
+  color:var(--mute); font:500 12.5px/1.7 var(--sans); animation:hw-rise .95s .18s var(--ease) both;
+}
+.home-foot a{color:var(--soft); text-decoration:none; border-bottom:1px solid color-mix(in srgb,var(--mute) 35%,transparent)}
+.home-foot a:hover{color:var(--accent); border-color:var(--accent)}
+
+@keyframes hw-rise{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+@keyframes hw-pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--ok) 50%,transparent)}70%{box-shadow:0 0 0 9px transparent}100%{box-shadow:0 0 0 0 transparent}}
+
+@media (max-width:640px){
+  .home-wrap{gap:22px; padding-top:96px}
+  .home-grid{grid-template-columns:1fr}
+  .home-search-go{padding:0 14px}
+  .home-hero h1{font-size:clamp(40px, 12vw, 56px)}
+}
+@media (prefers-reduced-motion: reduce){
+  .home-hero,.home-search,.home-grid,.home-foot,.hw-pill b{animation:none}
+  .home-card,.hw-theme,.home-search-go{transition:none}
+}
+</style>
+<script>
+(function(){
+  var THEME_KEY = 'handwave.console.theme';
+  var map = {glass:'dark',obsidian:'dark',default:'dark',mist:'light'};
+  function sysTheme(){
+    return (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
+  }
+  function currentTheme(){
+    var stored = null;
+    try { stored = localStorage.getItem(THEME_KEY); } catch (e) {}
+    stored = map[stored] || stored;
+    return (stored === 'dark' || stored === 'light') ? stored : sysTheme();
+  }
+  function syncChrome(t){
+    var meta = document.getElementById('hwThemeColor');
+    if (meta) meta.setAttribute('content', t === 'light' ? '#f3f5f8' : '#090b10');
+  }
+  function syncIcon(){
+    var btn = document.getElementById('hwTheme');
+    if (btn) btn.textContent = (document.documentElement.getAttribute('data-theme') === 'dark') ? '☾' : '☀';
+  }
+  function apply(){
+    var t = currentTheme();
+    document.documentElement.setAttribute('data-theme', t);
+    syncChrome(t);
+    syncIcon();
+  }
+  apply();
+  document.addEventListener('DOMContentLoaded', function(){
+    apply();
+    var btn = document.getElementById('hwTheme');
+    if (btn) btn.addEventListener('click', function(){
+      var next = (document.documentElement.getAttribute('data-theme') === 'dark') ? 'light' : 'dark';
+      try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
+      apply();
+    });
+  });
+  if (window.matchMedia) {
+    var mq = window.matchMedia('(prefers-color-scheme: light)');
+    var onChange = function(){ apply(); };
+    if (mq.addEventListener) mq.addEventListener('change', onChange);
+    else if (mq.addListener) mq.addListener(onChange);
+  }
+})();
+</script>
+</head>
+<body class="home-page">
+  <button type="button" class="hw-theme" id="hwTheme" aria-label="切换深浅主题" title="切换深浅主题">☾</button>
+  <div class="hw-noise" aria-hidden="true"></div>
+
+  <div class="home-wrap">
+    <header class="home-hero">
+      <span class="home-kicker"><i></i> Personal toolbox</span>
+      <h1>Ray <em>的工具箱</em></h1>
+      <p>一台云主机上的个人工具集。搜索或点选进入，权限各自独立。</p>
+      <span class="hw-pill" id="hwPill"><b></b><span id="hwStatus">检测中…</span></span>
+    </header>
+
+    <form class="home-search" id="hwSearchForm" role="search" action="#" autocomplete="off">
+      <label for="hwSearch">搜索工具</label>
+      <div class="home-search-shell">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="hwSearch" type="search" name="q" placeholder="搜索工具：工作台、OMP、下载、状态…" enterkeyhint="go">
+        <button type="submit" class="home-search-go">进入</button>
+      </div>
+      <div class="home-search-hint" id="hwSearchHint">回车打开第一个匹配项</div>
+    </form>
+
+    <nav class="home-grid" id="hwGrid" aria-label="工具入口">
+      <a class="home-card" href="/login" data-keys="handwave 工作台 聊天 agent 任务 审批 登录">
+        <span class="hw-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-8 8H4l2.4-2.9A8 8 0 1 1 21 12z"/><path d="M9 11h6M9 14h4"/></svg></span>
+        <b>Reach Desk 工作台</b>
+        <small>远程握手协作台：聊天、本机 Agent、任务板与审批。</small>
+        <em>/login →</em>
+      </a>
+      <a class="home-card" href="/omp/" data-keys="omp 网关 模型 key 缓存 路由">
+        <span class="hw-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="2.6"/><circle cx="18" cy="8" r="2.6"/><circle cx="10" cy="18" r="2.6"/><path d="M8.4 6.8 15.5 8M7 8.4l2 7M16 10.3l-4.4 6"/></svg></span>
+        <b>OMP 网关</b>
+        <small>模型路由、Key 池与缓存统计 WebUI。</small>
+        <em>/omp/ →</em>
+      </a>
+      <a class="home-card" href="/download" data-keys="下载 被控端 node 安装包 zip exe 客户端">
+        <span class="hw-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg></span>
+        <b>下载被控端</b>
+        <small>免登录获取安装包。双击即可上线，等待工作台允许。</small>
+        <em>/download →</em>
+      </a>
+      <a class="home-card" href="/healthz" data-keys="服务 状态 探活 healthz hub">
+        <span class="hw-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 12h4l2.5-6 4 12L16 12h5"/></svg></span>
+        <b>服务状态</b>
+        <small>网关与 hub 探活、缓存命中概览。</small>
+        <em>/healthz →</em>
+      </a>
+    </nav>
+    <div class="home-empty" id="hwEmpty">没有匹配的工具，试试「工作台」「下载」「OMP」。</div>
+
+    <footer class="home-foot">
+      ray toolbox · Reach Desk · <a href="/download">下载被控端</a> · 入网仅需 node_token
+    </footer>
+  </div>
+
+<script>
+(function(){
+  function setStatus(ok, text){
+    var el = document.getElementById('hwStatus');
+    var pill = document.getElementById('hwPill');
+    if (el) el.textContent = text;
+    if (pill) pill.classList.toggle('is-bad', !ok);
+  }
+  fetch('/healthz', {credentials:'same-origin'}).then(function(r){
+    setStatus(!!r.ok, r.ok ? '服务在线' : '服务异常');
+  }).catch(function(){ setStatus(false, '服务异常'); });
+
+  var input = document.getElementById('hwSearch');
+  var form = document.getElementById('hwSearchForm');
+  var cards = Array.prototype.slice.call(document.querySelectorAll('.home-card'));
+  var empty = document.getElementById('hwEmpty');
+  var hint = document.getElementById('hwSearchHint');
+
+  function visibleCards(){
+    return cards.filter(function(c){ return !c.classList.contains('is-hidden'); });
+  }
+  function markActive(){
+    cards.forEach(function(c){ c.classList.remove('is-active'); });
+    var vis = visibleCards();
+    if (vis[0]) vis[0].classList.add('is-active');
+    if (empty) empty.classList.toggle('is-show', vis.length === 0);
+    if (hint) hint.textContent = vis.length ? ('回车打开「' + (vis[0].querySelector('b')||{}).textContent + '」') : '无匹配项';
+  }
+  function filter(){
+    var q = (input && input.value || '').trim().toLowerCase();
+    cards.forEach(function(c){
+      var keys = ((c.getAttribute('data-keys') || '') + ' ' + c.textContent).toLowerCase();
+      var hit = !q || keys.indexOf(q) !== -1;
+      c.classList.toggle('is-hidden', !hit);
+    });
+    markActive();
+  }
+  if (input) {
+    input.addEventListener('input', filter);
+    input.addEventListener('keydown', function(e){
+      if (e.key === 'Escape') { input.value = ''; filter(); }
+    });
+  }
+  if (form) {
+    form.addEventListener('submit', function(e){
+      e.preventDefault();
+      var vis = visibleCards();
+      if (vis[0] && vis[0].href) window.location.href = vis[0].href;
+    });
+  }
+  markActive();
+})();
+</script>
+</body>
+</html>

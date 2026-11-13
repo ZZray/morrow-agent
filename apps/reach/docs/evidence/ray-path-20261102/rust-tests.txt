@@ -1,0 +1,10 @@
+   Compiling ry-reach-node v0.1.0 (E:\repos\ara\apps\reach)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.76s
+     Running unittests src\node\main.rs (E:\usr\var\cache\rust-target\reach\debug\deps\reach-5814a3b7aee41b68.exe)
+
+running 2 tests
+test api::tests::base_address_preserves_only_the_supported_mount ... ok
+test ledger::tests::failed_outbox_insert_rolls_back_admission_and_terminal_state ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.23s
+

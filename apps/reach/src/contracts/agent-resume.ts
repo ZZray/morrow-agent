@@ -1,0 +1,15 @@
+// Copyright (c) Ray Zhang. Host attestations are accepted only against the original service ledger.
+import {z} from 'zod';
+import {identifier} from './protocol.ts';
+import {agentReviewBindingSchema} from './agent-review.ts';
+import {nativeConsumptionSchema} from '../service/agent-budgets.ts';
+export const resumeHash=z.string().regex(/^[a-f0-9]{64}$/);
+export const nativeReference=z.strictObject({path:z.string().min(1).max(32768),sha256:resumeHash});
+export const resumePlanSchema=agentReviewBindingSchema.extend({consumedRuns:z.number().int().min(0).max(4),consumedCalls:z.number().int().min(0).max(32)});
+export const resumeArgumentsSchema=agentReviewBindingSchema.extend({childId:identifier,offset:z.number().int().min(0).max(4194304),length:z.number().int().min(1).max(65536)});
+const image=z.strictObject({path:z.string().min(1).max(32768),root:z.string().min(1).max(32768),sha256:resumeHash,bytes:z.number().int().positive().max(8*1024*1024),mime_type:z.literal('image/png'),width:z.number().int().positive().max(8192),height:z.number().int().positive().max(8192)});
+const toolSettlement=z.discriminatedUnion('kind',[z.strictObject({kind:z.literal('not_executed')}),z.strictObject({kind:z.literal('completed'),output:z.string().max(196608),images:z.array(image).max(4).default([])}),z.strictObject({kind:z.literal('failed'),output:z.string().max(196608)})]);
+export const nativeResumeReceiptSchema=z.strictObject({committed:z.literal(true),settlement:z.literal('Settled'),tool_calls:z.array(z.strictObject({call_id:z.string().min(1).max(4096),settlement:toolSettlement})).max(16),evidence:z.array(z.string().min(1).max(32768)).min(1).max(128)});
+export const resumeReconcileSchema=agentReviewBindingSchema.extend({planSha256:resumeHash,snapshotSha256:resumeHash,reviewJson:z.string().min(1).max(196608),reviewSha256:resumeHash,nativeReceiptJson:z.string().min(1).max(196608),nativeReceiptSha256:resumeHash,consumption:nativeConsumptionSchema,originalTask:nativeReference,review:nativeReference});
+export const resumeAdmissionSchema=agentReviewBindingSchema.extend({receiptSha256:resumeHash,runId:identifier,fence:nativeReference,resume:nativeReference,admission:nativeReference,nativeAdmission:z.strictObject({task_id:identifier,run_id:identifier,run_number:z.number().int().min(1).max(4),criteria_revision:z.literal('reach-receipt-integrity-v1'),authorization_revision:resumeHash,session_path:z.string().min(1).max(32768),remaining_calls:z.number().int().min(1).max(32),deadline_unix_ms:z.number().int().positive(),max_seconds:z.number().int().positive()}),sessionPath:z.string().min(1).max(32768),deadlineLocalUnixMs:z.number().int().positive()});
+export const resumeFinalSchema=z.strictObject({receiptSha256:resumeHash,snapshotSha256:resumeHash,terminal:nativeReference,outcome:nativeReference,lastRunId:identifier,observedCalls:z.number().int().min(0).max(32),fencePresence:z.literal('Released'),localCallbacksFinished:z.literal(true),sidecarJoined:z.literal(true),ownedProcessesEmpty:z.literal(true)});

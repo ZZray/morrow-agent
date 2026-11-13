@@ -1,0 +1,39 @@
+{
+  "sources": [
+    {
+      "sha256": "2cb3b08c1ddd72497a1bd4ec544775f8cfe3e85494e1cf2d1eee0376c0ce19b6",
+      "path": "src/service/store.ts"
+    },
+    {
+      "sha256": "7f73215875f9288c24770aa4b23655a151b4d86fe29e4553c5923e964e2c1cc1",
+      "path": "src/service/server.ts"
+    },
+    {
+      "sha256": "32c49bd8ae8d347f82d56721db827c12c861c55102369537a3b42415646bf966",
+      "path": "src/service/ray-login.ts"
+    },
+    {
+      "sha256": "9f0397d7763c5456e975f7aa1e086c6447b5a5ad13b10956f460b4b015bee8e0",
+      "path": "tests/ray-login.test.ts"
+    },
+    {
+      "sha256": "1c8496691883784156e302214405127ee1113f2bdc2c77838b14109bab686032",
+      "path": "deploy/update-ray-service.py"
+    }
+  ],
+  "parent": "snapshot.json",
+  "artifacts": [
+    {
+      "sha256": "05d25e8c84eb3ebf5dafe856deedd9de41cf651a58d2961aa9146def3991d1cf",
+      "path": "work/reach-ray-sso-stable-20261102.tar.gz"
+    },
+    {
+      "sha256": "2d687c59a0cf4380e5f8eb329efb8a01d5950c5060f7d3d4cc0ba4ad332f9a0a",
+      "path": "dist/admin/admin.js"
+    },
+    {
+      "sha256": "3b21deba87a5df87b19942a7b9557ab842ff92147e5103125d1d4a2b45fe7bd9",
+      "path": "E:\\workspace\\ray-front-reach\\bin\\ray-front-linux-amd64"
+    }
+  ]
+}

@@ -1,0 +1,616 @@
+{
+  "manifestSha256": "a8d27f6e688de21b5cb3445fef07ea4b48b40f5279b9a2ac6c6401a07a0d2db0",
+  "sources": [
+    {
+      "path": "apps/reach/Cargo.lock",
+      "current": "b5e45d7a8c3408c2de531b67c397044a56727f272674529e0714302e82f72d1c",
+      "snapshot": "b5e45d7a8c3408c2de531b67c397044a56727f272674529e0714302e82f72d1c",
+      "expected": "b5e45d7a8c3408c2de531b67c397044a56727f272674529e0714302e82f72d1c",
+      "match": true
+    },
+    {
+      "path": "apps/reach/Cargo.toml",
+      "current": "5b8c0c6b4a87a6955ab2a056367004d20623ae4e76ff2714d5c168718be2724f",
+      "snapshot": "5b8c0c6b4a87a6955ab2a056367004d20623ae4e76ff2714d5c168718be2724f",
+      "expected": "5b8c0c6b4a87a6955ab2a056367004d20623ae4e76ff2714d5c168718be2724f",
+      "match": true
+    },
+    {
+      "path": "apps/reach/assets/brand/reach.ico",
+      "current": "fe2ee6dfef2435aa8cc3a660c9c4abe263f30bf35522a1f27f4b902356cb5fda",
+      "snapshot": "fe2ee6dfef2435aa8cc3a660c9c4abe263f30bf35522a1f27f4b902356cb5fda",
+      "expected": "fe2ee6dfef2435aa8cc3a660c9c4abe263f30bf35522a1f27f4b902356cb5fda",
+      "match": true
+    },
+    {
+      "path": "apps/reach/build.rs",
+      "current": "6f161f616229b14f572b5b736779d9cbc3fef87d3574e165d72555cc2fd92af7",
+      "snapshot": "6f161f616229b14f572b5b736779d9cbc3fef87d3574e165d72555cc2fd92af7",
+      "expected": "6f161f616229b14f572b5b736779d9cbc3fef87d3574e165d72555cc2fd92af7",
+      "match": true
+    },
+    {
+      "path": "apps/reach/bun.lock",
+      "current": "da563d6cb9f6557c8c0a039d7a4820b2b32179f642ad91e15099921fd35cc4b3",
+      "snapshot": "da563d6cb9f6557c8c0a039d7a4820b2b32179f642ad91e15099921fd35cc4b3",
+      "expected": "da563d6cb9f6557c8c0a039d7a4820b2b32179f642ad91e15099921fd35cc4b3",
+      "match": true
+    },
+    {
+      "path": "apps/reach/desktop/Cargo.lock",
+      "current": "1630e92784910a3d9849274cd0df4f2b1e53589fa64e95d54acfdaecdeaf0396",
+      "snapshot": "1630e92784910a3d9849274cd0df4f2b1e53589fa64e95d54acfdaecdeaf0396",
+      "expected": "1630e92784910a3d9849274cd0df4f2b1e53589fa64e95d54acfdaecdeaf0396",
+      "match": true
+    },
+    {
+      "path": "apps/reach/desktop/Cargo.toml",
+      "current": "4114c1c6f9bf5c777a7ddd99e4df6b9f4f488c18ae4bb000cdd7246a889c4986",
+      "snapshot": "4114c1c6f9bf5c777a7ddd99e4df6b9f4f488c18ae4bb000cdd7246a889c4986",
+      "expected": "4114c1c6f9bf5c777a7ddd99e4df6b9f4f488c18ae4bb000cdd7246a889c4986",
+      "match": true
+    },
+    {
+      "path": "apps/reach/desktop/build.rs",
+      "current": "5a45efefab2cc1272e2797443f1f8e63eaa17d075c546d16a9af7727f28cc426",
+      "snapshot": "5a45efefab2cc1272e2797443f1f8e63eaa17d075c546d16a9af7727f28cc426",
+      "expected": "5a45efefab2cc1272e2797443f1f8e63eaa17d075c546d16a9af7727f28cc426",
+      "match": true
+    },
+    {
+      "path": "apps/reach/desktop/runtime/config.toml",
+      "current": "610f208450cd36f5d9fb25ab59279f3df36f8ba018660246f441f7f9cb6b91f1",
+      "snapshot": "610f208450cd36f5d9fb25ab59279f3df36f8ba018660246f441f7f9cb6b91f1",
+      "expected": "610f208450cd36f5d9fb25ab59279f3df36f8ba018660246f441f7f9cb6b91f1",
+      "match": true
+    },
+    {
+      "path": "apps/reach/desktop/src/capture.rs",
+      "current": "1b55009df0f1dd1ba4dddd54f5cd3b2e3f35a487c1ba5fe3acc7748c3022f195",
+      "snapshot": "1b55009df0f1dd1ba4dddd54f5cd3b2e3f35a487c1ba5fe3acc7748c3022f195",
+      "expected": "1b55009df0f1dd1ba4dddd54f5cd3b2e3f35a487c1ba5fe3acc7748c3022f195",
+      "match": true
+    },
+    {
+      "path": "apps/reach/desktop/src/main.rs",
+      "current": "e439fdde1003085333176ac8b3c7bf1afb646b45dca40e86f1759b564070cd5e",
+      "snapshot": "e439fdde1003085333176ac8b3c7bf1afb646b45dca40e86f1759b564070cd5e",
+      "expected": "e439fdde1003085333176ac8b3c7bf1afb646b45dca40e86f1759b564070cd5e",
+      "match": true
+    },
+    {
+      "path": "apps/reach/desktop/src/session.rs",
+      "current": "594c155ace634ed25c5f77d0e6c7441860f4ee645d5b5800b70ec6dca0712f14",
+      "snapshot": "594c155ace634ed25c5f77d0e6c7441860f4ee645d5b5800b70ec6dca0712f14",
+      "expected": "594c155ace634ed25c5f77d0e6c7441860f4ee645d5b5800b70ec6dca0712f14",
+      "match": true
+    },
+    {
+      "path": "apps/reach/desktop/src/supervise.rs",
+      "current": "e02202fcd711bf6959248eb98ebea6ee74dd6ba703a6f23c1e5d971cc10515ca",
+      "snapshot": "e02202fcd711bf6959248eb98ebea6ee74dd6ba703a6f23c1e5d971cc10515ca",
+      "expected": "e02202fcd711bf6959248eb98ebea6ee74dd6ba703a6f23c1e5d971cc10515ca",
+      "match": true
+    },
+    {
+      "path": "apps/reach/dist/admin/admin.js",
+      "current": "ad21d58196eac4eb0d04b944e1f808dac4abf62787f7a066576f09ec17d0e77f",
+      "snapshot": "ad21d58196eac4eb0d04b944e1f808dac4abf62787f7a066576f09ec17d0e77f",
+      "expected": "ad21d58196eac4eb0d04b944e1f808dac4abf62787f7a066576f09ec17d0e77f",
+      "match": true
+    },
+    {
+      "path": "apps/reach/dist/admin/artifacts.js",
+      "current": "e8dad4f454199bd881ebeee15fc712a7e040ef80abae59abe12a55d3f9f4ef76",
+      "snapshot": "e8dad4f454199bd881ebeee15fc712a7e040ef80abae59abe12a55d3f9f4ef76",
+      "expected": "e8dad4f454199bd881ebeee15fc712a7e040ef80abae59abe12a55d3f9f4ef76",
+      "match": true
+    },
+    {
+      "path": "apps/reach/package.json",
+      "current": "3d3152b0b84e123e733ea9790080b01c8a2f764ecf1a8917a3ed9a699dc47938",
+      "snapshot": "3d3152b0b84e123e733ea9790080b01c8a2f764ecf1a8917a3ed9a699dc47938",
+      "expected": "3d3152b0b84e123e733ea9790080b01c8a2f764ecf1a8917a3ed9a699dc47938",
+      "match": true
+    },
+    {
+      "path": "apps/reach/packaging/windows/setup/src/main.rs",
+      "current": "e132bb8ebbd9c40cd89cf927c890436bfb2e672684b9802d343c0d4562724c7e",
+      "snapshot": "e132bb8ebbd9c40cd89cf927c890436bfb2e672684b9802d343c0d4562724c7e",
+      "expected": "e132bb8ebbd9c40cd89cf927c890436bfb2e672684b9802d343c0d4562724c7e",
+      "match": true
+    },
+    {
+      "path": "apps/reach/src/README.md",
+      "current": "680a60181d2b860f844e1d6c474468e16db02a2916b45c7f2d091ed3239bd3f8",
+      "snapshot": "680a60181d2b860f844e1d6c474468e16db02a2916b45c7f2d091ed3239bd3f8",
+      "expected": "680a60181d2b860f844e1d6c474468e16db02a2916b45c7f2d091ed3239bd3f8",
+      "match": true
+    },
+    {
+      "path": "apps/reach/src/admin/.gitkeep",
+      "current": "7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6",
+      "snapshot": "7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6",
+      "expected": "7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6",
+      "match": true
+    },
+    {
+      "path": "apps/reach/src/admin/admin.css",
+      "current": "1acb56472033a318d1da35b89c3287bcc6561cc484932547b52fc7f208ad8442",
+      "snapshot": "1acb56472033a318d1da35b89c3287bcc6561cc484932547b52fc7f208ad8442",
+      "expected": "1acb56472033a318d1da35b89c3287bcc6561cc484932547b52fc7f208ad8442",
+      "match": true
+    },
+    {
+      "path": "apps/reach/src/admin/admin.ts",
+      "current": "cde7dfb08b2065a485f8783e2469f56e189f978b75b879c86768470e3b3ae680",
+      "snapshot": "cde7dfb08b2065a485f8783e2469f56e189f978b75b879c86768470e3b3ae680",
+      "expected": "cde7dfb08b2065a485f8783e2469f56e189f978b75b879c86768470e3b3ae680",
+      "match": true
+    },
+    {
+      "path": "apps/reach/src/admin/artifacts.ts",
+      "current": "e9e5febc5fd28f20f82173a8514ccd451b0f6dceee0049d96450ac69e7d941c7",
+      "snapshot": "e9e5febc5fd28f20f82173a8514ccd451b0f6dceee0049d96450ac69e7d941c7",
+      "expected": "e9e5febc5fd28f20f82173a8514ccd451b0f6dceee0049d96450ac69e7d941c7",
+      "match": true
+    },
+    {
+      "path": "apps/reach/src/admin/index.html",
+      "current": "0dcf674b3b7e036c5566290e2ab5ae495a834ff85c3240358ec4adb63321a6cb",
+      "snapshot": "0dcf674b3b7e036c5566290e2ab5ae495a834ff85c3240358ec4adb63321a6cb",
+      "expected": "0dcf674b3b7e036c5566290e2ab5ae495a834ff85c3240358ec4adb63321a6cb",
+      "match": true
+    },
+    {
+      "path": "apps/reach/src/contracts/artifacts.ts",
+      "current": "a0b6c1fea031fc9028b450a0703d88793330d3cac9d65012c56296066cb612df",
+      "snapshot": "a0b6c1fea031fc9028b450a0703d88793330d3cac9d65012c56296066cb612df",
+      "expected": "a0b6c1fea031fc9028b450a0703d88793330d3cac9d65012c56296066cb612df",
+      "match": true
+    },
+    {
+      "path": "apps/reach/src/contracts/protocol.ts",
+      "current": "75ed6d2cfacb22f1925675410571620fff6c0184ee122c0bba28924a023d7668",
+      "snapshot": "75ed6d2cfacb22f1925675410571620fff6c0184ee122c0bba28924a023d7668",
+      "expected": "75ed6d2cfacb22f1925675410571620fff6c0184ee122c0bba28924a023d7668",
+      "match": true
+    },
+    {
+      "path": "apps/reach/src/controller/.gitkeep",
+      "current": "7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6",
+      "snapshot": "7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6",
+      "expected": "7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6",
+      "match": true
+    },
+    {
+      "path": "apps/reach/src/controller/artifacts.ts",
+      "current": "d43e4058868b6c36d12f3c1d966934f862088aa830b59d0359ae229005f37568",
+      "snapshot": "d43e4058868b6c36d12f3c1d966934f862088aa830b59d0359ae229005f37568",
+      "expected": "d43e4058868b6c36d12f3c1d966934f862088aa830b59d0359ae229005f37568",
+      "match": true
+    },
+    {
+      "path": "apps/reach/src/controller/client.ts",
+      "current": "ded2051911876f5cac1465c13761e3cc272fefc6e82bf7830eecb7074bb68ee3",
+      "snapshot": "ded2051911876f5cac1465c13761e3cc272fefc6e82bf7830eecb7074bb68ee3",
+      "expected": "ded2051911876f5cac1465c13761e3cc272fefc6e82bf7830eecb7074bb68ee3",
+      "match": true
+    },
+    {
+      "path": "apps/reach/src/controller/main.ts",
+      "current": "cbe198aac5518061f986561431e7a0f059cdd71635c8f81b892f09cea048f3b6",
+      "snapshot": "cbe198aac5518061f986561431e7a0f059cdd71635c8f81b892f09cea048f3b6",
+      "expected": "cbe198aac5518061f986561431e7a0f059cdd71635c8f81b892f09cea048f3b6",
+      "match": true
+    },
+    {
+      "path": "apps/reach/src/controller/mcp.ts",
+      "current": "bf26fdff5d672561ef6690b5a1f9d016c956a0b8317b4e8a01d2921f4168d786",
+      "snapshot": "bf26fdff5d672561ef6690b5a1f9d016c956a0b8317b4e8a01d2921f4168d786",
+      "expected": "bf26fdff5d672561ef6690b5a1f9d016c956a0b8317b4e8a01d2921f4168d786",
+      "match": true
+    },
+    {
+      "path": "apps/reach/src/desktop_pipe.rs",
+      "current": "3edb9dce039e6ad3a37bcca03642ba08e7f041960c29684f16e557be94067561",
+      "snapshot": "3edb9dce039e6ad3a37bcca03642ba08e7f041960c29684f16e557be94067561",
+      "expected": "3edb9dce039e6ad3a37bcca03642ba08e7f041960c29684f16e557be94067561",
+      "match": true
+    },
+    {
+      "path": "apps/reach/src/node/.gitkeep",
+      "current": "7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6",
+      "snapshot": "7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6",
+      "expected": "7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6",
+      "match": true
+    },
+    {
+      "path": "apps/reach/src/node/api.rs",
+      "current": "7f0edd3e2a4229b653bae1f51285395bdf9147740ca7f47383b8f4d5ac44e944",
+      "snapshot": "7f0edd3e2a4229b653bae1f51285395bdf9147740ca7f47383b8f4d5ac44e944",
+      "expected": "7f0edd3e2a4229b653bae1f51285395bdf9147740ca7f47383b8f4d5ac44e944",
+      "match": true
+    },
+    {
+      "path": "apps/reach/src/node/control.rs",
+      "current": "d28b9c8fcaa0c4e770b6fcb68df1443d990ec98e1f8fd879bad440ddd0bab8f2",
+      "snapshot": "d28b9c8fcaa0c4e770b6fcb68df1443d990ec98e1f8fd879bad440ddd0bab8f2",
+      "expected": "d28b9c8fcaa0c4e770b6fcb68df1443d990ec98e1f8fd879bad440ddd0bab8f2",
+      "match": true
+    },
+    {
+      "path": "apps/reach/src/node/desktop.rs",
+      "current": "7bceb529dd0624aa100f12ab4eb965ece98bacf47bc90a44345605a56637c966",
+      "snapshot": "7bceb529dd0624aa100f12ab4eb965ece98bacf47bc90a44345605a56637c966",
+      "expected": "7bceb529dd0624aa100f12ab4eb965ece98bacf47bc90a44345605a56637c966",
+      "match": true
+    },
+    {
+      "path": "apps/reach/src/node/job.rs",
+      "current": "bfafa71b22603f22375a6dec83084825ab45afd74f857467a44235c98a471fc1",
+      "snapshot": "bfafa71b22603f22375a6dec83084825ab45afd74f857467a44235c98a471fc1",
+      "expected": "bfafa71b22603f22375a6dec83084825ab45afd74f857467a44235c98a471fc1",
+      "match": true
+    },
+    {
+      "path": "apps/reach/src/node/ledger.rs",
+      "current": "58965a676f4dd190fdde21b7856143b78a52b6b8a3bc4ea0775fd3d42dafa194",
+      "snapshot": "58965a676f4dd190fdde21b7856143b78a52b6b8a3bc4ea0775fd3d42dafa194",
+      "expected": "58965a676f4dd190fdde21b7856143b78a52b6b8a3bc4ea0775fd3d42dafa194",
+      "match": true
+    },
+    {
+      "path": "apps/reach/src/node/main.rs",
+      "current": "081c337ee4b139f3a17432e363f6405dadf04df02620add6502e20e6e596d314",
+      "snapshot": "081c337ee4b139f3a17432e363f6405dadf04df02620add6502e20e6e596d314",
+      "expected": "081c337ee4b139f3a17432e363f6405dadf04df02620add6502e20e6e596d314",
+      "match": true
+    },
+    {
+      "path": "apps/reach/src/node/pairing.rs",
+      "current": "4198a2e677e5e215812af16fa1f4263f4b2d6980e29005ae53a2e8afd576b2d5",
+      "snapshot": "4198a2e677e5e215812af16fa1f4263f4b2d6980e29005ae53a2e8afd576b2d5",
+      "expected": "4198a2e677e5e215812af16fa1f4263f4b2d6980e29005ae53a2e8afd576b2d5",
+      "match": true
+    },
+    {
+      "path": "apps/reach/src/node/protocol.rs",
+      "current": "31510c646f6878548cbc68ba826d635c1ac1450d07d3431899c34550882f4ac8",
+      "snapshot": "31510c646f6878548cbc68ba826d635c1ac1450d07d3431899c34550882f4ac8",
+      "expected": "31510c646f6878548cbc68ba826d635c1ac1450d07d3431899c34550882f4ac8",
+      "match": true
+    },
+    {
+      "path": "apps/reach/src/node/runtime.rs",
+      "current": "a3b1747b29e6b5cb0561bce085f163a03b797500dbaaaa3645950b236cb786ff",
+      "snapshot": "a3b1747b29e6b5cb0561bce085f163a03b797500dbaaaa3645950b236cb786ff",
+      "expected": "a3b1747b29e6b5cb0561bce085f163a03b797500dbaaaa3645950b236cb786ff",
+      "match": true
+    },
+    {
+      "path": "apps/reach/src/node/windows_desktop.rs",
+      "current": "33797e6bd97b21c63e0b06ba015aaee22d441aa69ab6e5342d208cc89ce8d11f",
+      "snapshot": "33797e6bd97b21c63e0b06ba015aaee22d441aa69ab6e5342d208cc89ce8d11f",
+      "expected": "33797e6bd97b21c63e0b06ba015aaee22d441aa69ab6e5342d208cc89ce8d11f",
+      "match": true
+    },
+    {
+      "path": "apps/reach/src/node/windows_host.rs",
+      "current": "27da04720112e1aedf910decc18e186af7ae977f970d5d91b943ecef0c6c466f",
+      "snapshot": "27da04720112e1aedf910decc18e186af7ae977f970d5d91b943ecef0c6c466f",
+      "expected": "27da04720112e1aedf910decc18e186af7ae977f970d5d91b943ecef0c6c466f",
+      "match": true
+    },
+    {
+      "path": "apps/reach/src/node/worker.rs",
+      "current": "186ae9e6af328ef113790f4b03c0dde8821d3cbb9e7f972ab227ece69f7b36be",
+      "snapshot": "186ae9e6af328ef113790f4b03c0dde8821d3cbb9e7f972ab227ece69f7b36be",
+      "expected": "186ae9e6af328ef113790f4b03c0dde8821d3cbb9e7f972ab227ece69f7b36be",
+      "match": true
+    },
+    {
+      "path": "apps/reach/src/service/.gitkeep",
+      "current": "7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6",
+      "snapshot": "7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6",
+      "expected": "7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6",
+      "match": true
+    },
+    {
+      "path": "apps/reach/src/service/admin.ts",
+      "current": "4c7e812584eb9522f8b4e853f2dce7b0127f75f14703d54819e4f47e3a80cae5",
+      "snapshot": "4c7e812584eb9522f8b4e853f2dce7b0127f75f14703d54819e4f47e3a80cae5",
+      "expected": "4c7e812584eb9522f8b4e853f2dce7b0127f75f14703d54819e4f47e3a80cae5",
+      "match": true
+    },
+    {
+      "path": "apps/reach/src/service/artifacts.ts",
+      "current": "7f4056eeede4525291561bb978e1a4144d509ec88aaff3209aef91cdf586efea",
+      "snapshot": "7f4056eeede4525291561bb978e1a4144d509ec88aaff3209aef91cdf586efea",
+      "expected": "7f4056eeede4525291561bb978e1a4144d509ec88aaff3209aef91cdf586efea",
+      "match": true
+    },
+    {
+      "path": "apps/reach/src/service/errors.ts",
+      "current": "b64a01df31c6183213c7c0675c94e6c93d2a99d9aa669185ecc8988d467ca4b1",
+      "snapshot": "b64a01df31c6183213c7c0675c94e6c93d2a99d9aa669185ecc8988d467ca4b1",
+      "expected": "b64a01df31c6183213c7c0675c94e6c93d2a99d9aa669185ecc8988d467ca4b1",
+      "match": true
+    },
+    {
+      "path": "apps/reach/src/service/main.ts",
+      "current": "39c42f95ea31702f6cc07937bdfcc034453a40ac902e359b3d792bc667cc6c24",
+      "snapshot": "39c42f95ea31702f6cc07937bdfcc034453a40ac902e359b3d792bc667cc6c24",
+      "expected": "39c42f95ea31702f6cc07937bdfcc034453a40ac902e359b3d792bc667cc6c24",
+      "match": true
+    },
+    {
+      "path": "apps/reach/src/service/ray-login.ts",
+      "current": "32c49bd8ae8d347f82d56721db827c12c861c55102369537a3b42415646bf966",
+      "snapshot": "32c49bd8ae8d347f82d56721db827c12c861c55102369537a3b42415646bf966",
+      "expected": "32c49bd8ae8d347f82d56721db827c12c861c55102369537a3b42415646bf966",
+      "match": true
+    },
+    {
+      "path": "apps/reach/src/service/server.ts",
+      "current": "e1446b6a9f9c7dd255e484e029ea4ceeec9db41235a783de20dce3216452a26b",
+      "snapshot": "e1446b6a9f9c7dd255e484e029ea4ceeec9db41235a783de20dce3216452a26b",
+      "expected": "e1446b6a9f9c7dd255e484e029ea4ceeec9db41235a783de20dce3216452a26b",
+      "match": true
+    },
+    {
+      "path": "apps/reach/src/service/store.ts",
+      "current": "1261c9f7557e0507202f20e5c2ab864bdb1cea1d6e9de417859bc16f990c03d4",
+      "snapshot": "1261c9f7557e0507202f20e5c2ab864bdb1cea1d6e9de417859bc16f990c03d4",
+      "expected": "1261c9f7557e0507202f20e5c2ab864bdb1cea1d6e9de417859bc16f990c03d4",
+      "match": true
+    },
+    {
+      "path": "apps/reach/src/windows_identity.rs",
+      "current": "22e2786eff5b3ff406c2b2f404ff4fa80b3aa865f1293d5615c76a4ebec1bd5c",
+      "snapshot": "22e2786eff5b3ff406c2b2f404ff4fa80b3aa865f1293d5615c76a4ebec1bd5c",
+      "expected": "22e2786eff5b3ff406c2b2f404ff4fa80b3aa865f1293d5615c76a4ebec1bd5c",
+      "match": true
+    },
+    {
+      "path": "apps/reach/tests/admin-artifacts.test.ts",
+      "current": "91d4c50925ec1a73e621125f3b7d9a4b10a57b95e77490be0df0a0e659971214",
+      "snapshot": "91d4c50925ec1a73e621125f3b7d9a4b10a57b95e77490be0df0a0e659971214",
+      "expected": "91d4c50925ec1a73e621125f3b7d9a4b10a57b95e77490be0df0a0e659971214",
+      "match": true
+    },
+    {
+      "path": "apps/reach/tests/admin-http.test.ts",
+      "current": "bdf5e1d62667cb4455deb406a1fe419b7a8cae3dfefeef3745fb66afd07f1287",
+      "snapshot": "bdf5e1d62667cb4455deb406a1fe419b7a8cae3dfefeef3745fb66afd07f1287",
+      "expected": "bdf5e1d62667cb4455deb406a1fe419b7a8cae3dfefeef3745fb66afd07f1287",
+      "match": true
+    },
+    {
+      "path": "apps/reach/tests/artifacts.test.ts",
+      "current": "a6a9bc307d4295b476a10ebc2e7fc95f635211fa928b92935303fcd00bc43a19",
+      "snapshot": "a6a9bc307d4295b476a10ebc2e7fc95f635211fa928b92935303fcd00bc43a19",
+      "expected": "a6a9bc307d4295b476a10ebc2e7fc95f635211fa928b92935303fcd00bc43a19",
+      "match": true
+    },
+    {
+      "path": "apps/reach/tests/desktop-chain.integration.test.ts",
+      "current": "b6643ac65ee636a913b8c3899da1820e25ba6587bcafadc9ce91bec8b43dd347",
+      "snapshot": "b6643ac65ee636a913b8c3899da1820e25ba6587bcafadc9ce91bec8b43dd347",
+      "expected": "b6643ac65ee636a913b8c3899da1820e25ba6587bcafadc9ce91bec8b43dd347",
+      "match": true
+    },
+    {
+      "path": "apps/reach/tests/desktop-fixture.ps1",
+      "current": "6c482f06506abfd4b8145de442e6617e9755b728b09590effbc7bdb755c55dd2",
+      "snapshot": "6c482f06506abfd4b8145de442e6617e9755b728b09590effbc7bdb755c55dd2",
+      "expected": "6c482f06506abfd4b8145de442e6617e9755b728b09590effbc7bdb755c55dd2",
+      "match": true
+    },
+    {
+      "path": "apps/reach/tests/native-fixture.ts",
+      "current": "cc0c3cc692ab5ffe69eda11f165e103c7b02ecd1d77e91ea840eadce947396c0",
+      "snapshot": "cc0c3cc692ab5ffe69eda11f165e103c7b02ecd1d77e91ea840eadce947396c0",
+      "expected": "cc0c3cc692ab5ffe69eda11f165e103c7b02ecd1d77e91ea840eadce947396c0",
+      "match": true
+    },
+    {
+      "path": "apps/reach/tests/node.integration.test.ts",
+      "current": "a7f22d37a6caf0f817a3b236c39b69633db66e7d894e166ac0ce9c094012c35b",
+      "snapshot": "a7f22d37a6caf0f817a3b236c39b69633db66e7d894e166ac0ce9c094012c35b",
+      "expected": "a7f22d37a6caf0f817a3b236c39b69633db66e7d894e166ac0ce9c094012c35b",
+      "match": true
+    },
+    {
+      "path": "apps/reach/tests/service-fixture.ts",
+      "current": "9c8fafa8e199ff047f84905b47d1a3c41d881a5dc3b1385bb6e2d51b51e5ba73",
+      "snapshot": "9c8fafa8e199ff047f84905b47d1a3c41d881a5dc3b1385bb6e2d51b51e5ba73",
+      "expected": "9c8fafa8e199ff047f84905b47d1a3c41d881a5dc3b1385bb6e2d51b51e5ba73",
+      "match": true
+    },
+    {
+      "path": "apps/reach/tests/text-artifacts.test.ts",
+      "current": "5904d7f1cbb3a79e4f5855fa9255446c560ac916fdfadc8d6a0d7e649d6473ea",
+      "snapshot": "5904d7f1cbb3a79e4f5855fa9255446c560ac916fdfadc8d6a0d7e649d6473ea",
+      "expected": "5904d7f1cbb3a79e4f5855fa9255446c560ac916fdfadc8d6a0d7e649d6473ea",
+      "match": true
+    },
+    {
+      "path": "apps/reach/tsconfig.admin.json",
+      "current": "a7d2efcf3a5fe01bfb71e1a246e28d65c6e73d512574e500dc24609eb8e68e39",
+      "snapshot": "a7d2efcf3a5fe01bfb71e1a246e28d65c6e73d512574e500dc24609eb8e68e39",
+      "expected": "a7d2efcf3a5fe01bfb71e1a246e28d65c6e73d512574e500dc24609eb8e68e39",
+      "match": true
+    },
+    {
+      "path": "apps/reach/tsconfig.json",
+      "current": "0703256a4d77db607cfc6456904c3e0c0095e402da4e1cd6b831a38225ba6d05",
+      "snapshot": "0703256a4d77db607cfc6456904c3e0c0095e402da4e1cd6b831a38225ba6d05",
+      "expected": "0703256a4d77db607cfc6456904c3e0c0095e402da4e1cd6b831a38225ba6d05",
+      "match": true
+    },
+    {
+      "path": "apps/reach/work/text-artifacts-browser.ts",
+      "current": "1667a8423bf4b44ee21267ddc9ebe72d4c1342b09406c028ae7fa98cf1fb6b3c",
+      "snapshot": "1667a8423bf4b44ee21267ddc9ebe72d4c1342b09406c028ae7fa98cf1fb6b3c",
+      "expected": "1667a8423bf4b44ee21267ddc9ebe72d4c1342b09406c028ae7fa98cf1fb6b3c",
+      "match": true
+    },
+    {
+      "path": "crates/ara-agent-lite-mcp/Cargo.lock",
+      "current": "683bc001b2ab52205ff137fdd7fb32c5ab818d9d6d96b8a2834b5a9e2f35ace8",
+      "snapshot": "683bc001b2ab52205ff137fdd7fb32c5ab818d9d6d96b8a2834b5a9e2f35ace8",
+      "expected": "683bc001b2ab52205ff137fdd7fb32c5ab818d9d6d96b8a2834b5a9e2f35ace8",
+      "match": true
+    },
+    {
+      "path": "crates/ara-agent-lite-mcp/Cargo.toml",
+      "current": "c133ff98dd8091438aeb768d637cb8b1c32ff10bf2365d9f4024b5f073cbd456",
+      "snapshot": "c133ff98dd8091438aeb768d637cb8b1c32ff10bf2365d9f4024b5f073cbd456",
+      "expected": "c133ff98dd8091438aeb768d637cb8b1c32ff10bf2365d9f4024b5f073cbd456",
+      "match": true
+    },
+    {
+      "path": "crates/ara-agent-lite-mcp/src/tool.rs",
+      "current": "713ae5a0f5ac00bc7e409ae80546be6f496cd843fded4aaed1103551509d70e9",
+      "snapshot": "713ae5a0f5ac00bc7e409ae80546be6f496cd843fded4aaed1103551509d70e9",
+      "expected": "713ae5a0f5ac00bc7e409ae80546be6f496cd843fded4aaed1103551509d70e9",
+      "match": true
+    },
+    {
+      "path": "crates/ara-agent-lite-mcp/tests/result_props.rs",
+      "current": "d3ef6dd2c5bd8f2b2470e73b6d571fbcb4e76a9680e6ef606337778630df13ca",
+      "snapshot": "d3ef6dd2c5bd8f2b2470e73b6d571fbcb4e76a9680e6ef606337778630df13ca",
+      "expected": "d3ef6dd2c5bd8f2b2470e73b6d571fbcb4e76a9680e6ef606337778630df13ca",
+      "match": true
+    }
+  ],
+  "binaries": [
+    {
+      "path": "E:\\usr\\var\\cache\\rust-target\\reach-static\\x86_64-pc-windows-msvc\\debug\\reach.exe",
+      "actual": "83297d6d18aa4e0847d09dcfcc345ba2459188f1c347ac2d0f0c35dd9354c4b0",
+      "expected": "83297d6d18aa4e0847d09dcfcc345ba2459188f1c347ac2d0f0c35dd9354c4b0",
+      "bytes": 11884544
+    },
+    {
+      "path": "E:\\usr\\var\\cache\\rust-target\\reach-static\\x86_64-pc-windows-msvc\\debug\\reach-desktop.exe",
+      "actual": "cf03b5d14e55e613a2d2b2a1682a97b2bc492c59200155074b41573198e4a9b1",
+      "expected": "cf03b5d14e55e613a2d2b2a1682a97b2bc492c59200155074b41573198e4a9b1",
+      "bytes": 10942464
+    }
+  ],
+  "evidence": [
+    {
+      "path": "apps/reach/work/text-node-tests-r2.log",
+      "actual": "a9dc8a4fd6923e67dd457e5f915efc8cd9f5c45b4f05cd4f2b2a4256ddaf158d",
+      "expected": "a9dc8a4fd6923e67dd457e5f915efc8cd9f5c45b4f05cd4f2b2a4256ddaf158d",
+      "bytes": 706,
+      "expectedBytes": 706
+    },
+    {
+      "path": "apps/reach/work/text-helper-tests-r2.log",
+      "actual": "9957785f231d3613390b25240cab5278d1901aba8cc5428d91ae87f5323b6e49",
+      "expected": "9957785f231d3613390b25240cab5278d1901aba8cc5428d91ae87f5323b6e49",
+      "bytes": 879,
+      "expectedBytes": 879
+    },
+    {
+      "path": "apps/reach/work/text-mcp-tests-r2.log",
+      "actual": "ddcd0415dfca09ceadf84f005a86f2f7300a6ee550200185c4cf70a567e68ffc",
+      "expected": "ddcd0415dfca09ceadf84f005a86f2f7300a6ee550200185c4cf70a567e68ffc",
+      "bytes": 2337,
+      "expectedBytes": 2337
+    },
+    {
+      "path": "apps/reach/work/text-node-clippy-r2.log",
+      "actual": "17d5fcc95f92fab961514ee49876067d02291141dac1d1d8c36255a7ae456d2f",
+      "expected": "17d5fcc95f92fab961514ee49876067d02291141dac1d1d8c36255a7ae456d2f",
+      "bytes": 3886,
+      "expectedBytes": 3886
+    },
+    {
+      "path": "apps/reach/work/text-helper-clippy-r2.log",
+      "actual": "2c6f020d1d114ff38d2b54c169720ebd292a178c64bf6c4989c66855528790d3",
+      "expected": "2c6f020d1d114ff38d2b54c169720ebd292a178c64bf6c4989c66855528790d3",
+      "bytes": 4418,
+      "expectedBytes": 4418
+    },
+    {
+      "path": "apps/reach/work/text-mcp-clippy-r2.log",
+      "actual": "cf78297e5ec13e8dee328c4901908caa01b3775322f9626370eb5ade9e344cae",
+      "expected": "cf78297e5ec13e8dee328c4901908caa01b3775322f9626370eb5ade9e344cae",
+      "bytes": 1992,
+      "expectedBytes": 1992
+    },
+    {
+      "path": "apps/reach/work/text-node-build-r2.log",
+      "actual": "717a9bcb5b82001788f2fa74ec6ac49aebd73717438e516cc35b4c7611e25e0d",
+      "expected": "717a9bcb5b82001788f2fa74ec6ac49aebd73717438e516cc35b4c7611e25e0d",
+      "bytes": 134,
+      "expectedBytes": 134
+    },
+    {
+      "path": "apps/reach/work/text-helper-build-r2.log",
+      "actual": "29e1fc768f2fd53145ae87aaaba44a7a9f00855b521fabe9d97353e7da51feab",
+      "expected": "29e1fc768f2fd53145ae87aaaba44a7a9f00855b521fabe9d97353e7da51feab",
+      "bytes": 150,
+      "expectedBytes": 150
+    },
+    {
+      "path": "apps/reach/work/text-artifacts-ts-r2.log",
+      "actual": "58579e3c1ebcfb02637c4d47278cbf53683d3fec5ca64fe3c8218aae61c20fda",
+      "expected": "58579e3c1ebcfb02637c4d47278cbf53683d3fec5ca64fe3c8218aae61c20fda",
+      "bytes": 1466,
+      "expectedBytes": 1466
+    },
+    {
+      "path": "apps/reach/work/text-admin-final-r3.log",
+      "actual": "98890240fcbe3c210046c52a128ea3d9bf728a2012bdd696200cab3de0083a96",
+      "expected": "98890240fcbe3c210046c52a128ea3d9bf728a2012bdd696200cab3de0083a96",
+      "bytes": 898,
+      "expectedBytes": 898
+    },
+    {
+      "path": "apps/reach/work/text-desktop-chain-r2.log",
+      "actual": "285c36ea0a3ddb3eda8b7e44c1a5d66ea0d06cab6bfa471149885436b3cfc642",
+      "expected": "285c36ea0a3ddb3eda8b7e44c1a5d66ea0d06cab6bfa471149885436b3cfc642",
+      "bytes": 597,
+      "expectedBytes": 597
+    },
+    {
+      "path": "apps/reach/work/text-node-integration-r2.log",
+      "actual": "d1caef2c32d28b4656f0a70fb7c46de2a4d4f410869914e32ea7617a7c692bf7",
+      "expected": "d1caef2c32d28b4656f0a70fb7c46de2a4d4f410869914e32ea7617a7c692bf7",
+      "bytes": 317,
+      "expectedBytes": 317
+    },
+    {
+      "path": "apps/reach/work/text-browser-6ee0835e-5d51-4224-89a3-9e102e0249c2/metadata.json",
+      "actual": "80d385e289b5c1207abb18535d56f95453975e9ec94239ebdac8cf35ef12a5b0",
+      "expected": "80d385e289b5c1207abb18535d56f95453975e9ec94239ebdac8cf35ef12a5b0",
+      "bytes": 838,
+      "expectedBytes": 838
+    },
+    {
+      "path": "apps/reach/work/text-browser-6ee0835e-5d51-4224-89a3-9e102e0249c2/range-requests.jsonl",
+      "actual": "a48eea60e81f176d71986858b49501793257e4f57340333de26a8de827a60b3d",
+      "expected": "a48eea60e81f176d71986858b49501793257e4f57340333de26a8de827a60b3d",
+      "bytes": 2200,
+      "expectedBytes": 2200
+    },
+    {
+      "path": "apps/reach/work/text-browser-6ee0835e-5d51-4224-89a3-9e102e0249c2/preview.png",
+      "actual": "997e91533ac8441063f8e24c1a3cda82f6d495d573d0cab07ac62238ddb8d926",
+      "expected": "997e91533ac8441063f8e24c1a3cda82f6d495d573d0cab07ac62238ddb8d926",
+      "bytes": 67537,
+      "expectedBytes": 67537
+    },
+    {
+      "path": "apps/reach/work/desktop-chain-7ebeb16c-a851-4ea9-9e87-324b6b2e68fc/full-text/full-text-evidence.json",
+      "actual": "29cde96579ef5bd218c2113826cbe8d3c2731bc807da6ce7a869c61bd76b2972",
+      "expected": "29cde96579ef5bd218c2113826cbe8d3c2731bc807da6ce7a869c61bd76b2972",
+      "bytes": 571,
+      "expectedBytes": 571
+    }
+  ]
+}

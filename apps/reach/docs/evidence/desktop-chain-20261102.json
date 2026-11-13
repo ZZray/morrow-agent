@@ -1,0 +1,3137 @@
+{
+  "scope": "ordinary Windows development Node -> HTTP -> Controller MCP desktop/image chain; no production WTS/installer/model acceptance",
+  "base": "90f2b1cdd138129e2d331d89a37d70852e849739",
+  "branch": "dev",
+  "binary": {
+    "path": "E:\\usr\\var\\cache\\rust-target\\reach-node\\debug\\reach.exe",
+    "bytes": 11467776,
+    "sha256": "287c0e8879c58ab6de383e86db2b205eae30d2e32b708b106004941d466bfb57"
+  },
+  "desktopBinary": {
+    "path": "E:\\usr\\var\\cache\\rust-target\\reach-desktop\\debug\\reach-desktop.exe",
+    "bytes": 10453504,
+    "sha256": "659124f14824239f2dce96067648df4eb61cdd37e150cdfe050180d284181b5e"
+  },
+  "nodeRuntime": {
+    "path": "E:\\usr\\local\\bin\\node.exe",
+    "bytes": 93580104,
+    "sha256": "ba4e6d110e8c1592a1ecd390f6b05f3da124b13871a5be62b341a07a853c6c32"
+  },
+  "nodeVersion": "v24.21.0",
+  "python": {
+    "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Scripts\\python.exe",
+    "bytes": 241152,
+    "sha256": "babea051efaae5d792dc469f3575268db9ab8200bd0ff6feaedd5469a94cf956"
+  },
+  "pythonVersion": "3.14.7",
+  "backendVersion": "0.8.8+reach.3",
+  "backendSource": "94de2b4a5e1f2c52aad6003d5e60af28f57b8c8b",
+  "nativeRuns": [
+    "E:\\repos\\ara\\apps\\reach\\work\\desktop-chain-f078dd98-1fdb-4caa-b8e1-77f8fc574a08",
+    "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1"
+  ],
+  "sourceFiles": [
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\Cargo.lock",
+      "bytes": 43531,
+      "sha256": "1fc450d7b3cc8cacfd6cfac9c53fae5ffd1b339ec11ef655f48617459087570b"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\Cargo.toml",
+      "bytes": 1239,
+      "sha256": "124e8353d15dc494e67837ec047759cabf2191f603bf56fba51eae1bc6e2b854"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\bun.lock",
+      "bytes": 1374,
+      "sha256": "35d71d6dd52cd18fccfff086f6b7a53c8aad1fce0b3e51f45056d61d354c7471"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\deny.toml",
+      "bytes": 669,
+      "sha256": "8111537b75ee17e6b3c273f7d308d8e14ab92a5aa7bebadf73350be40a289171"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\desktop\\Cargo.lock",
+      "bytes": 62681,
+      "sha256": "a57fccb4052d66d48cffc77a08baf8fe4e0a5d1d7ee51393d1680e9f73a23843"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\desktop\\Cargo.toml",
+      "bytes": 1285,
+      "sha256": "47ff218a2d2982bfec91d331afbef138a39ca029be6e4e31f7b4fb429b79b2a2"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\desktop\\README.md",
+      "bytes": 3983,
+      "sha256": "9939b903c91ee196ca44cb41b6a10a2de97d1ce79e1d85b6402d627beb7fc015"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\desktop\\deny.toml",
+      "bytes": 363,
+      "sha256": "a2c289313753bfdc8b6a6ce194ceb14ab73ba644a4252d991ba1d07e39baf033"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\desktop\\runtime\\config.toml",
+      "bytes": 131,
+      "sha256": "610f208450cd36f5d9fb25ab59279f3df36f8ba018660246f441f7f9cb6b91f1"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\desktop\\runtime\\prepare.ps1",
+      "bytes": 1824,
+      "sha256": "d6ccb4be5b5cb2bc68ea4690e30eb030f631aff21d220052d8b6ae6f119aaff4"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\desktop\\runtime\\upstream-LICENSE.md",
+      "bytes": 1089,
+      "sha256": "53550ce178bf217fa31e71e3193d2b1133626be0a4f2077dda249032a43a6bc6"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\desktop\\runtime\\uv.lock",
+      "bytes": 265321,
+      "sha256": "82d284ca678f00e4a46189632ceedaf3ad5a6dee168b6a89180ece3eef808896"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\desktop\\runtime\\windows-mcp.patch",
+      "bytes": 30075,
+      "sha256": "86e64b711fbdf539167e5293939e68a56b6aeba7027b498c721a1074ce57c8b2"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\desktop\\src\\capture.rs",
+      "bytes": 4330,
+      "sha256": "20fb1102640a505a02275b34b8e8791d3eba3502ef05d8ba95c1c688ba426f46"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\desktop\\src\\main.rs",
+      "bytes": 14280,
+      "sha256": "b6c921cc55f14364880ad0dfe8d4e382e68574424f0425ae49fef162d6275d11"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\desktop\\src\\session.rs",
+      "bytes": 6702,
+      "sha256": "594c155ace634ed25c5f77d0e6c7441860f4ee645d5b5800b70ec6dca0712f14"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\desktop\\src\\supervise.rs",
+      "bytes": 2505,
+      "sha256": "5a031c02f878b48535acada013f05c17147a95f398d999f87ffac4cae7c65eb5"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\package.json",
+      "bytes": 869,
+      "sha256": "586f72dc0e678e7ab5bfb64fe4624af596f5483d30196e894254a76cdf45243c"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\src\\README.md",
+      "bytes": 2115,
+      "sha256": "680a60181d2b860f844e1d6c474468e16db02a2916b45c7f2d091ed3239bd3f8"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\src\\admin\\.gitkeep",
+      "bytes": 2,
+      "sha256": "7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\src\\admin\\admin.css",
+      "bytes": 7442,
+      "sha256": "6a76c7287182a6e4233ebc4a2d60ed86d21125989fa7c493b286a780552c0d1b"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\src\\admin\\admin.ts",
+      "bytes": 24725,
+      "sha256": "29d09a8ebcbdd1de70c4599d90c653fcfae5b3dab6f566212184f5dc08f8cf63"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\src\\admin\\index.html",
+      "bytes": 608,
+      "sha256": "667ea0f308385ade944319a4145bbf3672629c845a7962c31c51d8674e0dcf35"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\src\\contracts\\artifacts.ts",
+      "bytes": 2049,
+      "sha256": "7049114e29346f4b1be3a4489276cd1d0fc708d373babe4e8721b41c29366ddc"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\src\\contracts\\protocol.ts",
+      "bytes": 4483,
+      "sha256": "3caeb59ae76bb8411ed06753cbd4eb587ee8565981b230799538517b94de3c15"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\src\\controller\\.gitkeep",
+      "bytes": 2,
+      "sha256": "7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\src\\controller\\artifacts.ts",
+      "bytes": 4221,
+      "sha256": "a230d788c0eadf0b02af7a64a77bda86b0c43ba1d630ac63dfc7bf85570f8bee"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\src\\controller\\client.ts",
+      "bytes": 5732,
+      "sha256": "ded2051911876f5cac1465c13761e3cc272fefc6e82bf7830eecb7074bb68ee3"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\src\\controller\\main.ts",
+      "bytes": 3917,
+      "sha256": "0df65ca3062d6b83a2eabcdff6048ed5f7033b242e5e776c362999b6ee6e3f6b"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\src\\controller\\mcp.ts",
+      "bytes": 6923,
+      "sha256": "4c13ff09d0b7df33a7a9b7deccbd5415d4986c13aa7c17bdb228354569919fdf"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\src\\node\\.gitkeep",
+      "bytes": 2,
+      "sha256": "7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\src\\node\\api.rs",
+      "bytes": 4040,
+      "sha256": "7f0edd3e2a4229b653bae1f51285395bdf9147740ca7f47383b8f4d5ac44e944"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\src\\node\\control.rs",
+      "bytes": 4018,
+      "sha256": "b6bb766ef7d7c298f2154e4d11b684f8b1c342386759e1e81cb827d49e24a546"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\src\\node\\desktop.rs",
+      "bytes": 15110,
+      "sha256": "480942878eb6e0aa0a423ae8525a3f55de44ede0ba35423803c00c013be9bb2f"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\src\\node\\job.rs",
+      "bytes": 3258,
+      "sha256": "83c9e479df6e97acc86e7bf56e6013385c45701c696b15987d245add97400d5f"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\src\\node\\ledger.rs",
+      "bytes": 12768,
+      "sha256": "58965a676f4dd190fdde21b7856143b78a52b6b8a3bc4ea0775fd3d42dafa194"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\src\\node\\main.rs",
+      "bytes": 4476,
+      "sha256": "dc04619931d275f91a539adb813b59970064b08e52cec6ea7be4d0aeb9d97d91"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\src\\node\\pairing.rs",
+      "bytes": 5086,
+      "sha256": "4198a2e677e5e215812af16fa1f4263f4b2d6980e29005ae53a2e8afd576b2d5"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\src\\node\\protocol.rs",
+      "bytes": 2008,
+      "sha256": "31510c646f6878548cbc68ba826d635c1ac1450d07d3431899c34550882f4ac8"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\src\\node\\runtime.rs",
+      "bytes": 19080,
+      "sha256": "c528dc4e5e4f90c778c2882c086bc24da5ebc8d193fc2073df2cdbd176d4ba94"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\src\\node\\windows_host.rs",
+      "bytes": 20554,
+      "sha256": "abbc5a9a8ac153496489252ac117a9251968b2454b04288576014bbb551c277e"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\src\\node\\worker.rs",
+      "bytes": 8990,
+      "sha256": "2d403f059ce30d091db14e23a8467a21c2faade32a9a9cee13e727efaaaac333"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\src\\service\\.gitkeep",
+      "bytes": 2,
+      "sha256": "7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\src\\service\\admin.ts",
+      "bytes": 1757,
+      "sha256": "4741aad3c2ba6f23eff2e6f2478de739cdc628c4f85f9659ab2fd7129fae5df3"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\src\\service\\artifacts.ts",
+      "bytes": 6763,
+      "sha256": "fefcee940c3c51f9367702cc16d441a8b80fa4226754a60106c475b9c071d1c2"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\src\\service\\errors.ts",
+      "bytes": 413,
+      "sha256": "b64a01df31c6183213c7c0675c94e6c93d2a99d9aa669185ecc8988d467ca4b1"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\src\\service\\main.ts",
+      "bytes": 1815,
+      "sha256": "39c42f95ea31702f6cc07937bdfcc034453a40ac902e359b3d792bc667cc6c24"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\src\\service\\ray-login.ts",
+      "bytes": 4297,
+      "sha256": "32c49bd8ae8d347f82d56721db827c12c861c55102369537a3b42415646bf966"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\src\\service\\server.ts",
+      "bytes": 14211,
+      "sha256": "e1446b6a9f9c7dd255e484e029ea4ceeec9db41235a783de20dce3216452a26b"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\src\\service\\store.ts",
+      "bytes": 25129,
+      "sha256": "1261c9f7557e0507202f20e5c2ab864bdb1cea1d6e9de417859bc16f990c03d4"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\src\\windows_identity.rs",
+      "bytes": 1613,
+      "sha256": "22e2786eff5b3ff406c2b2f404ff4fa80b3aa865f1293d5615c76a4ebec1bd5c"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\tests\\admin-http.test.ts",
+      "bytes": 7810,
+      "sha256": "e2e46bc823e8ef60b057cfc48592dec4283ee368a85b1ca01213eee4c73b0a49"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\tests\\artifacts.test.ts",
+      "bytes": 6689,
+      "sha256": "a6a9bc307d4295b476a10ebc2e7fc95f635211fa928b92935303fcd00bc43a19"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\tests\\deploy-path.test.py",
+      "bytes": 6353,
+      "sha256": "208b5f4948586fe29ba8a60904a7d885f156c4e8adf40ce61bede021640a8790"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\tests\\desktop-chain.integration.test.ts",
+      "bytes": 12459,
+      "sha256": "f953824f266af4d0ab689229cf48e1fdf29f6686cd4593f80ecba46e7df1b153"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\tests\\desktop-fixture.ps1",
+      "bytes": 2509,
+      "sha256": "6c482f06506abfd4b8145de442e6617e9755b728b09590effbc7bdb755c55dd2"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\tests\\desktop-runtime.test.py",
+      "bytes": 4905,
+      "sha256": "a896a04e76e8950d879526ceb66aa5bc406bb1cd20b382cc866effc768932b6b"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\tests\\desktop.integration.test.ts",
+      "bytes": 11081,
+      "sha256": "2fe41ba24aecb07d24860d662e830597316733982c37b69aeabc4f0b6e30c0a3"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\tests\\native-fixture.ts",
+      "bytes": 9561,
+      "sha256": "cc0c3cc692ab5ffe69eda11f165e103c7b02ecd1d77e91ea840eadce947396c0"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\tests\\node.integration.test.ts",
+      "bytes": 38998,
+      "sha256": "ffe82da388988c9de901cb14dc9be06db09cf2051848e47b7dead09d479d7082"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\tests\\ray-login.test.ts",
+      "bytes": 7101,
+      "sha256": "9f0397d7763c5456e975f7aa1e086c6447b5a5ad13b10956f460b4b015bee8e0"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\tests\\service-fixture.ts",
+      "bytes": 3323,
+      "sha256": "9c8fafa8e199ff047f84905b47d1a3c41d881a5dc3b1385bb6e2d51b51e5ba73"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\tests\\service-process.test.ts",
+      "bytes": 4784,
+      "sha256": "10b3e11d80f5816b479c38c25a137783f5a564dba29d2bad870bdc41f69b87d3"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\tests\\service.test.ts",
+      "bytes": 14695,
+      "sha256": "044ef461b583523d7bbb1010107c599e56da501a3f181dbf36f1ef125d502381"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\tests\\windows-installer.test.ps1",
+      "bytes": 12375,
+      "sha256": "8fc07fd06b35b6b0c1245af90eaf4bd4e1dddafb007d27b1af857ea21f6d5913"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\tsconfig.admin.json",
+      "bytes": 291,
+      "sha256": "a7d2efcf3a5fe01bfb71e1a246e28d65c6e73d512574e500dc24609eb8e68e39"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\tsconfig.json",
+      "bytes": 386,
+      "sha256": "0703256a4d77db607cfc6456904c3e0c0095e402da4e1cd6b831a38225ba6d05"
+    },
+    {
+      "path": "E:\\repos\\ara\\crates\\ara-agent-lite-core\\Cargo.toml",
+      "bytes": 1976,
+      "sha256": "35d41800b3f03060cedb07d59394175f845f5e866f0be46b7303385d45ddcb8e"
+    },
+    {
+      "path": "E:\\repos\\ara\\crates\\ara-agent-lite-core\\src\\agent.rs",
+      "bytes": 162898,
+      "sha256": "0ae5047f19aa2988e9502b158723d856972799469e7050e41e6d06c73acb78b1"
+    },
+    {
+      "path": "E:\\repos\\ara\\crates\\ara-agent-lite-core\\src\\analysis_tools.rs",
+      "bytes": 38902,
+      "sha256": "5ba3cd7b652e28cfa358b7e9aaa3336403e282b1a5f488b782f147faa58966ae"
+    },
+    {
+      "path": "E:\\repos\\ara\\crates\\ara-agent-lite-core\\src\\builtin_skills\\skill-creator\\SKILL.md",
+      "bytes": 2061,
+      "sha256": "cf7043858b9fb470d90da317650b4806546a5181229ed87a3c0aa371b6bb5343"
+    },
+    {
+      "path": "E:\\repos\\ara\\crates\\ara-agent-lite-core\\src\\builtin_skills\\skill-installer\\SKILL.md",
+      "bytes": 2465,
+      "sha256": "f558421906f02ffa310b0e6f290f0bb59c320100aa6a197d5e1102f42adb22bd"
+    },
+    {
+      "path": "E:\\repos\\ara\\crates\\ara-agent-lite-core\\src\\compaction_refresh.rs",
+      "bytes": 22538,
+      "sha256": "d9c16d7050cbd13a72b5fd6564e26bfa874a2919ad1788e1d1018d6809aa58ef"
+    },
+    {
+      "path": "E:\\repos\\ara\\crates\\ara-agent-lite-core\\src\\completion_gate.rs",
+      "bytes": 4126,
+      "sha256": "6e2fdd3cf9e450325e207c6db39632269df29185f661023f46db9573fc7aad61"
+    },
+    {
+      "path": "E:\\repos\\ara\\crates\\ara-agent-lite-core\\src\\context_memory.rs",
+      "bytes": 68408,
+      "sha256": "8848ab308f025f3db079e81a24a8d6797952fc549c2314d6bf9eaa1833ae619c"
+    },
+    {
+      "path": "E:\\repos\\ara\\crates\\ara-agent-lite-core\\src\\effect_status.rs",
+      "bytes": 4687,
+      "sha256": "9cb7f79b9803c6c68a630dccdf1ddcc84df33b470a9becf7e4c2cd7d9540ed40"
+    },
+    {
+      "path": "E:\\repos\\ara\\crates\\ara-agent-lite-core\\src\\environment_library.rs",
+      "bytes": 28113,
+      "sha256": "0cac59c818f16a3c9f559164c8acb2d3966fa666aff58ef18bb0cc67a9b2876f"
+    },
+    {
+      "path": "E:\\repos\\ara\\crates\\ara-agent-lite-core\\src\\environment_library_tests.rs",
+      "bytes": 18573,
+      "sha256": "2e14cad857021d55f7a37c84bbf33fdf372187ba34712fe4143110921109c676"
+    },
+    {
+      "path": "E:\\repos\\ara\\crates\\ara-agent-lite-core\\src\\environment_prompt.md",
+      "bytes": 4175,
+      "sha256": "f25a0c964d3f58a30834ba8c3de08b66f074917fd89d51dd03749c68ae52e509"
+    },
+    {
+      "path": "E:\\repos\\ara\\crates\\ara-agent-lite-core\\src\\environment_tools.rs",
+      "bytes": 4473,
+      "sha256": "1ef67040df5880e53cf6550217ac36975ffe493d742266563f78eb888cb102b0"
+    },
+    {
+      "path": "E:\\repos\\ara\\crates\\ara-agent-lite-core\\src\\events.rs",
+      "bytes": 15235,
+      "sha256": "d6909fdc14ceed9830fa8c3c6a04f63622a15273c40931f6aeec4facaaecfdc4"
+    },
+    {
+      "path": "E:\\repos\\ara\\crates\\ara-agent-lite-core\\src\\execution.rs",
+      "bytes": 23465,
+      "sha256": "4e611ee10a1bd0269da32e5b372c12d930096860d653d4d969b88d69e62ce69b"
+    },
+    {
+      "path": "E:\\repos\\ara\\crates\\ara-agent-lite-core\\src\\experience.rs",
+      "bytes": 22155,
+      "sha256": "ddbab5072325068bc442b54b05c98adde717a3c248ed3f73aede6d50ea0232ac"
+    },
+    {
+      "path": "E:\\repos\\ara\\crates\\ara-agent-lite-core\\src\\experience_memory_tests.rs",
+      "bytes": 15520,
+      "sha256": "8cdfb2be450dae87914765da2deddc75500b1626db91bbe519cb5d7c271c6dda"
+    },
+    {
+      "path": "E:\\repos\\ara\\crates\\ara-agent-lite-core\\src\\file_discovery.rs",
+      "bytes": 19312,
+      "sha256": "e893f4131bd9eb11666383f17b45d93f3f0ce1182d94d6d8284312aa824cb900"
+    },
+    {
+      "path": "E:\\repos\\ara\\crates\\ara-agent-lite-core\\src\\file_edits.rs",
+      "bytes": 18812,
+      "sha256": "a89d900441f50b43376363c84e13c2d6342dda0eaae1b60b4dcc930c35fd1f5b"
+    },
+    {
+      "path": "E:\\repos\\ara\\crates\\ara-agent-lite-core\\src\\goal_runtime.rs",
+      "bytes": 3184,
+      "sha256": "e2b4049aecdf11c667c1e255c1821c875617a48ef6e6968dd39683d086e287ed"
+    },
+    {
+      "path": "E:\\repos\\ara\\crates\\ara-agent-lite-core\\src\\length_recovery.rs",
+      "bytes": 12811,
+      "sha256": "f53a115708db2292173a951287c1fb0cdd39a500116241566029fdf7f09aa0ce"
+    },
+    {
+      "path": "E:\\repos\\ara\\crates\\ara-agent-lite-core\\src\\lib.rs",
+      "bytes": 1241,
+      "sha256": "175858b5d756f0893b5d5de4eb056847af316fe4dfc3452b9789cd4b6d3d069e"
+    },
+    {
+      "path": "E:\\repos\\ara\\crates\\ara-agent-lite-core\\src\\local_tools.rs",
+      "bytes": 82981,
+      "sha256": "18e9e0632549fef3e27010bc3715d07d01ad3d07bfc09268d1388b6867583620"
+    },
+    {
+      "path": "E:\\repos\\ara\\crates\\ara-agent-lite-core\\src\\managed_jobs.rs",
+      "bytes": 105371,
+      "sha256": "c7c7b8329bd8800b0a6516b4614ba647b68a58f48ad87afd7bf43e1e69c5ae8d"
+    },
+    {
+      "path": "E:\\repos\\ara\\crates\\ara-agent-lite-core\\src\\model.rs",
+      "bytes": 12689,
+      "sha256": "a3a29de54505c004bea0adf84897bff6ac70457b2061fdea817b928a03449d6f"
+    },
+    {
+      "path": "E:\\repos\\ara\\crates\\ara-agent-lite-core\\src\\model_caps.rs",
+      "bytes": 10176,
+      "sha256": "59ab3811390ae58e322e12eda0814b8bb95a29a998098c27130a7fd43cf4cb38"
+    },
+    {
+      "path": "E:\\repos\\ara\\crates\\ara-agent-lite-core\\src\\model_telemetry.rs",
+      "bytes": 6210,
+      "sha256": "e37bc58593cf4c534cdacd274cf82a4695fcc3e947877639d8fb93cd7735760a"
+    },
+    {
+      "path": "E:\\repos\\ara\\crates\\ara-agent-lite-core\\src\\output_limit.rs",
+      "bytes": 4369,
+      "sha256": "72fcaf1234cadfccffa84060c8970448b3b95dc9803b59e5909189938304b50b"
+    },
+    {
+      "path": "E:\\repos\\ara\\crates\\ara-agent-lite-core\\src\\process_capture_tests.rs",
+      "bytes": 3291,
+      "sha256": "332eacc4a7daa0b7f315c290c55998d46dce279a889dafdf7a8dff620ab55a6e"
+    },
+    {
+      "path": "E:\\repos\\ara\\crates\\ara-agent-lite-core\\src\\process_output.rs",
+      "bytes": 12533,
+      "sha256": "c2ca62c6ab9732a1817f0d584dc7387ca943db0ceff9195b869fe8fd4d0691f7"
+    },
+    {
+      "path": "E:\\repos\\ara\\crates\\ara-agent-lite-core\\src\\project_rules.rs",
+      "bytes": 3884,
+      "sha256": "8cdc8b73ceb59e09cb0ff7e960cde89e4ec9b28855b198981be61a24f94ca6ce"
+    },
+    {
+      "path": "E:\\repos\\ara\\crates\\ara-agent-lite-core\\src\\reference_window_tests.rs",
+      "bytes": 7520,
+      "sha256": "ed29f66ea125957d18f7c9851d8c2f11475cd88ac4e7824ac37e0f9dbf419c3a"
+    },
+    {
+      "path": "E:\\repos\\ara\\crates\\ara-agent-lite-core\\src\\run_policies.rs",
+      "bytes": 3356,
+      "sha256": "7fc013f2778b923d8435ce126151785bed70350c0ef2649132fa04b10f8fd456"
+    },
+    {
+      "path": "E:\\repos\\ara\\crates\\ara-agent-lite-core\\src\\script_tools.rs",
+      "bytes": 20312,
+      "sha256": "5391e73c3236ad538c977a25384b0419853d4883fafac3edfe83116beb500f37"
+    },
+    {
+      "path": "E:\\repos\\ara\\crates\\ara-agent-lite-core\\src\\session_fork.rs",
+      "bytes": 8131,
+      "sha256": "948d7f00a621715d8938331de96ba24ece1f9b8dc98b6d914c466ffe9ad26ea9"
+    },
+    {
+      "path": "E:\\repos\\ara\\crates\\ara-agent-lite-core\\src\\session_journal.rs",
+      "bytes": 35270,
+      "sha256": "a01fee8c5002293c6ae2463ce3f08075609aee3e4ac0a1010368929f0aa6391f"
+    },
+    {
+      "path": "E:\\repos\\ara\\crates\\ara-agent-lite-core\\src\\skill_library.rs",
+      "bytes": 33212,
+      "sha256": "e44a0029096dcb7e3b006d33de8908eaeeb5feea89e45e19d5f157c55e69d6f0"
+    },
+    {
+      "path": "E:\\repos\\ara\\crates\\ara-agent-lite-core\\src\\skill_library_tests.rs",
+      "bytes": 14341,
+      "sha256": "a8f74dfc045198ce3c5626b7c5aef97d828cb6650d27345ce499c914d0d8a0a5"
+    },
+    {
+      "path": "E:\\repos\\ara\\crates\\ara-agent-lite-core\\src\\steering.rs",
+      "bytes": 4801,
+      "sha256": "4a6d0b8356df0bc03d3b43e1fcc39d4d3fd0a845c85df43ce610055cca1a41f1"
+    },
+    {
+      "path": "E:\\repos\\ara\\crates\\ara-agent-lite-core\\src\\stuck_detector.rs",
+      "bytes": 16350,
+      "sha256": "aa7f4616f23d5e5029f2f832305ffab7750cf5ce9514f17ea01753b485b0ed8c"
+    },
+    {
+      "path": "E:\\repos\\ara\\crates\\ara-agent-lite-core\\src\\system_capabilities.rs",
+      "bytes": 12278,
+      "sha256": "d780c6ff3f46b16bbd9888fb413e0aa13baa8d83b9533fc93d2df88ba32ef074"
+    },
+    {
+      "path": "E:\\repos\\ara\\crates\\ara-agent-lite-core\\src\\terminal_emulator.rs",
+      "bytes": 6524,
+      "sha256": "c123fcb699beaa2b671c8d0ead2e6c18fc50e378ab1ee6951da31c6eeeb42962"
+    },
+    {
+      "path": "E:\\repos\\ara\\crates\\ara-agent-lite-core\\src\\terminal_process.rs",
+      "bytes": 33544,
+      "sha256": "e2970dcf26d9d46d5408d29f4b29bf9aa23569ec348e49f3a2361ef082e8791b"
+    },
+    {
+      "path": "E:\\repos\\ara\\crates\\ara-agent-lite-core\\src\\termination.rs",
+      "bytes": 5929,
+      "sha256": "d894edbed7a8edfc78982925ade6660330ead157784e182f2853e55b79a74920"
+    },
+    {
+      "path": "E:\\repos\\ara\\crates\\ara-agent-lite-core\\src\\web_research_prompt.md",
+      "bytes": 2452,
+      "sha256": "17304805ee5d6f9e67d5ca7d66277b0a3b0687b53e48afc0c30a1eafb33cd5e6"
+    },
+    {
+      "path": "E:\\repos\\ara\\crates\\ara-agent-lite-core\\src\\web_tools.rs",
+      "bytes": 29889,
+      "sha256": "fd4bd2bd9d8005be763903800544b547295605cd4648e3991b26381a52f8d856"
+    },
+    {
+      "path": "E:\\repos\\ara\\crates\\ara-agent-lite-core\\src\\web_tools_tests.rs",
+      "bytes": 17804,
+      "sha256": "00f6fe3d28297f1a77d7102364ccd6e00492bf7f6d2f8e524c41a5e5664019a3"
+    },
+    {
+      "path": "E:\\repos\\ara\\crates\\ara-agent-lite-mcp\\Cargo.toml",
+      "bytes": 1398,
+      "sha256": "1eeef5f317ae21c2793facd8e531e4cd09365225f90164a0c2f8d31b65749dd1"
+    },
+    {
+      "path": "E:\\repos\\ara\\crates\\ara-agent-lite-mcp\\src\\client.rs",
+      "bytes": 8940,
+      "sha256": "5b73bc4dd180b478be3367c59d741a91e0c29c000dd39ba948341cc9443920cc"
+    },
+    {
+      "path": "E:\\repos\\ara\\crates\\ara-agent-lite-mcp\\src\\config.rs",
+      "bytes": 13129,
+      "sha256": "f0b03fdca8fa4d89cc38bceb2356adea9b7f332a1e09f62987d076c470a4d82f"
+    },
+    {
+      "path": "E:\\repos\\ara\\crates\\ara-agent-lite-mcp\\src\\lib.rs",
+      "bytes": 10337,
+      "sha256": "597d0118c502b7c0ea9a18bf4fa33948669282eee3e265b56a822bdbb0d61f8b"
+    },
+    {
+      "path": "E:\\repos\\ara\\crates\\ara-agent-lite-mcp\\src\\names.rs",
+      "bytes": 5799,
+      "sha256": "bce2229f57867b2dc29ebbf71251a5b3ba26c21c487b94a6531bbb9e99dd0a25"
+    },
+    {
+      "path": "E:\\repos\\ara\\crates\\ara-agent-lite-mcp\\src\\resources.rs",
+      "bytes": 7891,
+      "sha256": "8de0c3314fbfeeefd9b9cdf281c4943fef613e72684505bf11186a5f3c695487"
+    },
+    {
+      "path": "E:\\repos\\ara\\crates\\ara-agent-lite-mcp\\src\\text.rs",
+      "bytes": 2134,
+      "sha256": "0ecd625f9ddfec1788973139bd5abfb10fef665389c916c1ce663511938a97f6"
+    },
+    {
+      "path": "E:\\repos\\ara\\crates\\ara-agent-lite-mcp\\src\\tool.rs",
+      "bytes": 9294,
+      "sha256": "9e44c9d6bbbf3f0b20529550b323473772ed3a28ffad8ed8d540bf5f316f4865"
+    },
+    {
+      "path": "E:\\repos\\ara\\crates\\ara-agent-lite-mcp\\src\\transport\\http.rs",
+      "bytes": 9578,
+      "sha256": "ff4d8b659fd6c20f5214d8fe3740b19f46695f8db6449e87be913adf5a7238fb"
+    },
+    {
+      "path": "E:\\repos\\ara\\crates\\ara-agent-lite-mcp\\src\\transport\\mod.rs",
+      "bytes": 2688,
+      "sha256": "885d9836765e3d90dfd1440a3edf80618de7eafb01ace4f6facfaa980ef9bd5d"
+    },
+    {
+      "path": "E:\\repos\\ara\\crates\\ara-agent-lite-mcp\\src\\transport\\stdio.rs",
+      "bytes": 12829,
+      "sha256": "fa7d08e3d6fd0b2b8f2163b87fd7bb10a3215de563f23ed8db7d09297c661eb9"
+    }
+  ],
+  "runtimeFiles": [
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\__init__.py",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\__main__.py",
+      "bytes": 44382,
+      "sha256": "f49102cd6847c4861e502a0a4aec9fd71d95837f0c4637a8574e1004c66a6400"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\config.py",
+      "bytes": 389,
+      "sha256": "12771a3f7cc98e103ef635e6aaf9fcd36e21c880cf5d9d8f25a35db5d8beab44"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\desktop\\__init__.py",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\desktop\\config.py",
+      "bytes": 363,
+      "sha256": "bcd637c5c3dfffbbb9d98ffd3d1d01697be5043f793bd42f60876e0e7ea51dbf"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\desktop\\control.py",
+      "bytes": 25095,
+      "sha256": "046f8107ab65414f8b19d745d8eb205699a65666ae8f19903cb629e849c3c2fa"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\desktop\\control_context.py",
+      "bytes": 1113,
+      "sha256": "59d7780c75b00ba6488b150b86ec365e89904011a0f76bd08e762155e5bfc35f"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\desktop\\control_hooks.py",
+      "bytes": 5712,
+      "sha256": "122400c73ae1b0e5ca5518f0f5a332a6faeb7d293cf023a6e961860d128793d7"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\desktop\\control_ledger.py",
+      "bytes": 2838,
+      "sha256": "7a20421c2bbfecc5f4d1f6903b28c6f1484e33d2685f8fa607365097539097d5"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\desktop\\control_overlay.py",
+      "bytes": 19246,
+      "sha256": "567ce7b33e361fd13d5fbff6ab930cf5a500b9f1001a2c938abe585317876a67"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\desktop\\control_overlay_art.py",
+      "bytes": 9022,
+      "sha256": "1b0a1293717032f3595381ff88e5121f4cfac8c4bfda15c41657895c88236448"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\desktop\\control_recovery.py",
+      "bytes": 4074,
+      "sha256": "0c85fa284d8c6520a91e0e2dccb69e107e8ac538f2a67df197568a0d4b5c8273"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\desktop\\control_win32.py",
+      "bytes": 12609,
+      "sha256": "ecbb7973b6a9745308677a5771c57c8fd3522b694bcde87038f05b6b052731a4"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\desktop\\control_worker.py",
+      "bytes": 3135,
+      "sha256": "3af9ac8d9f58afa5546b30f8eeafcf15d5d1ea4f139c41aa7272e3463449a761"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\desktop\\flash_overlay.py",
+      "bytes": 19345,
+      "sha256": "aa5799f54b0a75c0458428a7d55ce82721a7084dfdb4b73c60863ed57568f061"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\desktop\\overlay_bitmap.py",
+      "bytes": 1432,
+      "sha256": "c6b1a4c65372297ad6d30598e6c9a6de690b7b4f4418ab3dd13ed59ee780bace"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\desktop\\screenshot.py",
+      "bytes": 13887,
+      "sha256": "b154df0a7d899a44f86ab08cdbe96ecdec76df3a168f357d2b5acb8943ec9a29"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\desktop\\service.py",
+      "bytes": 72590,
+      "sha256": "508f33a1e5d3baaf12a6212d26a1431d56c1ba3e427284c304053412fd01f0a4"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\desktop\\utils.py",
+      "bytes": 4704,
+      "sha256": "1480790d2b258b599037b5ffd12c205d70ccd35bc61879183f4a1273a216e0c6"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\desktop\\views.py",
+      "bytes": 2931,
+      "sha256": "393112377376077e882b2ee4f3dddf99a9bd0d205e70742a2c97f4e045dc5672"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\filesystem\\__init__.py",
+      "bytes": 324,
+      "sha256": "4a8f003020898d801d3f5bfb346ac477e088309de0f1527956e5e37110d8e3da"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\filesystem\\service.py",
+      "bytes": 16715,
+      "sha256": "07b9118dd34dfa6ee97e2dee50c61c81f24c7180ebea6e1e2dc54dc5b5211840"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\filesystem\\views.py",
+      "bytes": 2315,
+      "sha256": "53e25e6546d28b690935f5d054cd3ca9487784262b5751a3005ee641b4701e6a"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\infrastructure\\__init__.py",
+      "bytes": 1592,
+      "sha256": "fe3ccc9acdf77bb0141d1c93532045f20c08a73642d5a1fe391ea10e0ea7d302"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\infrastructure\\analytics.py",
+      "bytes": 8469,
+      "sha256": "d1fea3aa5ab2ae5a7f50701baac73813993dac5baefa09b875ea2efc32383eb3"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\infrastructure\\auth.py",
+      "bytes": 2967,
+      "sha256": "f58ad507364884307f184c5c18cb1af947947f468e61f0590902a74c0141ddee"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\infrastructure\\config.py",
+      "bytes": 10909,
+      "sha256": "f18d4a5a1008481e2bb9c2cae726004835ab3be506119fc6757dd17523a28888"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\infrastructure\\eventloop.py",
+      "bytes": 3641,
+      "sha256": "7dd9bf29743118bc660d50afeded9a9a397083ff36f8380b25408d3e8d574588"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\infrastructure\\oauth.py",
+      "bytes": 10368,
+      "sha256": "6a44ece6f05615f4f718d112b0ca69ccdaea6ad785ddce986408eef84fcaa241"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\infrastructure\\security.py",
+      "bytes": 9612,
+      "sha256": "2498c8528496f58f50d62ef508a617a0572b6f95f68ed2f9b56b74194b301ba8"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\infrastructure\\thread_affinity.py",
+      "bytes": 2670,
+      "sha256": "fb4ee540a0b3e415a680d6db4f4a9dae85764aa8ac649f11bddd560e6d4b2411"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\notifications\\__init__.py",
+      "bytes": 109,
+      "sha256": "7e49f5cbcd924a4123f29bdedaf22e9aeb1367f8fe4356706c9000511cf7d925"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\notifications\\service.py",
+      "bytes": 2394,
+      "sha256": "a7caa81d57b77941ca7da2f9dcb962c43cbfe1667b2e00da9da34190b9a2f3ed"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\paths.py",
+      "bytes": 3107,
+      "sha256": "74fc94c2df874b5ed104218c66cd63a9905bf76cacca39891106dfe1b1f10de9"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\powershell\\__init__.py",
+      "bytes": 108,
+      "sha256": "b942e27f08e8159a6d32eea73d983fa56a4183b5ded6ae67f64157af9747a469"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\powershell\\service.py",
+      "bytes": 11949,
+      "sha256": "daa1f81752c8b4ecbc69b523d9dc022592360beab5d0e4d79aca6edf2e64ff5e"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\powershell\\utils.py",
+      "bytes": 8130,
+      "sha256": "de136b532b09dc58a014065dcb4466eb05e49f2ca7ec2e0eed40d306ca9556bc"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\process\\__init__.py",
+      "bytes": 134,
+      "sha256": "4dd170a7400c0c14e9f7aded7c8388d839ffabe04afd120ee6c33919c107ce98"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\process\\service.py",
+      "bytes": 4000,
+      "sha256": "498811ae00b4f4733eba5ad2e9a0b0be88b8bfb243b5dae7af2bedda43974848"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\registry\\__init__.py",
+      "bytes": 208,
+      "sha256": "dba756e13ee047b253f0b12a46db94d1f9afa8f5714c3d71c0b3462496e635d0"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\registry\\service.py",
+      "bytes": 4632,
+      "sha256": "e006bea3ac4bb6e8d5bdaa2ca1ca3ab5c0dbc2070b33027779adbf84eeccf9c4"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\registry\\views.py",
+      "bytes": 460,
+      "sha256": "7786349852093e7c55dd367ddbb7aac4887a9b96fd6da1e6b46fd5f88a7653dc"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\tools\\__init__.py",
+      "bytes": 986,
+      "sha256": "e2d79999c6c170126b4e01edea62be193b8eb92d246010f4ee23bc5672776de2"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\tools\\_snapshot_helpers.py",
+      "bytes": 10094,
+      "sha256": "13fcdad7cfcdbeb4d32f54992fe430f740a18c249af0e9b3a3b782a10e5da4ac"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\tools\\app.py",
+      "bytes": 4325,
+      "sha256": "2d245e4028ca7a9fc64ef5495f80dca08801be4cd9d6b4d49bce0ceb89fc8204"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\tools\\clipboard.py",
+      "bytes": 2327,
+      "sha256": "781a2ae544caf9108da1aa100b41b196c6a7c501784a96cf340738b967f7e813"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\tools\\control_notifications.py",
+      "bytes": 12070,
+      "sha256": "4891859aa16abd42dcdc25aab72f803bb2f898a1de9fe9eba73d60a3b79da58e"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\tools\\control_policy.py",
+      "bytes": 1922,
+      "sha256": "c85bf41e94d1677539211be70706676ee62490ae5c0cd70e558206de1322e05a"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\tools\\control_status.py",
+      "bytes": 769,
+      "sha256": "0309ad6b4d14e2694f9548cc5438ab5da3d164ef2478f021591360d11f4d0b29"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\tools\\display.py",
+      "bytes": 2076,
+      "sha256": "ab75bf356a0ff64644867daf0a35afab3b0b72dbb2419d8d3a5b2d3077ae83f6"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\tools\\filesystem.py",
+      "bytes": 4668,
+      "sha256": "1b4ecd6df818deaf2570fb707e806b816f8d87a1526f53028c7f9014f8ee73ed"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\tools\\input.py",
+      "bytes": 19603,
+      "sha256": "88a4bde2e3affdb33229b3761f87b741b7eaeea48241b486f5e4b693e157e491"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\tools\\multi.py",
+      "bytes": 4465,
+      "sha256": "1789e56e9ecc6f9045709fd2ae7e9144f1649b3d60649eef7a47a3d0b95d9ad2"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\tools\\notification.py",
+      "bytes": 1785,
+      "sha256": "1c1790fd64aaff7ba8e8ed92b6d730732aad933940726123aa0469a15f60310e"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\tools\\process.py",
+      "bytes": 1928,
+      "sha256": "a728b4937380090e4c0f4ced9e8c2d7886b79e90b6b3686dfae747084145f675"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\tools\\registry.py",
+      "bytes": 2255,
+      "sha256": "286e5fac239b69f9e2fb6f37e84c55e65c23704c6a48a92c629e131dc58909ce"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\tools\\scrape.py",
+      "bytes": 3941,
+      "sha256": "64b152a2e7cb225fe85bb831977545f94e2ad11517649b2633d8f8a8ebafa273"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\tools\\shell.py",
+      "bytes": 1836,
+      "sha256": "37bb892bd0e602cc4531722ecfa621e669e15c2ca3d35d0d24820f245703d269"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\tools\\snapshot.py",
+      "bytes": 6801,
+      "sha256": "fdad904c2e4981a68f3965bc88e8ef83f45d5e8942e9c0df804a0cd99c72cf21"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\tree\\__init__.py",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\tree\\budget.py",
+      "bytes": 3156,
+      "sha256": "4bfec47e9d0edc38cff01c54f296daf320b3c7e931574712ae75784257a0d8ae"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\tree\\cache_utils.py",
+      "bytes": 9923,
+      "sha256": "d01bc74849d0798b098b74da9c27b9dfa50e4564dbd70f0ae73fa5d359275089"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\tree\\config.py",
+      "bytes": 2329,
+      "sha256": "56146f39db7dc29b027b4a0698b168c86009767445255f5dcfc710a8d073943d"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\tree\\ia2.py",
+      "bytes": 17539,
+      "sha256": "17cedb366f06c73f832950cdf9da063318b55cf4e11f505da29ebae63358eac4"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\tree\\service.py",
+      "bytes": 60970,
+      "sha256": "a1b324b0bdae191498b04d22754b5cd8316f53528ad213319723fe429c002f39"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\tree\\utils.py",
+      "bytes": 918,
+      "sha256": "48422d362163a9441282e39c988ce5c0c0da2e10dc61836e0a4c70bbc985b119"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\tree\\views.py",
+      "bytes": 10020,
+      "sha256": "065fb66f3cbf6461ca9f822c64f3a3c02b9716774b21f27cf1133e7b0ac0df4a"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\uia\\__init__.py",
+      "bytes": 143,
+      "sha256": "92545e4d9ec2021cefc28029dcb9a1d23bec0ecc1c5b10006189809327b3498d"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\uia\\comtypes_cache.py",
+      "bytes": 5290,
+      "sha256": "8f7f81caf266b1e7e99be67e53c182d40a85d573c0882ae18733599a3acb17b9"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\uia\\controls.py",
+      "bytes": 231705,
+      "sha256": "5e85bddf4c97e42fbda3192244e0b5691155d1d26ecd701be6c2e3041154590d"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\uia\\core.py",
+      "bytes": 97341,
+      "sha256": "c976e00cc8d39762b6db5931aab4527b9bc2f2770e569e6bc3fe12fc41ee294e"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\uia\\enums.py",
+      "bytes": 81596,
+      "sha256": "766f0886942fc8fc774a4808453072d11aecb6d1f03df5556b258fc1a66e4d89"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\uia\\events.py",
+      "bytes": 6456,
+      "sha256": "e5a83aaa57595a3ec4d2eff873891bdce0e39c7b2e340136d2b17af237fe8f6e"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\uia\\exceptions.py",
+      "bytes": 4506,
+      "sha256": "9b8d515060ba9590e1992619173633eca525aadfc9e8b25cce998b537461d10a"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\uia\\patterns.py",
+      "bytes": 110099,
+      "sha256": "13daa5dc1558d96b85abc2a4ef5c191dbefc4c33aac1720586f9aae3de9677e8"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\vdm\\__init__.py",
+      "bytes": 183,
+      "sha256": "ab5e290e0eca9b02a4cd798996684d4ea940566ef2fd510c32a95648bd55dd04"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\vdm\\core.py",
+      "bytes": 24974,
+      "sha256": "4b90b0083ef181e30a332a8af81b7129b4d0d12c753b804141a98edf25eaf1c8"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\watchdog\\__init__.py",
+      "bytes": 43,
+      "sha256": "8081e0610b0b842b59a8bab934f2a405e14f547935325416faa428ae0a6583fe"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\watchdog\\event_handlers.py",
+      "bytes": 3484,
+      "sha256": "320a068de2d2ac5cf8422166f1f4e3dd75caf18a81f8cd87da038e2484969b75"
+    },
+    {
+      "path": "E:\\usr\\opt\\python\\reach-desktop-94de2b4-reach3\\Lib\\site-packages\\windows_mcp\\watchdog\\service.py",
+      "bytes": 13025,
+      "sha256": "b7ac21029097d9595f6e6d34c5d03e22f96ce0d7822344b8c49a0aca15d8ab6d"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\pngjs\\browser.js",
+      "bytes": 572711,
+      "sha256": "e21b88288e3df098f476bb3c4d1e8900d3780572e1802c8e301e38674d527f51"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\pngjs\\lib\\bitmapper.js",
+      "bytes": 6477,
+      "sha256": "3f2f720e3a2b4e41cdc03e9f58bb1794bec26dcd1b22568e41ce0b84ab20aeb5"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\pngjs\\lib\\bitpacker.js",
+      "bytes": 4670,
+      "sha256": "3f7bfabcbc82bedd0cc8551bc210b44dc1fb179fa2ce3b8b1d39fa307d8af204"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\pngjs\\lib\\chunkstream.js",
+      "bytes": 4249,
+      "sha256": "43c5507901554a29c5a29e555aaeb3c3987b84fb3aa8c681c1b30794a477aa85"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\pngjs\\lib\\constants.js",
+      "bytes": 662,
+      "sha256": "9e3b4f994ac93751e9ccb4d453e85e4f25a0b086a9f24ec92c7dcb06995bdf6c"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\pngjs\\lib\\crc.js",
+      "bytes": 853,
+      "sha256": "57e2328cfa361fb54f1f4b3a59e071c1ccc864095e4f3759a957cd15aa2a8b65"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\pngjs\\lib\\filter-pack.js",
+      "bytes": 4279,
+      "sha256": "500c1b3b34702c895e9e689143f44280687cac363447523679ec13d12bd564f6"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\pngjs\\lib\\filter-parse-async.js",
+      "bytes": 558,
+      "sha256": "328b6173f1a2a4d91425220a0fa421699552f254006a57ede9f4018ced50a7ee"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\pngjs\\lib\\filter-parse-sync.js",
+      "bytes": 483,
+      "sha256": "201a08dfab26a2903c0dabcbdfe0406b3fa33d60f59b591878329f590fac48ff"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\pngjs\\lib\\filter-parse.js",
+      "bytes": 4798,
+      "sha256": "b8aad6f29371f5b13b232643781a7c49f7d36d565136ddda1ed7fbaca987ce2c"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\pngjs\\lib\\format-normaliser.js",
+      "bytes": 2366,
+      "sha256": "c73989d85bef5d33ce571095bf0d96927261730d8b0f79c9d48f971fcbdd0be0"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\pngjs\\lib\\interlace.js",
+      "bytes": 2004,
+      "sha256": "3bb5d57153078ff586667e9a9d2c06db993c8ff1638e0521a9883cdeea6e1e3f"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\pngjs\\lib\\packer-async.js",
+      "bytes": 1162,
+      "sha256": "f50df0610749ce7b1a99abbe9e4596df7c16f96efd3848f12dd632b22cb02b45"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\pngjs\\lib\\packer-sync.js",
+      "bytes": 1193,
+      "sha256": "1b516238168a42704e62ba44528406188864a6ddda2ae92d1b91e5e078cdaa2d"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\pngjs\\lib\\packer.js",
+      "bytes": 3723,
+      "sha256": "b5f9956364c80d67c28d615ace639a5fb4d4d79d3acb235237f3050dca220e03"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\pngjs\\lib\\paeth-predictor.js",
+      "bytes": 372,
+      "sha256": "48555b909af708593dade8e8df75d18ecdffdb6577e362eac01eae357ef1e0e9"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\pngjs\\lib\\parser-async.js",
+      "bytes": 4368,
+      "sha256": "a0299cad35220de62b7180b1f984b8f77b4c0f419a580fd3c86ea3b3e971ee30"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\pngjs\\lib\\parser-sync.js",
+      "bytes": 2580,
+      "sha256": "266c9fb230b90075022b3f54f5710a9cacb71ca565f83fce66e7cbd1b7e9b507"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\pngjs\\lib\\parser.js",
+      "bytes": 7720,
+      "sha256": "574e43fea28a28cc6feb7ab62a480a86bb75411ee4bfaba76a7e9d7310b6e94c"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\pngjs\\lib\\png-sync.js",
+      "bytes": 252,
+      "sha256": "867b1a78dcd3e45458eb4f0af01acd48f38d3a31225bd7cb8dd8ee3966ab54be"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\pngjs\\lib\\png.js",
+      "bytes": 4418,
+      "sha256": "e02cecbd36327829758386dc3f0ca4a36a2339ccb5d5e824ca3556e2c3f89726"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\pngjs\\lib\\sync-inflate.js",
+      "bytes": 3751,
+      "sha256": "08cb8afb79a4c0ab58e94601dab22261daf6638382b211d6a7f6bfbc16d27a0b"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\pngjs\\lib\\sync-reader.js",
+      "bytes": 1114,
+      "sha256": "437a99bf1bf739202ae85c3018cd9174d411597cf55e7064c36976de493368f1"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\pngjs\\package.json",
+      "bytes": 1812,
+      "sha256": "85b17f2f852aece03e71edb4ed4d9fddf6a0a8f0b69ac75d7f00b6592d62d37c"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\compile.cjs",
+      "bytes": 4780,
+      "sha256": "56dfeaf286f377344636dd37c19bd2dff50c0a0ed4ab99bb8c42bddcaa535914"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\compile.js",
+      "bytes": 3008,
+      "sha256": "7c4c8bcf404a1c7749cd6f4d765a2882f048c6ae045c8702b2a9e2c79d48ea9b"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\index.cjs",
+      "bytes": 2132,
+      "sha256": "d93a8730d52c0fedab13619c8bc971cc99934c13d8dce7c97ee4d03a98d4096e"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\index.js",
+      "bytes": 422,
+      "sha256": "32e7efd49a94a765f6d10a1a0a3c02c50c246def17c80c6f0225f85525d98505"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\locales\\index.cjs",
+      "bytes": 1444,
+      "sha256": "581bd6a445bee039476bc2af57fa9853879468a8ad19ea3a0f986ff27952ce1e"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\locales\\index.js",
+      "bytes": 40,
+      "sha256": "0b98ccbe349eb9774d8c96fa381335cef127140996f91a4eea47b7742b55f51d"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\locales\\package.json",
+      "bytes": 127,
+      "sha256": "3e3125b5a537a24c3632c1c5c09640ce7bcb3935901b127ad8ae3c37a27f133f"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\mini\\index.cjs",
+      "bytes": 2089,
+      "sha256": "7c8d8f6e8b841a620bb49de3d58bd1e97d0e8aacfa1f051747d7ae47b893e857"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\mini\\index.js",
+      "bytes": 99,
+      "sha256": "92f42fea7c90ec3f2f623a923d8798d2a316cb4ff93d6399084065b9214365de"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\mini\\package.json",
+      "bytes": 127,
+      "sha256": "3e3125b5a537a24c3632c1c5c09640ce7bcb3935901b127ad8ae3c37a27f133f"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\package.json",
+      "bytes": 4142,
+      "sha256": "cff7e142055a9dd9bc2947a71ca3fb5e3aacdfda966d7728993ff3656245b94a"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v3\\errors.cjs",
+      "bytes": 1207,
+      "sha256": "e22989a517c8a0ee9e0946df403ca0d1fe898125dc4e0e747bbc79dd5d17faec"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v3\\errors.js",
+      "bytes": 243,
+      "sha256": "d40831f478288d76e82bbbcc3b7e95c8513b6e76471f2d49a37c979bc57d492d"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v3\\external.cjs",
+      "bytes": 1704,
+      "sha256": "b543e566b3c5dfe3ce130b15514bbc62236d476edec3e7ee84bf995977db9b95"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v3\\external.js",
+      "bytes": 205,
+      "sha256": "5d26d2e47e2352def36f89a3e8bf8581da22b7f857e07ef3114cd52cf4813445"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v3\\helpers\\enumUtil.cjs",
+      "bytes": 705,
+      "sha256": "e684c514403d03c1259d6d51a82b795db361189c837a9d95ccb0ecef3aa9043c"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v3\\helpers\\enumUtil.js",
+      "bytes": 11,
+      "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v3\\helpers\\errorUtil.cjs",
+      "bytes": 1114,
+      "sha256": "a3d592306e060b03c134f7ae8774a6bd27e53391e584b658dc36de464e6322e2"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v3\\helpers\\errorUtil.js",
+      "bytes": 368,
+      "sha256": "1b08878f171ff69b9ff14cff1d6636da00b02271d75bf591235ffe0c39fb51fe"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v3\\helpers\\parseUtil.cjs",
+      "bytes": 4900,
+      "sha256": "53dfcdf771a06985cc4186aa3dd51552d13be3e90c59aa38414b93875f908e26"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v3\\helpers\\parseUtil.js",
+      "bytes": 3601,
+      "sha256": "b57484013bb360bac2e334d58fcd5f6cbfa63ffcc7d8ff3dbbb3380ca659b956"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v3\\helpers\\partialUtil.cjs",
+      "bytes": 705,
+      "sha256": "e684c514403d03c1259d6d51a82b795db361189c837a9d95ccb0ecef3aa9043c"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v3\\helpers\\partialUtil.js",
+      "bytes": 11,
+      "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v3\\helpers\\typeAliases.cjs",
+      "bytes": 705,
+      "sha256": "e684c514403d03c1259d6d51a82b795db361189c837a9d95ccb0ecef3aa9043c"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v3\\helpers\\typeAliases.js",
+      "bytes": 11,
+      "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v3\\helpers\\util.cjs",
+      "bytes": 5029,
+      "sha256": "22aac941f042e9bb36874b4c7ee80181ad5522557fb646cc1cf386e981e3438e"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v3\\helpers\\util.js",
+      "bytes": 4055,
+      "sha256": "906ef685e5853d496e293ee8f8a2bb8b1ed2d078a1bcdfedb2dfd61d75b6330c"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v3\\index.cjs",
+      "bytes": 2092,
+      "sha256": "80849f43fee80f567614da950ab7b1393bae87197a95c0298c55cb2fec765000"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v3\\index.js",
+      "bytes": 99,
+      "sha256": "3db2efd285e7328d8014b54a7fce3f4861ebcdc655df40517092ed0050983617"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v3\\locales\\en.cjs",
+      "bytes": 6005,
+      "sha256": "5fe55414e39de7fff8ec19983adc1421c238b679f8aa6b9d3311c7f9f12a21f3"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v3\\locales\\en.js",
+      "bytes": 5602,
+      "sha256": "51a6dcc5d4bd52a64da127c012c6c963395c1d9a343ad75d4a8eca662fc8b205"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v3\\package.json",
+      "bytes": 127,
+      "sha256": "3e3125b5a537a24c3632c1c5c09640ce7bcb3935901b127ad8ae3c37a27f133f"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v3\\standard-schema.cjs",
+      "bytes": 705,
+      "sha256": "e684c514403d03c1259d6d51a82b795db361189c837a9d95ccb0ecef3aa9043c"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v3\\standard-schema.js",
+      "bytes": 11,
+      "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v3\\types.cjs",
+      "bytes": 140924,
+      "sha256": "7a2f06d88e280bdd198c60e0d292ed7f1e3993e877be4415de07e6abc7746dd1"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v3\\types.js",
+      "bytes": 131408,
+      "sha256": "d7214e1dacf9e6e70c9ca80247717b4be13b240510428fef132b7da3260d1a32"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v3\\ZodError.cjs",
+      "bytes": 5916,
+      "sha256": "6a03b4f87c6c5ec86a0e2822fdb3dc7aaa890334a2802b93d8c7eb56efd9987b"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v3\\ZodError.js",
+      "bytes": 5061,
+      "sha256": "33501c7133427477cc5307d8b0c9149329d8488099194e8a3729b44763abc2d4"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\classic\\checks.cjs",
+      "bytes": 4786,
+      "sha256": "7d29ae09f7f5cb85e3764fc07e069b7ea6a0c29df0278c42777b6e2cf9279522"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\classic\\checks.js",
+      "bytes": 690,
+      "sha256": "7543391a9ad5e7df287bbfecaa79844d46af44c75c1de0d43a411d65795d9dd1"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\classic\\coerce.cjs",
+      "bytes": 2400,
+      "sha256": "0c682fe4f473e5896cfc048c392fc602fc885ffd7d6e15b1a5fe376b88b19942"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\classic\\coerce.js",
+      "bytes": 550,
+      "sha256": "fb2efe3b6eacc475c77cbb571b5fb8650d92a10f316dc869e49b722973d83c3c"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\classic\\compat.cjs",
+      "bytes": 3230,
+      "sha256": "dd0289ac1a42ced592cbc6e049f61992649c524badf53eded6ea09ec05c2bb81"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\classic\\compat.js",
+      "bytes": 1090,
+      "sha256": "0e948b101771cc0e7b753e54b3f5b486929d3db9bd4c09d98fe4ce86271bcf7b"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\classic\\deep-partial.cjs",
+      "bytes": 2341,
+      "sha256": "45a5b3cde1d17e5a87202d5f5a8c2d7d858bb2ca509855919a8b70cc3d858bf4"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\classic\\deep-partial.js",
+      "bytes": 543,
+      "sha256": "0abffcc9838e04dc6f091229c1d522fbfd43aab9563316b52d3eb8ff2bacf26d"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\classic\\errors.cjs",
+      "bytes": 4320,
+      "sha256": "7acf7b35400c681e4e9eb8da7b2921891f5a29a132cba0547a9635e625203436"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\classic\\errors.js",
+      "bytes": 2532,
+      "sha256": "d32f7c1ef8e2c70072f6f0ec8ba7081bbc331353cc3a7cb4429e5ece91409543"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\classic\\external.cjs",
+      "bytes": 7553,
+      "sha256": "0f917f6f02890347c44e4fca280480ace573ac87b9c697d1c47761a45fdcb620"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\classic\\external.js",
+      "bytes": 1101,
+      "sha256": "c6b584ae70ba4e7132b2cd78c23ea4ecedc9828abf999edee312372e1fb453d6"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\classic\\from-json-schema.cjs",
+      "bytes": 40032,
+      "sha256": "2bdbfa970dac5e9bccaf98e27ab2cf5264e253563df306a941878b634f3d56bf"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\classic\\from-json-schema.js",
+      "bytes": 38171,
+      "sha256": "31dc999a26cb6928f5e99ea564d648567e85cf9aa47565198fb6186dbd6c070e"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\classic\\in-out.cjs",
+      "bytes": 4035,
+      "sha256": "17c0700c8c44ca7d23cc417353def8536fa1b267e3a44167fa3885c65f53683b"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\classic\\in-out.js",
+      "bytes": 2190,
+      "sha256": "34370913842ff02d14a9796b11c5ec2af160bdb35a7148edc286e9a9c6fb5c17"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\classic\\index.cjs",
+      "bytes": 2110,
+      "sha256": "2d6bfbfbf3c1bc3a18afb218decda6cf34e1f4e9d2e9ddbabc92cabbbb0ad77d"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\classic\\index.js",
+      "bytes": 177,
+      "sha256": "978a923075be24db9051635ccd2c21ade18d7a6b5ce0fe6e0029660072073398"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\classic\\iso.cjs",
+      "bytes": 2949,
+      "sha256": "3620ee2ea251ef945af2f85504ca1099a47318b90ff1a83532dfba3eacb2d256"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\classic\\iso.js",
+      "bytes": 556,
+      "sha256": "deaa026b7c5302e59719f401248e7866691d8d8a892884dd2b6868b1cb7252d8"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\classic\\package.json",
+      "bytes": 127,
+      "sha256": "3e3125b5a537a24c3632c1c5c09640ce7bcb3935901b127ad8ae3c37a27f133f"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\classic\\parse.cjs",
+      "bytes": 3231,
+      "sha256": "3141ebbdd2d7b553dcf5ebfc683c1abeed21140c38db5bd532f2204970339dd7"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\classic\\parse.js",
+      "bytes": 1057,
+      "sha256": "11941573401bbef138842c7a523dff554873343fccbf0e8b0a144259d2d703f1"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\classic\\schemas.cjs",
+      "bytes": 59491,
+      "sha256": "c1870a72d6809d462a90ee1d2bcb67f7f6beea4a504ae56c28b95df50074c4b2"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\classic\\schemas.js",
+      "bytes": 53354,
+      "sha256": "2bf4a631a18f734a9a7ab7fc11bcf919214774d2235a312dcec0dd53d0324c32"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\core\\api.cjs",
+      "bytes": 33284,
+      "sha256": "1aef5cd4ed0cca874b02bf8081a67db4908cd7858ff0c61c593ce58c74e619dd"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\core\\api.js",
+      "bytes": 28953,
+      "sha256": "03ae6016abc9585e3f3481d6b8d775a95ae4ee65badbde73ca1ed953ff14c0e7"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\core\\checks.cjs",
+      "bytes": 21692,
+      "sha256": "9a2a428602fe9e380ea2a08495a47101a56710d814fe18fb0e6e30f65686a703"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\core\\checks.js",
+      "bytes": 19491,
+      "sha256": "bc42543274218aa7ef72192b3218d2a4a399e53df8de240a04d9ff275096f563"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\core\\compile.cjs",
+      "bytes": 94180,
+      "sha256": "53920c324ac3709a099d2b608398699a6160211738c9ced6473065d9509b7b61"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\core\\compile.js",
+      "bytes": 92003,
+      "sha256": "53fcf24821f50ecf42492ab7101abe8a50ead8286a53567d71648fe5ca346b99"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\core\\core.cjs",
+      "bytes": 7522,
+      "sha256": "0aec383c3aa438289a963c30bcccde1277e7f9657fef9215f74330d2794f0dea"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\core\\core.js",
+      "bytes": 6642,
+      "sha256": "c7ce485c97263e42568d16b11bb4a90133221c7e807498a9273d70f41ba16ef6"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\core\\doc.cjs",
+      "bytes": 2029,
+      "sha256": "920b37602309434c783ecd326141418dbb0e2eff560e42cb1b85a91f4fdd9cc4"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\core\\doc.js",
+      "bytes": 1290,
+      "sha256": "be4c1b1a1ad247cc70f360a572060edd7e0cea24252c3a319f33d247899c5643"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\core\\errors.cjs",
+      "bytes": 12833,
+      "sha256": "2e00adbc6abd966a2b2c68815e0d0605cd69fbd8b8331a621a4ed1c906034479"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\core\\errors.js",
+      "bytes": 10871,
+      "sha256": "a0c95ef2f7085b5bc2931f7b566f524b26a0360c8df741e3f87f923745cf9792"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\core\\index.cjs",
+      "bytes": 3500,
+      "sha256": "aed3af491dc4ee4d18d5c3454dfadc83ff7b5566921602a6adc37a5d58716f83"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\core\\index.js",
+      "bytes": 690,
+      "sha256": "2a0e452323aa5b75b7d7de4879289e2579b9dd2d6af291c0416ba6806ca2199d"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\core\\json-schema-generator.cjs",
+      "bytes": 4753,
+      "sha256": "4fa480de056ac07a8c43ff3fe249cc642967ec4e08301ee00ba9e4d76f6c42b2"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\core\\json-schema-generator.js",
+      "bytes": 3857,
+      "sha256": "beaeab6faa654e99e443b8a9f5d8a4adc08cd8226f92a0cd32477a58ecfa1807"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\core\\json-schema-processors.cjs",
+      "bytes": 40727,
+      "sha256": "224ea00a1d4a19732b5d76a30b8bba3d977463aab95c45f6825c677bb6fd49db"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\core\\json-schema-processors.js",
+      "bytes": 34985,
+      "sha256": "b6d2aee72212c076b9cde38da6333591c76a24eb049a4ee4e7bd2b7825d8b817"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\core\\json-schema.cjs",
+      "bytes": 705,
+      "sha256": "e684c514403d03c1259d6d51a82b795db361189c837a9d95ccb0ecef3aa9043c"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\core\\json-schema.js",
+      "bytes": 11,
+      "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\core\\memoizer.cjs",
+      "bytes": 14422,
+      "sha256": "247fe6b5aa9ff57e8c83f984a14dea70b95f8428b15176d1666342a6449aac81"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\core\\memoizer.js",
+      "bytes": 12517,
+      "sha256": "18a3188c51229d9189a5408b0b7fbc3e121b55c2b4c3c406d79cb9b77e7ad964"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\core\\package.json",
+      "bytes": 127,
+      "sha256": "3e3125b5a537a24c3632c1c5c09640ce7bcb3935901b127ad8ae3c37a27f133f"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\core\\parse.cjs",
+      "bytes": 11002,
+      "sha256": "e19bfe843aed1844680a014f9a185d17374fe87bcd1676a2d62ed11177c1caa8"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\core\\parse.js",
+      "bytes": 8267,
+      "sha256": "fb05b91ec260f3f484f7c00a177b6126ceb8fd1b09dc90b1200afdffd4d98efd"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\core\\regexes.cjs",
+      "bytes": 14425,
+      "sha256": "0f597e9323d68371224cf7080d31e87e8f420dae4629e044a88b921470cb03d2"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\core\\regexes.js",
+      "bytes": 11818,
+      "sha256": "24fc98f6fc9175e50ff29d28b040e3b4ac5650de19914d45ee27b853d367ecc6"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\core\\registries.cjs",
+      "bytes": 2345,
+      "sha256": "aabaac9f1d813d2e4836b0c0d673c4c0cdf6e0c07e740c201ae7bd77b8e3aed1"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\core\\registries.js",
+      "bytes": 1540,
+      "sha256": "f04d4b2c0bc5b4ac2d6610ea34edf2e5260eade18f20976b79916dcdbeb9fa4d"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\core\\schemas.cjs",
+      "bytes": 110831,
+      "sha256": "7e35563b275bcc457a6d8ae0f5e1354b3c499ddd38401439f16bed1b8f357e41"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\core\\schemas.js",
+      "bytes": 107291,
+      "sha256": "0ee56e8afbae28eeb1060a162ad7e56f0675ee6fb83f0ae56bea2e088f6cdbc0"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\core\\standard-schema.cjs",
+      "bytes": 705,
+      "sha256": "e684c514403d03c1259d6d51a82b795db361189c837a9d95ccb0ecef3aa9043c"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\core\\standard-schema.js",
+      "bytes": 11,
+      "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\core\\to-json-schema.cjs",
+      "bytes": 30160,
+      "sha256": "68d0c4c3310cce3c36af6e7956ff4ef0c3ba7132f7cfc33c033b712bb0eb8abd"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\core\\to-json-schema.js",
+      "bytes": 29029,
+      "sha256": "85b883eb8f05e9f060c71a39fce7df9345b566af29d5bc9c8fa477fe616a051d"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\core\\util.cjs",
+      "bytes": 37625,
+      "sha256": "c7fd0ee0303e7344463692d0936d59c982ed28bb1b73dbd97d2b887ae15d80f1"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\core\\util.js",
+      "bytes": 34840,
+      "sha256": "bb08133b11b478c8e715038fff26ebea204d7fd5443fba31fe138b142d202efb"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\core\\versions.cjs",
+      "bytes": 796,
+      "sha256": "9aab15a1df2c39dadeebeac393aa01fe8fff4c9ec68cda8ee4a89ee937f33aa3"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\core\\versions.js",
+      "bytes": 70,
+      "sha256": "c0f09e5bb7e9dd7712138a22096e0884bd2df3d5d8cfcd2a1bcad7086fc8dfc5"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\core\\visit.cjs",
+      "bytes": 8577,
+      "sha256": "66657f3a1c401d0f639c74fbac048c227446a440f9d99495418ced2d922bd881"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\core\\visit.js",
+      "bytes": 6643,
+      "sha256": "a804062900869e09ea0b975cfa569fd3c70dc33bad7fc30b63872d451cae29f7"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\index.cjs",
+      "bytes": 2098,
+      "sha256": "946e368ce2f7939fbf5946ab665f54d1e7d901d922db405aaf5dd40e87c636a0"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\index.js",
+      "bytes": 351,
+      "sha256": "5ba6cdbd3839d2a9df5c6d91d2121ef680f3d22fd60ee9d2c0b4611b7cb49a65"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\ar.cjs",
+      "bytes": 6580,
+      "sha256": "18559234f469cde82aafb15077a3765ffe76e8c80f1f7316a4d576edbc963e04"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\ar.js",
+      "bytes": 5404,
+      "sha256": "eec4016c2b3063ae929617d90ec609e4c425e60c97a954d3a24de0f457b6ec97"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\az.cjs",
+      "bytes": 5879,
+      "sha256": "0a2110cf7561f599db6b62455791b7a68b57a4c93360a4ff1e6bf5e4e97bfe80"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\az.js",
+      "bytes": 4703,
+      "sha256": "5bd03646b9d18b73e71356cd28937e4e6413b806bb23e14689cc88f6f65ff3a6"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\be.cjs",
+      "bytes": 8174,
+      "sha256": "d7f97046fd97f51a879d124f860fb094a92a7404c88cc0db5b95f2e81823036f"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\be.js",
+      "bytes": 6998,
+      "sha256": "f969afea5d9800a71958a621658943b85a2576a2bfefdd5dea70afc4924d4af4"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\bg.cjs",
+      "bytes": 7205,
+      "sha256": "1cd93984b84ba81302994b085fb67b0c6f88a5eeceb3c45116bf3e6f1e3d49c1"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\bg.js",
+      "bytes": 6029,
+      "sha256": "96741333a790320e05aef7286b5b709a4a7c48cfffc50fc5e6acff5b505275e9"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\bn.cjs",
+      "bytes": 6933,
+      "sha256": "4fe9109396d083d9c2491fb0b19618441899b402807ede53202a50a1227e2984"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\bn.js",
+      "bytes": 5757,
+      "sha256": "6d8227b52a6864465b7c52a9ef7e09d261d904ec8a619932e15dd9f9f826e8dd"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\ca.cjs",
+      "bytes": 6084,
+      "sha256": "267b91c9833398c8c587316cd53eabac72c5542d159f9079badd50326a2316c7"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\ca.js",
+      "bytes": 4908,
+      "sha256": "67f6f38b59a6e3ee81cc5155480465331dd9a142b2471a495503a81dafba0684"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\ckb.cjs",
+      "bytes": 7124,
+      "sha256": "af0033bd97c2840f0e081e0f7e0dac5ace12ee759abe714506a494ca04d0e518"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\ckb.js",
+      "bytes": 5948,
+      "sha256": "bdb9ef0cfda4009f8892585a1780fff863cd409931d6f89394c271042c131137"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\cs.cjs",
+      "bytes": 6129,
+      "sha256": "a0f49a63ded92bb49a3a5f3f4c9302818234ea356716e9a3d1635a4834f1d4c1"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\cs.js",
+      "bytes": 4953,
+      "sha256": "4ffa0e484ad1842a2c0e5c7f2dfe9160155ff5be4b95ab6e524d3a30a2210488"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\da.cjs",
+      "bytes": 6163,
+      "sha256": "92bfee7ae9f3e0c3679802925ae770ff7ac38a4f5ee61242a8f3c93736430716"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\da.js",
+      "bytes": 4987,
+      "sha256": "29addcd60e88422bed9ed78c6c864220a15c06b31fdb4ab7ad4f87be4098e6ae"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\de.cjs",
+      "bytes": 5950,
+      "sha256": "c32b1d9445bb790eba1b13645361e1e2f82436d4f4ea7ee5d8cbb638b3268bef"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\de.js",
+      "bytes": 4774,
+      "sha256": "f344eb96ba18d9db907f3f9c95897ce2590ab0cde1553c023daffbb1cb5ef6f4"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\el.cjs",
+      "bytes": 6877,
+      "sha256": "e0df8a9b0f6150b304e86536917c2e03bee05ffb1ee9276d605871d4324cf93f"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\el.js",
+      "bytes": 5701,
+      "sha256": "fdea833aa0a8c381d26216db1521dd7fbc4dccb6d3aa50f9a585ffb975df91eb"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\en.cjs",
+      "bytes": 6478,
+      "sha256": "14a0588e528ab1797db17fcb3913a5804089e17208330a4e442d21be67d47682"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\en.js",
+      "bytes": 5302,
+      "sha256": "d5930e10d137b048b37823e168e4177947e1f696ada8419c71bb0d32da4333c0"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\eo.cjs",
+      "bytes": 5960,
+      "sha256": "5f527fcc03fbe88932cc5a01ad9bf97348a4259a8694b8b19100a5022437e582"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\eo.js",
+      "bytes": 4784,
+      "sha256": "97797bd22319ecc3f2044da6c305f1114b851803697029ffce2b66644757da3a"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\es.cjs",
+      "bytes": 6767,
+      "sha256": "a7378a27ab10a2c3f71814a1f5ab59e1882d75f04bf4719cedd46a743ef90bad"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\es.js",
+      "bytes": 5591,
+      "sha256": "12e762b921b1e3fdb8e265d2b554de81ce9706ceb23a81527f48ae2dddf355db"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\fa.cjs",
+      "bytes": 6519,
+      "sha256": "9003c50e0b26fe1aa62ba1ecb4bb2eda7f09218e303eb3fb7691bdbb7306710e"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\fa.js",
+      "bytes": 5343,
+      "sha256": "60e7eeff4c000c85f8420168374344305d3c2110a5f91a2fb672b2a2381eeddf"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\fi.cjs",
+      "bytes": 6183,
+      "sha256": "f8c8281ab10379a8603b7bd76257f6fa003c33e074a86bc20dfa05bd2e89dc4a"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\fi.js",
+      "bytes": 5007,
+      "sha256": "1e72af4193e564cd37dce4a850dc18bc1bcd6ca280f29e9f5f8c6bbab6a2cad9"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\fr-CA.cjs",
+      "bytes": 5925,
+      "sha256": "19abde712631bf2a3b367ea87a202d4967a89173846804ad4f094a0f12ef427b"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\fr-CA.js",
+      "bytes": 4749,
+      "sha256": "a2ca0451ff943766bb6a88b392b25447462a1d3ed75c1adda5ddb0bc474bcd42"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\fr.cjs",
+      "bytes": 6590,
+      "sha256": "47dbdb2be984c58b78b52642b3cb2d1ca262c5be8f7e6e6110728a34ad6c6e55"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\fr.js",
+      "bytes": 5414,
+      "sha256": "477345d6401d0e4f07794b1a2cff8b78953723f1fc8cfaeb6b660c19be47125a"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\gu.cjs",
+      "bytes": 7106,
+      "sha256": "9dbafeed1d6b5906414ffd90b605c43fc50342ab9ec5f48a69c4a9319e17fb72"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\gu.js",
+      "bytes": 5930,
+      "sha256": "b1921ac6b4158e6360a8da6099df8bbf2d7bce7c1cf381d5a5e47aa0c74874d2"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\he.cjs",
+      "bytes": 13587,
+      "sha256": "cd484340c55aea560e97411c9ae34500a0c9bd4441a1b4c1dc4021dc5af70d71"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\he.js",
+      "bytes": 12411,
+      "sha256": "1cfff31fac19616d900d1f3febd9690ea87711e13b5be299326ebfd3f33aad4d"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\hi.cjs",
+      "bytes": 7116,
+      "sha256": "0b2a995daed1ce721eb63eceef49ce13b5297982cb5fcd7df72659e42947aba5"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\hi.js",
+      "bytes": 5940,
+      "sha256": "c31e466c2a31dc10ba6a288e1aebf429a6e9566a26918d0240aae058693f6329"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\hr.cjs",
+      "bytes": 6360,
+      "sha256": "e680043892f62367fef1b35f3d07de6dd8f4865e5d32d476f493623b96c06bea"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\hr.js",
+      "bytes": 5184,
+      "sha256": "ff2bebef0761f2d6095103d58484e3b95551bc51d56770db8f161b8e0e0ec941"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\hu.cjs",
+      "bytes": 6047,
+      "sha256": "f319b7f82012307620dc9010685bd820cdd4f713957f4cfabf504834592634b4"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\hu.js",
+      "bytes": 4871,
+      "sha256": "9816c21ee0b3be9d973f9e033e9587a608f2d35dd1b984d415b88e03242b0189"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\hy.cjs",
+      "bytes": 7896,
+      "sha256": "ecf7a657a5d6ca7be0aa15d5e1fdc2608c11cf7d4bd3aa82e1ebc332f0032f95"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\hy.js",
+      "bytes": 6720,
+      "sha256": "daf6d0c590d9b061759598ba9f7f97041e2874c7a58da2c64b86f152840d68fa"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\id.cjs",
+      "bytes": 5935,
+      "sha256": "fc95e772d0cc431b01740a75eb9cf42ee6ca24b06b3601772eca71d9d3f3cab2"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\id.js",
+      "bytes": 4759,
+      "sha256": "e5c23bb0b6f696fa936bafd7969e64738504cf7a5be3ec04b24ae899d4912b58"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\index.cjs",
+      "bytes": 11695,
+      "sha256": "eb58a51a00b5a880dcdf9d64b70f6069f386c9245350a54079a8c6007ac50ceb"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\index.js",
+      "bytes": 2607,
+      "sha256": "7ea85250d1e7bd9459cda61f38c78757a410d561a5421bb3f08019bba79c9849"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\is.cjs",
+      "bytes": 5998,
+      "sha256": "915d8d354fc1b0385238e4a1cea9b409b66172a530e8bd265c758a31135b9f90"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\is.js",
+      "bytes": 4822,
+      "sha256": "1cce1285bbf55c8a76303fea0be0fb6d39fbd0ece833137ea23a22f406ac1ae1"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\it.cjs",
+      "bytes": 5951,
+      "sha256": "d66adacf3aa4df9b7c2cf3d92499da41d6b9039eac2b6e909b3d128699a156eb"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\it.js",
+      "bytes": 4775,
+      "sha256": "096b497df6c5fe7de4422482b7733e764e4b344e8d7f768a7289556687acdb82"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\ja.cjs",
+      "bytes": 6230,
+      "sha256": "4277e0fa09adaf3d707b78c1d2468937e54dc6ee1350ed4d31ba7585c4258962"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\ja.js",
+      "bytes": 5054,
+      "sha256": "2a6bbbd6dbd573687b22f35873a13cdf730c07423b4ab114e5a8b12d8777146d"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\ka.cjs",
+      "bytes": 7703,
+      "sha256": "3421600b01dd66f8ae65ba9a8ab9196737120792cceab431fe5ab90e73d52075"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\ka.js",
+      "bytes": 6527,
+      "sha256": "baf3204123cf4246df654fd1948b6c8da6917e7a06e470aeeaf7c1eaa7003628"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\kh.cjs",
+      "bytes": 430,
+      "sha256": "5a5f3a63e4e97a25b44692b0910f73cf15e54fc5b03c61f9d87e2a9eb6e2a098"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\kh.js",
+      "bytes": 111,
+      "sha256": "78c3d1991041bb8c8fc0f7c5d745aae422d4c2e4e8f30bae44f3fef4765900a8"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\km.cjs",
+      "bytes": 7685,
+      "sha256": "64491270f4b931ee972fb11721e36cf5c01e8cfae449f0e94e7dbb59b281653d"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\km.js",
+      "bytes": 6509,
+      "sha256": "e61079f14070dfa9c7b2047eb79f5bea6d4e845f192756d103c121bbd63ee18a"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\kn.cjs",
+      "bytes": 7688,
+      "sha256": "1c05195a8a6e803ea732990c7cae61dd0d8162cf58dc0129d00de4f629798be2"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\kn.js",
+      "bytes": 6512,
+      "sha256": "884b1b68a1ca02fe9a774b8de9cbfa3486892eea36192699120f57b31f0a1f42"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\ko.cjs",
+      "bytes": 6285,
+      "sha256": "6a8121c8f38ffd119b4c229f8e22fe2b0115513aa1fd3d3c16970e967b11bebb"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\ko.js",
+      "bytes": 5109,
+      "sha256": "11fcef61a2f23e010bf0f569d71be0d49524afc97f3072cc03fdc6fe3ea2f14d"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\lt.cjs",
+      "bytes": 9399,
+      "sha256": "e2f1b949cd5cc8b048955db5a85edcdf70ad17b6347bb6de493df53e18e0a9b9"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\lt.js",
+      "bytes": 8223,
+      "sha256": "d2e67a35a3c6e7241a9eb9c5851e4b5b651ac8b23278854862e6055829946c48"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\mk.cjs",
+      "bytes": 6575,
+      "sha256": "bdb023dd11a5b25d4caba0022491581f99264c12827146d2df3c2fb3b1a677d9"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\mk.js",
+      "bytes": 5399,
+      "sha256": "64ddd914c432ba5690d0686bff6603651ce886a891f84823d7dc766c9c980cd1"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\ms.cjs",
+      "bytes": 5850,
+      "sha256": "fd5fa183bf0c2de256b12aa2a552bc6060d6e338a568f70eb2c53d508550c730"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\ms.js",
+      "bytes": 4674,
+      "sha256": "94faf0d306ffa2a4f95e57f3e53060d27220a639b9cb529f00d1d01b6270f045"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\ne.cjs",
+      "bytes": 6995,
+      "sha256": "dbbb0fbd17e5add4aa5552acf1fe880e4a884318b5476699f514e24a74be647f"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\ne.js",
+      "bytes": 5819,
+      "sha256": "6da69989b702ae15baa27b799b6b2b32fd011ba3980a190dd0eccfc9233083d6"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\nl.cjs",
+      "bytes": 6115,
+      "sha256": "07cd7721ec51b7c89cb49af7a3b6fd596be2b783f06f923e21f29f7bce67c024"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\nl.js",
+      "bytes": 4939,
+      "sha256": "296ced8be508c5f9e82b562049d2974882029bcd5b2ab4ade14401b33ec99909"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\nn.cjs",
+      "bytes": 5854,
+      "sha256": "91e2bf70fef65cd83e5f129ba919fdb6c306b394a1cc49dcdd70bb82a034a998"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\nn.js",
+      "bytes": 4678,
+      "sha256": "bae9756817629db30841eb54a27ed9b3c71c2a4208314d8d070be624bd2e9359"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\no.cjs",
+      "bytes": 5869,
+      "sha256": "3606b2dc51dcc9f053a5d7311ee553cb158fa7af7883a7a502c4caf2ce6cd442"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\no.js",
+      "bytes": 4693,
+      "sha256": "f358e5586940350ee25a05db184565d23eb1c66903e182ebec812172f31cb55a"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\ota.cjs",
+      "bytes": 5899,
+      "sha256": "4608faa8ed3d006312a7a6d7104765b111e32150138c388795327c69c5e79314"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\ota.js",
+      "bytes": 4723,
+      "sha256": "66ed8c3ce00b2e9971ed5a17f002937405d8cdfeb399ebe012db9d2317f42146"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\package.json",
+      "bytes": 127,
+      "sha256": "3e3125b5a537a24c3632c1c5c09640ce7bcb3935901b127ad8ae3c37a27f133f"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\pl.cjs",
+      "bytes": 6326,
+      "sha256": "9c369c4ab4f89df3339dae388e2bb2edb7e72a4842b780890dd5ce733af53a42"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\pl.js",
+      "bytes": 5150,
+      "sha256": "b7f82cf9f747785beeec05cd31d3d7493c52bd3647598924141568f148c07222"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\ps.cjs",
+      "bytes": 6299,
+      "sha256": "b328aa16b991681bc0538e1034af3d61704434f5f10fa2d3509456314cb3c460"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\ps.js",
+      "bytes": 5123,
+      "sha256": "1c15b81fcce0cdc59dbcca18df5c4ecf4e176fc3fb7668207b9ba54df43cce46"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\pt-BR.cjs",
+      "bytes": 8200,
+      "sha256": "8f91c3ddd94d52ec29708a2efa4f6d0dfbc4ecd856708eca843c0bae031687f1"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\pt-BR.js",
+      "bytes": 7024,
+      "sha256": "abc52db767b9dd938954776728ea7480cdcab569a5a17664f60e5a2c1d63e60b"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\pt.cjs",
+      "bytes": 8200,
+      "sha256": "6af7063f00ede92bf48760fde31b1fa61506be18254e38e2ae6fcf7aab997d89"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\pt.js",
+      "bytes": 7024,
+      "sha256": "93a820f60d571607bf34b69198f5b24617475584c0b22c0f8d160fcdef096a46"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\ro.cjs",
+      "bytes": 6059,
+      "sha256": "49f3e5315b019a14cd429729c81cac5de6996888ac1d9954219b15757177970e"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\ro.js",
+      "bytes": 4883,
+      "sha256": "54751d2866171c9c7ce1a72868dec09efa54d1b2b67401767594c5b360aca38a"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\ru.cjs",
+      "bytes": 8271,
+      "sha256": "6cc82a211a5a72040148cfd929e1ec846fb1ea6c57388c7bf10aae7f16f4d3a0"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\ru.js",
+      "bytes": 7095,
+      "sha256": "40a019b53bd1684fd4b750db87021520dd5d710f714010c0a594e5bcf5787478"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\sk.cjs",
+      "bytes": 6125,
+      "sha256": "1ca6c89c6d63a2b8d22402f415cf99b153660f3986dd8a573f7f91ba1a28acca"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\sk.js",
+      "bytes": 4949,
+      "sha256": "ae7c49242e70149434c9051dd00209afbd517d98ba54c13692371a5340b616da"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\sl.cjs",
+      "bytes": 5932,
+      "sha256": "f987d45d2948b9c1ecc666cbec7f2470dabbd58a507391820ffd38f70c9dce0c"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\sl.js",
+      "bytes": 4756,
+      "sha256": "490ca48f8aae3aed660758b32856d49a9fc5c7e255dad220e75abaef8c35140b"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\sv.cjs",
+      "bytes": 6017,
+      "sha256": "c637d45fd8df36d8afb549adeb217085255cdc2fecc8dac348a50786c73099bf"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\sv.js",
+      "bytes": 4841,
+      "sha256": "448f36996bb0d159489b34ad7d86df03e520a13e43b1c98ea2fb18d7ed4a3c95"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\ta.cjs",
+      "bytes": 7864,
+      "sha256": "cefeaca1216517fb545069408f4df6861be08df745882360b6ea07f882b87a98"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\ta.js",
+      "bytes": 6688,
+      "sha256": "8b6e1bc033fdaefb1acfc7edf88c9f53c3a50cc892066effdab306103e994d42"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\tg.cjs",
+      "bytes": 6823,
+      "sha256": "8f8d44284f22935f9941dc5f242892c22a33ccce8d6cec0af6fd379eaeb3282b"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\tg.js",
+      "bytes": 5647,
+      "sha256": "9a5c9a3b18b8ccded28d66033575b22d823df17a7afa8bb9a733f31fe071462f"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\th.cjs",
+      "bytes": 7739,
+      "sha256": "ce34bfcf9be95ca74bf5034d45f957f291a5705997067a11d76740e6786438f6"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\th.js",
+      "bytes": 6563,
+      "sha256": "913cc4962ddf5cb54ed694d04b7008493ef401d3333b26426b32f4890712574e"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\tk.cjs",
+      "bytes": 5634,
+      "sha256": "cf158cdbca312af9f2b879f78b09ebe189fabc272e67dbde59acd790da883dac"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\tk.js",
+      "bytes": 4458,
+      "sha256": "445abfed18c5a9d79143b02c9cf9c171b41fb5dff8ffc2cb59b7aef7203e5a7f"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\tr.cjs",
+      "bytes": 5818,
+      "sha256": "e3343bc4bec8b59aa1cb5ea270d38d816f2ac41a05cd9f9222a4567bc919a4d4"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\tr.js",
+      "bytes": 4642,
+      "sha256": "bca07607a27f518f19877dd9c2235fada9c73eb56896f0f6e274781fab71d64e"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\ua.cjs",
+      "bytes": 430,
+      "sha256": "0565126e33d30fd26046fd5399fe6293e8827fa846c3a7ff414e4e63acbfbf0a"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\ua.js",
+      "bytes": 111,
+      "sha256": "9391169ffbc72f777a83230b6ffcc3f4cf46ab5945ec540de9ef4609dca1f4cc"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\uk.cjs",
+      "bytes": 6841,
+      "sha256": "b8483f06866654d53b689b0540492e2424cb4a128922781084365fe52ed443ae"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\uk.js",
+      "bytes": 5665,
+      "sha256": "1e59ba41296aeb5b6142a6e5ed84712931e33e54ab0b9ae5d83faf436fc3d968"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\ur.cjs",
+      "bytes": 6667,
+      "sha256": "7d5c4e0fc0703e269fd2c98087187535d96d705be0f5b53b7b8cb403cf8d5843"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\ur.js",
+      "bytes": 5491,
+      "sha256": "d37ed2c93408e0a6b6e1cd290117a6f0e9d7b2c83509cd34b502e1dd94899c87"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\uz.cjs",
+      "bytes": 6020,
+      "sha256": "5694b9fd46b14f8645e241714b31b0ad1f06ed63122344906aa07c568e012bd3"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\uz.js",
+      "bytes": 4844,
+      "sha256": "2cbe07635b03064ffad0bfcc98d2d570f3264b9cd3e22bbd5c160cd0343f7872"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\vi.cjs",
+      "bytes": 6143,
+      "sha256": "3019737524157cec5925e8d7886de8bd67ac21f923a1762505064dc93ebed177"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\vi.js",
+      "bytes": 4967,
+      "sha256": "15939adaf263e0869c602d4b34c206178a235b8bec11c8207ccd3fa50de3a141"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\yo.cjs",
+      "bytes": 6023,
+      "sha256": "8ab657a1e641acc9f57b886b7b2ed47a96ed9a7677426a3047f14edec5041bb8"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\yo.js",
+      "bytes": 4847,
+      "sha256": "88b33f6527c1a2faaf159568330cf727c448dc468eac72142a6fb24f8714ac1e"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\zh-CN.cjs",
+      "bytes": 5798,
+      "sha256": "1cb0d539c55dd7def2507f008879542faf121a4e2d0edef87a8a9698a9a36517"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\zh-CN.js",
+      "bytes": 4622,
+      "sha256": "8fc02f2bd4d92f46b24b8d82da0ee95c962fc80c14dd7dd469500e14de08d320"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\zh-TW.cjs",
+      "bytes": 5848,
+      "sha256": "d538244c13f88f72aa9b540f324590f546ce5649cc4540c9a439cb6b126384c7"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\locales\\zh-TW.js",
+      "bytes": 4672,
+      "sha256": "01d9b119e318d8b9f1a8fa720d06424457429425a61d0730984b750e6a5edf7d"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\mini\\checks.cjs",
+      "bytes": 4911,
+      "sha256": "ee96b7e28fc2182e1339e99ad95f6080b94645cdc187fe3f5fbb01bf9cd2a589"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\mini\\checks.js",
+      "bytes": 703,
+      "sha256": "2a51b60cc14bc7bf1fe7ae61df47a858e297798691de6d89019f31e35bf25c4f"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\mini\\coerce.cjs",
+      "bytes": 2540,
+      "sha256": "41171fb2495686f645dccb177ae5f6462965d073c039ebb3df7d9b3c990bc6c2"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\mini\\coerce.js",
+      "bytes": 690,
+      "sha256": "52d5c50a16ff2a4a6c1615cf6933be996c2fc20c7a7cc42221ab00a56a1072a4"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\mini\\deep-partial.cjs",
+      "bytes": 2274,
+      "sha256": "fb888413040c7fb36bda2da5b9bf7099934c8a08018a4a1dff7d9af3dda3dffb"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\mini\\deep-partial.js",
+      "bytes": 476,
+      "sha256": "dd49d549ae82ef175a20a0e6398770cd4968d3dc713da67ca3dd3ec94b869458"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\mini\\external.cjs",
+      "bytes": 7197,
+      "sha256": "892311c6152ce5335814d29cff1453a517a44bef13696e11fb8b030775ef8c11"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\mini\\external.js",
+      "bytes": 923,
+      "sha256": "ab008c757db2d32840bdfc270ad433010d8a71eac5c2dce9a7509dcee087cd68"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\mini\\in-out.cjs",
+      "bytes": 3468,
+      "sha256": "55796bd10e089338c913b0f62e96c2c8ce05691a780997109b11beabdbb5ee81"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\mini\\in-out.js",
+      "bytes": 1623,
+      "sha256": "161b1b012a5354ad990f4ba6181835d4a186d79055df35a5004036f83c17f66b"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\mini\\index.cjs",
+      "bytes": 2071,
+      "sha256": "429b861f1d159fe1fdbb977ed4fbca5c11641d4df45d80d453768f8b0e710786"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\mini\\index.js",
+      "bytes": 81,
+      "sha256": "455d93e660b61feec18cd4c31e2f394627546ae8ab31f9bacdab6318112ac31c"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\mini\\iso.cjs",
+      "bytes": 3217,
+      "sha256": "9b8f6e3ae34dd9035dc7c4023ded84c655236121c32a66df3739dc28240ec460"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\mini\\iso.js",
+      "bytes": 1311,
+      "sha256": "24acf58a401645baaab9846987e5387cdf7c9e659e2e0aa3b3b6b8ac5555a5ed"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\mini\\package.json",
+      "bytes": 127,
+      "sha256": "3e3125b5a537a24c3632c1c5c09640ce7bcb3935901b127ad8ae3c37a27f133f"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\mini\\parse.cjs",
+      "bytes": 2743,
+      "sha256": "7d8217f1f00486d3ef62f12bf425c09ada8906a99d47ee19d2361c7cb78d45b8"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\mini\\parse.js",
+      "bytes": 207,
+      "sha256": "b87374f4e821d583f699d83e4b74ac59e4a5a782c510959187a0ba209145d76b"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\mini\\schemas.cjs",
+      "bytes": 37964,
+      "sha256": "06fc34c10fb14cb50b09c525822886593fd501d9d9e964dec8f2dfc67c58f399"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\mini\\schemas.js",
+      "bytes": 32509,
+      "sha256": "5614339bbec6b9be13ed1809e1215fe44d78e99f5f0eee848c0bb3b25dc1c9b6"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4\\package.json",
+      "bytes": 127,
+      "sha256": "3e3125b5a537a24c3632c1c5c09640ce7bcb3935901b127ad8ae3c37a27f133f"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4-mini\\index.cjs",
+      "bytes": 2089,
+      "sha256": "7c8d8f6e8b841a620bb49de3d58bd1e97d0e8aacfa1f051747d7ae47b893e857"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4-mini\\index.js",
+      "bytes": 99,
+      "sha256": "92f42fea7c90ec3f2f623a923d8798d2a316cb4ff93d6399084065b9214365de"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\node_modules\\zod\\v4-mini\\package.json",
+      "bytes": 127,
+      "sha256": "3e3125b5a537a24c3632c1c5c09640ce7bcb3935901b127ad8ae3c37a27f133f"
+    }
+  ],
+  "logs": [
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\docs\\evidence\\desktop-chain-artifacts-final.log",
+      "bytes": 466,
+      "sha256": "f58f3b4667234ce39507a0b079c516ff5ad0df73d04d64a5fe40c030138bb295"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\docs\\evidence\\desktop-chain-artifacts-v1.log",
+      "bytes": 3379,
+      "sha256": "b8b89d07d57fb90d98dae602e1df1e60694d01560e140997279eb615c5a01ee7"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\docs\\evidence\\desktop-chain-artifacts-v2.log",
+      "bytes": 1573,
+      "sha256": "af4b1009570b8a1ebd41baa7745781eca68f55beb8c74b532a3121631a4bdcca"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\docs\\evidence\\desktop-chain-controller-regression-v2.log",
+      "bytes": 314,
+      "sha256": "71c9bb7473ee42bec1f5c81566458e57b5c93154f66b8a34d6cd0f61d024f39b"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\docs\\evidence\\desktop-chain-helper-build-v1.log",
+      "bytes": 150,
+      "sha256": "34f06a22b39d14668cd75eeb03cff464096bd8befe389b377a4e50df74372fa4"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\docs\\evidence\\desktop-chain-helper-build-v2.log",
+      "bytes": 150,
+      "sha256": "3a282ea3ec86117048efd57d48f4b8c6763297943080c3391d25092d22e63829"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\docs\\evidence\\desktop-chain-helper-clippy-v2.log",
+      "bytes": 150,
+      "sha256": "ef059d7fa932b2dea8009c60208f6c6d8c25dd4bf1e808ad948b1417a5d20827"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\docs\\evidence\\desktop-chain-helper-clippy.log",
+      "bytes": 838,
+      "sha256": "ad3022282d0327bad04d563b5579e8eaca58ef4e3d84892f64c63c542a1b1ee7"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\docs\\evidence\\desktop-chain-helper-deny.log",
+      "bytes": 32290,
+      "sha256": "afcf1eec23f8c389ebada8b35864e1830194ad78bb47212492914f35f325c93f"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\docs\\evidence\\desktop-chain-helper-tests.log",
+      "bytes": 575,
+      "sha256": "e97b32161a82a01bdba77cccc8062eb9bd3aaa05526b49a9beb9185d07722acc"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\docs\\evidence\\desktop-chain-host-regression.log",
+      "bytes": 912,
+      "sha256": "8af4e13f61b3fabc5624e1371db652e1f4755468785aaa1cb885501501029fc0"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\docs\\evidence\\desktop-chain-native-final.log",
+      "bytes": 1278,
+      "sha256": "297655d86e4abce48dfaab37ce157fb9c287d70c8a806e99159c999cf6deeb57"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\docs\\evidence\\desktop-chain-native-v1.log",
+      "bytes": 1285,
+      "sha256": "eb782cd9e0ec8ef3f212c26a376c58c6d477b61c411d37d93a4e408a474ed0e5"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\docs\\evidence\\desktop-chain-native-v2.log",
+      "bytes": 489,
+      "sha256": "b7534c73b2e301735d1eb7bb5afa7789949e7302aeceba65dad5fecf5129c48a"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\docs\\evidence\\desktop-chain-node-build-v1.log",
+      "bytes": 3886,
+      "sha256": "cc885d0af28d14cf9f19f4ad1279d0ddcbabe16ca253beaaf80a820680c53bdd"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\docs\\evidence\\desktop-chain-node-build-v2.log",
+      "bytes": 134,
+      "sha256": "cae2362d53ea1577b3428bd17e6494fe88134bc711c0a1b69076fee0aa2a225b"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\docs\\evidence\\desktop-chain-node-build-v3.log",
+      "bytes": 134,
+      "sha256": "4cd336b8f877947f3a1c0c434db7447e3f264d09d75f1d9710e05a94c8b85073"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\docs\\evidence\\desktop-chain-node-clippy.log",
+      "bytes": 134,
+      "sha256": "403dbffc1e4b26bc9ec0667303d0a443557662d6b566e76f591c470e5a607c8d"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\docs\\evidence\\desktop-chain-node-deny-proxy.log",
+      "bytes": 7869,
+      "sha256": "f7f4efff6700f63617ae67b140b531e342517e2277a0843301c8db03daea7d10"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\docs\\evidence\\desktop-chain-node-deny.log",
+      "bytes": 2799,
+      "sha256": "f3dec2a67cf5561d52d7fd02d8242834f218c38a50eec8f233736b36a48db308"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\docs\\evidence\\desktop-chain-node-tests.log",
+      "bytes": 536,
+      "sha256": "1073c0c8e50f170d8253c40987708de41dc1552e29b7bc1c1ec61b04e11958f1"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\docs\\evidence\\desktop-chain-regression-v1.log",
+      "bytes": 5230,
+      "sha256": "14e7b97f3d7abe7803585cae3f155c307a0ef80230b62fe6f30155d663a52282"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\docs\\evidence\\desktop-chain-types-final.log",
+      "bytes": 62,
+      "sha256": "712b107f0d800d4b3596f8b3e72db45f6e8e555ff38647ff076e0f10456550f0"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\docs\\evidence\\desktop-chain-types.log",
+      "bytes": 62,
+      "sha256": "712b107f0d800d4b3596f8b3e72db45f6e8e555ff38647ff076e0f10456550f0"
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-chain-f078dd98-1fdb-4caa-b8e1-77f8fc574a08\\failures\\cancel-began.txt",
+      "bytes": 4,
+      "sha256": "200651a8b2d5912f692db89468a7d47d86a3ed6844f48f1b15f2be1d9c9a7e5e"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-chain-f078dd98-1fdb-4caa-b8e1-77f8fc574a08\\failures\\cancel-effects.json",
+      "bytes": 1683,
+      "sha256": "a5db4be57e9fde0bb1603a25ef504ef57fe6ad0063ab9448afb8826677887083"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-chain-f078dd98-1fdb-4caa-b8e1-77f8fc574a08\\failures\\describe-3aba5153-797f-4492-86cf-9bc6ef3df574.json",
+      "bytes": 61588,
+      "sha256": "e5114841006b6386f68c99e0d52f67d2d93cb76a9997ab8324a35b6b5787a981"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-chain-f078dd98-1fdb-4caa-b8e1-77f8fc574a08\\failures\\describe-752ed0b8-167a-4797-ba8f-6b9ce42161be.json",
+      "bytes": 61588,
+      "sha256": "6ee9b52ddd2d3d55e6b663993dfb759edf238a9877de62e9991544914ed3a09a"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-chain-f078dd98-1fdb-4caa-b8e1-77f8fc574a08\\failures\\describe-a24eaad5-14a5-41f3-9982-f7a785430abd.json",
+      "bytes": 61588,
+      "sha256": "23ad8b0d4e0e3aa42a1eaf4e3fd2e8810f290ffe8b1e527c74a8ccc9919fc08d"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-chain-f078dd98-1fdb-4caa-b8e1-77f8fc574a08\\failures\\describe-c5f8ae74-3d40-4d5a-b944-9423ad4e27c1.json",
+      "bytes": 61588,
+      "sha256": "25be62a90e62bd6b0f3d9120d946c25e1cba6c50330bf1de129482e954516d7d"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-chain-f078dd98-1fdb-4caa-b8e1-77f8fc574a08\\failures\\describe-dad3c682-4c14-4e9f-83b0-f6b85d3a1ec1.json",
+      "bytes": 61588,
+      "sha256": "d434296388b5a1ea002ae86f2ecb4c30e778a2c7716634e66341b55f7996f4c1"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-chain-f078dd98-1fdb-4caa-b8e1-77f8fc574a08\\failures\\node-crash-began.txt",
+      "bytes": 4,
+      "sha256": "200651a8b2d5912f692db89468a7d47d86a3ed6844f48f1b15f2be1d9c9a7e5e"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-chain-f078dd98-1fdb-4caa-b8e1-77f8fc574a08\\failures\\node-crash-effects.json",
+      "bytes": 1623,
+      "sha256": "fbfb7096061d14fd893c42b62f58d8ea19fd026e7e7ef22be47b7a22a64ab7fd"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-chain-f078dd98-1fdb-4caa-b8e1-77f8fc574a08\\failures\\node-log.json",
+      "bytes": 38,
+      "sha256": "dd8c7ec8d628df80899fd581af41a1a62c9a6c9c615eb8777bdff53626258a74"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-chain-f078dd98-1fdb-4caa-b8e1-77f8fc574a08\\failures\\Screenshot-2b76b6b3-6c80-40da-a8fe-cdf7ec022028.json",
+      "bytes": 3202,
+      "sha256": "88e6a8fb15e21c3c323d7140c9d96524c8eb4484561638ad3ececfe83829e280"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-chain-f078dd98-1fdb-4caa-b8e1-77f8fc574a08\\failures\\Screenshot-371dcfe7-0921-467b-966b-1a12ccd639a2.json",
+      "bytes": 3239,
+      "sha256": "974679f8f82fd5c39b534eb5c86c484ba387c37464c3a7936ffcd4ee901dd4d1"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-chain-f078dd98-1fdb-4caa-b8e1-77f8fc574a08\\failures\\Screenshot-72637652-e31b-456c-88f6-558e6961ef30.json",
+      "bytes": 1424,
+      "sha256": "f8634145598f301929dad16088e4c532e10906e7160ce588ae8fe7f2bd928ce9"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-chain-f078dd98-1fdb-4caa-b8e1-77f8fc574a08\\failures\\Screenshot-776b7938-3582-4386-8008-9d76187825c9.json",
+      "bytes": 4870,
+      "sha256": "bcd533ea7170ff57d901d204cc57624e0c4b4db7ab69b7f010e76de30efd83ef"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-chain-f078dd98-1fdb-4caa-b8e1-77f8fc574a08\\failures\\Screenshot-e577dc28-b0de-46c0-b0f1-528c3e2aec79.json",
+      "bytes": 1424,
+      "sha256": "0adb80b1d963de8ac06fc8dcb3a07bcdb86f6d8db457c16d36b3c6c7d8da26ed"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-chain-f078dd98-1fdb-4caa-b8e1-77f8fc574a08\\failures\\Screenshot-f3cb1329-22b6-48a6-9765-4b32ad282236.json",
+      "bytes": 4870,
+      "sha256": "cc5d32394bf412a2885b325cfd53feca589a981b6b5a3634f7038268f0feb47c"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-chain-f078dd98-1fdb-4caa-b8e1-77f8fc574a08\\failures\\wire-probe.json",
+      "bytes": 1370,
+      "sha256": "3b573fc113b6ffcbcf2ee9d7eae848a187a66bf1782cfbd013a6b563387e987f"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-chain-f078dd98-1fdb-4caa-b8e1-77f8fc574a08\\interaction\\after.png",
+      "bytes": 17527,
+      "sha256": "9d4a3ae432607298e06c0eeb9e2aa606294115a7d711ae86e6366cf1b47abbd8"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-chain-f078dd98-1fdb-4caa-b8e1-77f8fc574a08\\interaction\\after.png.receipt.json",
+      "bytes": 214,
+      "sha256": "9a7b33f53b920c281a7ecfb9a253806580541483a98aeee8bc0d8db2d0e2324b"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-chain-f078dd98-1fdb-4caa-b8e1-77f8fc574a08\\interaction\\before.png",
+      "bytes": 14164,
+      "sha256": "9b013808d1e1c788c1665e5d2444304bae10bca38841f838e253aed2c4e642fe"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-chain-f078dd98-1fdb-4caa-b8e1-77f8fc574a08\\interaction\\before.png.receipt.json",
+      "bytes": 214,
+      "sha256": "de9cd5da9380ef674026f87e195f170eab7df91c26cefd14e72c79f5dc4e304c"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-chain-f078dd98-1fdb-4caa-b8e1-77f8fc574a08\\interaction\\Click-93cf55a4-8e90-4678-a26c-f97c8e1f37c5.json",
+      "bytes": 1524,
+      "sha256": "099ca5c993fcebc856c07984140bdd4f61566ce2c94794f718582b579acc2aef"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-chain-f078dd98-1fdb-4caa-b8e1-77f8fc574a08\\interaction\\Click-c2aec15d-e6f0-40ad-91a6-b2016440ed64.json",
+      "bytes": 1432,
+      "sha256": "942d287bee367079a5845f8468c566df1b213827c26e66af509e7190abda7a78"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-chain-f078dd98-1fdb-4caa-b8e1-77f8fc574a08\\interaction\\Click-c36cbb71-5800-4c64-b189-fd86cfb028dc.json",
+      "bytes": 3006,
+      "sha256": "b68f752406c514d12aa5bb1f4050b7bf5f10836a1d54b33cc9b1fdff7007a0ca"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-chain-f078dd98-1fdb-4caa-b8e1-77f8fc574a08\\interaction\\describe-1fe8bd4a-6c52-4863-ac78-c80f19b116a0.json",
+      "bytes": 61588,
+      "sha256": "1c7b55403e0104cdbd59e199daf1ac4bfd52d6f383d8b0321cbe8d1ab5da9945"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-chain-f078dd98-1fdb-4caa-b8e1-77f8fc574a08\\interaction\\describe-74038a12-6b6f-42c1-b50c-f465eede5b77.json",
+      "bytes": 61588,
+      "sha256": "784bb086215021ce0124b9ed8706562850f7fb5357b1db22f938c42997c05eb5"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-chain-f078dd98-1fdb-4caa-b8e1-77f8fc574a08\\interaction\\describe-80d7e783-eb7d-46a5-9f50-9a2c641dd67c.json",
+      "bytes": 61588,
+      "sha256": "03ffa9727b23270929484dd412d417fe511826143e35f4a4a839ff836caceab1"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-chain-f078dd98-1fdb-4caa-b8e1-77f8fc574a08\\interaction\\effects.json",
+      "bytes": 293,
+      "sha256": "594d07a14afebace9975b75377671847895a911dbaa35413ec71f10b32d61e76"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-chain-f078dd98-1fdb-4caa-b8e1-77f8fc574a08\\interaction\\fixture.json",
+      "bytes": 198,
+      "sha256": "6485cd7d33fe9f12cb7f6f8616da4580cb4b033be2b2756605fb4884d6ddd96b"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-chain-f078dd98-1fdb-4caa-b8e1-77f8fc574a08\\interaction\\fixture.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-chain-f078dd98-1fdb-4caa-b8e1-77f8fc574a08\\interaction\\maintenance.json",
+      "bytes": 95,
+      "sha256": "0997e89f85820590f77e13a917ecfb49c2e77c7c3175f91860da5ef962336653"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-chain-f078dd98-1fdb-4caa-b8e1-77f8fc574a08\\interaction\\node-log.json",
+      "bytes": 38,
+      "sha256": "dd8c7ec8d628df80899fd581af41a1a62c9a6c9c615eb8777bdff53626258a74"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-chain-f078dd98-1fdb-4caa-b8e1-77f8fc574a08\\interaction\\node-recovered.png",
+      "bytes": 17527,
+      "sha256": "9d4a3ae432607298e06c0eeb9e2aa606294115a7d711ae86e6366cf1b47abbd8"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-chain-f078dd98-1fdb-4caa-b8e1-77f8fc574a08\\interaction\\node-recovered.png.receipt.json",
+      "bytes": 214,
+      "sha256": "13bc4701c88decdb8c5ac6137359be4cf25120a377fd54abc950edd2aa6562c7"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-chain-f078dd98-1fdb-4caa-b8e1-77f8fc574a08\\interaction\\Snapshot-c84b3955-4def-4ffc-a7c3-96b4289e1e5c.json",
+      "bytes": 99961,
+      "sha256": "315878d8d1ee4f715bea8bca87d5b61d8e3b1513b9669d08ecafd2d337a836f6"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-chain-f078dd98-1fdb-4caa-b8e1-77f8fc574a08\\interaction\\Snapshot-e3d68cfc-4833-4c3b-861a-417bfe39b89a.json",
+      "bytes": 98389,
+      "sha256": "7ab9bb00899f413b2b884a10b2cb42438b42d435e3b78fe4953c7266e7e63ab4"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-chain-f078dd98-1fdb-4caa-b8e1-77f8fc574a08\\interaction\\Type-56e422bd-e2b1-4e4f-88ac-478506f9db01.json",
+      "bytes": 3202,
+      "sha256": "a36a9bacccd0c95db8230b5cbc1475aeaef614ce7a2cd545cc47761b0f1d947b"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\after.png",
+      "bytes": 16114,
+      "sha256": "1ef0386d91f0673c87e0f1e9c76c711678c499c61df336b9302fb64ee9538af0"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\before.png",
+      "bytes": 13932,
+      "sha256": "aa3717af2d6d870d30361b7dba09d1bca7cc93f839a6756b82f1b93307a3b58c"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\capture-error\\Screenshot-75ae9d50-309b-4be5-8d4f-acdf3bf434c5.json",
+      "bytes": 775,
+      "sha256": "055cef033ce2224e106c24da5258eda8f97fa00e071884d80506bf42c6db8f88"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\capture-error\\settlement.json",
+      "bytes": 74,
+      "sha256": "128da82b07fcdcb89d9fedfc4985ba7dc8c8ca06a24915f3f11c430526dfd407"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\capture-error\\stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\capture-error\\tools.json",
+      "bytes": 35773,
+      "sha256": "69e159ade7579ef5a94119c84be5183d030505f9a07729f9d9115f7f294191ce"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\delete-missing\\FileSystem-1183bc7c-dff4-4b92-ad1f-9c168f6b14b3.json",
+      "bytes": 680,
+      "sha256": "f5cc8c7c3476ae70c4f3b7f7404cde05e093b1a2e28eddf50f336277403fc243"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\delete-missing\\Screenshot-44a42d88-6d64-4e9a-9a84-f59153408b45.json",
+      "bytes": 1729,
+      "sha256": "86716ba0732438e10d61a11984256d95327273e6eeb4898439c958f148f70f28"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\delete-missing\\settlement.json",
+      "bytes": 74,
+      "sha256": "128da82b07fcdcb89d9fedfc4985ba7dc8c8ca06a24915f3f11c430526dfd407"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\delete-missing\\stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\delete-missing\\tools.json",
+      "bytes": 35773,
+      "sha256": "3dcffe7581a1ab627d737508899cfc673ec5208090cf7c7dcc1853ffec5a6d33"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\effects.json",
+      "bytes": 247,
+      "sha256": "b1638726605d62f082f9e964ef97a383b37bb9b654cefab8df7c65aa39db3fc3"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\eof\\began.txt",
+      "bytes": 5,
+      "sha256": "b3cebf40b6c091af81c9751816cfe974debf2a19974cfb6ce3adf3019300031d"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\eof\\effects.json",
+      "bytes": 58,
+      "sha256": "b44d70dfc3a7228b48e7f82b7dcad259daa74ced9aa64b16af72cd9809dd7b79"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\eof\\interrupted.json",
+      "bytes": 523,
+      "sha256": "8bac7baaec691e72ebcfe0f0e8c8928be2254c992cafaf05754a53123e06635a"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\eof\\Screenshot-3c131565-d29c-4436-b8f2-deb10bf4aecc.json",
+      "bytes": 1729,
+      "sha256": "eabb95d711407d54b1a0910b2ac8fd3ef8c1f01e02fb4ce5a73b5cf14f322248"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\eof\\settlement.json",
+      "bytes": 74,
+      "sha256": "128da82b07fcdcb89d9fedfc4985ba7dc8c8ca06a24915f3f11c430526dfd407"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\eof\\stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\eof\\tools.json",
+      "bytes": 35773,
+      "sha256": "de49cd8f95a0753edf953e421f0400bd5f814c5afd96a1d56f7c349d2346adfe"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\fixture-stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\fixture.json",
+      "bytes": 199,
+      "sha256": "1eb85c8145fdbd7dfb4e53266529daee2e6a3ab893e37a24339f2ceadaabc96f"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\interaction\\Click-8eeeafab-8b7e-467f-a47a-a9202f14b6b0.json",
+      "bytes": 128,
+      "sha256": "52f955201abdeb38a7d67ab7ed8b928b4695e32df05299a92e4a60ffaf3eee8c"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\interaction\\Click-c9625404-54c4-4853-8879-aa356329ced1.json",
+      "bytes": 680,
+      "sha256": "7a64811b57b8dfae22139e4450f756eed3bad95ac1e6ef1afc1623e0c36a33b8"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\interaction\\Click-d7026cb1-9d6e-400c-9456-1d96463e5fdf.json",
+      "bytes": 128,
+      "sha256": "44bad227b40dac8723b68365ed2618391f34d5a68950c1bf52fdcf049b1931e1"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\interaction\\Screenshot-346387f0-fd5d-4bde-a60f-e0410c26c1df.json",
+      "bytes": 22872,
+      "sha256": "2ee284f97aacae979f7c427b66b87a9f69bfb74b58b22aff3f8e4d8e77eeceb0"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\interaction\\settlement.json",
+      "bytes": 74,
+      "sha256": "128da82b07fcdcb89d9fedfc4985ba7dc8c8ca06a24915f3f11c430526dfd407"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\interaction\\Snapshot-5b79e20f-fe78-4001-aab2-85e5a4799761.json",
+      "bytes": 63585,
+      "sha256": "d1e566d5f08ce6767760633c94af763cdc475d04909c276f8a97ba8fc89ad959"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\interaction\\Snapshot-f2f33726-02db-4ace-b823-8dc55a2b7bdc.json",
+      "bytes": 55221,
+      "sha256": "f661d420debab547b004604aee2e1911bb80d83e44b69d1e4269895046e997ee"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\interaction\\stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\interaction\\tools.json",
+      "bytes": 35773,
+      "sha256": "a48d1caf5efbe3251bfee28b42a7a66174576b4960c0af2ba8c2b842e06f7681"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\interaction\\Type-e2a6c8df-4e98-4b83-b892-19e670c54413.json",
+      "bytes": 737,
+      "sha256": "3af2ed336db14b0d49b2da8085f32aea7a86e582685e016607d16814ffec78c7"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\parameter-error\\Clipboard-10d0afec-1efe-4854-ba7d-056eedc2eef3.json",
+      "bytes": 566,
+      "sha256": "8bd0117cb3795919bd035514cedecc1e8969619458a8aec07de1c9a881506bda"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\parameter-error\\Screenshot-5d86729f-d751-45b9-8b2a-0d945daf6a14.json",
+      "bytes": 1729,
+      "sha256": "fe517a03e1feaee02254dedb4251d10b63863b0c99147e1dd83996cd93a692ea"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\parameter-error\\settlement.json",
+      "bytes": 74,
+      "sha256": "128da82b07fcdcb89d9fedfc4985ba7dc8c8ca06a24915f3f11c430526dfd407"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\parameter-error\\stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\parameter-error\\tools.json",
+      "bytes": 35773,
+      "sha256": "e3d24566d0f316cb875c018116aea01ece04991758feaaefb5091d5464d6408c"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\registry-missing\\Registry-197a3582-c536-4e4a-963f-184cc4a826b3.json",
+      "bytes": 818,
+      "sha256": "1901488818cfd8fa2fad7a4e3573f1e0b573ef72417e9e0d35b1727d1ca52671"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\registry-missing\\Screenshot-4da85b31-3c75-4ab3-a754-52c01eae2dcb.json",
+      "bytes": 1729,
+      "sha256": "5a84d2dac7fa2c9dc7b0da4504ce7359afc922c1bf61a82c349aae3552a93c0b"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\registry-missing\\settlement.json",
+      "bytes": 74,
+      "sha256": "128da82b07fcdcb89d9fedfc4985ba7dc8c8ca06a24915f3f11c430526dfd407"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\registry-missing\\stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\registry-missing\\tools.json",
+      "bytes": 35773,
+      "sha256": "a6dad9f5c2015383c45f5d0480c1b5d55234c8a402bec55d4888daa522ed3a97"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\scroll-axis\\Screenshot-c8306664-5e5c-4369-92d5-c366e96e718a.json",
+      "bytes": 1729,
+      "sha256": "de70d8f4d0518aeee74e8dda667e3cb4c768a54efb3423a4232e6884bb73bf51"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\scroll-axis\\Scroll-10a12877-e1e3-4777-ab7a-147f4159e900.json",
+      "bytes": 559,
+      "sha256": "9654a1bac61beaddc40ace99170e937d1393f99ab46a08e0cb4835e042ca523d"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\scroll-axis\\settlement.json",
+      "bytes": 74,
+      "sha256": "128da82b07fcdcb89d9fedfc4985ba7dc8c8ca06a24915f3f11c430526dfd407"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\scroll-axis\\stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\scroll-axis\\tools.json",
+      "bytes": 35773,
+      "sha256": "ac73511b0bc4c26b20101378ee3df55124e26cc3635a3a41a8580860163402d1"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\shell-partial\\partial.txt",
+      "bytes": 7,
+      "sha256": "9834a14ab9bcaa0f6a8da71073617eac8f004e596a3fa11d807b84631b825d9d"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\shell-partial\\PowerShell-a5e18131-4fac-435e-bac4-04f62336b3f3.json",
+      "bytes": 556,
+      "sha256": "30bf89d5f25e86534c1a811c9551435f0ae61747fccb3dc6d9d73b934ab765fa"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\shell-partial\\Screenshot-c60f7884-a756-42a9-ba8c-7e00f4ca4844.json",
+      "bytes": 1729,
+      "sha256": "3378531a0ab8035f56a0a257b20e3ad9f25b4e582dcf46e0cd38ff77e47bdce8"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\shell-partial\\settlement.json",
+      "bytes": 74,
+      "sha256": "128da82b07fcdcb89d9fedfc4985ba7dc8c8ca06a24915f3f11c430526dfd407"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\shell-partial\\stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\shell-partial\\tools.json",
+      "bytes": 35773,
+      "sha256": "c62c4ddbfb12da9618a6d25802e50fee1fdbaf9e996ef2d79b205d1986e7f854"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\stop\\began.txt",
+      "bytes": 5,
+      "sha256": "b3cebf40b6c091af81c9751816cfe974debf2a19974cfb6ce3adf3019300031d"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\stop\\effects.json",
+      "bytes": 59,
+      "sha256": "5e116fc04d61dbbaf9a16658a53e67fe6e14aaf5018515565345d328f3918713"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\stop\\interrupted.json",
+      "bytes": 501,
+      "sha256": "6675c0abf1bea4a90cb9b6790e3a8c6dc4c3d6f03f69e976af1c55f9cd234a97"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\stop\\Screenshot-91c1b9c4-6de3-444d-afa6-c3b734ab58e9.json",
+      "bytes": 1729,
+      "sha256": "482a5baa112eac26474bf4709f5e3a11766a55fe68f5b16671998be6325813e7"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\stop\\settlement.json",
+      "bytes": 74,
+      "sha256": "128da82b07fcdcb89d9fedfc4985ba7dc8c8ca06a24915f3f11c430526dfd407"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\stop\\stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\stop\\tools.json",
+      "bytes": 35773,
+      "sha256": "ec22b68f04dd8f6ee9bd961cd34b016415233f3c4bef1b1725d83de931ee985e"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\worker-crash\\began.txt",
+      "bytes": 5,
+      "sha256": "b3cebf40b6c091af81c9751816cfe974debf2a19974cfb6ce3adf3019300031d"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\worker-crash\\effects.json",
+      "bytes": 66,
+      "sha256": "d289d587e7be9bec2c561266f866ced58a5109ecdbf8130eb5e55d91d29c132e"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\worker-crash\\Screenshot-796fbb9f-e014-44d3-a149-8d49c9693096.json",
+      "bytes": 1729,
+      "sha256": "39f74d5fa3eab75108db367a3c5faffbd1f2f37e74afb240d72703eefedeb39b"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\worker-crash\\settlement.json",
+      "bytes": 74,
+      "sha256": "aeb92a7d33018c7d3faa0dc4d113544dc7ed7f59b015559a40c82c7d69b3fc3a"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\worker-crash\\stderr.log",
+      "bytes": 43,
+      "sha256": "c83af0bdc6d5bb04ad43de0c52ade664feaffa233bb597c37658505cdd92a7e2"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\worker-crash\\tools.json",
+      "bytes": 35773,
+      "sha256": "a856405078927c64a54bea6858aaf48e7b1e3dc0a3c2d5a174bba7fd0b844d29"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\write-directory\\FileSystem-81b08670-84a8-4d5d-b436-a4a59d337125.json",
+      "bytes": 726,
+      "sha256": "1a1c661812fc457a40259ccd513159bde76ee8c214e90ef7d36453ca829b171a"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\write-directory\\Screenshot-6daa23c8-7815-4f20-bdea-e8d54628eff2.json",
+      "bytes": 1729,
+      "sha256": "56b43837a02cd04960fad4573f5709e495f93f36df7e7a865ba53cb6173dcd28"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\write-directory\\settlement.json",
+      "bytes": 74,
+      "sha256": "128da82b07fcdcb89d9fedfc4985ba7dc8c8ca06a24915f3f11c430526dfd407"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\write-directory\\stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\desktop-native-b94d3d20-947f-465e-81be-0c83b77555e1\\write-directory\\tools.json",
+      "bytes": 35773,
+      "sha256": "808ec3ee37b55cc60a70f71f372005fea5dec42ef547a2badb7ecc72cd66eba3"
+    }
+  ],
+  "bridges": {
+    "python": "80 files unchanged from desktop-host-20261102.json",
+    "regression": "32/34 passed; unchanged 32 bodies and production sources; only old 7-tool count assertion changed to exact 10 names and both affected cases passed separately",
+    "service": "10 service tests passed in artifacts-v2; artifact 3 rerun after adding palette boundary test"
+  },
+  "review": "Accepted ordinary-user development chain by independent Codex /root/reach_plan_review: 622/622 fixed inputs matched, final PNG/effects inspected; root independently verified all 622. Production WTS, installer, full text, model vision and Reach Desk remain open."
+}

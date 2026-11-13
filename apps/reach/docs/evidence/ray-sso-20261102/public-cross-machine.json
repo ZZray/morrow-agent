@@ -1,0 +1,81 @@
+{
+  "origin": "https://118.25.103.226/reach",
+  "controllerHost": "ray-dev Linux",
+  "target": "Windows ordinary Reach Node",
+  "operationId": "2d50c6a2-ce42-4bba-9c8e-5f3cbe2ac214",
+  "requestId": "e9904d7c-c4c6-41b1-ac81-afa0170e5f3b",
+  "nodeId": "a45aa867-0eac-42e7-a112-d40cf744d932",
+  "execution": "succeeded",
+  "observedRunning": true,
+  "cli": true,
+  "mcp": true,
+  "reconnected": true,
+  "duplicateSameOperation": true,
+  "pages": 5,
+  "events": [
+    {
+      "sequence": 1,
+      "event_id": "6afc8648-4745-4b4e-baca-62f71ed4fa11",
+      "kind": "received",
+      "received_at": 1793609142593,
+      "data": {
+        "durable": true
+      }
+    },
+    {
+      "sequence": 2,
+      "event_id": "3410a3c5-90b9-426f-8fce-bbe33fce5d71",
+      "kind": "running",
+      "received_at": 1793609142692,
+      "data": {
+        "executionIntentSaved": true
+      }
+    },
+    {
+      "sequence": 3,
+      "event_id": "19840ca9-8441-4705-a920-ddbd794dcd15",
+      "kind": "output",
+      "received_at": 1793609142808,
+      "data": {
+        "pid": 44112,
+        "processStarted": true
+      }
+    },
+    {
+      "sequence": 4,
+      "event_id": "f3906116-9da3-4480-b7bf-a5907ff94db3",
+      "kind": "output",
+      "received_at": 1793609142967,
+      "data": {
+        "base64": "Y3Jvc3MtbWFjaGluZS1zdHJlYW0NCg==",
+        "stream": "stdout"
+      }
+    },
+    {
+      "sequence": 5,
+      "event_id": "4b7ea35c-955c-40f5-98b2-b55a5d6dd22e",
+      "kind": "succeeded",
+      "received_at": 1793609146070,
+      "data": {
+        "exitCode": 0,
+        "pid": 44112,
+        "processTreeStopped": true
+      }
+    }
+  ],
+  "result": "{\"exitCode\":0,\"pid\":44112,\"processTreeStopped\":true}",
+  "file": {
+    "path": "E:\\repos\\ara\\apps\\reach\\work\\ray-path-node\\public-sso-effect.txt",
+    "sha256": "ae40dd4ab01092f8e18670486e02deb1606b18c1734d0d29cce59e58a1484027",
+    "exactOnce": true
+  },
+  "tls": "normal certificate validation, public TCP 443, no proxy/tunnel",
+  "nodeBinarySha256": "b472ef53e5e515a6c4aed3ad5123315e2d2d9f612a85f6b5356d5f9bd6aed7b6",
+  "identityRetained": {
+    "installationId": "36b7a09e-b0d2-4db7-a55a-ed26ea12c32e",
+    "nodeBefore": "a45aa867-0eac-42e7-a112-d40cf744d932",
+    "nodeAfter": "a45aa867-0eac-42e7-a112-d40cf744d932",
+    "epochBefore": 1,
+    "epochAfter": 2
+  }
+}

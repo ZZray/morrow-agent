@@ -1,0 +1,97 @@
+[
+  {
+    "old": "  if (!on && currentModelValue() === 'default') {\n    // 目录不自动挑第一个：保持 Auto，提示用户显式点选模型。\n    modelAuto = true;\n    syncAutoToggle();\n    renderModelList();\n    const box = $('modelStatus');\n    if (box) { box.textContent = '请先在列表里点选一个模型；关闭 Auto 不会自动选第一个。'; box.classList.remove('hide'); }\n    return;\n  }\n",
+    "new": "",
+    "count": 1
+  },
+  {
+    "old": "function protocolChoiceError() {\n  if (modelAuto || currentModelValue() === 'default') return '';",
+    "new": "function requireModelChoice() {\n  const error = protocolChoiceError();\n  if (!error) return true;\n  addBubble('system', error);\n  openModelMenu();\n  return false;\n}\n\nfunction protocolChoiceError() {\n  if (!modelAuto && currentModelValue() === 'default') return '请先选择一个模型，或开启 Auto。';\n  if (modelAuto) return '';",
+    "count": 1
+  },
+  {
+    "old": "  if (action === 'follow' || action === 'start') {",
+    "new": "  if ((text || pendingAttach.length) && !requireModelChoice()) return;\n  if (action === 'follow' || action === 'start') {",
+    "count": 1
+  },
+  {
+    "old": "async function startLocalRun(text) {",
+    "new": "async function startLocalRun(text) {\n  if (!requireModelChoice()) return;",
+    "count": 1
+  },
+  {
+    "old": "async function sendClarifyReply(turnID, value) {",
+    "new": "async function sendClarifyReply(turnID, value) {\n  if (!requireModelChoice()) return;",
+    "count": 1
+  },
+  {
+    "old": "      const turnID = pendingClarify.turnID;",
+    "new": "      if (!requireModelChoice()) return;\n      const turnID = pendingClarify.turnID;",
+    "count": 1
+  },
+  {
+    "old": "    label.textContent = sel.model === 'default' ?",
+    "new": "    label.textContent = !modelAuto && currentModelValue() === 'default' ? '选择模型' : sel.model === 'default' ?",
+    "count": 1
+  },
+  {
+    "old": "  tog.setAttribute('aria-checked', modelAuto ? 'true' : 'false');",
+    "new": "  tog.setAttribute('aria-checked', modelAuto ? 'true' : 'false');\n  tog.setAttribute('aria-label', 'Auto');",
+    "count": 1
+  },
+  {
+    "old": "  box.classList.toggle('hide', !text);\n}",
+    "new": "  box.classList.toggle('hide', !text);\n  if (modelMenuOpen) positionModelMenu();\n}",
+    "count": 1
+  },
+  {
+    "old": "renderModelList($('modelSearch') ? $('modelSearch').value : '');",
+    "new": "renderModelList();",
+    "count": 2
+  },
+  {
+    "old": "function renderModelList(filter = '') {\n  const list = $('modelList');\n  if (!list) return;\n  const q = (filter || '').trim().toLowerCase();\n  list.replaceChildren();\n  const rows = modelCatalog.filter((m) => {\n    if (!q) return true;\n    const protocols = Array.isArray(m.protocols) ? m.protocols.join(' ') : '';\n    return (m.id || '').toLowerCase().includes(q) || (m.owned_by || '').toLowerCase().includes(q) || protocols.toLowerCase().includes(q);\n  });\n  if (!rows.length) {\n    list.appendChild(el('div', 'model-empty', modelCatalog.length\n      ? (q ? '无匹配模型' : '网关模型目录为空')\n      : '网关模型目录为空或不可用：不会自动回退到 auto 或第一个模型。'));\n    renderProtocolRow();\n    return;\n  }\n",
+    "new": "function renderModelList() {\n  const list = $('modelList');\n  if (!list) return;\n  list.replaceChildren();\n  list.style.display = modelAuto ? 'none' : '';\n  const separator = $('modelMenu').querySelector('.model-sep');\n  if (separator) separator.style.display = modelAuto ? 'none' : '';\n  if (modelAuto) { renderProtocolRow(); return; }\n  const rows = modelCatalog;\n  if (!rows.length) {\n    list.appendChild(el('div', 'model-empty', '网关模型目录为空或不可用，请开启 Auto 或稍后重试。'));\n    renderProtocolRow();\n    return;\n  }\n",
+    "count": 1
+  },
+  {
+    "old": "  $('modelSearch').value = '';\n",
+    "new": "",
+    "count": 1
+  },
+  {
+    "old": "  setTimeout(() => $('modelSearch').focus(), 0);",
+    "new": "  setTimeout(() => { if (modelMenuOpen) $('modelAutoToggle').focus({ preventScroll: true }); }, 0);",
+    "count": 1
+  },
+  {
+    "old": "  $('modelSearch').addEventListener('input', () => renderModelList($('modelSearch').value));\n  $('modelSearch').addEventListener('keydown', (e) => {\n    if (e.key === 'Escape') {\n      e.preventDefault();\n      closeModelMenu();\n    }\n  });\n",
+    "new": "  const search = $('modelSearch');\n  if (search) search.remove(); // Remove the legacy server's search field too.\n  $('modelMenu').addEventListener('keydown', (e) => {\n    if (e.key === 'Escape') {\n      e.preventDefault();\n      closeModelMenu();\n      $('modelTrigger').focus({ preventScroll: true });\n    }\n  });\n",
+    "count": 1
+  },
+  {
+    "old": "  if (retry) retry.onclick = () => {",
+    "new": "  if (retry) retry.onclick = () => {\n    if (!requireModelChoice()) return;",
+    "count": 1
+  },
+  {
+    "old": "  const loopSel = agentLoopModelSelection();\n",
+    "new": "",
+    "count": 1
+  },
+  {
+    "old": "async function startLocalRun(text) {\n  if (!requireModelChoice()) return;",
+    "new": "async function startLocalRun(text) {\n  if (!requireModelChoice()) return;\n  const loopSel = agentLoopModelSelection();",
+    "count": 1
+  },
+  {
+    "old": "    const turnSel = chatModelSelection();\n",
+    "new": "",
+    "count": 1
+  },
+  {
+    "old": "async function sendClarifyReply(turnID, value) {\n  if (!requireModelChoice()) return;",
+    "new": "async function sendClarifyReply(turnID, value) {\n  if (!requireModelChoice()) return;\n  const turnSel = chatModelSelection();",
+    "count": 1
+  }
+]

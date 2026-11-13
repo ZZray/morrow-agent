@@ -1,0 +1,38 @@
+{
+  "bundleSha256": "f5bf3af0f0244923a327ff4bd894e34c92bb3c78282f6110955d9e995c6a0956",
+  "files": [
+    {
+      "path": "apps/provider/cmd/ray_front/reach_ingress.go",
+      "sha256": "ce99f72de1f33a9bbeb6d4f16497f964f872cde2d48c00b57247b4073dabbdbb"
+    },
+    {
+      "path": "apps/provider/cmd/ray_front/reach_ingress_test.go",
+      "sha256": "6922ed22fe53018234ee944782c85c0bcce974682d6fff8fff855d5732e11087"
+    },
+    {
+      "path": "apps/provider/cmd/ray_front/main.go",
+      "sha256": "a2a4bfe15f947e323ed432b8d27cad723f3ad7527a696087243bf4aed6cbec72"
+    },
+    {
+      "path": "apps/provider/cmd/ray_front/web.go",
+      "sha256": "c280960f70ac331c356f948ae5bbf707d1bd87891f2cd861b43bd31908bb4cc2"
+    },
+    {
+      "path": "scripts/build.ps1",
+      "sha256": "6d97a93da2169a268fcf6bd453e0ce73512acc33010efb546636e4068e8a231b"
+    },
+    {
+      "path": "go.mod",
+      "sha256": "5e778f6fea2dbfbff3316eec1157b11805f57a66b379b6ac7ad226504e53f344"
+    },
+    {
+      "path": "go.sum",
+      "sha256": "849688ab871349d4b9be1e4d6a2bd6a330b53c25c7b146575345efb625c23024"
+    }
+  ],
+  "originalWorkbenchSha256": "72c4eff9bd3f747ff9c111dbdbb53803816683634e4818ab4df453c4ef61a188",
+  "baseline": "0b9cb7c3eabf1e4d82bfc1d6147786c2d883721c",
+  "installerSha256": "29eb803678bd2723960f9f24ebaf87fa1640ba6b5f8610143a0c756c84f2d24b",
+  "repository": "https://gitee.com/rzjw/llm-im.git",
+  "binarySha256": "dd222233d78d425d25be37fa595153edbfb89a3a70da7f7ae5d0e64e2587c36d"
+}

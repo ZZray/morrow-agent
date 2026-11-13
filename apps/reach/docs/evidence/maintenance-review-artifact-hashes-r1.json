@@ -1,0 +1,74 @@
+[
+  {
+    "path": "docs/evidence/maintenance-integration-inputs-20261103-r2.json",
+    "sha256": "b374152a9048109cd33d4dc620950ed6a8df99fa899d81eff45bc9c6f2a26be9"
+  },
+  {
+    "path": "docs/evidence/maintenance-source-review-r2.json",
+    "sha256": "6f3fd8c54d8225b979473839bfb18538fd0f05506d67f0cdfca621f1e6e03b3c"
+  },
+  {
+    "path": "docs/evidence/maintenance-entry-bootstrap-review-r1.log",
+    "sha256": "d1340567008bd82cce26516fecd7f614c128a1b8a85491b67b38ef1993e60c06"
+  },
+  {
+    "path": "docs/evidence/maintenance-registry-acl-review-r1.log",
+    "sha256": "35c3697cc8f38d34486907f1d06706b7df5f717e86159a595a3549cdeba37e01"
+  },
+  {
+    "path": "docs/evidence/maintenance-candidate-inspect-review-r1.log",
+    "sha256": "abf3483637307fa6345e70340f9a3d9bbe1a76f01ae0da323e53ba805c34b43f"
+  },
+  {
+    "path": "docs/evidence/maintenance-candidate-review-r1.json",
+    "sha256": "4b274c431df74adaa6979eb747bd41d8c79feda3dc7021b30116544d1015c156"
+  },
+  {
+    "path": "docs/evidence/maintenance-legacy-fixture-review-r1.json",
+    "sha256": "8972e2867048fbaecc412659370bc0feef145f015657809ca841b9bdd21e3fa8"
+  },
+  {
+    "path": "docs/evidence/maintenance-integration-final-r1.log",
+    "sha256": "f41aa0a0551390b007f86890e4cb96357babed884332fc08aa529562bf9ffa4f"
+  },
+  {
+    "path": "docs/evidence/maintenance-windows-uninstall-transaction-final-r2.log",
+    "sha256": "dd4761b520156381f3ec2776bf2e972cc7952294887e9d2f3912da34bb90e22c"
+  },
+  {
+    "path": "docs/evidence/maintenance-windows-uninstall-transaction-final.log",
+    "sha256": "5decf0e223ed4603aba72881a97d4f283fa1540078b7957e36d67de36a553691"
+  },
+  {
+    "path": "docs/evidence/maintenance-windows-uninstall-files-final.log",
+    "sha256": "5b5178a2a908589f9bd00838433f733669f6891a5cd0fb5c7e8a3e157b03f576"
+  },
+  {
+    "path": "docs/evidence/maintenance-setup-test-r1.log",
+    "sha256": "25033301f40c03a73984eff68b78db0c1e48862c0132a561b3593003dbd367b5"
+  },
+  {
+    "path": "docs/evidence/maintenance-setup-clippy-r1.log",
+    "sha256": "b49250969b69276727f6fc4e79e68033dbfae4983cbc3e7a87951de97a11ace9"
+  },
+  {
+    "path": "docs/evidence/maintenance-complete-build-r1.log",
+    "sha256": "711896e0c9eec1db2aba7118ac1607cb2ade0509905e23f4c2a0100f65c0808f"
+  },
+  {
+    "path": "docs/evidence/maintenance-setup-icons.json",
+    "sha256": "5efe11a3f8b544c25b9d6be0f327c55317363e60f448a66e12b23b4595471cde"
+  },
+  {
+    "path": "work/maintenance-legacy-tests.log",
+    "sha256": "4c751cb7f6481b299e018a360bb5f6be289d694573c393f31980d5cc31a7d27d"
+  },
+  {
+    "path": "outputs/windows-complete-716a23ad70230a1c-93fe5dccdd7f/package.json",
+    "sha256": "069fc7a0ff6ed5876cdd37d8ce4239ab6d539468cb29babf6bb51971b89c9efc"
+  },
+  {
+    "path": "outputs/windows-complete-716a23ad70230a1c-93fe5dccdd7f/verify-payload.txt",
+    "sha256": "2f5112ece18734131ccdc04402e464d5679495543a9e1e1c8ac12c1b62fae6f2"
+  }
+]

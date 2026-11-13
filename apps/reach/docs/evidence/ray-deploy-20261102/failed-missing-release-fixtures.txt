@@ -1,0 +1,21 @@
+go: downloading github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
+go: downloading nhooyr.io/websocket v1.8.17
+--- FAIL: TestAssistantAvatarMaintainedRelease (0.00s)
+    handwave_avatar_test.go:21: open ../../../handwave/release-web/stable-web-f2a01bedb53562b8.tar.gz: The system cannot find the path specified.
+--- FAIL: TestMaintainedReleaseRecoveryAdapter (0.00s)
+    handwave_recovery_stable_test.go:26: open ..\..\..\handwave\release-web\manifest.json: The system cannot find the path specified.
+--- FAIL: TestHandWaveSecurityFinalAdapterRegression (0.00s)
+    handwave_security_test.go:35: open ..\..\..\handwave\release-web\stable-web-f2a01bedb53562b8.tar.gz: The system cannot find the path specified.
+2026/11/02 15:32:28 next-suggestion: suggestion JSON invalid
+2026/11/02 15:32:28 next-suggestion: suggestion JSON invalid
+2026/11/02 15:32:28 next-suggestion: suggestion output budget exhausted
+2026/11/02 15:32:29 next-suggestion: suggestion attempted tools
+2026/11/02 15:32:29 next-suggestion: suggestion source invalid
+2026/11/02 15:32:29 next-suggestion: suggestion JSON invalid
+2026/11/02 15:32:29 next-suggestion: suggestion output limit
+2026/11/02 15:32:30 next-suggestion: suggestion JSON invalid
+2026/11/02 15:32:31 next-suggestion: suggestion model timeout
+2026/11/02 15:32:32 next-suggestion: suggestion model canceled
+FAIL
+FAIL	ara/apps/provider/cmd/ray_front	21.635s
+FAIL

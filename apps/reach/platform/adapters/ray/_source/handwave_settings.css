@@ -1,0 +1,90 @@
+.hw-settings-dialog{width:min(960px,calc(100vw - 48px));height:min(680px,calc(100dvh - 64px));max-height:calc(100dvh - 32px);padding:0;overflow:hidden;border-radius:18px;background:var(--ink);box-shadow:0 24px 80px rgba(0,0,0,.25)}
+.hw-settings-layout{display:grid;grid-template-columns:220px minmax(0,1fr);height:100%;min-height:0}
+.hw-settings-sidebar{display:flex;flex-direction:column;min-width:0;min-height:0;overflow:auto;overscroll-behavior:contain;padding:24px 12px 18px;background:var(--mat-card);border-right:1px solid var(--hair)}
+.hw-settings-dialog .hw-settings-sidebar h2{font-size:14px;font-weight:600;margin:0 12px 27px}
+.hw-settings-nav{display:flex;flex-direction:column;flex:0 0 auto;gap:5px}
+.hw-settings-tab{display:flex;align-items:center;gap:10px;width:100%;min-height:38px;text-align:left;padding:8px 12px;border:0;border-radius:8px;background:transparent;color:var(--text-2);font:13px/1.5 var(--sans);cursor:pointer;transition:background .12s,color .12s}
+.hw-settings-tab:hover{background:var(--sel-hover)}
+.hw-settings-tab[aria-selected=true]{background:var(--sel-hover);color:var(--text);font-weight:600}
+.hw-settings-tab svg{width:16px;height:16px;flex:0 0 16px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.hw-settings-local-note{margin:auto 12px 0;padding-top:32px;font-size:11px;line-height:1.6;color:var(--muted)}
+.hw-settings-content{overflow:auto;overscroll-behavior:contain;min-width:0;min-height:0;padding:44px 40px 30px;scrollbar-gutter:stable}
+.hw-settings-panel[hidden]{display:none!important}
+.hw-settings-panel{outline:none}
+.hw-settings-page-title{font-size:22px;font-weight:600;letter-spacing:-.03em;line-height:1.3;margin:0 0 10px}
+.hw-settings-subtitle{font-size:12px;line-height:1.6;color:var(--muted);margin:0 0 30px}
+.hw-settings-section-title{font-size:12px;line-height:1.5;font-weight:600;margin:26px 0 8px}
+.hw-settings-group{border:1px solid var(--hair);border-radius:12px;background:var(--mat-card);padding:0 16px}
+.hw-settings-row{display:flex;align-items:center;justify-content:space-between;gap:22px;min-height:75px;padding:16px 0;box-sizing:border-box;border-top:1px solid var(--hair)}
+.hw-settings-row:first-child{border-top:0}
+.hw-settings-copy{min-width:0;display:block}
+.hw-settings-copy b{font-size:13px;font-weight:500}
+.hw-settings-copy small{display:block;color:var(--muted);margin-top:5px;font-size:11px;line-height:1.6}
+.hw-settings-row>.hw-memory-button{flex:0 0 auto;white-space:nowrap}
+.hw-settings-switch{appearance:none;-webkit-appearance:none;position:relative;flex:0 0 32px;width:32px;height:19px;margin:0;border:1px solid var(--hair);border-radius:20px;background:var(--sel-hover);cursor:pointer;transition:background .12s}
+.hw-settings-switch:after{content:'';position:absolute;top:2px;left:2px;width:13px;height:13px;border-radius:50%;background:var(--muted);transition:transform .12s}
+.hw-settings-switch:checked{background:var(--text);border-color:var(--text)}
+.hw-settings-switch:checked:after{background:var(--ink);transform:translateX(13px)}
+.hw-settings-switch:disabled{opacity:.4;cursor:default}
+.hw-settings-close{position:absolute;top:16px;right:16px;width:30px;height:30px;padding:0;border:0;border-radius:6px;background:transparent;color:var(--muted);font:22px/1 var(--sans);cursor:pointer;z-index:1}
+.hw-settings-close:hover{color:var(--text);background:var(--sel-hover)}
+.hw-settings-segment{display:flex;gap:2px;padding:3px;border:1px solid var(--hair);border-radius:8px;flex:0 0 auto}
+.hw-settings-segment button{border:0;border-radius:5px;color:var(--muted);background:transparent;font:12px var(--sans);padding:5px 12px;cursor:pointer}
+.hw-settings-segment button[aria-pressed=true]{color:var(--text);background:var(--sel-hover)}
+.hw-settings-footnote{font-size:11px;color:var(--muted);line-height:1.7;margin:14px 0}
+.hw-settings-context .hw-context-hint{font-size:11px;line-height:1.7;color:var(--muted)}
+.hw-settings-summary{white-space:pre-wrap;overflow-wrap:anywhere;max-height:220px;overflow:auto;overscroll-behavior:contain;padding:14px;background:var(--mat-card);border:1px solid var(--hair);border-radius:8px;font-size:12px;line-height:1.7}
+.hw-settings-actions{flex-wrap:wrap;justify-content:flex-start}
+.hw-settings-feedback{font-size:12px;color:var(--text-2);line-height:1.6;margin:16px 0 0}
+.hw-settings-row kbd{flex:0 0 auto;border:1px solid var(--hair);background:var(--sel-hover);border-radius:5px;padding:3px 7px;font:11px var(--mono,monospace);white-space:nowrap}
+#accountMenu #btnSkillManager[hidden]{display:none!important}
+#btnHandwaveSettings:focus-visible{outline:2px solid var(--primary);outline-offset:-2px}
+/* Reuse the original skills dialog as an inline region; its open flag still guards late CRUD responses. */
+.hw-settings-dialog #skillManager.hw-settings-skills{position:static;inset:auto;width:100%;max-width:100%;max-height:none;margin:0;padding:0;border:0;border-radius:0;background:transparent;color:var(--text);box-shadow:none;overflow:visible;box-sizing:border-box}
+.hw-settings-dialog #skillManager.hw-settings-skills>.dlg-head{display:none}
+.hw-settings-dialog #skillManager.hw-settings-skills>.hint:first-of-type{margin-top:0}
+.hw-settings-dialog #skillManager .skill-manager-toolbar{flex-wrap:wrap}
+.hw-settings-dialog #skillManager .skill-manager-toolbar .model-search{min-width:100px;flex:1 1 160px}
+.hw-settings-dialog #skillManager .skill-manager-body{grid-template-columns:150px minmax(0,1fr);gap:16px;max-height:none}
+.hw-settings-dialog #skillManager .skill-manager-list{max-height:420px;min-width:0}
+.hw-settings-dialog #skillManager .skill-create{min-width:0}
+.hw-settings-dialog #skillManager .field{box-sizing:border-box;width:100%;min-width:0}
+.hw-settings-dialog #skillManager .skill-editor-actions{flex-wrap:wrap}
+[data-hw-reduce-motion=true] *,[data-hw-reduce-motion=true] *::before,[data-hw-reduce-motion=true] *::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
+/* Small screens use the full content width; categories scroll independently above it. */
+@media(max-width:680px){
+  .hw-settings-dialog{width:calc(100vw - 16px);height:calc(100dvh - 16px);max-height:calc(100dvh - 16px);border-radius:14px}
+  .hw-settings-layout{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr)}
+  .hw-settings-sidebar{padding:8px 10px 6px;overflow:hidden;border-right:0;border-bottom:1px solid var(--hair)}
+  .hw-settings-dialog .hw-settings-sidebar h2{display:flex;align-items:center;min-height:44px;margin:0 52px 4px 2px}
+  .hw-settings-nav{flex-direction:row;gap:4px;min-width:0;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scroll-padding-inline:4px;padding:2px 0 6px}
+  .hw-settings-tab{flex:0 0 auto;width:auto;padding:9px 12px;font-size:12px;gap:6px;min-height:44px;white-space:nowrap}
+  .hw-settings-tab svg{width:14px;height:14px;flex-basis:14px}
+  .hw-settings-local-note{display:none}
+  .hw-settings-content{padding:20px 18px 24px;scrollbar-gutter:auto}
+  .hw-settings-page-title{font-size:20px}.hw-settings-subtitle{margin-bottom:22px}
+  .hw-settings-group{padding:0 12px}.hw-settings-row{gap:10px;flex-wrap:wrap}.hw-settings-copy{flex:1 1 140px}
+  .hw-settings-close{top:8px;right:8px;width:44px;height:44px}
+  .hw-settings-dialog button{min-height:44px}
+  .hw-settings-dialog input:not([type=checkbox]),.hw-settings-dialog select{min-height:44px}
+  .hw-settings-switch,.hw-settings-switch:checked{flex:0 0 44px;width:44px;height:44px;background:transparent;border:0}
+  .hw-settings-switch:before{content:'';position:absolute;top:12px;left:6px;width:32px;height:19px;box-sizing:border-box;border:1px solid var(--hair);border-radius:20px;background:var(--sel-hover)}
+  .hw-settings-switch:checked:before{background:var(--text);border-color:var(--text)}
+  .hw-settings-switch:after{top:15px;left:9px}
+  .hw-settings-row>.hw-memory-button{white-space:normal;text-align:left}
+  .hw-settings-dialog #skillManager .skill-manager-body{grid-template-columns:minmax(0,1fr)}
+  .hw-settings-dialog #skillManager .skill-manager-list{max-height:160px}
+  .hw-settings-dialog #skillManager .skill-manager-toolbar>*{max-width:100%}
+  .hw-settings-dialog #skillManager .skill-ai-actions{flex-wrap:wrap}
+  .hw-settings-row kbd{white-space:normal}.hw-settings-summary{max-height:180px}
+  .hw-settings-memory-host .hw-memory-group summary{min-height:44px;box-sizing:border-box;padding:10px 0}
+}
+@media(prefers-reduced-motion:reduce){.hw-settings-dialog *,.hw-settings-dialog *::after{transition:none!important}}
+
+/* The live memory card moves here while settings is open; no duplicate editor or data owner. */
+.hw-settings-memory-host{margin-top:16px;min-width:0}
+.hw-settings-memory-host .hw-memory-card{padding:16px}
+.hw-settings-memory-host .hw-memory-list{max-height:none;overflow:visible}
+.hw-settings-memory-host .hw-memory-context{margin-bottom:12px;padding-right:0;overflow-wrap:anywhere}
+.hw-settings-memory-host .hw-memory-group .hw-memory-button{max-width:100%}
+.hw-settings-memory-host .hw-memory-actions{flex-wrap:wrap}

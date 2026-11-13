@@ -4,6 +4,22 @@ Morrow is consumed through a host boundary. The host creates the workspace and
 state paths, checks authorization, supplies the model route and credentials,
 registers business tools, and decides whether the resulting work is accepted.
 
+## Reach application
+
+[Reach](../apps/reach/README.md) is the remote-assistance application under
+`apps/reach/`. It owns device pairing, operation receipts, its service and Node,
+and the optional Reach Desk. Its desktop Host consumes the Morrow Core/MCP
+packages; its delegated Agent and Desk use the Morrow JSONL sidecar. It has
+independent Cargo and Bun manifests and is excluded from the root workspace's
+default build. No Reach identity, HTTP API or product database moves into Core.
+
+The source migration preserves unfinished work. Source availability, compiling
+a Host and accepting its end-to-end behavior are separate claims. In particular,
+old ARA-era binary hashes, Session fences, installed packages and recovery
+attestations do not authorize a Morrow binary. See the
+[Reach handoff](../apps/reach/docs/handoffs/2026-11-13-morrow-subproject.md)
+for executed checks and the remaining protocol differences.
+
 ## Rust host
 
 Node hosts can use the JSONL client and its `management` export for Goal,

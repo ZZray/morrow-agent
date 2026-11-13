@@ -1,0 +1,12 @@
+{
+  "author": "Ray Zhang",
+  "repository": "https://gitee.com/rzjw/llm-im.git",
+  "commit": "0b9cb7c3eabf1e4d82bfc1d6147786c2d883721c",
+  "module": "ara",
+  "application": "apps/handwave",
+  "shared_paths": ["go.mod", "go.sum", "internal", "third_party/systray"],
+  "runtime_status": "legacy platform compatibility source; not the Reach extension runtime",
+  "new_owner": "apps/reach/platform",
+  "product_name": "Reach Desk",
+  "command": "reach-desk"
+}

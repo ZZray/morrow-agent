@@ -1,0 +1,28 @@
+✔ lost server ACK and unavailable uploads replay original events only, even after unpair (9846.6687ms)
+✔ interrupted local running state must recover original receipts before re-pair after reconciliation (10415.5517ms)
+✖ MCP retrieves more than 2 MiB of real output in bounded consecutive pages (125298.6343ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 2
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 145684.8442
+
+✖ failing tests:
+
+test at tests\node.integration.test.ts:344:1
+✖ MCP retrieves more than 2 MiB of real output in bounded consecutive pages (125298.6343ms)
+  AssertionError [ERR_ASSERTION]: Condition did not settle: {"id":"5d09487e-8de2-4228-80f2-0404a5b3d677","user_id":"8b51fc47-a858-492d-82bb-9e3386c93f62","node_id":"4f65b739-ca80-4a0d-8aee-f61eff1d28c2","epoch":1,"request_id":"236a966c-3529-44a5-bc90-1f4f24d602b3","command_json":"{\"kind\":\"command.run\",\"command\":\"[Console]::Out.Write(('x' * 2400000))\",\"timeoutMs\":120000}","payload_hash":"e2a9e63ef1b35ac8417c653d37e4af66dc1e58cfee5aa65e4751c7b2bd7d58da","delivery":"acknowledged","execution":"running","dispatch_id":"ff309be2-fcff-4aea-89cc-7296225fd551","claimed_at":1793600580755,"cancel_requested":0,"last_sequence":2,"result_json":null,"created_at":1793600580187,"updated_at":1793600581240}
+      at until (file:///E:/repos/ara/apps/reach/tests/node.integration.test.ts:26:10)
+      at async TestContext.<anonymous> (file:///E:/repos/ara/apps/reach/tests/node.integration.test.ts:349:19)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: undefined,
+    operator: 'fail',
+    diff: 'simple'
+  }

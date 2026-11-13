@@ -21,7 +21,7 @@ use std::{
     time::Duration,
 };
 
-use morrow_agent_core::rpi_agent::AgentTool;
+use morrow_agent_core::rpi_agent::{AgentError, AgentTool};
 use serde::Serialize;
 use serde_json::Value;
 use tokio_util::sync::CancellationToken;
@@ -29,6 +29,7 @@ use tokio_util::sync::CancellationToken;
 pub use client::{MAX_PAGES, MAX_TOOLS, SUPPORTED_PROTOCOL_VERSIONS};
 pub use config::{ConfigError, McpConfig, ServerConfig};
 pub use resources::{LIST_TOOL as LIST_RESOURCES_TOOL, READ_TOOL as READ_RESOURCE_TOOL};
+pub use tool::ToolCallEvidence;
 
 use client::Client;
 
@@ -41,7 +42,8 @@ pub struct McpOptions {
     pub call_timeout: Duration,
     /// Servers whose failure fails the whole connect.
     pub required: BTreeSet<String>,
-    /// Where success results over 50000 characters are written in full.
+    /// Where success results over 50000 and errors over 11000 characters are
+    /// written in full. Hosts use call_tool_with_evidence to obtain error files.
     pub results_dir: Option<PathBuf>,
 }
 
@@ -116,6 +118,7 @@ pub struct McpSession {
     clients: BTreeMap<String, Arc<Client>>,
     status: BTreeMap<String, ServerStatus>,
     tools: Vec<Arc<dyn AgentTool>>,
+    mcp_tools: BTreeMap<String, Arc<tool::McpTool>>,
     excluded: Vec<ExcludedTool>,
 }
 
@@ -183,6 +186,7 @@ impl McpSession {
         }
         let mut names = names::NameRegistry::default();
         let mut tools: Vec<Arc<dyn AgentTool>> = Vec::new();
+        let mut mcp_tools = BTreeMap::new();
         let mut excluded = Vec::new();
         let mut clients = BTreeMap::new();
         let mut resource_servers = BTreeMap::new();
@@ -221,15 +225,17 @@ impl McpSession {
                     schema.1.as_deref(),
                     definition.get("description").and_then(Value::as_str).unwrap_or_default(),
                 );
-                tools.push(Arc::new(tool::McpTool {
-                    schema: tool::schema(full, description, schema.0),
+                let mcp_tool = Arc::new(tool::McpTool {
+                    schema: tool::schema(full.clone(), description, schema.0),
                     server: server.clone(),
                     tool: original.to_string(),
                     read_only,
                     client: client.clone(),
                     call_timeout: options.call_timeout,
                     results_dir: options.results_dir.clone(),
-                }));
+                });
+                tools.push(mcp_tool.clone());
+                mcp_tools.insert(full, mcp_tool);
                 count += 1;
             }
             if let Some(reason) = listing.truncated {
@@ -245,12 +251,27 @@ impl McpSession {
             clients.insert(server, client);
         }
         tools.extend(resources::tools(resource_servers, options.call_timeout, options.results_dir.clone()));
-        Ok(Self { clients, status, tools, excluded })
+        Ok(Self { clients, status, tools, mcp_tools, excluded })
     }
 
     /// MCP tools plus the resource tools when any server declares `resources`.
     pub fn tools(&self) -> Vec<Arc<dyn AgentTool>> {
         self.tools.clone()
+    }
+
+    /// Invoke one listed server tool exactly once, preserving its error evidence.
+    /// `name` is the normalized schema name; synthetic resource tools are excluded.
+    /// This is an alternative to AgentTool::execute, never a second retrieval call.
+    pub async fn call_tool_with_evidence(
+        &self,
+        name: &str,
+        call_id: &str,
+        params: Value,
+        signal: CancellationToken,
+    ) -> Result<ToolCallEvidence, AgentError> {
+        let tool =
+            self.mcp_tools.get(name).ok_or_else(|| AgentError::Tool(format!("no connected MCP tool named {name}")))?;
+        tool.execute_with_evidence(call_id, params, signal).await
     }
 
     pub fn status(&self) -> &BTreeMap<String, ServerStatus> {

@@ -1,0 +1,6 @@
+# Copyright (c) Ray Zhang. Local stdio backend, owned by the Reach helper.
+[server]
+transport = "stdio"
+
+[control]
+enabled = false

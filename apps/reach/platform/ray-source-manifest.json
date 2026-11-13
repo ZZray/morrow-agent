@@ -1,0 +1,498 @@
+{
+  "author": "Ray Zhang",
+  "commit": "0b9cb7c3eabf1e4d82bfc1d6147786c2d883721c",
+  "build_status": "reference sources pending host extraction; not built or loaded",
+  "files": [
+    {
+      "source": "apps/provider/cmd/ray_front/assets/avatars/README.md",
+      "destination": "adapters/ray/_source/assets/avatars/README.md",
+      "source_sha256": "bb629dbb64999955988b5041859306d7c9a268a9b653c6e3a9962317630be303",
+      "import_sha256": "bb629dbb64999955988b5041859306d7c9a268a9b653c6e3a9962317630be303",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/assets/avatars/assistant-cartoon-20261017.md",
+      "destination": "adapters/ray/_source/assets/avatars/assistant-cartoon-20261017.md",
+      "source_sha256": "bde4a92ff13bf597cb0d16d43bf43bf4373c0ec1662ddc872649d78ae213f116",
+      "import_sha256": "bde4a92ff13bf597cb0d16d43bf43bf4373c0ec1662ddc872649d78ae213f116",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/assets/avatars/assistant-cartoon-20261017.png",
+      "destination": "adapters/ray/_source/assets/avatars/assistant-cartoon-20261017.png",
+      "source_sha256": "bd4145810802a5ff7ba2f9fa9dfad02e155d2f9de2a4d5ccc679fcb2b06adea6",
+      "import_sha256": "bd4145810802a5ff7ba2f9fa9dfad02e155d2f9de2a4d5ccc679fcb2b06adea6",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/assets/avatars/assistant-orange-20261017.png",
+      "destination": "adapters/ray/_source/assets/avatars/assistant-orange-20261017.png",
+      "source_sha256": "c551ea9d3989c821af7dd6663be269f512e4aace5f74996a084534b5186a012a",
+      "import_sha256": "c551ea9d3989c821af7dd6663be269f512e4aace5f74996a084534b5186a012a",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/assets/brand/README.md",
+      "destination": "adapters/ray/_source/assets/brand/README.md",
+      "source_sha256": "09ba9c9f5e91c848519104cc486ab57af30d6f3788a9cd2d10863d74599648d5",
+      "import_sha256": "09ba9c9f5e91c848519104cc486ab57af30d6f3788a9cd2d10863d74599648d5",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/assets/brand/handwave-ai-20261017.png",
+      "destination": "adapters/ray/_source/assets/brand/handwave-ai-20261017.png",
+      "source_sha256": "d2f42225668bbb7d4105864ea8adcf53a4e8706163b5be2c049d41bef73251b8",
+      "import_sha256": "d2f42225668bbb7d4105864ea8adcf53a4e8706163b5be2c049d41bef73251b8",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/assets/brand/handwave-ai-chibi-body-20261017.md",
+      "destination": "adapters/ray/_source/assets/brand/handwave-ai-chibi-body-20261017.md",
+      "source_sha256": "1118dcb46b0decc9231f6f28dce3cb880c50ccd14b150a73a8c06fcda34f97b3",
+      "import_sha256": "1118dcb46b0decc9231f6f28dce3cb880c50ccd14b150a73a8c06fcda34f97b3",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/assets/brand/handwave-ai-chibi-body-20261017.png",
+      "destination": "adapters/ray/_source/assets/brand/handwave-ai-chibi-body-20261017.png",
+      "source_sha256": "dcff05f3d7a89dd799025576ef675f6d4440bed4011e4c58e81862bdbcb7d975",
+      "import_sha256": "dcff05f3d7a89dd799025576ef675f6d4440bed4011e4c58e81862bdbcb7d975",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/cloud_memory.go",
+      "destination": "adapters/ray/_source/cloud_memory.go",
+      "source_sha256": "f643c10c9f65670fe2930612c43bdce47eca89be4131b0fe5c92801f496fdcee",
+      "import_sha256": "f643c10c9f65670fe2930612c43bdce47eca89be4131b0fe5c92801f496fdcee",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/cloud_memory_test.go",
+      "destination": "adapters/ray/_source/cloud_memory_test.go",
+      "source_sha256": "245aac9ccb7ddd6704109ffb7998c159906b0b4130f539f3c9631f46c3a2ac2b",
+      "import_sha256": "245aac9ccb7ddd6704109ffb7998c159906b0b4130f539f3c9631f46c3a2ac2b",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/context_links.go",
+      "destination": "adapters/ray/_source/context_links.go",
+      "source_sha256": "65a4a0a3c38215d0c2d12855e008a48c752f4266813271dc1355aaf35af56801",
+      "import_sha256": "65a4a0a3c38215d0c2d12855e008a48c752f4266813271dc1355aaf35af56801",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/context_links_test.go",
+      "destination": "adapters/ray/_source/context_links_test.go",
+      "source_sha256": "ce59ef526676eebb0cc3aa6fcb09519c1429db37aa4ce7ffeb25332e890e056f",
+      "import_sha256": "ce59ef526676eebb0cc3aa6fcb09519c1429db37aa4ce7ffeb25332e890e056f",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/handwave_avatar.css",
+      "destination": "adapters/ray/_source/handwave_avatar.css",
+      "source_sha256": "04204b12b6df19aca34e076955017018861b871d8094a47a84be86b0625bcb89",
+      "import_sha256": "04204b12b6df19aca34e076955017018861b871d8094a47a84be86b0625bcb89",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/handwave_avatar.go",
+      "destination": "adapters/ray/_source/handwave_avatar.go",
+      "source_sha256": "2a6931f872c585ac602e42c31af150dfcdbcf7d3d8f8477ca4ca4a780120b9ff",
+      "import_sha256": "2a6931f872c585ac602e42c31af150dfcdbcf7d3d8f8477ca4ca4a780120b9ff",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/handwave_avatar.js",
+      "destination": "adapters/ray/_source/handwave_avatar.js",
+      "source_sha256": "163661f68a93d018a16b087e3940eb1786f65fc3f45f2624f06a20d39c076246",
+      "import_sha256": "163661f68a93d018a16b087e3940eb1786f65fc3f45f2624f06a20d39c076246",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/handwave_avatar.test.cjs",
+      "destination": "adapters/ray/_source/handwave_avatar.test.cjs",
+      "source_sha256": "523e95f74b235a1cbbbbf8ca3721e2fd65372b4e843c67a7c0a337edf4b600b8",
+      "import_sha256": "523e95f74b235a1cbbbbf8ca3721e2fd65372b4e843c67a7c0a337edf4b600b8",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/handwave_avatar_test.go",
+      "destination": "adapters/ray/_source/handwave_avatar_test.go",
+      "source_sha256": "d96b2a9b6e6dc1e82c1ed3666ab3b8e0066ff4ed39af03690e35cc70184a36b8",
+      "import_sha256": "d96b2a9b6e6dc1e82c1ed3666ab3b8e0066ff4ed39af03690e35cc70184a36b8",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/handwave_composer.css",
+      "destination": "adapters/ray/_source/handwave_composer.css",
+      "source_sha256": "be5ec8f6bca0124f60401feee6a0503f1154e170a751d5696049ca77b6c3fbbf",
+      "import_sha256": "be5ec8f6bca0124f60401feee6a0503f1154e170a751d5696049ca77b6c3fbbf",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/handwave_composer_menu.js",
+      "destination": "adapters/ray/_source/handwave_composer_menu.js",
+      "source_sha256": "eec81e4cd5f9f6ba205da75498bfd10b589969e9352b5d66a8552a396c1dfdd8",
+      "import_sha256": "eec81e4cd5f9f6ba205da75498bfd10b589969e9352b5d66a8552a396c1dfdd8",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/handwave_console.css",
+      "destination": "adapters/ray/_source/handwave_console.css",
+      "source_sha256": "7d3ccc564b9ac90fcd968239914d03afd82ce2523e05a7f5cfac291d3f79cf48",
+      "import_sha256": "7d3ccc564b9ac90fcd968239914d03afd82ce2523e05a7f5cfac291d3f79cf48",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/handwave_console.js",
+      "destination": "adapters/ray/_source/handwave_console.js",
+      "source_sha256": "47d245cf8aa6fb795db9ccef35f7e622761b8db80629a28bd94039568cd98142",
+      "import_sha256": "47d245cf8aa6fb795db9ccef35f7e622761b8db80629a28bd94039568cd98142",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/handwave_console.test.cjs",
+      "destination": "adapters/ray/_source/handwave_console.test.cjs",
+      "source_sha256": "38ed3b6f9c0216e4081787c277aac3c194abf4c2841a62186299daa8a504a685",
+      "import_sha256": "38ed3b6f9c0216e4081787c277aac3c194abf4c2841a62186299daa8a504a685",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/handwave_context.css",
+      "destination": "adapters/ray/_source/handwave_context.css",
+      "source_sha256": "f91eb864eefc833be53cf715420d8a813e2627e3d26a96d80bcf5ac9b78dbb02",
+      "import_sha256": "f91eb864eefc833be53cf715420d8a813e2627e3d26a96d80bcf5ac9b78dbb02",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/handwave_context.js",
+      "destination": "adapters/ray/_source/handwave_context.js",
+      "source_sha256": "ea0edb71269cf8385e326950517fdcebcc9501348d261c0167197a9b27ac16de",
+      "import_sha256": "ea0edb71269cf8385e326950517fdcebcc9501348d261c0167197a9b27ac16de",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/handwave_context.test.cjs",
+      "destination": "adapters/ray/_source/handwave_context.test.cjs",
+      "source_sha256": "7c569febc0ac78aa20e4ac00dffb10f962c7dc37c2159260582565bf076077e5",
+      "import_sha256": "7c569febc0ac78aa20e4ac00dffb10f962c7dc37c2159260582565bf076077e5",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/handwave_context_patch.json",
+      "destination": "adapters/ray/_source/handwave_context_patch.json",
+      "source_sha256": "0379e015f1ffad893f4cf66893e9eedc8a0340669142bcc9eda37181957b51a4",
+      "import_sha256": "0379e015f1ffad893f4cf66893e9eedc8a0340669142bcc9eda37181957b51a4",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/handwave_links.css",
+      "destination": "adapters/ray/_source/handwave_links.css",
+      "source_sha256": "49c4e3ee4aa094e42b9c5e87b5156e8b738c6d11e88b8e6fabcae920cf4129e2",
+      "import_sha256": "49c4e3ee4aa094e42b9c5e87b5156e8b738c6d11e88b8e6fabcae920cf4129e2",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/handwave_links.js",
+      "destination": "adapters/ray/_source/handwave_links.js",
+      "source_sha256": "a3a07f4bbe9b55f9dc5f4edc35481768415bea2bfedc311582c20f7f5d19dd9f",
+      "import_sha256": "a3a07f4bbe9b55f9dc5f4edc35481768415bea2bfedc311582c20f7f5d19dd9f",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/handwave_links.test.cjs",
+      "destination": "adapters/ray/_source/handwave_links.test.cjs",
+      "source_sha256": "0f9872eec6b8b683f8f28cfd11b3315121ad7ded970cd83a516768ac488466fe",
+      "import_sha256": "0f9872eec6b8b683f8f28cfd11b3315121ad7ded970cd83a516768ac488466fe",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/handwave_machine_target.js",
+      "destination": "adapters/ray/_source/handwave_machine_target.js",
+      "source_sha256": "31df48f18bf616e5200833784aba42c6b20c7d8e0b72c03b8aded38e1dde37b8",
+      "import_sha256": "31df48f18bf616e5200833784aba42c6b20c7d8e0b72c03b8aded38e1dde37b8",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/handwave_machine_target.test.cjs",
+      "destination": "adapters/ray/_source/handwave_machine_target.test.cjs",
+      "source_sha256": "20d38d3fcb0f188a5444dcc90ba920648490bfe29b718ae5d5a12ffd529ba52e",
+      "import_sha256": "20d38d3fcb0f188a5444dcc90ba920648490bfe29b718ae5d5a12ffd529ba52e",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/handwave_memory.css",
+      "destination": "adapters/ray/_source/handwave_memory.css",
+      "source_sha256": "dc1709d91f6d92d4f64b49e771fa574d0906f3df88bba10b8932ef7b1ebd768d",
+      "import_sha256": "dc1709d91f6d92d4f64b49e771fa574d0906f3df88bba10b8932ef7b1ebd768d",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/handwave_memory.js",
+      "destination": "adapters/ray/_source/handwave_memory.js",
+      "source_sha256": "ccb59af738ef68f1fec0335c1c2761434cbd30f303763bf97a27672166cc9016",
+      "import_sha256": "ccb59af738ef68f1fec0335c1c2761434cbd30f303763bf97a27672166cc9016",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/handwave_memory.test.cjs",
+      "destination": "adapters/ray/_source/handwave_memory.test.cjs",
+      "source_sha256": "721979ccd470524266ae9f8cf2fa61cf977118c7b5145f6b44b914b229c082ec",
+      "import_sha256": "721979ccd470524266ae9f8cf2fa61cf977118c7b5145f6b44b914b229c082ec",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/handwave_memory_transport.js",
+      "destination": "adapters/ray/_source/handwave_memory_transport.js",
+      "source_sha256": "72f4cc85881d74aed072bdb66de357be8598e9fd8f9f1df574c7326aa49d5e6e",
+      "import_sha256": "72f4cc85881d74aed072bdb66de357be8598e9fd8f9f1df574c7326aa49d5e6e",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/handwave_memory_transport.test.cjs",
+      "destination": "adapters/ray/_source/handwave_memory_transport.test.cjs",
+      "source_sha256": "29a8ecffa98715eb8a1040525d7b8ebb566ecc974a339f3f880e198795bda999",
+      "import_sha256": "29a8ecffa98715eb8a1040525d7b8ebb566ecc974a339f3f880e198795bda999",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/handwave_motion.css",
+      "destination": "adapters/ray/_source/handwave_motion.css",
+      "source_sha256": "d8067825c40f22dacb04728695a4cdb5ae2b3049e653ba6c693b274eecfb219e",
+      "import_sha256": "d8067825c40f22dacb04728695a4cdb5ae2b3049e653ba6c693b274eecfb219e",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/handwave_motion.js",
+      "destination": "adapters/ray/_source/handwave_motion.js",
+      "source_sha256": "a54d213246c2e81e2c3cef578fa927e746aae7642a7c9e9e684445e1dc4e48bf",
+      "import_sha256": "a54d213246c2e81e2c3cef578fa927e746aae7642a7c9e9e684445e1dc4e48bf",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/handwave_motion.test.cjs",
+      "destination": "adapters/ray/_source/handwave_motion.test.cjs",
+      "source_sha256": "681415c100186336c052f1d2235b7ab30ccce759c26a4a9b5112588b28ed1fd3",
+      "import_sha256": "681415c100186336c052f1d2235b7ab30ccce759c26a4a9b5112588b28ed1fd3",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/handwave_queue.css",
+      "destination": "adapters/ray/_source/handwave_queue.css",
+      "source_sha256": "07b5520d361cffae9e82f759c59f7e7867d376da1b9d3c713f777d8dbc01c510",
+      "import_sha256": "07b5520d361cffae9e82f759c59f7e7867d376da1b9d3c713f777d8dbc01c510",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/handwave_queue.js",
+      "destination": "adapters/ray/_source/handwave_queue.js",
+      "source_sha256": "9eba191123f99874d3a406b4f82a21f0e567738d1bc8878f700b51fc849ddd8f",
+      "import_sha256": "9eba191123f99874d3a406b4f82a21f0e567738d1bc8878f700b51fc849ddd8f",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/handwave_queue.test.cjs",
+      "destination": "adapters/ray/_source/handwave_queue.test.cjs",
+      "source_sha256": "af2377b4668c448946929b4f9a2dabd0fc4faebbac61ea71c3a23e186edb539e",
+      "import_sha256": "af2377b4668c448946929b4f9a2dabd0fc4faebbac61ea71c3a23e186edb539e",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/handwave_recovery.css",
+      "destination": "adapters/ray/_source/handwave_recovery.css",
+      "source_sha256": "b6c5e8d61570764ae778cdf6243a9c1c16ddba31b4e41e2dc86998b6e5bab0c1",
+      "import_sha256": "b6c5e8d61570764ae778cdf6243a9c1c16ddba31b4e41e2dc86998b6e5bab0c1",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/handwave_recovery.js",
+      "destination": "adapters/ray/_source/handwave_recovery.js",
+      "source_sha256": "0f8625803efaaab5f04f05753faee11103166858e5c613d6558abb7335a6351c",
+      "import_sha256": "0f8625803efaaab5f04f05753faee11103166858e5c613d6558abb7335a6351c",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/handwave_recovery.test.cjs",
+      "destination": "adapters/ray/_source/handwave_recovery.test.cjs",
+      "source_sha256": "206d30f7980c7b6ed43a9f560572373894204b10faf81dc17c051bb0d330e681",
+      "import_sha256": "206d30f7980c7b6ed43a9f560572373894204b10faf81dc17c051bb0d330e681",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/handwave_recovery_stable_test.go",
+      "destination": "adapters/ray/_source/handwave_recovery_stable_test.go",
+      "source_sha256": "b468d312372869b3749194bfc88f5e2085a238745e1440fb15d0e04dc2c3b9ad",
+      "import_sha256": "b468d312372869b3749194bfc88f5e2085a238745e1440fb15d0e04dc2c3b9ad",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/handwave_schedule.css",
+      "destination": "adapters/ray/_source/handwave_schedule.css",
+      "source_sha256": "6fe0d4a42639add11511313cb06fbb3f2c1555e2cbeb3fbd4bca5c9c7e994519",
+      "import_sha256": "6fe0d4a42639add11511313cb06fbb3f2c1555e2cbeb3fbd4bca5c9c7e994519",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/handwave_schedule.js",
+      "destination": "adapters/ray/_source/handwave_schedule.js",
+      "source_sha256": "e9d162360598f7df708f5c50b4448804730a761d33b10a9d68592e34fc587336",
+      "import_sha256": "e9d162360598f7df708f5c50b4448804730a761d33b10a9d68592e34fc587336",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/handwave_schedule.test.cjs",
+      "destination": "adapters/ray/_source/handwave_schedule.test.cjs",
+      "source_sha256": "744da11a536c00b1c86a5fad02371fde62870763cacebdf88494b6858662f04b",
+      "import_sha256": "744da11a536c00b1c86a5fad02371fde62870763cacebdf88494b6858662f04b",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/handwave_security.test.cjs",
+      "destination": "adapters/ray/_source/handwave_security.test.cjs",
+      "source_sha256": "3d8ee19aa8ea8f23ab44064c83b8b9917cb9ecf4018ab45049e2a0b49f80a37c",
+      "import_sha256": "3d8ee19aa8ea8f23ab44064c83b8b9917cb9ecf4018ab45049e2a0b49f80a37c",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/handwave_security_test.go",
+      "destination": "adapters/ray/_source/handwave_security_test.go",
+      "source_sha256": "83f12099d79a396c36199d7f48be55d82649adc94232c2f61f1c9b5d4c7863d9",
+      "import_sha256": "83f12099d79a396c36199d7f48be55d82649adc94232c2f61f1c9b5d4c7863d9",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/handwave_settings.css",
+      "destination": "adapters/ray/_source/handwave_settings.css",
+      "source_sha256": "73917deb4bc73f0e52221046f995ab723865a1abd29a72ae9c33657c5ca2004f",
+      "import_sha256": "73917deb4bc73f0e52221046f995ab723865a1abd29a72ae9c33657c5ca2004f",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/handwave_settings.js",
+      "destination": "adapters/ray/_source/handwave_settings.js",
+      "source_sha256": "aa8f84f3f70d1f3065e8ae5953fdc9bfda4bedf08abb29079ea1fcdeec88136f",
+      "import_sha256": "aa8f84f3f70d1f3065e8ae5953fdc9bfda4bedf08abb29079ea1fcdeec88136f",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/handwave_settings.test.cjs",
+      "destination": "adapters/ray/_source/handwave_settings.test.cjs",
+      "source_sha256": "558c274f03e77551f38284552e41b3fae35ad0fb00967e701a119ad638e11254",
+      "import_sha256": "558c274f03e77551f38284552e41b3fae35ad0fb00967e701a119ad638e11254",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/handwave_suggest.js",
+      "destination": "adapters/ray/_source/handwave_suggest.js",
+      "source_sha256": "08db478fd6bb56bd88a87ade3913446779cb419dc6367b7c77baa8beec719215",
+      "import_sha256": "08db478fd6bb56bd88a87ade3913446779cb419dc6367b7c77baa8beec719215",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/handwave_suggest.test.cjs",
+      "destination": "adapters/ray/_source/handwave_suggest.test.cjs",
+      "source_sha256": "cc7b24fb062b62828a791869e8ed91682476d1ee2795749cd016fa4774823c73",
+      "import_sha256": "cc7b24fb062b62828a791869e8ed91682476d1ee2795749cd016fa4774823c73",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/handwave_ui.go",
+      "destination": "adapters/ray/_source/handwave_ui.go",
+      "source_sha256": "c710c2768a2cc76b6054893da05e8010daa265f5f8bcc813c44cdb5c1b3141e5",
+      "import_sha256": "c710c2768a2cc76b6054893da05e8010daa265f5f8bcc813c44cdb5c1b3141e5",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/handwave_ui_test.go",
+      "destination": "adapters/ray/_source/handwave_ui_test.go",
+      "source_sha256": "3c082dfb73d15dad9022ec52763df41d05e1811dd99c42271ecda62c73316c6b",
+      "import_sha256": "3c082dfb73d15dad9022ec52763df41d05e1811dd99c42271ecda62c73316c6b",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/model_menu_patch.json",
+      "destination": "adapters/ray/_source/model_menu_patch.json",
+      "source_sha256": "b21363bbf20b36741c5489700c5a7b7b8513eb7fe341c7b178a28030a6289108",
+      "import_sha256": "b21363bbf20b36741c5489700c5a7b7b8513eb7fe341c7b178a28030a6289108",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/next_suggestion.go",
+      "destination": "adapters/ray/_source/next_suggestion.go",
+      "source_sha256": "c9e22f1dec24b476c4bc5edde1325a4fb76ecb78cad23cefbbcf6fcbfae36282",
+      "import_sha256": "c9e22f1dec24b476c4bc5edde1325a4fb76ecb78cad23cefbbcf6fcbfae36282",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/next_suggestion_test.go",
+      "destination": "adapters/ray/_source/next_suggestion_test.go",
+      "source_sha256": "887c76ccbe4c706e65331c8939a76b38d796faa1c60eb606d9d2ac7c7f714de0",
+      "import_sha256": "887c76ccbe4c706e65331c8939a76b38d796faa1c60eb606d9d2ac7c7f714de0",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/testdata/.gitattributes",
+      "destination": "adapters/ray/_source/testdata/.gitattributes",
+      "source_sha256": "d34ab4f67f5b158a58aabe05c06fa1d0d0e567464412d252beed13215d6e2d01",
+      "import_sha256": "d34ab4f67f5b158a58aabe05c06fa1d0d0e567464412d252beed13215d6e2d01",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/testdata/README.md",
+      "destination": "adapters/ray/_source/testdata/README.md",
+      "source_sha256": "75efc13b77f20e2ba29c1a378df438208d70da7d71698cd1495e31187e0db0db",
+      "import_sha256": "75efc13b77f20e2ba29c1a378df438208d70da7d71698cd1495e31187e0db0db",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/testdata/handwave-app-7ae318fe.js",
+      "destination": "adapters/ray/_source/testdata/handwave-app-7ae318fe.js",
+      "source_sha256": "7ae318fe13a6fd35cd652c3fed7ee51134ca7808d14aab8f1be0c18aa44a15b2",
+      "import_sha256": "7ae318fe13a6fd35cd652c3fed7ee51134ca7808d14aab8f1be0c18aa44a15b2",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/vendor/xterm/LICENSE-addon-fit",
+      "destination": "adapters/ray/_source/vendor/xterm/LICENSE-addon-fit",
+      "source_sha256": "e256f01188af527e4d06d21d06fbf785ae9c50d4b328bf03cbe0ba7f0aa4228f",
+      "import_sha256": "e256f01188af527e4d06d21d06fbf785ae9c50d4b328bf03cbe0ba7f0aa4228f",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/vendor/xterm/LICENSE-xterm",
+      "destination": "adapters/ray/_source/vendor/xterm/LICENSE-xterm",
+      "source_sha256": "b569f629d00f2626a8100df2a1798210535621e42164dfd426a6fe5aac7b0ccd",
+      "import_sha256": "b569f629d00f2626a8100df2a1798210535621e42164dfd426a6fe5aac7b0ccd",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/vendor/xterm/README.md",
+      "destination": "adapters/ray/_source/vendor/xterm/README.md",
+      "source_sha256": "e7c9ea47ec422cdfae8d2f746cbe04db79e5c5c5644e8fbcd394404441f49a30",
+      "import_sha256": "e7c9ea47ec422cdfae8d2f746cbe04db79e5c5c5644e8fbcd394404441f49a30",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/vendor/xterm/addon-fit-0.11.0.js",
+      "destination": "adapters/ray/_source/vendor/xterm/addon-fit-0.11.0.js",
+      "source_sha256": "ba3ea256ce0620a0992a197d6c9baea64823fc93d8da07a9e366ca9943c18527",
+      "import_sha256": "ba3ea256ce0620a0992a197d6c9baea64823fc93d8da07a9e366ca9943c18527",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/vendor/xterm/xterm-6.0.0.css",
+      "destination": "adapters/ray/_source/vendor/xterm/xterm-6.0.0.css",
+      "source_sha256": "854a7c0fb70e8b1a083c16797ab827299fb18744f5ad34f227b48337e33293c6",
+      "import_sha256": "854a7c0fb70e8b1a083c16797ab827299fb18744f5ad34f227b48337e33293c6",
+      "changes": []
+    },
+    {
+      "source": "apps/provider/cmd/ray_front/vendor/xterm/xterm-6.0.0.js",
+      "destination": "adapters/ray/_source/vendor/xterm/xterm-6.0.0.js",
+      "source_sha256": "14903579ff54664cd72f8e8699e6961a6272c21863ec1c3b118cdc8af5d4a972",
+      "import_sha256": "14903579ff54664cd72f8e8699e6961a6272c21863ec1c3b118cdc8af5d4a972",
+      "changes": []
+    }
+  ],
+  "source_hash_semantics": "SHA256 of exact Git blob bytes at commit; import_sha256 is the one-time import snapshot, not the current edited source"
+}

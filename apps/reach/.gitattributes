@@ -1,0 +1,7 @@
+# Preserve historical evidence, patches and third-party notices as imported.
+# Patch context blank lines and original legal texts are not product whitespace edits.
+desktop/runtime/notices/** -whitespace
+desktop/runtime/*.patch -whitespace
+docs/evidence/** -whitespace
+platform/adapters/ray/_source/** -whitespace
+platform/legacy/** -whitespace

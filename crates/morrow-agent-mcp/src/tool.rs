@@ -12,6 +12,7 @@ use morrow_agent_core::{
     rpi_ai::{ImageContent, Schema, Tool},
 };
 use serde_json::{json, Value};
+use sha2::{Digest, Sha256};
 use tokio_util::sync::CancellationToken;
 
 use crate::{client::Client, transport::CallError};
@@ -24,6 +25,28 @@ pub const ERROR_KEEP: usize = 5_000;
 pub const SUCCESS_LIMIT: usize = 50_000;
 /// Excerpt returned with a saved full result.
 pub const EXCERPT: usize = 2_000;
+
+/// One transport call and its evidence. An MCP `isError` reply remains an error;
+/// Hosts may inspect its saved full text without issuing another tools/call.
+#[derive(Debug, Clone)]
+pub struct ToolCallEvidence {
+    pub server: String,
+    pub tool: String,
+    pub call_id: String,
+    pub result: AgentToolResult,
+    /// The ordinary, bounded Tool error. None does not imply known effects;
+    /// interruption results still carry `effects_unknown` in result.details.
+    pub error: Option<String>,
+}
+
+impl ToolCallEvidence {
+    pub fn into_result(self) -> Result<AgentToolResult, String> {
+        match self.error {
+            Some(error) => Err(error),
+            None => Ok(self.result),
+        }
+    }
+}
 
 /// `isError` text: head and tail with the omitted character count.
 pub fn truncate_error(text: &str) -> String {
@@ -81,6 +104,18 @@ pub fn convert_result(
     result: &Value,
     results_dir: Option<&Path>,
 ) -> Result<AgentToolResult, String> {
+    convert_result_with_evidence(server, tool, call_id, result, results_dir).into_result()
+}
+
+/// Preserve long error text with the same byte/SHA metadata as long success
+/// text. The receipt binds the evidence to the caller's original call ID.
+pub fn convert_result_with_evidence(
+    server: &str,
+    tool: &str,
+    call_id: &str,
+    result: &Value,
+    results_dir: Option<&Path>,
+) -> ToolCallEvidence {
     let items = result.get("content").and_then(Value::as_array).map(Vec::as_slice).unwrap_or_default();
     let structured = result.get("structuredContent").filter(|value| !value.is_null());
     let failed = result.get("isError").and_then(Value::as_bool) == Some(true);
@@ -96,17 +131,20 @@ pub fn convert_result(
         if text.is_empty() {
             text = "MCP tool reported an error without text.".into();
         }
-        return Err(truncate_error(&text));
     }
     if text.is_empty() && images.is_empty() {
         text = structured.map_or_else(|| "(MCP tool returned no content)".to_string(), Value::to_string);
     }
     let mut details = json!({"server": server, "tool": tool});
-    if let Some(structured) = structured {
+    // Errors already include structuredContent in their full text. Duplicating
+    // it here would bypass that text's bound and overflow downstream receipts.
+    if let Some(structured) = structured.filter(|_| !failed) {
         details["structuredContent"] = structured.clone();
     }
     let count = text.chars().count();
-    if count > SUCCESS_LIMIT {
+    let error = failed.then(|| truncate_error(&text));
+    let limit = if failed { ERROR_LIMIT } else { SUCCESS_LIMIT };
+    if count > limit {
         details["original_chars"] = json!(count);
         let saved = results_dir.and_then(|dir| {
             let name = format!(
@@ -122,10 +160,17 @@ pub fn convert_result(
         text = match saved {
             Some(path) => {
                 details["full_result_path"] = json!(path.display().to_string());
+                // Bind saved bytes to the original MCP text, before a Host reopens the file.
+                details["full_result_bytes"] = json!(text.len());
+                details["full_result_sha256"] = json!(format!("{:x}", Sha256::digest(text.as_bytes())));
                 format!(
                     "MCP result has {count} characters; the full text is saved to {}. First {EXCERPT} characters:\n{excerpt}",
                     path.display()
                 )
+            }
+            None if failed => {
+                details["truncated"] = json!(true);
+                error.as_ref().expect("failed reply has an error").clone()
             }
             None => {
                 details["truncated"] = json!(true);
@@ -138,7 +183,13 @@ pub fn convert_result(
         content.push(TextContentOrImage::text(text));
     }
     content.extend(images.into_iter().map(TextContentOrImage::Image));
-    Ok(AgentToolResult { content, details, ..Default::default() })
+    ToolCallEvidence {
+        server: server.into(),
+        tool: tool.into(),
+        call_id: call_id.into(),
+        result: AgentToolResult { content, details, ..Default::default() },
+        error,
+    }
 }
 
 /// Structured unknown-effect result (requirement 22 contract).
@@ -185,6 +236,44 @@ pub(crate) struct McpTool {
     pub(crate) results_dir: Option<PathBuf>,
 }
 
+impl McpTool {
+    pub(crate) async fn execute_with_evidence(
+        &self,
+        call_id: &str,
+        params: Value,
+        signal: CancellationToken,
+    ) -> Result<ToolCallEvidence, AgentError> {
+        if signal.is_cancelled() {
+            return Err(AgentError::Abort);
+        }
+        let arguments = if params.is_null() { json!({}) } else { params };
+        if !arguments.is_object() {
+            return Err(AgentError::Tool("MCP tool arguments must be an object".into()));
+        }
+        let request = json!({"name": self.tool, "arguments": arguments});
+        match self.client.request("tools/call", request, self.call_timeout, &signal).await {
+            Ok(result) => Ok(convert_result_with_evidence(
+                &self.server,
+                &self.tool,
+                call_id,
+                &result,
+                self.results_dir.as_deref(),
+            )),
+            Err(error) => {
+                interrupted(&self.server, &self.tool, self.read_only, self.call_timeout, error).map(|result| {
+                    ToolCallEvidence {
+                        server: self.server.clone(),
+                        tool: self.tool.clone(),
+                        call_id: call_id.into(),
+                        result,
+                        error: None,
+                    }
+                })
+            }
+        }
+    }
+}
+
 #[async_trait]
 impl AgentTool for McpTool {
     fn schema(&self) -> &Tool {
@@ -202,19 +291,7 @@ impl AgentTool for McpTool {
         signal: CancellationToken,
         _: Arc<dyn Fn(ToolResultPartial) + Send + Sync>,
     ) -> Result<AgentToolResult, AgentError> {
-        if signal.is_cancelled() {
-            return Err(AgentError::Abort);
-        }
-        let arguments = if params.is_null() { json!({}) } else { params };
-        if !arguments.is_object() {
-            return Err(AgentError::Tool("MCP tool arguments must be an object".into()));
-        }
-        let request = json!({"name": self.tool, "arguments": arguments});
-        match self.client.request("tools/call", request, self.call_timeout, &signal).await {
-            Ok(result) => convert_result(&self.server, &self.tool, call_id, &result, self.results_dir.as_deref())
-                .map_err(AgentError::Tool),
-            Err(error) => interrupted(&self.server, &self.tool, self.read_only, self.call_timeout, error),
-        }
+        self.execute_with_evidence(call_id, params, signal).await?.into_result().map_err(AgentError::Tool)
     }
 }
 

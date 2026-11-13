@@ -1,0 +1,10 @@
+✔ Ray signed assertion is fixed-account, short-lived, one-time and durable across restart (769.9536ms)
+✔ loopback signed exchange creates an existing Reach account session without exposing a bearer; cookie CSRF remains required (122.3863ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1075.9831

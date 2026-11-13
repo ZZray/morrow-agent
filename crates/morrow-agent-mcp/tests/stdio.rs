@@ -15,6 +15,51 @@ use serde_json::json;
 use tokio_util::sync::CancellationToken;
 
 #[tokio::test]
+async fn error_evidence_is_call_bound_and_never_fetches_by_reexecuting() {
+    let dir = tempfile::tempdir().unwrap();
+    let log = dir.path().join("calls.log");
+    let mut opts = options();
+    opts.results_dir = Some(dir.path().join("results"));
+    opts.call_timeout = Duration::from_millis(600);
+    let session = connect(config(vec![("fake", fake(&[], Some(&log), &[]))]), opts).await;
+    let call = |id: &'static str, n| {
+        session.call_tool_with_evidence("mcp__fake__fail", id, json!({"n":n}), CancellationToken::new())
+    };
+    let (first, second) = tokio::join!(call("call-a", 12_001), call("call-b", 12_002));
+    let (first, second) = (first.unwrap(), second.unwrap());
+    for (receipt, id, count) in [(&first, "call-a", 12_001), (&second, "call-b", 12_002)] {
+        assert_eq!((&*receipt.server, &*receipt.tool, &*receipt.call_id), ("fake", "fail", id));
+        assert!(receipt.error.is_some());
+        assert_eq!(
+            std::fs::read_to_string(receipt.result.details["full_result_path"].as_str().unwrap()).unwrap(),
+            "e".repeat(count)
+        );
+    }
+    assert_ne!(first.result.details["full_result_path"], second.result.details["full_result_path"]);
+    assert!(first.into_result().is_err());
+    assert!(second.into_result().is_err());
+    assert!(error_text(run(&tool(&session, "mcp__fake__fail"), json!({"n":12003}), CancellationToken::new()).await)
+        .contains("2003 characters omitted"));
+    let cancelled = CancellationToken::new();
+    cancelled.cancel();
+    assert!(session.call_tool_with_evidence("mcp__fake__fail", "cancel", json!({}), cancelled).await.is_err());
+    assert!(session
+        .call_tool_with_evidence("not-listed", "missing", json!({}), CancellationToken::new())
+        .await
+        .is_err());
+    assert_eq!(count(&log_lines(&log), "call fail "), 3);
+    let unknown = session
+        .call_tool_with_evidence("mcp__fake__slow", "timeout", json!({"ms":2000}), CancellationToken::new())
+        .await
+        .unwrap();
+    assert_eq!(unknown.call_id, "timeout");
+    assert!(unknown.error.is_none());
+    assert!(reports_unknown(&unknown.result.details));
+    assert_eq!(count(&log_lines(&log), "call slow "), 1);
+    session.shutdown().await;
+}
+
+#[tokio::test]
 async fn handshake_paginates_and_names_tools() {
     let dir = tempfile::tempdir().unwrap();
     let log = dir.path().join("log.txt");

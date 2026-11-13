@@ -1,0 +1,22 @@
+[
+  {
+    "distribution": "dnspython",
+    "version": "2.9.0",
+    "file": "dnspython-2.9.0-LICENSE",
+    "sha256": "c3ea3ff5654b329c19d3bc5f7481af623c3dded4a6145585499f843ad3d741cd",
+    "source": "https://github.com/rthalley/dnspython",
+    "revision": "dfc838e79425ced75b857a9e23132e506201e7b9",
+    "archiveSha256": "daf10bef676e3c79593fc18b98e37f244f51ded60aef092aca48702b91e057d0",
+    "sourcePath": "LICENSE",
+    "status": "staged-not-yet-bundled"
+  },
+  {
+    "distribution": "fastmcp-slim",
+    "version": "4.1.3",
+    "file": "fastmcp-slim-4.1.3-LICENSE",
+    "sha256": "43070e2d4e532684de521b885f385d0841030efa2b1a20bafb76133a5e1379c1",
+    "source": "locked fastmcp 4.1.3 wheel",
+    "sourcePath": "fastmcp-4.1.3.dist-info/licenses/LICENSE",
+    "status": "staged-not-yet-bundled"
+  }
+]

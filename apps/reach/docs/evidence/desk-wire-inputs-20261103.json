@@ -1,0 +1,2040 @@
+{
+  "kind": "locked native inspection JSONL/SDK and fresh closure local evidence",
+  "at": "2026-11-03T15:00:45.386Z",
+  "sourceIdentity": "f910c76fef6c3226a9a8925ec2ab34508bc744b35b33ce9aed64eedd277f3c12",
+  "snapshot": "E:\\repos\\ara\\apps\\reach\\work\\desk-wire-source-4cb20fc3-8111-457e-9c42-c5570a0f0ddb",
+  "sources": [
+    {
+      "path": "crates/ara-agent-lite-core/Cargo.lock",
+      "sha256": "abe96e00b36ac648104844eb16f70d0feb1cc244ec68b4b15b48181478d55b96",
+      "bytes": 61635
+    },
+    {
+      "path": "crates/ara-agent-lite-core/Cargo.toml",
+      "sha256": "35d41800b3f03060cedb07d59394175f845f5e866f0be46b7303385d45ddcb8e",
+      "bytes": 1976
+    },
+    {
+      "path": "crates/ara-agent-lite-core/README.md",
+      "sha256": "2f794a8331c2607f7dd2846db0b1ae797bdaf9fad5b70beecf32b8face37c3d8",
+      "bytes": 9503
+    },
+    {
+      "path": "crates/ara-agent-lite-core/examples/business_host.rs",
+      "sha256": "4ea7efae1fbc130f7ec32287771e458118b12cac3c5c35fd00c824b0fee205ec",
+      "bytes": 12192
+    },
+    {
+      "path": "crates/ara-agent-lite-core/src/agent.rs",
+      "sha256": "099ab1c95500b972d6ff42166496155151d8ff3e4ad6f14e3f864896833c203c",
+      "bytes": 164666
+    },
+    {
+      "path": "crates/ara-agent-lite-core/src/analysis_tools.rs",
+      "sha256": "5ba3cd7b652e28cfa358b7e9aaa3336403e282b1a5f488b782f147faa58966ae",
+      "bytes": 38902
+    },
+    {
+      "path": "crates/ara-agent-lite-core/src/compaction_refresh.rs",
+      "sha256": "d9c16d7050cbd13a72b5fd6564e26bfa874a2919ad1788e1d1018d6809aa58ef",
+      "bytes": 22538
+    },
+    {
+      "path": "crates/ara-agent-lite-core/src/completion_gate.rs",
+      "sha256": "6e2fdd3cf9e450325e207c6db39632269df29185f661023f46db9573fc7aad61",
+      "bytes": 4126
+    },
+    {
+      "path": "crates/ara-agent-lite-core/src/context_memory.rs",
+      "sha256": "fefd80cc1daf9df09c35adf87d6b4d72bc6489aba7277d8ce06d176ce0bb3457",
+      "bytes": 69311
+    },
+    {
+      "path": "crates/ara-agent-lite-core/src/effect_status.rs",
+      "sha256": "9cb7f79b9803c6c68a630dccdf1ddcc84df33b470a9becf7e4c2cd7d9540ed40",
+      "bytes": 4687
+    },
+    {
+      "path": "crates/ara-agent-lite-core/src/environment_library.rs",
+      "sha256": "0cac59c818f16a3c9f559164c8acb2d3966fa666aff58ef18bb0cc67a9b2876f",
+      "bytes": 28113
+    },
+    {
+      "path": "crates/ara-agent-lite-core/src/environment_library_tests.rs",
+      "sha256": "2e14cad857021d55f7a37c84bbf33fdf372187ba34712fe4143110921109c676",
+      "bytes": 18573
+    },
+    {
+      "path": "crates/ara-agent-lite-core/src/environment_tools.rs",
+      "sha256": "1ef67040df5880e53cf6550217ac36975ffe493d742266563f78eb888cb102b0",
+      "bytes": 4473
+    },
+    {
+      "path": "crates/ara-agent-lite-core/src/events.rs",
+      "sha256": "d6909fdc14ceed9830fa8c3c6a04f63622a15273c40931f6aeec4facaaecfdc4",
+      "bytes": 15235
+    },
+    {
+      "path": "crates/ara-agent-lite-core/src/execution.rs",
+      "sha256": "4e611ee10a1bd0269da32e5b372c12d930096860d653d4d969b88d69e62ce69b",
+      "bytes": 23465
+    },
+    {
+      "path": "crates/ara-agent-lite-core/src/experience.rs",
+      "sha256": "ddbab5072325068bc442b54b05c98adde717a3c248ed3f73aede6d50ea0232ac",
+      "bytes": 22155
+    },
+    {
+      "path": "crates/ara-agent-lite-core/src/experience_memory_tests.rs",
+      "sha256": "8cdfb2be450dae87914765da2deddc75500b1626db91bbe519cb5d7c271c6dda",
+      "bytes": 15520
+    },
+    {
+      "path": "crates/ara-agent-lite-core/src/file_discovery.rs",
+      "sha256": "e893f4131bd9eb11666383f17b45d93f3f0ce1182d94d6d8284312aa824cb900",
+      "bytes": 19312
+    },
+    {
+      "path": "crates/ara-agent-lite-core/src/file_edits.rs",
+      "sha256": "a89d900441f50b43376363c84e13c2d6342dda0eaae1b60b4dcc930c35fd1f5b",
+      "bytes": 18812
+    },
+    {
+      "path": "crates/ara-agent-lite-core/src/goal_runtime.rs",
+      "sha256": "e2b4049aecdf11c667c1e255c1821c875617a48ef6e6968dd39683d086e287ed",
+      "bytes": 3184
+    },
+    {
+      "path": "crates/ara-agent-lite-core/src/length_recovery.rs",
+      "sha256": "f53a115708db2292173a951287c1fb0cdd39a500116241566029fdf7f09aa0ce",
+      "bytes": 12811
+    },
+    {
+      "path": "crates/ara-agent-lite-core/src/lib.rs",
+      "sha256": "175858b5d756f0893b5d5de4eb056847af316fe4dfc3452b9789cd4b6d3d069e",
+      "bytes": 1241
+    },
+    {
+      "path": "crates/ara-agent-lite-core/src/local_tools.rs",
+      "sha256": "18e9e0632549fef3e27010bc3715d07d01ad3d07bfc09268d1388b6867583620",
+      "bytes": 82981
+    },
+    {
+      "path": "crates/ara-agent-lite-core/src/managed_jobs.rs",
+      "sha256": "c7c7b8329bd8800b0a6516b4614ba647b68a58f48ad87afd7bf43e1e69c5ae8d",
+      "bytes": 105371
+    },
+    {
+      "path": "crates/ara-agent-lite-core/src/model.rs",
+      "sha256": "a3a29de54505c004bea0adf84897bff6ac70457b2061fdea817b928a03449d6f",
+      "bytes": 12689
+    },
+    {
+      "path": "crates/ara-agent-lite-core/src/model_caps.rs",
+      "sha256": "59ab3811390ae58e322e12eda0814b8bb95a29a998098c27130a7fd43cf4cb38",
+      "bytes": 10176
+    },
+    {
+      "path": "crates/ara-agent-lite-core/src/model_telemetry.rs",
+      "sha256": "e37bc58593cf4c534cdacd274cf82a4695fcc3e947877639d8fb93cd7735760a",
+      "bytes": 6210
+    },
+    {
+      "path": "crates/ara-agent-lite-core/src/output_limit.rs",
+      "sha256": "72fcaf1234cadfccffa84060c8970448b3b95dc9803b59e5909189938304b50b",
+      "bytes": 4369
+    },
+    {
+      "path": "crates/ara-agent-lite-core/src/process_capture_tests.rs",
+      "sha256": "332eacc4a7daa0b7f315c290c55998d46dce279a889dafdf7a8dff620ab55a6e",
+      "bytes": 3291
+    },
+    {
+      "path": "crates/ara-agent-lite-core/src/process_output.rs",
+      "sha256": "c2ca62c6ab9732a1817f0d584dc7387ca943db0ceff9195b869fe8fd4d0691f7",
+      "bytes": 12533
+    },
+    {
+      "path": "crates/ara-agent-lite-core/src/project_rules.rs",
+      "sha256": "8cdc8b73ceb59e09cb0ff7e960cde89e4ec9b28855b198981be61a24f94ca6ce",
+      "bytes": 3884
+    },
+    {
+      "path": "crates/ara-agent-lite-core/src/reference_window_tests.rs",
+      "sha256": "ed29f66ea125957d18f7c9851d8c2f11475cd88ac4e7824ac37e0f9dbf419c3a",
+      "bytes": 7520
+    },
+    {
+      "path": "crates/ara-agent-lite-core/src/run_policies.rs",
+      "sha256": "7fc013f2778b923d8435ce126151785bed70350c0ef2649132fa04b10f8fd456",
+      "bytes": 3356
+    },
+    {
+      "path": "crates/ara-agent-lite-core/src/script_tools.rs",
+      "sha256": "5391e73c3236ad538c977a25384b0419853d4883fafac3edfe83116beb500f37",
+      "bytes": 20312
+    },
+    {
+      "path": "crates/ara-agent-lite-core/src/session_fork.rs",
+      "sha256": "948d7f00a621715d8938331de96ba24ece1f9b8dc98b6d914c466ffe9ad26ea9",
+      "bytes": 8131
+    },
+    {
+      "path": "crates/ara-agent-lite-core/src/session_inspect.rs",
+      "sha256": "28ab8ccda20dd1e606110d50aa8a61af64fadbfdd8f93e8fa0b7390685fcfc9c",
+      "bytes": 36165
+    },
+    {
+      "path": "crates/ara-agent-lite-core/src/session_journal.rs",
+      "sha256": "2d856a85eb61c1934cae0a811c7d4ad76b0252ec3810e7f03ea1807eb2e5def0",
+      "bytes": 36609
+    },
+    {
+      "path": "crates/ara-agent-lite-core/src/skill_library.rs",
+      "sha256": "e44a0029096dcb7e3b006d33de8908eaeeb5feea89e45e19d5f157c55e69d6f0",
+      "bytes": 33212
+    },
+    {
+      "path": "crates/ara-agent-lite-core/src/skill_library_tests.rs",
+      "sha256": "a8f74dfc045198ce3c5626b7c5aef97d828cb6650d27345ce499c914d0d8a0a5",
+      "bytes": 14341
+    },
+    {
+      "path": "crates/ara-agent-lite-core/src/steering.rs",
+      "sha256": "4a6d0b8356df0bc03d3b43e1fcc39d4d3fd0a845c85df43ce610055cca1a41f1",
+      "bytes": 4801
+    },
+    {
+      "path": "crates/ara-agent-lite-core/src/stuck_detector.rs",
+      "sha256": "aa7f4616f23d5e5029f2f832305ffab7750cf5ce9514f17ea01753b485b0ed8c",
+      "bytes": 16350
+    },
+    {
+      "path": "crates/ara-agent-lite-core/src/system_capabilities.rs",
+      "sha256": "d780c6ff3f46b16bbd9888fb413e0aa13baa8d83b9533fc93d2df88ba32ef074",
+      "bytes": 12278
+    },
+    {
+      "path": "crates/ara-agent-lite-core/src/terminal_emulator.rs",
+      "sha256": "c123fcb699beaa2b671c8d0ead2e6c18fc50e378ab1ee6951da31c6eeeb42962",
+      "bytes": 6524
+    },
+    {
+      "path": "crates/ara-agent-lite-core/src/terminal_process.rs",
+      "sha256": "e2970dcf26d9d46d5408d29f4b29bf9aa23569ec348e49f3a2361ef082e8791b",
+      "bytes": 33544
+    },
+    {
+      "path": "crates/ara-agent-lite-core/src/termination.rs",
+      "sha256": "d894edbed7a8edfc78982925ade6660330ead157784e182f2853e55b79a74920",
+      "bytes": 5929
+    },
+    {
+      "path": "crates/ara-agent-lite-core/src/web_tools.rs",
+      "sha256": "fd4bd2bd9d8005be763903800544b547295605cd4648e3991b26381a52f8d856",
+      "bytes": 29889
+    },
+    {
+      "path": "crates/ara-agent-lite-core/src/web_tools_tests.rs",
+      "sha256": "00f6fe3d28297f1a77d7102364ccd6e00492bf7f6d2f8e524c41a5e5664019a3",
+      "bytes": 17804
+    },
+    {
+      "path": "crates/ara-agent-lite-core/tests/byte_roundtrip.rs",
+      "sha256": "37c4bf2837cb739ca201af7dc24d5a8d589c8dbac1f4176ed060d5aaf94a2573",
+      "bytes": 10212
+    },
+    {
+      "path": "crates/ara-agent-lite-core/tests/compaction_refresh.rs",
+      "sha256": "c0a384100efc0a7f54ce5c4182fe99edd1062340ab9a78acd96b4ea2db9572bd",
+      "bytes": 8612
+    },
+    {
+      "path": "crates/ara-agent-lite-core/tests/completion_gate.rs",
+      "sha256": "4266b1d02ddac753903805a22fcc6624fdf12a3d853ac4f3a64108117f567f09",
+      "bytes": 10005
+    },
+    {
+      "path": "crates/ara-agent-lite-core/tests/completion_gate_golden.rs",
+      "sha256": "62a98111cec6a5e3b23cc7690a42a058a25c21a8fb2ced10e82eabb77695a37b",
+      "bytes": 1614
+    },
+    {
+      "path": "crates/ara-agent-lite-core/tests/event_compat.rs",
+      "sha256": "b9f59b09874a6b948dca0f16a7dabe294fcf5db3190d708667719ea3e4d8beef",
+      "bytes": 5587
+    },
+    {
+      "path": "crates/ara-agent-lite-core/tests/event_enum.rs",
+      "sha256": "53c2f7fca2051a32f3d780516749820b84102fa8ce27b7e43fbbddccd9d67d9b",
+      "bytes": 4634
+    },
+    {
+      "path": "crates/ara-agent-lite-core/tests/event_enum_errors.rs",
+      "sha256": "389bfc5b5c3a743feeb9567d4956bb41c103c6b778e8963bc2f7b73953a85c4a",
+      "bytes": 6680
+    },
+    {
+      "path": "crates/ara-agent-lite-core/tests/event_samples.rs",
+      "sha256": "45b80daa17f091cabb23554d7857ad3eb255ffdd93ac9c9e705e11d54b842176",
+      "bytes": 1567
+    },
+    {
+      "path": "crates/ara-agent-lite-core/tests/event_scenarios/mod.rs",
+      "sha256": "6ea617cde4c58fa59e6a9ed30ddc9d37c729a91476c92e3832552bf92804cbf3",
+      "bytes": 14388
+    },
+    {
+      "path": "crates/ara-agent-lite-core/tests/golden_support/mod.rs",
+      "sha256": "b67039e0058180834cb858d43e2ee6cbb547c50a374bab187879951ff1e47d77",
+      "bytes": 6988
+    },
+    {
+      "path": "crates/ara-agent-lite-core/tests/host_boundary.rs",
+      "sha256": "7d60c59df692a946f066b4fa257bbf3021138c51006501ea0554564a0df3d060",
+      "bytes": 5052
+    },
+    {
+      "path": "crates/ara-agent-lite-core/tests/output_limit_wire.rs",
+      "sha256": "de9155b7887a4f2c0ad5e5159a6937a3c1c9932636155521eae1e7fb36d2cb5b",
+      "bytes": 6259
+    },
+    {
+      "path": "crates/ara-agent-lite-core/tests/output_limit_zero.rs",
+      "sha256": "23f856d08f30c35a0559dfe87f498b54e2137bc1c1a5c8142b7d0a110aae3989",
+      "bytes": 1748
+    },
+    {
+      "path": "crates/ara-agent-lite-core/tests/replay_preconditions.rs",
+      "sha256": "104a8743c8a1ea9affa6bcc5924b25b87cf0fd14814b70ce2c4c0170d57fc721",
+      "bytes": 4442
+    },
+    {
+      "path": "crates/ara-agent-lite-core/tests/replay_provenance.rs",
+      "sha256": "2594e66b0101971e3811fe6f6b304d8a7a9d215306f86d87cc1c73c13de0a877",
+      "bytes": 6185
+    },
+    {
+      "path": "crates/ara-agent-lite-core/tests/run_policies.rs",
+      "sha256": "47b81d93d7b28124457af7bc116ab6cd65f7a1fb7222efefabfd0f1af5449bd9",
+      "bytes": 16152
+    },
+    {
+      "path": "crates/ara-agent-lite-core/tests/session_fork.rs",
+      "sha256": "f4671c51c0fb83e2b1bb6a4ee4e052e9732e9c1851b4875c7df8680fe9901250",
+      "bytes": 11200
+    },
+    {
+      "path": "crates/ara-agent-lite-core/tests/session_inspection.rs",
+      "sha256": "9eb60b3277523e5230299e3757774f4d92c945fd788f4e378b4ce537cbfe8bea",
+      "bytes": 11875
+    },
+    {
+      "path": "crates/ara-agent-lite-core/tests/stability_surface.rs",
+      "sha256": "96937535819f3c354167230a85de34c69e5d617d7ac8928363c8a886a881b390",
+      "bytes": 14249
+    },
+    {
+      "path": "crates/ara-agent-lite-core/tests/stuck.rs",
+      "sha256": "2646094fe60c8c36736af34d22d21f8600577ca309fe480fd55cbe71937898af",
+      "bytes": 6641
+    },
+    {
+      "path": "crates/ara-agent-lite-core/tests/summary_reservation.rs",
+      "sha256": "c74dc84a366f36b657a64977d8b203d888c671f9aaf1a1a87180ec0519909b25",
+      "bytes": 6793
+    },
+    {
+      "path": "crates/ara-agent-lite-core/tests/support/mod.rs",
+      "sha256": "178a59341c8e40aa895a37e771db14cf127736493af8b6a6df7a59d78476130c",
+      "bytes": 15289
+    },
+    {
+      "path": "crates/ara-agent-lite-core/tests/vision_wire.rs",
+      "sha256": "82fec0adfb617c97678d979725ccf5c15c11dbf1f106b3a3c88df931edd0cadc",
+      "bytes": 19975
+    },
+    {
+      "path": "crates/ara-agent-lite-harness/Cargo.lock",
+      "sha256": "146f5b9d7d4a76f48f255b5f7269cc5b8756f8546bb44fba934ff5d0759a2813",
+      "bytes": 65337
+    },
+    {
+      "path": "crates/ara-agent-lite-harness/Cargo.toml",
+      "sha256": "f4cedac34e4a1dc924f3c1549611a3142d0e91f9b80baf7464d7e3e307da0623",
+      "bytes": 882
+    },
+    {
+      "path": "crates/ara-agent-lite-harness/README.md",
+      "sha256": "6a398115d609bbfe6ec1879ca7dc5d7827b73782ee1f1b7bb4701f002511d6db",
+      "bytes": 16044
+    },
+    {
+      "path": "crates/ara-agent-lite-harness/examples/capability/host.rs",
+      "sha256": "0088e9177771c0ddd322abd3a10b44286eabc59f5a1c6464d98abed0d377b553",
+      "bytes": 30871
+    },
+    {
+      "path": "crates/ara-agent-lite-harness/examples/capability/process.rs",
+      "sha256": "3ae2c0895ff7d56f364d49b07d7d7be42c69dc559a67758ee12f302069a67212",
+      "bytes": 6734
+    },
+    {
+      "path": "crates/ara-agent-lite-harness/examples/capability/provider.rs",
+      "sha256": "a9b344c654f5a183e89bb5c3244375665eef922d75e63440cc37ecfc9dd8eaf2",
+      "bytes": 4762
+    },
+    {
+      "path": "crates/ara-agent-lite-harness/examples/capability/tasks.rs",
+      "sha256": "1d6662c1e3d1705d190c9444feec23788f88e12aed9066cb73ce471e44dbd1cd",
+      "bytes": 11185
+    },
+    {
+      "path": "crates/ara-agent-lite-harness/examples/capability_host.rs",
+      "sha256": "0927010d1114c300c9483ced6e34615f53524efe69bc301a42bfcd7e7ce49117",
+      "bytes": 3694
+    },
+    {
+      "path": "crates/ara-agent-lite-harness/examples/lifecycle_probe.rs",
+      "sha256": "fba9a444e70d5e2f69db29db09d93915230fee2515b5559a2063a758d4783294",
+      "bytes": 3082
+    },
+    {
+      "path": "crates/ara-agent-lite-harness/examples/task_set.rs",
+      "sha256": "72652d74dfe746ed8ed986bcf05536fd95dfd4fac3dc694ca0c36a3aafb82fa1",
+      "bytes": 5329
+    },
+    {
+      "path": "crates/ara-agent-lite-harness/src/close.rs",
+      "sha256": "9f766cc227a6e05f6764ad72abf6b24586871e1d28b791cfc3d5b8e1b19a1ad7",
+      "bytes": 22014
+    },
+    {
+      "path": "crates/ara-agent-lite-harness/src/inspection.rs",
+      "sha256": "277b5ccc5e71aebd859648b679816d1aa050e0015d9018f2e12d4ff3115d4a39",
+      "bytes": 4492
+    },
+    {
+      "path": "crates/ara-agent-lite-harness/src/lib.rs",
+      "sha256": "cce4de9ccdc7bc2b5f5da4e60341db38fd36b1079470e7af7c8b5b1a6a0217e2",
+      "bytes": 1454
+    },
+    {
+      "path": "crates/ara-agent-lite-harness/src/runner.rs",
+      "sha256": "9fe25e4fef604b9d4e62c33f9edb38a142a3f7b611cfd5657d740f2899943e42",
+      "bytes": 72788
+    },
+    {
+      "path": "crates/ara-agent-lite-harness/src/snapshot.rs",
+      "sha256": "62a02e473c40bfbdb35de44c74bd1610bd1de7328c70cf8c699ea8d444f0bc88",
+      "bytes": 4181
+    },
+    {
+      "path": "crates/ara-agent-lite-harness/src/stop_review.rs",
+      "sha256": "d22b79d33c47fbda8f749d79a62cdc6b1df4472a2cf779b455e9fe1ec1082481",
+      "bytes": 2440
+    },
+    {
+      "path": "crates/ara-agent-lite-harness/src/storage.rs",
+      "sha256": "7c7c288d268561c8c286dcb03ff20e2d64143d7666cf50c3f7b8f8385dda4f64",
+      "bytes": 9329
+    },
+    {
+      "path": "crates/ara-agent-lite-harness/src/task_set.rs",
+      "sha256": "0e36caa99880a4c18997484892e9fc5028dfd4bcbd0f612710550b0ac4dea861",
+      "bytes": 8144
+    },
+    {
+      "path": "crates/ara-agent-lite-harness/src/types.rs",
+      "sha256": "dc2de40a4552d20c89662cee18a884ad8f55131fc5630b2bb52f8c1cd22f687f",
+      "bytes": 16481
+    },
+    {
+      "path": "crates/ara-agent-lite-harness/tests/budget_snapshots.rs",
+      "sha256": "1f63b131be957bc25ecc369b154218afa5097d38bf997bb58bb98ef34c067eb4",
+      "bytes": 25240
+    },
+    {
+      "path": "crates/ara-agent-lite-harness/tests/common/mod.rs",
+      "sha256": "81c3a34d5fded59785f98692725554406e16d90e2b9d148ec8e20f2eb58d42c7",
+      "bytes": 21590
+    },
+    {
+      "path": "crates/ara-agent-lite-harness/tests/completion_gate_accept.rs",
+      "sha256": "90604092df93a67b19c2db25db512308ea549bea438e0707d621cdf14255f5b3",
+      "bytes": 2261
+    },
+    {
+      "path": "crates/ara-agent-lite-harness/tests/outcome_compat.rs",
+      "sha256": "814f3fa4faffa8fcae7f972e64254cc84e92121acd07def53cd651904198dd67",
+      "bytes": 4594
+    },
+    {
+      "path": "crates/ara-agent-lite-harness/tests/resume.rs",
+      "sha256": "d85b779bd13d7e4b4f76696bd5fd3bfb58bb25a8735355fe45268382522a28f3",
+      "bytes": 63877
+    },
+    {
+      "path": "crates/ara-agent-lite-harness/tests/stability_surface.rs",
+      "sha256": "df3c43a5e930e977cf676b176fc147486ae163e5db9ae97b0e736fd1898ebc10",
+      "bytes": 6909
+    },
+    {
+      "path": "crates/ara-agent-lite-harness/tests/stop_review.rs",
+      "sha256": "c0d091d146ab1ec3f1ea0a8ef3de28f7df562c8c6fd428261c27f8e23f175174",
+      "bytes": 18714
+    },
+    {
+      "path": "crates/ara-agent-lite-harness/tests/stop_review_flow.rs",
+      "sha256": "777ac77de8d072bfb030092317a258c3fe22628f3834fd18e18e3476e94a1c68",
+      "bytes": 12632
+    },
+    {
+      "path": "crates/ara-agent-lite-harness/tests/summary_budget.rs",
+      "sha256": "ca6176538431040ccf1b738c077cc1c4b6c656716377b21a579313fde474ec1d",
+      "bytes": 10911
+    },
+    {
+      "path": "crates/ara-agent-lite-harness/tests/task_set.rs",
+      "sha256": "e6dfa7fa06566d25b4a7cec9d67df2b1cc069724d2d981895497fd12589178de",
+      "bytes": 22551
+    },
+    {
+      "path": "crates/ara-agent-lite-harness/tests/tasks.rs",
+      "sha256": "5f77e161f83c70d2dedf57689156579ad268c6c33a7be7c11f3c9cbffe1244c8",
+      "bytes": 17453
+    },
+    {
+      "path": "crates/ara-agent-lite-harness/tests/unknown_effect_list.rs",
+      "sha256": "3e4e3eb49745899428efe3b4cf146f81499ade2ed0f8f5c088b4c0cbbc5c5cec",
+      "bytes": 6550
+    },
+    {
+      "path": "crates/ara-agent-lite-harness/tests/unknown_effects.rs",
+      "sha256": "7531a21d6af243d62f56e8598c6529dcda62f692dbbe54e0c608c7010e96c0ee",
+      "bytes": 6525
+    },
+    {
+      "path": "crates/ara-agent-lite-harness/tests/unknown_effects_examples.rs",
+      "sha256": "c5789348ad597578b68635deb6161497cb8125a14f6b39284f29aae7085fc19a",
+      "bytes": 5895
+    },
+    {
+      "path": "crates/ara-agent-lite-jsonl/Cargo.lock",
+      "sha256": "444e99db590e45585b0fd53108167f434695b6026c27d2b2181d7f424678b409",
+      "bytes": 62353
+    },
+    {
+      "path": "crates/ara-agent-lite-jsonl/Cargo.toml",
+      "sha256": "6665b4a873eaae541c8874ad6fff17286b4a6e6bb9822d71884e81bc6b8e6a5a",
+      "bytes": 1023
+    },
+    {
+      "path": "crates/ara-agent-lite-jsonl/README.md",
+      "sha256": "f6dc798115e52b401c3b15380ea9a4139f55d16df6dfb05af665f423c0cbe6cf",
+      "bytes": 14341
+    },
+    {
+      "path": "crates/ara-agent-lite-jsonl/clients/node/README.md",
+      "sha256": "8ce8433631f3613d81df8fd8c840f6d3d6b7f8399137bde5af15180e6e529596",
+      "bytes": 12883
+    },
+    {
+      "path": "crates/ara-agent-lite-jsonl/clients/node/budget-probe.mjs",
+      "sha256": "a789ff86b49ee1b439e59b670620fb16417c283018e4df86c6687eb9ffcec352",
+      "bytes": 3437
+    },
+    {
+      "path": "crates/ara-agent-lite-jsonl/clients/node/budget-snapshot.test.mjs",
+      "sha256": "ebd550c8cb7965759d486d077b7950bb7ffd28900bcc601b978c3eb865397b54",
+      "bytes": 4425
+    },
+    {
+      "path": "crates/ara-agent-lite-jsonl/clients/node/byte-roundtrip.test.mjs",
+      "sha256": "0c1eedd16782b976948c5515db1068a36ac932e2ee242648865a48fb7b6c91f8",
+      "bytes": 12150
+    },
+    {
+      "path": "crates/ara-agent-lite-jsonl/clients/node/client.mjs",
+      "sha256": "902859fd568d89fd0a568c186d57163d8f188a98cbcc051ca4f00d888641891f",
+      "bytes": 44360
+    },
+    {
+      "path": "crates/ara-agent-lite-jsonl/clients/node/client.props.test.mjs",
+      "sha256": "f92d81da2903a3898ed0405a34d3ecbf07177265d66b4054cba99feb159433a7",
+      "bytes": 6597
+    },
+    {
+      "path": "crates/ara-agent-lite-jsonl/clients/node/client.resume.test.mjs",
+      "sha256": "760606028820377e7a2ba174ab0b213d7a1384be809ddde53fb5382bf64e8dfd",
+      "bytes": 8852
+    },
+    {
+      "path": "crates/ara-agent-lite-jsonl/clients/node/client.test.mjs",
+      "sha256": "60dd394d91315d205294b99776e41fba20e86389a671eab16d86955a7bde6f5d",
+      "bytes": 13360
+    },
+    {
+      "path": "crates/ara-agent-lite-jsonl/clients/node/close.mjs",
+      "sha256": "4c7cfda8e22a7ab5354b88f22d0fcb75eea0205872f98e8c22d90283d80969c7",
+      "bytes": 12957
+    },
+    {
+      "path": "crates/ara-agent-lite-jsonl/clients/node/close.test.mjs",
+      "sha256": "a552b4323746e125af33d9792087f8136e080b9c1376da07d082daaef5d231ce",
+      "bytes": 7208
+    },
+    {
+      "path": "crates/ara-agent-lite-jsonl/clients/node/inspection.mjs",
+      "sha256": "ce03f572a715817a74c1ae6c05115bbbac112709681c16930c739f9d64869e3a",
+      "bytes": 15409
+    },
+    {
+      "path": "crates/ara-agent-lite-jsonl/clients/node/inspection.test.mjs",
+      "sha256": "acd0de46fb3a57dca6581b266b1b38080abe3fea3a8a054f187688609cc0a481",
+      "bytes": 7491
+    },
+    {
+      "path": "crates/ara-agent-lite-jsonl/clients/node/labslot-todos.mjs",
+      "sha256": "5b67618e0487a9aede231f688fbc6d51b815174b698947a83da10741d6799cbe",
+      "bytes": 10516
+    },
+    {
+      "path": "crates/ara-agent-lite-jsonl/clients/node/labslot-todos.test.mjs",
+      "sha256": "68af10f0e45ceae803b9bd1be1eece3bc3fe196168c2f334bbf4aefcaa9be2ea",
+      "bytes": 6410
+    },
+    {
+      "path": "crates/ara-agent-lite-jsonl/clients/node/native-close-probe.mjs",
+      "sha256": "8e7877a9517fd4e724c7ff4cd916e772f825b15fe9f734529180179242266441",
+      "bytes": 10670
+    },
+    {
+      "path": "crates/ara-agent-lite-jsonl/clients/node/native-inspection-probe.mjs",
+      "sha256": "26e9651682186f3959b67e703b658dab76bbb077fc6f395a4b39ff493b4e9a26",
+      "bytes": 15463
+    },
+    {
+      "path": "crates/ara-agent-lite-jsonl/clients/node/native-probe.mjs",
+      "sha256": "041ef84386fd166e48accf5c57e1f7177cfebd8dd2a2a769aaf94c89a6947ccb",
+      "bytes": 4733
+    },
+    {
+      "path": "crates/ara-agent-lite-jsonl/examples/session_probe.rs",
+      "sha256": "f7b116e7cf0689e3234fb9dec8eb788d53754e9cd3c56267a1bb371213ba72a4",
+      "bytes": 2213
+    },
+    {
+      "path": "crates/ara-agent-lite-jsonl/src/close.rs",
+      "sha256": "8f4307049deae5e5a95a143a4b5a7947a7400d4ea8b386b4259fa2ea4956660f",
+      "bytes": 11492
+    },
+    {
+      "path": "crates/ara-agent-lite-jsonl/src/evidence.rs",
+      "sha256": "d9790fc3a3b8882fb298ee648d64b8702e40aa7067ddf4811ef93383f681274f",
+      "bytes": 14214
+    },
+    {
+      "path": "crates/ara-agent-lite-jsonl/src/inspection.rs",
+      "sha256": "e674b14442999565dbdfd2d20469e8cbc2e438e96a94a98c7611d79bc2c2ca02",
+      "bytes": 6289
+    },
+    {
+      "path": "crates/ara-agent-lite-jsonl/src/lib.rs",
+      "sha256": "0a85803e4f6bde730291b4fb79bec3fba45c39fb020e9f440e9c3678073c213c",
+      "bytes": 16112
+    },
+    {
+      "path": "crates/ara-agent-lite-jsonl/src/main.rs",
+      "sha256": "243c93fe86b8e2abf535f4c96eff942e9c90aeef3955b210879f0eb13d89e2bf",
+      "bytes": 77
+    },
+    {
+      "path": "crates/ara-agent-lite-jsonl/src/protocol.rs",
+      "sha256": "dbf06606326327c9891646e746c608b31848bbccb8847d89be76312be2a4cdf8",
+      "bytes": 15067
+    },
+    {
+      "path": "crates/ara-agent-lite-jsonl/src/rpc.rs",
+      "sha256": "4b1580044bb1b590c122bfa9696180eb94d7cfd058311cbf69b8f66ad50cd5c9",
+      "bytes": 24995
+    },
+    {
+      "path": "crates/ara-agent-lite-jsonl/src/runtime.rs",
+      "sha256": "6bf7ab3a7cd30552a2de6a2b2560df5b5cea361fd943c384c39b93784116c9c9",
+      "bytes": 27386
+    },
+    {
+      "path": "crates/ara-agent-lite-jsonl/src/transport.rs",
+      "sha256": "79be06d7c94f170ec659ceb5d37183a46cafe5dab71a47ba421f573ac85762df",
+      "bytes": 4985
+    },
+    {
+      "path": "rustfmt.toml",
+      "sha256": "e27d70e4fa1a9ff63a14b5e53a26bc35c5a277a25fc967a4252cb3866a0e1394",
+      "bytes": 47
+    }
+  ],
+  "ordinaryImage": {
+    "path": "E:/usr/var/cache/rust-target/reach-static/x86_64-pc-windows-msvc/debug/ara-agent-lite-jsonl.exe",
+    "copy": "E:\\repos\\ara\\apps\\reach\\work\\desk-wire-source-4cb20fc3-8111-457e-9c42-c5570a0f0ddb\\ordinary-sidecar.exe",
+    "sha256": "2f858a77ba86bd8b201f7184b5afb7a10afc674ad8668cf49354c44174dc8353",
+    "bytes": 23862784
+  },
+  "roots": [
+    "E:\\repos\\ara\\apps\\reach\\work\\desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474",
+    "E:\\repos\\ara\\apps\\reach\\work\\desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899",
+    "E:\\repos\\ara\\apps\\reach\\work\\desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b"
+  ],
+  "failedRoots": [
+    "E:\\repos\\ara\\apps\\reach\\work\\desk-inspection-wire-48c1e377-9454-4566-b921-9e9388ac9330"
+  ],
+  "artifacts": [
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/.ara-lite-harness-76271464d121e6213931a492050341fb1094bb5549a57985109d749fff4676b9.fence.closure-0ceeb24f135bca3c4a5e9ec7c7966f849fcc0651799948c191bc34252dc1b122.json",
+      "sha256": "201164c8777a28577de75be7ed5f1dbc58de8f5f08ef4943c7d6235b81ab2de8",
+      "bytes": 1104
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/.ara-lite-harness-76271464d121e6213931a492050341fb1094bb5549a57985109d749fff4676b9.fence.json",
+      "sha256": "db5728b4e06aa2c70c3d62d0d3d3fffc4e3cd32a664e3f945d15d092cff947a4",
+      "bytes": 668
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/.ara-lite-harness-76271464d121e6213931a492050341fb1094bb5549a57985109d749fff4676b9.lock",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/close-client-duplicate/client-result.json",
+      "sha256": "1cce0514a7aae23bb0cdfc983ca86c9173ad2195ef2fbb97cccab05750d5d141",
+      "bytes": 3676
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/close-client-duplicate/client-started.json",
+      "sha256": "7a738c305a8307a96eef3e206c4aa4a81eb4a4f9f70fdcaf4163b9a72badccbc",
+      "bytes": 346
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/close-client-fault/client-result.json",
+      "sha256": "4ea99e7b48417d2fbf21a4be90a4415ba57230d487c5b79a83bd32d15166ae14",
+      "bytes": 366
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/close-client-fault/client-started.json",
+      "sha256": "7a738c305a8307a96eef3e206c4aa4a81eb4a4f9f70fdcaf4163b9a72badccbc",
+      "bytes": 346
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/close-client-recovery/client-result.json",
+      "sha256": "df020bf1c49790a1321240311ab71eccec40384b1c6bb66350ac22d99e3f108d",
+      "bytes": 3675
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/close-client-recovery/client-started.json",
+      "sha256": "7a738c305a8307a96eef3e206c4aa4a81eb4a4f9f70fdcaf4163b9a72badccbc",
+      "bytes": 346
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/closure/committed.json",
+      "sha256": "c51b668d7d509a26c45e02ba6b2056ca8e09119c024404600b5f57cc83f4a15d",
+      "bytes": 1041
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/closure/host-declaration.json",
+      "sha256": "aa54345942f23db22c8b2e4fccf5ea26246febb18ebd8defd97490a4c332640d",
+      "bytes": 4513
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/closure/prepared.json",
+      "sha256": "00b4b4252ee8c6573b3f0e31d5c983a812855d72b690ae717e2bf3cded504aac",
+      "bytes": 7344
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/closure/released.json",
+      "sha256": "aeaf252de726688356dd9ac96ad095c5e5a785c8eaa9ccd163e04b3ca228a01a",
+      "bytes": 3131
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/closure/request.json",
+      "sha256": "85fcefce7404306bb69c3fa39049caf0a9fb4182c285cd29cbd7e628897002ed",
+      "bytes": 996
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/closure/unrelated-evidence.json",
+      "sha256": "01f92903f4c06605dd06ab5082799a3eacda13652dfa2ad82f194755c66caef0",
+      "bytes": 4503
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/closure/wrong-calls.json",
+      "sha256": "d98ea433d1881f399163268909502895e1e99c53fa4f2bafcd07c123676eae1f",
+      "bytes": 4572
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/closure/wrong-consumption.json",
+      "sha256": "7238eeded931d1834b7028978bdabc43e01fb12831a72c01f8a2adcbc48bb1fe",
+      "bytes": 4513
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/first/client/client-finished.json",
+      "sha256": "51ba5d2dd0707a15cb57d1bbf060e9b5092469ebc010783362572ad3cb6c66ce",
+      "bytes": 286
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/first/client/client-started.json",
+      "sha256": "4e6755bd5d81e4d13ab844d96f6962527de2701e7c3405ca2c83cdbfcc90a27f",
+      "bytes": 142
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/first/client/rpc-a63dc2adf4f00b8f8efbb638e667a4a0571082b76e3070f86745a0705135f2d2-started.json",
+      "sha256": "f5a11c012401f6ad40a5b51c2537445677436e14cd5e93ed0e9c3a01709729ad",
+      "bytes": 245
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/first/client/rpc-a63dc2adf4f00b8f8efbb638e667a4a0571082b76e3070f86745a0705135f2d2-unknown.json",
+      "sha256": "9eab237d9ff7d567ad34f36175f886f911f673a7ce816691683740d4e04d4d22",
+      "bytes": 331
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/first/evidence/jsonl-rpc-1-reply.json",
+      "sha256": "d88b01b842378b992662fcb2d7cd446fdc30812ff22ac3d5a1be076bba9bf51f",
+      "bytes": 1170
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/first/evidence/jsonl-rpc-1-request.json",
+      "sha256": "15e07829590b31f0763e3068a5aa38ead6e6b6e94e110e04425a2fc98a42859f",
+      "bytes": 1035
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/first/evidence/outcome.json",
+      "sha256": "5f6eee92cf9704df086d78ebd396dc227f6741f19e5076bb97782ce77df6a7ab",
+      "bytes": 2367
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/first/evidence/run-1-admission.json",
+      "sha256": "2e975a29641bbcda806393261f4001e2b790be821a693acb8182a9b3e0d03496",
+      "bytes": 397
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/first/evidence/run-1-candidate.json",
+      "sha256": "1d4dd55519978af559dba97932f31a1b2fa747cfb25d30333796c26df929b5bd",
+      "bytes": 871
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/first/evidence/run-1-events.jsonl",
+      "sha256": "268e4edfc1e8e28ee826615be1ece7fb7213455acddf4178ec0eccdfa7879f95",
+      "bytes": 2686
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/first/evidence/run-1-observation.json",
+      "sha256": "d0bd3949b7cb195d94fa50c779b48613a0868b72c5d52a302652c2eb8aacb889",
+      "bytes": 290
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/first/evidence/run-1-review.json",
+      "sha256": "426958d9c1b0d9b0cede9f8eec55654a70c0dae032c8ebe3998d435d80ac3af8",
+      "bytes": 1010
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/first/evidence/task-options.json",
+      "sha256": "77bab3aed5df7d9455308e097e7c2c13cbe4c5ab287d522c92ae9a35be1b9ea7",
+      "bytes": 32
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/first/evidence/task.json",
+      "sha256": "74ac5816692228433e46242d6f26888f14f55da21df20d39342486869353cf26",
+      "bytes": 339
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/first/reply-review.json",
+      "sha256": "bea022db6173b5d215dfa96f3ba6362a2e556f8ed72d09a2ad313d44673bdfb2",
+      "bytes": 859
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/first/result.json",
+      "sha256": "d1ca15d8d9706ad1523c901f37c2da59202e0185f715b6c2572932d54960fe66",
+      "bytes": 3479
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/first/start.json",
+      "sha256": "0771730735422b05c8cca8b33ea33298438f870681b74e062b82fb1b3c7bfcf2",
+      "bytes": 1207
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/host-settlement.json",
+      "sha256": "a142653014d3d76892b6388ea0c690a80d00a83ac37caa279ec7c9b9908b2d25",
+      "bytes": 7868
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/model-requests.json",
+      "sha256": "86a57bcf76b40247814e1c26263e0128b6bee1533b19651fa8027d4e8b1e919b",
+      "bytes": 16453
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/probe-result.json",
+      "sha256": "4307f8b1853e48533a6b9cbe6c69f9224081e1904039e6931a7bd31e184cc9de",
+      "bytes": 426
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/second/client/client-finished.json",
+      "sha256": "5115ae5b59ffe10d7e65269d89e6362f4ad0a9fe8fda65c2320c0581635a3a10",
+      "bytes": 286
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/second/client/client-started.json",
+      "sha256": "1f55a58474ef9c167e5ed1e1250e2147fa8e27ac194792fcb98c31022c284e3d",
+      "bytes": 142
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/second/client/rpc-a63dc2adf4f00b8f8efbb638e667a4a0571082b76e3070f86745a0705135f2d2-started.json",
+      "sha256": "0551f915abf892ad698edfd4b8b835cf8ec41624868af4185085abc74ca96121",
+      "bytes": 245
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/second/client/rpc-a63dc2adf4f00b8f8efbb638e667a4a0571082b76e3070f86745a0705135f2d2-unknown.json",
+      "sha256": "f31fe579be3364d42f0b2bc95655a7c93f7f191d22809da0bb27072fb58fae58",
+      "bytes": 331
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/second/evidence/jsonl-rpc-1-reply.json",
+      "sha256": "ff0f5092d7c4d2d70c9d801a22f87eb5323a4ef5de7d90bf5da39af5da44c79b",
+      "bytes": 1172
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/second/evidence/jsonl-rpc-1-request.json",
+      "sha256": "76d239245c8a850245483a8b99a3b84d3b338fcdf8081c011f83752f47df1ddc",
+      "bytes": 1047
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/second/evidence/outcome.json",
+      "sha256": "e61680bd9739053f4216e697023c791a770ad059608b120c71b40cf47851869c",
+      "bytes": 2381
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/second/evidence/run-1-admission.json",
+      "sha256": "e9a4ffa6da03a0ad8e4e09519eb05e8b92b9d9326829fba6c3cd08255eea6ee9",
+      "bytes": 397
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/second/evidence/run-1-candidate.json",
+      "sha256": "3b7189a94a8dd1e4d418fe83f723bb30af1d8182564f79f23b81fbb7351c8266",
+      "bytes": 883
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/second/evidence/run-1-events.jsonl",
+      "sha256": "1caf577f7e1ba8337c1d4f8e96bdf15d1516c910a65faee5805b60f7136b07a0",
+      "bytes": 2721
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/second/evidence/run-1-observation.json",
+      "sha256": "0fd80259c4804e99f3806cb232c13613ffe075dc96ba57e5667ca27b5268ebb2",
+      "bytes": 290
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/second/evidence/run-1-review.json",
+      "sha256": "768aab85d6f9fe87d24dc859eabcb4ad27c48922a0113af35bca5aa99659124f",
+      "bytes": 1012
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/second/evidence/task-options.json",
+      "sha256": "77bab3aed5df7d9455308e097e7c2c13cbe4c5ab287d522c92ae9a35be1b9ea7",
+      "bytes": 32
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/second/evidence/task.json",
+      "sha256": "ce8512f3216bc0a5b77c5b41dc6413a628cddfdd3a0032e0a2badf489db7e2c8",
+      "bytes": 340
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/second/reply-review.json",
+      "sha256": "e8133e16a8e6a5af91c2dbcdbf088f50b7ec6450f9e7303baf1a23d3a7baa113",
+      "bytes": 871
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/second/result.json",
+      "sha256": "34041eb951319812544b402c7d3cd3db831c2a5b9cf8002833e4de546b500595",
+      "bytes": 3495
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/second/start.json",
+      "sha256": "a8ef11a52748e335ef02194d4f378aa9a19266c0a7170e3c939e4c7272b75a06",
+      "bytes": 1209
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/session.context.json",
+      "sha256": "00a3c7928129325ed81ba068b68a5fb41168c438334382cc0177d4b2f8f6628a",
+      "bytes": 996
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/session.journal/head.json",
+      "sha256": "5968570452c230b75a22e68d55144668e77bc9f928cbb774aeeec6182453b8df",
+      "bytes": 1057
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/session.journal/runs/8616096717de853573780ccf8ce0b91e9388f2ac0b78bddbb48dba3f6d318ad2.json",
+      "sha256": "b856f2a69c75d32de1dce2b63e62cf1e8e3ddeaf42fcd41edc6526697cc86a4c",
+      "bytes": 66
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/session.journal/runs/8af325b8e9af186a87efc335d578db86ab289bc9774ad6869c8c2b31a8bacec7.json",
+      "sha256": "6f9e394174737a5e662796b756ecd3e76040038ae2a34c6f4109dcc71799107c",
+      "bytes": 66
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/session.journal/segment-00000000.jsonl",
+      "sha256": "f866f921ad12a155ca6532670b900e2b1087f6a6dc1663a27d98cfb8bea575a1",
+      "bytes": 2098
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/session.journal/writer.lock",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/session.json",
+      "sha256": "92bf913e2e058e6b7b40c1100fe88ed71f324bd57f48cceed8a50e73565e7621",
+      "bytes": 1814
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/unrelated-evidence-stderr.log",
+      "sha256": "1a955c6af3d49c676bec4951642e28d901cbfa43a33a87222333676d9d03c282",
+      "bytes": 24
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/unrelated-evidence-stdout.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/wrong-calls-stderr.log",
+      "sha256": "48b7a476888b41cf6e71895463e5d5d37d47b7e308f194d3ccbc7c73dd8b4df3",
+      "bytes": 22
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/wrong-calls-stdout.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/wrong-consumption-stderr.log",
+      "sha256": "48b7a476888b41cf6e71895463e5d5d37d47b7e308f194d3ccbc7c73dd8b4df3",
+      "bytes": 22
+    },
+    {
+      "path": "apps/reach/work/desk-close-jsonl-8bac4ba4-2051-4f2a-9df9-569ff28ed07b/wrong-consumption-stdout.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "apps/reach/work/desk-inspect-sdk-final-r1.log",
+      "sha256": "efa1fdafc3986aab5801c38da37a100f49645292499c99e797f8aeb65a2246f3",
+      "bytes": 2123
+    },
+    {
+      "path": "apps/reach/work/desk-inspect-sdk-fixtures-r1.log",
+      "sha256": "fa20d80b51cd743221bc32fe45664f96ddff9378f611981b0650e35cc9e3e72e",
+      "bytes": 2168
+    },
+    {
+      "path": "apps/reach/work/desk-inspect-sdk-fixtures-r2.log",
+      "sha256": "690e7d6170ac24bbf60ec95d22afa7039f8b782e27d87fbb39cefa125d822b3f",
+      "bytes": 1302
+    },
+    {
+      "path": "apps/reach/work/desk-inspect-wire-build-final.log",
+      "sha256": "b4428a0ae48c4dd2450331e6a923bc59f783e9689622765acf7693ca26ad597e",
+      "bytes": 158
+    },
+    {
+      "path": "apps/reach/work/desk-inspect-wire-bun-r1.log",
+      "sha256": "e668ac0bde92b32d320c559558c900ce9fe7e9145b3c2357c4794e635f1d3741",
+      "bytes": 119
+    },
+    {
+      "path": "apps/reach/work/desk-inspect-wire-core-doc.log",
+      "sha256": "2444b017b155a815c91e850a5c15062856434d225e935a6cc4f321fc8edc92a7",
+      "bytes": 309
+    },
+    {
+      "path": "apps/reach/work/desk-inspect-wire-core-fmt.log",
+      "sha256": "2095d5302e465922147e220c0389f7a923ea0c1509a23097f04b3c220798aef8",
+      "bytes": 8
+    },
+    {
+      "path": "apps/reach/work/desk-inspect-wire-core-marker.log",
+      "sha256": "351c2e4c2181d10597ec1f3ed188e50b4c2051054f743cb8bfb73172aa423812",
+      "bytes": 459
+    },
+    {
+      "path": "apps/reach/work/desk-inspect-wire-core-regression.log",
+      "sha256": "bc19b1d143359a47498eac32e75e89d1ccd14d3cf2f61dc65c7350fefcae97ec",
+      "bytes": 1468
+    },
+    {
+      "path": "apps/reach/work/desk-inspect-wire-deny.log",
+      "sha256": "c6de86d994bc01238aec931d6d50d70d0b3393572f5bfd10da21c4dc0e1e77ff",
+      "bytes": 34558
+    },
+    {
+      "path": "apps/reach/work/desk-inspect-wire-harness-clippy.log",
+      "sha256": "e6229053a84b3953322cb521bee727b1267291dc25cdc57a7dc07eec53a15398",
+      "bytes": 246
+    },
+    {
+      "path": "apps/reach/work/desk-inspect-wire-harness-doc.log",
+      "sha256": "02c12c68c3f01a0b452b21ef48bd10d1892345c7488d17994fd93af4871bd491",
+      "bytes": 229
+    },
+    {
+      "path": "apps/reach/work/desk-inspect-wire-harness-fmt.log",
+      "sha256": "2095d5302e465922147e220c0389f7a923ea0c1509a23097f04b3c220798aef8",
+      "bytes": 8
+    },
+    {
+      "path": "apps/reach/work/desk-inspect-wire-harness-r1.log",
+      "sha256": "82eee0c3b5f815b3cc7796d9068ef460787f5eb1cd3c80a270bd1404b8c0e70d",
+      "bytes": 1886
+    },
+    {
+      "path": "apps/reach/work/desk-inspect-wire-jsonl-clippy.log",
+      "sha256": "125e0f644e452c85ef8b31f5d9e53e2c3ee304c74f36290853ff24aeef8b6128",
+      "bytes": 328
+    },
+    {
+      "path": "apps/reach/work/desk-inspect-wire-jsonl-doc.log",
+      "sha256": "7cbfeb6f7f1919fc6816bf01f84505bfe9c8eb773f3a31d3a738fac8423e8e33",
+      "bytes": 227
+    },
+    {
+      "path": "apps/reach/work/desk-inspect-wire-jsonl-fmt.log",
+      "sha256": "2095d5302e465922147e220c0389f7a923ea0c1509a23097f04b3c220798aef8",
+      "bytes": 8
+    },
+    {
+      "path": "apps/reach/work/desk-inspect-wire-jsonl-unit-final.log",
+      "sha256": "b8124ed2626bf41958a1481f5303d38d2ca796e3fd51dff22e5f7e25f6b2de5b",
+      "bytes": 1514
+    },
+    {
+      "path": "apps/reach/work/desk-inspect-wire-legacy-node.log",
+      "sha256": "7042ec64f0054ff1dd29800600076642f10d8a36e56f21c64383485252dfbc66",
+      "bytes": 115
+    },
+    {
+      "path": "apps/reach/work/desk-inspect-wire-node-r3.log",
+      "sha256": "0455c1fb0c25d81134ff4666b968dcfa6c0770b39f9ee88018c2ce85819f0d63",
+      "bytes": 119
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-48c1e377-9454-4566-b921-9e9388ac9330/actual-sidecar.exe",
+      "sha256": "3d4fb1c962339e80bb39085d945ce7509f10f7c860d867280c85a88595ea79fc",
+      "bytes": 23862272
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-48c1e377-9454-4566-b921-9e9388ac9330/inspect-baseline/client-result.json",
+      "sha256": "287db4129c24351d0c1311751651c0ebcccfbeb5c43487ac8ad37bd8ff0168e7",
+      "bytes": 2342
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-48c1e377-9454-4566-b921-9e9388ac9330/inspect-baseline/client-started.json",
+      "sha256": "aeb9aaa81691d8f54ab6fce0c3ce65fb3ec0e236cf1192ded36dae818c50dd75",
+      "bytes": 808
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-48c1e377-9454-4566-b921-9e9388ac9330/inspect-baseline/result/inspection.json",
+      "sha256": "081fe58942e1fef775472079558fb32cd1159f6585c9f8946524742c697513eb",
+      "bytes": 1802
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-48c1e377-9454-4566-b921-9e9388ac9330/native/.ara-lite-harness-144daa4c16cd2aad0601d6b7be1a82e686a661c385d06f798199f520c35c91d8.lock",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-48c1e377-9454-4566-b921-9e9388ac9330/original/client/client-finished.json",
+      "sha256": "d74fa6d800535b1026934ff4ad43209c3e4be20498b75e94cad4be78d54abc70",
+      "bytes": 241
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-48c1e377-9454-4566-b921-9e9388ac9330/original/client/client-started.json",
+      "sha256": "8ac31d7e7308e137b49b8d30cbd26770ee6dbd2b1403af7061913b2a7349a053",
+      "bytes": 142
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-48c1e377-9454-4566-b921-9e9388ac9330/original/start.json",
+      "sha256": "a6b4ca0e998efa9cd662b63627138cc808cd7f5fe25c388f9273d3f22e12eb00",
+      "bytes": 1304
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/actual-sidecar.exe",
+      "sha256": "2f858a77ba86bd8b201f7184b5afb7a10afc674ad8668cf49354c44174dc8353",
+      "bytes": 23862784
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/bad-changed-ref-sha-stderr.log",
+      "sha256": "1a955c6af3d49c676bec4951642e28d901cbfa43a33a87222333676d9d03c282",
+      "bytes": 24
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/bad-changed-ref-sha-stdout.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/bad-missing-evidence-stderr.log",
+      "sha256": "d503b26b0bbd0b2f589c9a8b4a71730729193559b24eb5f67c9662734cda5aae",
+      "bytes": 26
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/bad-missing-evidence-stdout.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/bad-null-stderr.log",
+      "sha256": "8756095db0fb4090e718db2e64a915fdf8605e9f116ebd1422ab4e8ce2ae3e1c",
+      "bytes": 27
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/bad-null-stdout.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/bad-unknown-field-stderr.log",
+      "sha256": "8756095db0fb4090e718db2e64a915fdf8605e9f116ebd1422ab4e8ce2ae3e1c",
+      "bytes": 27
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/bad-unknown-field-stdout.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/close-publication-fault/client-result.json",
+      "sha256": "6d9b19fac76a29dc0f19243b5900029ba6ce3167040aa8a380b5c6fc1b52a0ac",
+      "bytes": 366
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/close-publication-fault/client-started.json",
+      "sha256": "14f6d5df892a7d43f89ad4d6b426887dd1437be060ea99f175b3821087470783",
+      "bytes": 358
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/close-recovery/client-result.json",
+      "sha256": "474d826a299088c66a7bc607461ebcffdba009bb7277654d0685f46276e80160",
+      "bytes": 1839
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/close-recovery/client-started.json",
+      "sha256": "14f6d5df892a7d43f89ad4d6b426887dd1437be060ea99f175b3821087470783",
+      "bytes": 358
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/inspect-baseline/client-result.json",
+      "sha256": "bd5a482a083ffd88a9d6464dee8f3d6628dc0ceb5f54ebd1b3c789e9be01f663",
+      "bytes": 2343
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/inspect-baseline/client-started.json",
+      "sha256": "2c0e59a4cb8adb16d786d4450a491e7b6a505f15eae9f2a3f2b5026f30654094",
+      "bytes": 808
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/inspect-baseline/result/inspection.json",
+      "sha256": "bd33ae018c53b6653c59c406de6140014d9ca7b7dad8ecc55011f55c6a397534",
+      "bytes": 1802
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/inspect-busy/client-result.json",
+      "sha256": "77aaa00d9743f79ee8ca7003ff0c4568a50cdcf605621d973457e6d9249fb6ae",
+      "bytes": 345
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/inspect-busy/client-started.json",
+      "sha256": "044405b16e60a4ff63bf8d0751dd1929e0fe6b2f6fc95eb94994e9a3c082f497",
+      "bytes": 804
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/inspect-effects/client-result.json",
+      "sha256": "739200f8b440d22f1f5b2ab545132c472a8836ab2f4339558a338429b95cb1d9",
+      "bytes": 272180
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/inspect-effects/client-started.json",
+      "sha256": "ea066c4d18c47532b6d4ac38b83fccc3ca96ae0e5dbee38d6659cc7984cb6272",
+      "bytes": 844
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/inspect-effects/result/inspection.json",
+      "sha256": "fce4ea3d939bbd96fa4b2df588f10984da5ba86c9a69aaa5f3cdd20d81fa85a0",
+      "bytes": 271641
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/model-requests.jsonl",
+      "sha256": "12942e086ef9d9d1dec89f4358b4bb63dccf28c737fc16d0c2e663f1b1104896",
+      "bytes": 33742
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/native/.ara-lite-harness-e6ef3a4c76869d2cc6736e97e76b220e54061b557c0b2c9e0ccfb8131bba1f1d.fence.closure-8bf69c1ffc54bb9e70d738b5dc496bb463b640ccfb5352abb8e2a0f5198fcee6.json",
+      "sha256": "19e414b82fe1fa5b2d5c0ddb6aa590d7938c1e03d8c8a45713b56beea6db5f89",
+      "bytes": 1141
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/native/.ara-lite-harness-e6ef3a4c76869d2cc6736e97e76b220e54061b557c0b2c9e0ccfb8131bba1f1d.fence.json",
+      "sha256": "76588af0fe7a7d92883c09805e93392b4d9b1076ea1a3c5b758665ca29fc7a40",
+      "bytes": 684
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/native/.ara-lite-harness-e6ef3a4c76869d2cc6736e97e76b220e54061b557c0b2c9e0ccfb8131bba1f1d.lock",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/native/closure/bad-changed-ref-sha.json",
+      "sha256": "644899a699df2b94484c57de6f724d5deea96bd5de4da834eb5a08930d687136",
+      "bytes": 3348
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/native/closure/bad-missing-evidence.json",
+      "sha256": "5650158b12ab565df0281eef4e65d01bd82584488e5decfa0f29560aaa6d3547",
+      "bytes": 2975
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/native/closure/bad-null.json",
+      "sha256": "b16700971bf2150c81a39631b3b34d7952ef63f8e2f1f2d0598b1efe8bde73d9",
+      "bytes": 3124
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/native/closure/bad-unknown-field.json",
+      "sha256": "eddbe12d093cb7890f2382d73d43e6eb3624ab2a855c152371683e4254728ee5",
+      "bytes": 3367
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/native/closure/committed.json",
+      "sha256": "85b33c0658fcae77492a34eb334497a5379bdb807a031f4ff8294ab734f139a1",
+      "bytes": 1140
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/native/closure/host-declaration.json",
+      "sha256": "590d84e8e48c3fe21f09a8d8a20a4e001880a3838a2d5f85196fd698461d3409",
+      "bytes": 3348
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/native/closure/prepared.json",
+      "sha256": "fae4d2a4977af6eeba1fa98cb1005a3daeb32c90a9422fe132e187dd0ada60ed",
+      "bytes": 4998
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/native/closure/released.json",
+      "sha256": "99c9e47034db8f1575cd7f4ae5cccb968b51c2da3768e214d25bf9517cc945d5",
+      "bytes": 1282
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/native/closure/request.json",
+      "sha256": "00a93ad4ba19208e0faa97590715bde3bef17cdfee65ff291b422cc112944bed",
+      "bytes": 1033
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/native/host-settlement.json",
+      "sha256": "7f9d05d449bd548a21e46be92365f5dc0ebb9c1d3c2e9bca718ebdcbec6be05f",
+      "bytes": 1884
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/native/session.context.json",
+      "sha256": "e59e985d575ad12210f8bed9a0a3c1f87ad1f574b25a0df81f2f1b072f5e2d5b",
+      "bytes": 132197
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/native/session.journal/head.json",
+      "sha256": "c893346c1ba8a699c8ec6ee2f95b183f0571c917fdbdf088dd7b39bc4f1a72e3",
+      "bytes": 1141
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/native/session.journal/runs/08a097c94016252e6e594e9235a71d50892a2827877a99bab81064f35f9e51e4.json",
+      "sha256": "527afc0cee5c069963c5b44e7274fcee0241955c66430cdbf8628ba3762dba88",
+      "bytes": 67
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/native/session.journal/runs/8855a1828c8250f0c2e321372a0fedbdc4fb8b648991038c7d531ec28a9f56bc.json",
+      "sha256": "cbd6ded07be4ecfe14b80cc2a36d95f635f38d635998baddc7c0a62411b02ad6",
+      "bytes": 67
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/native/session.journal/segment-00000000.jsonl",
+      "sha256": "f4815c1c6ab742c69729e60739e13917aa3269b7b5fbb37c3ecea47ceffe5af8",
+      "bytes": 139288
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/native/session.journal/writer.lock",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/native/session.json",
+      "sha256": "3575c33af3cb9929b4ea0556289ab7b33226873d6cd0253a9297aba24a073c5a",
+      "bytes": 134839
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/next/client/client-finished.json",
+      "sha256": "4c28274578403d7ed8e6a0279329851801a6a2518d74a924046bd504f0040b68",
+      "bytes": 286
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/next/client/client-started.json",
+      "sha256": "00a66c2358522ed3f0dceeffc6753a38c1122dd56b205d53e19ac247cdbe798c",
+      "bytes": 142
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/next/client/rpc-a63dc2adf4f00b8f8efbb638e667a4a0571082b76e3070f86745a0705135f2d2-started.json",
+      "sha256": "50140ce59e653be8a46f3be9bfb834811649866b3a22634a16080b4bf4111604",
+      "bytes": 245
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/next/client/rpc-a63dc2adf4f00b8f8efbb638e667a4a0571082b76e3070f86745a0705135f2d2-unknown.json",
+      "sha256": "00d46a4931a6207e773ebbaffad69e213c871a511adb2ecafae61442f7ecd8c2",
+      "bytes": 331
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/next/evidence/jsonl-rpc-1-reply.json",
+      "sha256": "853dcf16f85767b3ea4c2fc955639ef4839908264660e17b075680f280b8b018",
+      "bytes": 1185
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/next/evidence/jsonl-rpc-1-request.json",
+      "sha256": "d16e09f47d85961229340eaab495acec990a904d2cea5065c0f1d6e38a721d36",
+      "bytes": 1064
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/next/evidence/outcome.json",
+      "sha256": "2aa18aef4c63801e0a61c10dca63130979071077b46a2b880dac3d177c1ade24",
+      "bytes": 2423
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/next/evidence/run-1-admission.json",
+      "sha256": "5426ee900daac43217ce9ca93cb48ef900a97160c24c8c91d448472e50eff0b9",
+      "bytes": 411
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/next/evidence/run-1-candidate.json",
+      "sha256": "16829fe3ec0c03a891ecd51a760488ff8d20a1bb4e527de3b337f46a562098d3",
+      "bytes": 900
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/next/evidence/run-1-events.jsonl",
+      "sha256": "0ad2f02ccd25623b778403b0acbb43bb8fcefe264076cb484c6f7a2336d110d3",
+      "bytes": 2530
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/next/evidence/run-1-observation.json",
+      "sha256": "8c82bd348980b4aeb5a838f6bfa1e6388489da340bb5d1d08bdfecc10d166346",
+      "bytes": 290
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/next/evidence/run-1-review.json",
+      "sha256": "b49ae3d10b30930ce0c7581e3f53db9742811ac243ee21a64fc49322f1d71574",
+      "bytes": 1025
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/next/evidence/task-options.json",
+      "sha256": "77bab3aed5df7d9455308e097e7c2c13cbe4c5ab287d522c92ae9a35be1b9ea7",
+      "bytes": 32
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/next/evidence/task.json",
+      "sha256": "f51436fa8bfe1d1511d0aa94231592a01ece45300608ea4c59950ed43f2e8e1e",
+      "bytes": 344
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/next/reply.json",
+      "sha256": "ed60f5eb8a028c648bb325b135c457e90d30c4b65dfcb5898c0dee6c9b6f5a78",
+      "bytes": 914
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/next/result.json",
+      "sha256": "d9454812aed94096bf56407f58b07f3aa0d6a450e009072342b637fc91c7bd3b",
+      "bytes": 3553
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/next/start.json",
+      "sha256": "e04f70889b3e956bc73059ee864cfd9951380b6b8e333f0a8f4b5085918c5257",
+      "bytes": 1324
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/old-released-retry/client-result.json",
+      "sha256": "187f850fa2b004a206e12b4d680a0caf5438ca50e55d3eb6407cb981d569355c",
+      "bytes": 1839
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/old-released-retry/client-started.json",
+      "sha256": "14f6d5df892a7d43f89ad4d6b426887dd1437be060ea99f175b3821087470783",
+      "bytes": 358
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/original/client/client-finished.json",
+      "sha256": "dad78dae059ba8a3bac2159a225b094fead4768ffeb6b33295ec17a6a97e5b15",
+      "bytes": 286
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/original/client/client-started.json",
+      "sha256": "ddca7f41ce9cb85398f057bb415ce8f494d88f4f63d15da0bd196add95762101",
+      "bytes": 142
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/original/evidence/outcome.json",
+      "sha256": "962275ce7d1dcaf58514beb05a6b46c57e150618aafd76e1c3bfa9326474f6dc",
+      "bytes": 494
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/original/evidence/run-1-admission.json",
+      "sha256": "7f97aaeead5365f1df449d149b105cc842d0d4ae4f06ef3fc93ddcbf335504c1",
+      "bytes": 411
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/original/evidence/run-1-events.jsonl",
+      "sha256": "7c284c96d5e341f2b9f9fd799a9c76630cdee3da74526d15c42563d00530df66",
+      "bytes": 139051
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/original/evidence/run-1-observation.json",
+      "sha256": "68e67ef116a66b23dd18854d0c9712bc7a0ad8ad066f8e535ffde76a7f6d444e",
+      "bytes": 290
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/original/evidence/task-options.json",
+      "sha256": "77bab3aed5df7d9455308e097e7c2c13cbe4c5ab287d522c92ae9a35be1b9ea7",
+      "bytes": 32
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/original/evidence/task.json",
+      "sha256": "1362dcee769973ce33f7e933b4947ba54db72df68d9434237870158d9775a3f7",
+      "bytes": 348
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/original/result.json",
+      "sha256": "ce883e56807d4797ecb2dab89a7b2ed4c15eed1f93c1f73481a88257cb9e0c17",
+      "bytes": 1619
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/original/start.json",
+      "sha256": "ca5abfc81c0bb740989c63a935253a89c108e4f8b56b568a53d69ed56d3ceac0",
+      "bytes": 1332
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/stale-context/client-result.json",
+      "sha256": "64094cb1ec650ba080c43bc3d8027d76c5b1122e980a3fd8fd307bd6d54ff350",
+      "bytes": 366
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/stale-context/client-started.json",
+      "sha256": "14f6d5df892a7d43f89ad4d6b426887dd1437be060ea99f175b3821087470783",
+      "bytes": 358
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/stale-fence/client-result.json",
+      "sha256": "d99587c69e6053cc22f60f0f55b23485e44d9d0310570e690f4c94a59a1e030a",
+      "bytes": 365
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/stale-fence/client-started.json",
+      "sha256": "14f6d5df892a7d43f89ad4d6b426887dd1437be060ea99f175b3821087470783",
+      "bytes": 358
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/stale-journal/client-result.json",
+      "sha256": "9cb8b38f9f7ad350a8c689c76d695311ed5e46a1347810b3e12c5c9fca451c6a",
+      "bytes": 366
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/stale-journal/client-started.json",
+      "sha256": "14f6d5df892a7d43f89ad4d6b426887dd1437be060ea99f175b3821087470783",
+      "bytes": 358
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/stale-run-index/client-result.json",
+      "sha256": "ffeb00ce6783d90114347e13095abf28a2b87c2b929ec60ca0a3d67a1d273248",
+      "bytes": 366
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/stale-run-index/client-started.json",
+      "sha256": "14f6d5df892a7d43f89ad4d6b426887dd1437be060ea99f175b3821087470783",
+      "bytes": 358
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/unsafe-output-existing-stderr.log",
+      "sha256": "003328b84dfbc2af7dce90d75ae1d1b4ce4c00f7d7ed503084745170202f7f22",
+      "bytes": 27
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/unsafe-output-existing-stdout.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/unsafe-output-journal-stderr.log",
+      "sha256": "003328b84dfbc2af7dce90d75ae1d1b4ce4c00f7d7ed503084745170202f7f22",
+      "bytes": 27
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/unsafe-output-journal-stdout.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/unsafe-output-marker-stderr.log",
+      "sha256": "003328b84dfbc2af7dce90d75ae1d1b4ce4c00f7d7ed503084745170202f7f22",
+      "bytes": 27
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/unsafe-output-marker-stdout.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-8aea0860-2924-4673-be87-db90867d6899/verified.json",
+      "sha256": "5854b790f967195c8a5822723b65336fd703bd0b62524407941c553b5716e4dd",
+      "bytes": 607
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/actual-sidecar.exe",
+      "sha256": "2f858a77ba86bd8b201f7184b5afb7a10afc674ad8668cf49354c44174dc8353",
+      "bytes": 23862784
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/bad-changed-ref-sha-stderr.log",
+      "sha256": "1a955c6af3d49c676bec4951642e28d901cbfa43a33a87222333676d9d03c282",
+      "bytes": 24
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/bad-changed-ref-sha-stdout.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/bad-missing-evidence-stderr.log",
+      "sha256": "d503b26b0bbd0b2f589c9a8b4a71730729193559b24eb5f67c9662734cda5aae",
+      "bytes": 26
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/bad-missing-evidence-stdout.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/bad-null-stderr.log",
+      "sha256": "8756095db0fb4090e718db2e64a915fdf8605e9f116ebd1422ab4e8ce2ae3e1c",
+      "bytes": 27
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/bad-null-stdout.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/bad-unknown-field-stderr.log",
+      "sha256": "8756095db0fb4090e718db2e64a915fdf8605e9f116ebd1422ab4e8ce2ae3e1c",
+      "bytes": 27
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/bad-unknown-field-stdout.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/close-publication-fault/client-result.json",
+      "sha256": "07af11e973bbb400141984761deb37508c947b445e8b6615a764f451ca7d14da",
+      "bytes": 366
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/close-publication-fault/client-started.json",
+      "sha256": "59e7da6f4d6e047d800938f6108f3b4cf443b142848c7f76de339a4487cee824",
+      "bytes": 358
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/close-recovery/client-result.json",
+      "sha256": "b95ed5f9d69c8154a416e6653fa6606e09ef9893182bb2f6a414fe5d728a1345",
+      "bytes": 1839
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/close-recovery/client-started.json",
+      "sha256": "59e7da6f4d6e047d800938f6108f3b4cf443b142848c7f76de339a4487cee824",
+      "bytes": 358
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/inspect-baseline/client-result.json",
+      "sha256": "7b9ec232ca3d06d55bf4d9bf8d52deee5c0f33a9fdbad9f155f75a07d9a13f9f",
+      "bytes": 2342
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/inspect-baseline/client-started.json",
+      "sha256": "53f3976c8e7c4fd4bb2844866e9e56d64c4140183b00c63cfdcd84950c1b4d00",
+      "bytes": 808
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/inspect-baseline/result/inspection.json",
+      "sha256": "b65fc9a6f89f74c7ff44d1d9d1aecf1304001925a081bc658c9e401df156d4a5",
+      "bytes": 1802
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/inspect-busy/client-result.json",
+      "sha256": "06fb89b7c11e1d25f077ec712d82670fc55b0ea46d44be1090c375be31c4e7ba",
+      "bytes": 345
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/inspect-busy/client-started.json",
+      "sha256": "0b9087a88d3a75e605b7702f5130fa28614f326951cdb8503bdef2cf3401cace",
+      "bytes": 804
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/inspect-effects/client-result.json",
+      "sha256": "4a39032bf0bd841a0fc739f9d06a859ee03116a906526bd3d16ae20bd9ae448d",
+      "bytes": 272182
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/inspect-effects/client-started.json",
+      "sha256": "0932dad35c6420a613411513d84c014ac7d1355582925010f32d9a851e2bd504",
+      "bytes": 844
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/inspect-effects/result/inspection.json",
+      "sha256": "1d93befea6594ae62b80d1fe6513aa89591bd6b45e729045d3fbf71268f69919",
+      "bytes": 271642
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/model-requests.jsonl",
+      "sha256": "8adca51aa532e50e210e17b63e993a730504f9371652bdadbf6d2e5a2fe38fc0",
+      "bytes": 33742
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/native/.ara-lite-harness-8514336017fc58bcffbb9db0034330c09ce2b79767a94ec7f27e4d9c25c50863.fence.closure-1b6412802eb02c014eab6213a7aaf77550a966509c7c2e6ea095550d93c9d19e.json",
+      "sha256": "59c8894b7cf7548a650f8641c6ce243f1eafad651572b590cc0ee127c6a97b62",
+      "bytes": 1141
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/native/.ara-lite-harness-8514336017fc58bcffbb9db0034330c09ce2b79767a94ec7f27e4d9c25c50863.fence.json",
+      "sha256": "fd1c4a6f4f13f54603cf0c04fa9d3635b477ab24d1e5dadbcf3866267c77f0f1",
+      "bytes": 683
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/native/.ara-lite-harness-8514336017fc58bcffbb9db0034330c09ce2b79767a94ec7f27e4d9c25c50863.lock",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/native/closure/bad-changed-ref-sha.json",
+      "sha256": "f4144b6cc716e7cbee924e4a2049d8478fb6ce1245e11f13c145dafa1a1f3692",
+      "bytes": 3349
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/native/closure/bad-missing-evidence.json",
+      "sha256": "175930dcd8fdae4d912e7dab71576f1a63bce51062d7bc651b99fa05a6238c41",
+      "bytes": 2976
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/native/closure/bad-null.json",
+      "sha256": "7c2141abe3410b07362d80e5ce89766340a92db22dde60e57dba24d610598195",
+      "bytes": 3125
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/native/closure/bad-unknown-field.json",
+      "sha256": "6497827b82ffc679489c76b696816b84f7d0ac17556150c78c4d7c3626f5e4ea",
+      "bytes": 3368
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/native/closure/committed.json",
+      "sha256": "356f084091c0b30268457b2d002f7aa28a7160937819fb113022189d527f8245",
+      "bytes": 1140
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/native/closure/host-declaration.json",
+      "sha256": "66ff3e37b9c8317982977534b99ba6f49053b064a1c47a5bcd727bdee15462cd",
+      "bytes": 3349
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/native/closure/prepared.json",
+      "sha256": "25a26737ed52b3410350134015a30355da33e6c0097b10412e983a15522e4856",
+      "bytes": 4999
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/native/closure/released.json",
+      "sha256": "3622ee00b2d0e31c06e97ff25fb5d25723b54c2da27c3387955dccda38f603c9",
+      "bytes": 1282
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/native/closure/request.json",
+      "sha256": "4ab6d1518005fdcd7325a8c19c729b148f44efbe9b4a653ef5f33c41a76474d6",
+      "bytes": 1033
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/native/host-settlement.json",
+      "sha256": "53cb6473084467f51bc765f057460bdeebf2ce7455d11aac34ef59bbcdb1e48b",
+      "bytes": 1884
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/native/session.context.json",
+      "sha256": "5ba26fe7c78e520fdab3f2d675387513fac5bc924cd8d5d71b7fb0fcec1d5375",
+      "bytes": 132197
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/native/session.journal/head.json",
+      "sha256": "858d1f0c83b242926c570f748425844d5f593842c61a80f36e38c04ab95123a9",
+      "bytes": 1141
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/native/session.journal/runs/210522d16887d1c02b32881a9fe400efeffa8c08f374227f6d01b04d5443dfdb.json",
+      "sha256": "f2785a9784297010a6fa7d0ab59ad2bae91a148a0126235d96028c87a7323652",
+      "bytes": 67
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/native/session.journal/runs/b2656fda0a9c5e9bd695d48d3ab5ed439aebe07d1bd882008dbb781b8b20e24c.json",
+      "sha256": "aed2c5d5f157bc57924517b5fd6b68c4880697cd1a66d3def169ab3ec3f98613",
+      "bytes": 67
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/native/session.journal/segment-00000000.jsonl",
+      "sha256": "b2178308c6bcd1b48e2bbd113cef49f3c2a5f32599720d2ebb97a53789d0afee",
+      "bytes": 139288
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/native/session.journal/writer.lock",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/native/session.json",
+      "sha256": "1bc0aeff302e113f5d15996c54ad10926711e6112a8b2fcdad0f294a4bf81dd3",
+      "bytes": 134839
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/next/client/client-finished.json",
+      "sha256": "2315234befebd0da5a902a16f578a13860bb54906a6fd7733a776e2b49456446",
+      "bytes": 286
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/next/client/client-started.json",
+      "sha256": "e511aef3392bce2c04f411dbac99f41f344c4bd3950257becfcf5ae6d864ce66",
+      "bytes": 142
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/next/client/rpc-a63dc2adf4f00b8f8efbb638e667a4a0571082b76e3070f86745a0705135f2d2-started.json",
+      "sha256": "da017a756147683f2794d80b331f24d932149418ca71eb70fb194d6939e0b4db",
+      "bytes": 245
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/next/client/rpc-a63dc2adf4f00b8f8efbb638e667a4a0571082b76e3070f86745a0705135f2d2-unknown.json",
+      "sha256": "721442de1a371019b997369fab8fb01d4e3bf1ed5817afc90485b3c505eb5ef9",
+      "bytes": 331
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/next/evidence/jsonl-rpc-1-reply.json",
+      "sha256": "368b5e468357279cc9365080a104554a4ca480bbd711e1d23b40f8fff5c3c598",
+      "bytes": 1185
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/next/evidence/jsonl-rpc-1-request.json",
+      "sha256": "76490004b96ef6b0a5f2066bc61556470642dfb6e3b9e932687aef38d44218a8",
+      "bytes": 1064
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/next/evidence/outcome.json",
+      "sha256": "40f2d728af3ad484501d9e5170301afac2ca8ccbc17eb6ea53da048e8ac0c46b",
+      "bytes": 2423
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/next/evidence/run-1-admission.json",
+      "sha256": "c0e1450caa8e3416fa4662d4a24bb1bbc696bac625bc8e0ee4e22adc33ba55bb",
+      "bytes": 411
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/next/evidence/run-1-candidate.json",
+      "sha256": "b99c704babdb4ea6ac6fc91385280292ae6b9eb0f4f1d6dd81236cae81c9edd4",
+      "bytes": 900
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/next/evidence/run-1-events.jsonl",
+      "sha256": "b24fee9bc09c9bb42baedcd498410f408f8e175d189c8124525c4608edea0db8",
+      "bytes": 2530
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/next/evidence/run-1-observation.json",
+      "sha256": "3e5d880975ee08f2ad8efa794f9e8e33580a1a540918cf052c916a21fb935049",
+      "bytes": 290
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/next/evidence/run-1-review.json",
+      "sha256": "5692ac7878062ab38718214cf69dc8eeda29e5802f4967cf0c453b7184372335",
+      "bytes": 1025
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/next/evidence/task-options.json",
+      "sha256": "77bab3aed5df7d9455308e097e7c2c13cbe4c5ab287d522c92ae9a35be1b9ea7",
+      "bytes": 32
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/next/evidence/task.json",
+      "sha256": "120c9a9b8250dfcff762bbb6833961f7b694545b52ec88da4bd1e8da84b08f24",
+      "bytes": 344
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/next/reply.json",
+      "sha256": "042dd48c70697937f66c46f576a120f8ba6ef7555fc4864cf852830ab8bc69d2",
+      "bytes": 914
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/next/result.json",
+      "sha256": "73b39fb48236f4e4358ae3abd43f2edec6e2fb9214d10e622cef4097017994f5",
+      "bytes": 3553
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/next/start.json",
+      "sha256": "7d5383b85d053d27cff3d70cac438c84b911615cc85e0d7b39d9a30e3f5a74ca",
+      "bytes": 1324
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/old-released-retry/client-result.json",
+      "sha256": "fd06428139e49b06f0a55bd085403cbab5a214f878edbcec910f63f98f6e0dcc",
+      "bytes": 1839
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/old-released-retry/client-started.json",
+      "sha256": "59e7da6f4d6e047d800938f6108f3b4cf443b142848c7f76de339a4487cee824",
+      "bytes": 358
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/original/client/client-finished.json",
+      "sha256": "f639941670fcbfef9f05ca5d9aa6fe9f01997acd0b9cf8f780549d3ccdaa8ce2",
+      "bytes": 286
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/original/client/client-started.json",
+      "sha256": "6085b305673f9035d024a90c362d19f33ebb7fed15dc56386175b408e3ca3336",
+      "bytes": 142
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/original/evidence/outcome.json",
+      "sha256": "bc32833a4db87d46e8e17a8934168ea52244c0f90a9a9bf933a9cfb45402b883",
+      "bytes": 494
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/original/evidence/run-1-admission.json",
+      "sha256": "3a7043e9f8399f357c49ae3d50c63f7551b5d2a18b3ad74dae56914618777fd2",
+      "bytes": 411
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/original/evidence/run-1-events.jsonl",
+      "sha256": "4354815e96242525d841641f492d3f181a12a381d472b1a2f8be0788bb741623",
+      "bytes": 139398
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/original/evidence/run-1-observation.json",
+      "sha256": "1cecd962152d03c6a0b0df6b7dc3565a9cad512a88aeb951ed4adfc50ac16069",
+      "bytes": 290
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/original/evidence/task-options.json",
+      "sha256": "77bab3aed5df7d9455308e097e7c2c13cbe4c5ab287d522c92ae9a35be1b9ea7",
+      "bytes": 32
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/original/evidence/task.json",
+      "sha256": "059f5fb75c3576ba805d349ec5039a477c2e35614d1a4a10831711f06b9c2b70",
+      "bytes": 348
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/original/result.json",
+      "sha256": "087a2ef992e7cd9c5d44aa4eeabdda8a62730a0746e98eaae52f1eaaaf49878a",
+      "bytes": 1619
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/original/start.json",
+      "sha256": "cb1507206d00ec0786073b1fdf468af2abb703cafe2f64c757531cdf01a95315",
+      "bytes": 1332
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/stale-context/client-result.json",
+      "sha256": "3b9c8faa4e45c0779410fe10f8dea92dec1ce5d8c60a88375913397949e22c71",
+      "bytes": 366
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/stale-context/client-started.json",
+      "sha256": "59e7da6f4d6e047d800938f6108f3b4cf443b142848c7f76de339a4487cee824",
+      "bytes": 358
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/stale-fence/client-result.json",
+      "sha256": "57c890748beb05c5b08f79846a060a1527d56228975a131242062dee604e5ff0",
+      "bytes": 366
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/stale-fence/client-started.json",
+      "sha256": "59e7da6f4d6e047d800938f6108f3b4cf443b142848c7f76de339a4487cee824",
+      "bytes": 358
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/stale-journal/client-result.json",
+      "sha256": "de632e3cdc758b4c631f2c77d9c8837c42f3245a9aaa74b560a3816a169ead4b",
+      "bytes": 366
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/stale-journal/client-started.json",
+      "sha256": "59e7da6f4d6e047d800938f6108f3b4cf443b142848c7f76de339a4487cee824",
+      "bytes": 358
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/stale-run-index/client-result.json",
+      "sha256": "2336ea3bdc7acd6f8ae6cf5d3a3f823edd02d9cfe190f486dcd721f847a5e233",
+      "bytes": 366
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/stale-run-index/client-started.json",
+      "sha256": "59e7da6f4d6e047d800938f6108f3b4cf443b142848c7f76de339a4487cee824",
+      "bytes": 358
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/unsafe-output-existing-stderr.log",
+      "sha256": "003328b84dfbc2af7dce90d75ae1d1b4ce4c00f7d7ed503084745170202f7f22",
+      "bytes": 27
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/unsafe-output-existing-stdout.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/unsafe-output-journal-stderr.log",
+      "sha256": "003328b84dfbc2af7dce90d75ae1d1b4ce4c00f7d7ed503084745170202f7f22",
+      "bytes": 27
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/unsafe-output-journal-stdout.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/unsafe-output-marker-stderr.log",
+      "sha256": "003328b84dfbc2af7dce90d75ae1d1b4ce4c00f7d7ed503084745170202f7f22",
+      "bytes": 27
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/unsafe-output-marker-stdout.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "apps/reach/work/desk-inspection-wire-ffb0c295-53ad-4330-befa-803fbe250474/verified.json",
+      "sha256": "4d92a23761d140a64307b7793cc21dbbd806d4ad18e872293810df67e580256e",
+      "bytes": 607
+    },
+    {
+      "path": "apps/reach/work/desk-wire-source-r1.json",
+      "sha256": "5005ca75c2120c872853dcbc75dafd72bc591fd0db867bd24d5e84c108265adc",
+      "bytes": 25052
+    },
+    {
+      "path": "apps/reach/work/freeze-desk-wire.mjs",
+      "sha256": "78907c3edf103ed23b01c3441b3cef0a1b1168e83e82d0c9b54f0ce9aa63de79",
+      "bytes": 4703
+    }
+  ],
+  "scope": "Local shared protocol; no Desk Host/UI closure wiring, deployment or whole-product acceptance"
+}

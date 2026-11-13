@@ -1,0 +1,18 @@
+$ node --test --test-concurrency=1 tests/*.test.ts
+✔ ordinary service process retains pairing, sessions, claimed operation and original result across forced restart (2615.4424ms)
+✔ pairing retry survives a lost response; consumed code and changed attempt cannot create a second identity (1578.5336ms)
+✔ concurrent claims deliver once, duplicate submission returns original, changed input is rejected (2065.4088ms)
+✔ durable ordered event outbox accepts duplicate uploads and rejects mutated, skipped, or late events (1799.025ms)
+✔ cancel is a request after claim; unpair rejects new work but lets original receipts settle (1753.9751ms)
+✔ ownership, auth kinds, CSRF, and schema reject untrusted requests (1479.2641ms)
+✔ explicit reconciliation preserves unknown history and permits re-pairing without re-execution (1989.6641ms)
+✔ trusted proxy client buckets are independent; untrusted source headers cannot bypass throttling (3506.6119ms)
+✔ a newer persistent schema is rejected without silently downgrading its version (1536.9166ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 18652.3956

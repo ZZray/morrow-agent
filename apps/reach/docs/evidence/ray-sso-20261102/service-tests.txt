@@ -1,0 +1,25 @@
+✔ built management assets have restrictive headers; arbitrary paths and protected APIs stay private (52.2901ms)
+✔ overview keeps historical unknown counts without transferring large operation payloads or another account (87.3054ms)
+✔ cookie management session restores, enforces CSRF, logs out and expires on the actual HTTP boundary (89.4295ms)
+✔ controller accepts only canonical root or Reach mount addresses (0.4539ms)
+✔ Ray signed assertion is fixed-account, short-lived, one-time and durable across restart (708.2714ms)
+✔ loopback signed exchange creates an existing Reach account session without exposing a bearer; cookie CSRF remains required (83.6428ms)
+✔ ordinary service process retains pairing, sessions, claimed operation and original result across forced restart (2176.5112ms)
+✔ pairing retry survives a lost response; consumed code and changed attempt cannot create a second identity (1200.5209ms)
+✔ concurrent claims deliver once, duplicate submission returns original, changed input is rejected (1597.2086ms)
+✔ durable ordered event outbox accepts duplicate uploads and rejects mutated, skipped, or late events (1607.8427ms)
+✔ cancel is a request after claim; unpair rejects new work but lets original receipts settle (1394.2998ms)
+✔ ownership, auth kinds, CSRF, and schema reject untrusted requests (1824.9777ms)
+✔ explicit reconciliation preserves unknown history and permits re-pairing without re-execution (1586.6493ms)
+✔ trusted proxy client buckets are independent; untrusted source headers cannot bypass throttling (3321.3888ms)
+✔ accepted pairing receipt remains recoverable after unpair without reactivating old binding (1462.8911ms)
+✔ late original receipts remain readable after explicit reconciliation without changing its decision (1658.9071ms)
+✔ a newer persistent schema is rejected without silently downgrading its version (1399.879ms)
+ℹ tests 17
+ℹ suites 0
+ℹ pass 17
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 20909.5611

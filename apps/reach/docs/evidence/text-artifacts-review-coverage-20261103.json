@@ -1,0 +1,478 @@
+{
+  "schema": 1,
+  "author": "Ray Zhang",
+  "reviewer": "/root/reach_plan_review",
+  "sourceIdentity": "289c29ebafc39375db265ade0b107bb29413cb27d336922585d31e92b14e75d7",
+  "scope": "Targeted semantic coverage is separate from all-input hash verification; no tests rerun by this reviewer.",
+  "coverageCounts": {
+    "identity_only_semantic_reaudit_scope_excluded": 34,
+    "dependency_changes_only": 4,
+    "reviewed_artifact_logic": 13,
+    "reviewed_relevant_callers": 7,
+    "generated_identity_and_label_only": 2,
+    "reviewed_relevant_test_and_fixture_logic": 9
+  },
+  "coverage": [
+    {
+      "path": "apps/reach/Cargo.lock",
+      "bytes": 43766,
+      "sha256": "b5e45d7a8c3408c2de531b67c397044a56727f272674529e0714302e82f72d1c",
+      "reviewCoverage": "identity_only_semantic_reaudit_scope_excluded"
+    },
+    {
+      "path": "apps/reach/Cargo.toml",
+      "bytes": 1383,
+      "sha256": "5b8c0c6b4a87a6955ab2a056367004d20623ae4e76ff2714d5c168718be2724f",
+      "reviewCoverage": "identity_only_semantic_reaudit_scope_excluded"
+    },
+    {
+      "path": "apps/reach/assets/brand/reach.ico",
+      "bytes": 77478,
+      "sha256": "fe2ee6dfef2435aa8cc3a660c9c4abe263f30bf35522a1f27f4b902356cb5fda",
+      "reviewCoverage": "identity_only_semantic_reaudit_scope_excluded"
+    },
+    {
+      "path": "apps/reach/build.rs",
+      "bytes": 199,
+      "sha256": "6f161f616229b14f572b5b736779d9cbc3fef87d3574e165d72555cc2fd92af7",
+      "reviewCoverage": "identity_only_semantic_reaudit_scope_excluded"
+    },
+    {
+      "path": "apps/reach/bun.lock",
+      "bytes": 4748,
+      "sha256": "da563d6cb9f6557c8c0a039d7a4820b2b32179f642ad91e15099921fd35cc4b3",
+      "reviewCoverage": "identity_only_semantic_reaudit_scope_excluded"
+    },
+    {
+      "path": "apps/reach/desktop/Cargo.lock",
+      "bytes": 62939,
+      "sha256": "1630e92784910a3d9849274cd0df4f2b1e53589fa64e95d54acfdaecdeaf0396",
+      "reviewCoverage": "dependency_changes_only"
+    },
+    {
+      "path": "apps/reach/desktop/Cargo.toml",
+      "bytes": 1453,
+      "sha256": "4114c1c6f9bf5c777a7ddd99e4df6b9f4f488c18ae4bb000cdd7246a889c4986",
+      "reviewCoverage": "dependency_changes_only"
+    },
+    {
+      "path": "apps/reach/desktop/build.rs",
+      "bytes": 261,
+      "sha256": "5a45efefab2cc1272e2797443f1f8e63eaa17d075c546d16a9af7727f28cc426",
+      "reviewCoverage": "identity_only_semantic_reaudit_scope_excluded"
+    },
+    {
+      "path": "apps/reach/desktop/runtime/config.toml",
+      "bytes": 131,
+      "sha256": "610f208450cd36f5d9fb25ab59279f3df36f8ba018660246f441f7f9cb6b91f1",
+      "reviewCoverage": "identity_only_semantic_reaudit_scope_excluded"
+    },
+    {
+      "path": "apps/reach/desktop/src/capture.rs",
+      "bytes": 12989,
+      "sha256": "1b55009df0f1dd1ba4dddd54f5cd3b2e3f35a487c1ba5fe3acc7748c3022f195",
+      "reviewCoverage": "reviewed_artifact_logic"
+    },
+    {
+      "path": "apps/reach/desktop/src/main.rs",
+      "bytes": 16825,
+      "sha256": "e439fdde1003085333176ac8b3c7bf1afb646b45dca40e86f1759b564070cd5e",
+      "reviewCoverage": "reviewed_artifact_logic"
+    },
+    {
+      "path": "apps/reach/desktop/src/session.rs",
+      "bytes": 6702,
+      "sha256": "594c155ace634ed25c5f77d0e6c7441860f4ee645d5b5800b70ec6dca0712f14",
+      "reviewCoverage": "identity_only_semantic_reaudit_scope_excluded"
+    },
+    {
+      "path": "apps/reach/desktop/src/supervise.rs",
+      "bytes": 3447,
+      "sha256": "e02202fcd711bf6959248eb98ebea6ee74dd6ba703a6f23c1e5d971cc10515ca",
+      "reviewCoverage": "reviewed_relevant_callers"
+    },
+    {
+      "path": "apps/reach/dist/admin/admin.js",
+      "bytes": 31395,
+      "sha256": "ad21d58196eac4eb0d04b944e1f808dac4abf62787f7a066576f09ec17d0e77f",
+      "reviewCoverage": "generated_identity_and_label_only"
+    },
+    {
+      "path": "apps/reach/dist/admin/artifacts.js",
+      "bytes": 7093,
+      "sha256": "e8dad4f454199bd881ebeee15fc712a7e040ef80abae59abe12a55d3f9f4ef76",
+      "reviewCoverage": "generated_identity_and_label_only"
+    },
+    {
+      "path": "apps/reach/package.json",
+      "bytes": 951,
+      "sha256": "3d3152b0b84e123e733ea9790080b01c8a2f764ecf1a8917a3ed9a699dc47938",
+      "reviewCoverage": "identity_only_semantic_reaudit_scope_excluded"
+    },
+    {
+      "path": "apps/reach/packaging/windows/setup/src/main.rs",
+      "bytes": 12759,
+      "sha256": "e132bb8ebbd9c40cd89cf927c890436bfb2e672684b9802d343c0d4562724c7e",
+      "reviewCoverage": "identity_only_semantic_reaudit_scope_excluded"
+    },
+    {
+      "path": "apps/reach/src/README.md",
+      "bytes": 2115,
+      "sha256": "680a60181d2b860f844e1d6c474468e16db02a2916b45c7f2d091ed3239bd3f8",
+      "reviewCoverage": "identity_only_semantic_reaudit_scope_excluded"
+    },
+    {
+      "path": "apps/reach/src/admin/.gitkeep",
+      "bytes": 2,
+      "sha256": "7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6",
+      "reviewCoverage": "identity_only_semantic_reaudit_scope_excluded"
+    },
+    {
+      "path": "apps/reach/src/admin/admin.css",
+      "bytes": 7346,
+      "sha256": "1acb56472033a318d1da35b89c3287bcc6561cc484932547b52fc7f208ad8442",
+      "reviewCoverage": "identity_only_semantic_reaudit_scope_excluded"
+    },
+    {
+      "path": "apps/reach/src/admin/admin.ts",
+      "bytes": 29578,
+      "sha256": "cde7dfb08b2065a485f8783e2469f56e189f978b75b879c86768470e3b3ae680",
+      "reviewCoverage": "reviewed_artifact_logic"
+    },
+    {
+      "path": "apps/reach/src/admin/artifacts.ts",
+      "bytes": 7719,
+      "sha256": "e9e5febc5fd28f20f82173a8514ccd451b0f6dceee0049d96450ac69e7d941c7",
+      "reviewCoverage": "reviewed_artifact_logic"
+    },
+    {
+      "path": "apps/reach/src/admin/index.html",
+      "bytes": 673,
+      "sha256": "0dcf674b3b7e036c5566290e2ab5ae495a834ff85c3240358ec4adb63321a6cb",
+      "reviewCoverage": "identity_only_semantic_reaudit_scope_excluded"
+    },
+    {
+      "path": "apps/reach/src/contracts/artifacts.ts",
+      "bytes": 3060,
+      "sha256": "a0b6c1fea031fc9028b450a0703d88793330d3cac9d65012c56296066cb612df",
+      "reviewCoverage": "reviewed_artifact_logic"
+    },
+    {
+      "path": "apps/reach/src/contracts/protocol.ts",
+      "bytes": 4590,
+      "sha256": "75ed6d2cfacb22f1925675410571620fff6c0184ee122c0bba28924a023d7668",
+      "reviewCoverage": "reviewed_artifact_logic"
+    },
+    {
+      "path": "apps/reach/src/controller/.gitkeep",
+      "bytes": 2,
+      "sha256": "7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6",
+      "reviewCoverage": "identity_only_semantic_reaudit_scope_excluded"
+    },
+    {
+      "path": "apps/reach/src/controller/artifacts.ts",
+      "bytes": 5687,
+      "sha256": "d43e4058868b6c36d12f3c1d966934f862088aa830b59d0359ae229005f37568",
+      "reviewCoverage": "reviewed_artifact_logic"
+    },
+    {
+      "path": "apps/reach/src/controller/client.ts",
+      "bytes": 5732,
+      "sha256": "ded2051911876f5cac1465c13761e3cc272fefc6e82bf7830eecb7074bb68ee3",
+      "reviewCoverage": "reviewed_relevant_callers"
+    },
+    {
+      "path": "apps/reach/src/controller/main.ts",
+      "bytes": 4992,
+      "sha256": "cbe198aac5518061f986561431e7a0f059cdd71635c8f81b892f09cea048f3b6",
+      "reviewCoverage": "reviewed_artifact_logic"
+    },
+    {
+      "path": "apps/reach/src/controller/mcp.ts",
+      "bytes": 7974,
+      "sha256": "bf26fdff5d672561ef6690b5a1f9d016c956a0b8317b4e8a01d2921f4168d786",
+      "reviewCoverage": "reviewed_artifact_logic"
+    },
+    {
+      "path": "apps/reach/src/desktop_pipe.rs",
+      "bytes": 13238,
+      "sha256": "3edb9dce039e6ad3a37bcca03642ba08e7f041960c29684f16e557be94067561",
+      "reviewCoverage": "identity_only_semantic_reaudit_scope_excluded"
+    },
+    {
+      "path": "apps/reach/src/node/.gitkeep",
+      "bytes": 2,
+      "sha256": "7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6",
+      "reviewCoverage": "identity_only_semantic_reaudit_scope_excluded"
+    },
+    {
+      "path": "apps/reach/src/node/api.rs",
+      "bytes": 4040,
+      "sha256": "7f0edd3e2a4229b653bae1f51285395bdf9147740ca7f47383b8f4d5ac44e944",
+      "reviewCoverage": "identity_only_semantic_reaudit_scope_excluded"
+    },
+    {
+      "path": "apps/reach/src/node/control.rs",
+      "bytes": 4057,
+      "sha256": "d28b9c8fcaa0c4e770b6fcb68df1443d990ec98e1f8fd879bad440ddd0bab8f2",
+      "reviewCoverage": "identity_only_semantic_reaudit_scope_excluded"
+    },
+    {
+      "path": "apps/reach/src/node/desktop.rs",
+      "bytes": 31535,
+      "sha256": "7bceb529dd0624aa100f12ab4eb965ece98bacf47bc90a44345605a56637c966",
+      "reviewCoverage": "reviewed_artifact_logic"
+    },
+    {
+      "path": "apps/reach/src/node/job.rs",
+      "bytes": 3604,
+      "sha256": "bfafa71b22603f22375a6dec83084825ab45afd74f857467a44235c98a471fc1",
+      "reviewCoverage": "identity_only_semantic_reaudit_scope_excluded"
+    },
+    {
+      "path": "apps/reach/src/node/ledger.rs",
+      "bytes": 12768,
+      "sha256": "58965a676f4dd190fdde21b7856143b78a52b6b8a3bc4ea0775fd3d42dafa194",
+      "reviewCoverage": "reviewed_relevant_callers"
+    },
+    {
+      "path": "apps/reach/src/node/main.rs",
+      "bytes": 4582,
+      "sha256": "081c337ee4b139f3a17432e363f6405dadf04df02620add6502e20e6e596d314",
+      "reviewCoverage": "identity_only_semantic_reaudit_scope_excluded"
+    },
+    {
+      "path": "apps/reach/src/node/pairing.rs",
+      "bytes": 5086,
+      "sha256": "4198a2e677e5e215812af16fa1f4263f4b2d6980e29005ae53a2e8afd576b2d5",
+      "reviewCoverage": "identity_only_semantic_reaudit_scope_excluded"
+    },
+    {
+      "path": "apps/reach/src/node/protocol.rs",
+      "bytes": 2008,
+      "sha256": "31510c646f6878548cbc68ba826d635c1ac1450d07d3431899c34550882f4ac8",
+      "reviewCoverage": "identity_only_semantic_reaudit_scope_excluded"
+    },
+    {
+      "path": "apps/reach/src/node/runtime.rs",
+      "bytes": 19199,
+      "sha256": "a3b1747b29e6b5cb0561bce085f163a03b797500dbaaaa3645950b236cb786ff",
+      "reviewCoverage": "reviewed_relevant_callers"
+    },
+    {
+      "path": "apps/reach/src/node/windows_desktop.rs",
+      "bytes": 12008,
+      "sha256": "33797e6bd97b21c63e0b06ba015aaee22d441aa69ab6e5342d208cc89ce8d11f",
+      "reviewCoverage": "reviewed_relevant_callers"
+    },
+    {
+      "path": "apps/reach/src/node/windows_host.rs",
+      "bytes": 20671,
+      "sha256": "27da04720112e1aedf910decc18e186af7ae977f970d5d91b943ecef0c6c466f",
+      "reviewCoverage": "identity_only_semantic_reaudit_scope_excluded"
+    },
+    {
+      "path": "apps/reach/src/node/worker.rs",
+      "bytes": 10383,
+      "sha256": "186ae9e6af328ef113790f4b03c0dde8821d3cbb9e7f972ab227ece69f7b36be",
+      "reviewCoverage": "identity_only_semantic_reaudit_scope_excluded"
+    },
+    {
+      "path": "apps/reach/src/service/.gitkeep",
+      "bytes": 2,
+      "sha256": "7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6",
+      "reviewCoverage": "identity_only_semantic_reaudit_scope_excluded"
+    },
+    {
+      "path": "apps/reach/src/service/admin.ts",
+      "bytes": 2010,
+      "sha256": "4c7e812584eb9522f8b4e853f2dce7b0127f75f14703d54819e4f47e3a80cae5",
+      "reviewCoverage": "reviewed_artifact_logic"
+    },
+    {
+      "path": "apps/reach/src/service/artifacts.ts",
+      "bytes": 7664,
+      "sha256": "7f4056eeede4525291561bb978e1a4144d509ec88aaff3209aef91cdf586efea",
+      "reviewCoverage": "reviewed_artifact_logic"
+    },
+    {
+      "path": "apps/reach/src/service/errors.ts",
+      "bytes": 413,
+      "sha256": "b64a01df31c6183213c7c0675c94e6c93d2a99d9aa669185ecc8988d467ca4b1",
+      "reviewCoverage": "identity_only_semantic_reaudit_scope_excluded"
+    },
+    {
+      "path": "apps/reach/src/service/main.ts",
+      "bytes": 1815,
+      "sha256": "39c42f95ea31702f6cc07937bdfcc034453a40ac902e359b3d792bc667cc6c24",
+      "reviewCoverage": "identity_only_semantic_reaudit_scope_excluded"
+    },
+    {
+      "path": "apps/reach/src/service/ray-login.ts",
+      "bytes": 4297,
+      "sha256": "32c49bd8ae8d347f82d56721db827c12c861c55102369537a3b42415646bf966",
+      "reviewCoverage": "identity_only_semantic_reaudit_scope_excluded"
+    },
+    {
+      "path": "apps/reach/src/service/server.ts",
+      "bytes": 14211,
+      "sha256": "e1446b6a9f9c7dd255e484e029ea4ceeec9db41235a783de20dce3216452a26b",
+      "reviewCoverage": "reviewed_relevant_callers"
+    },
+    {
+      "path": "apps/reach/src/service/store.ts",
+      "bytes": 25129,
+      "sha256": "1261c9f7557e0507202f20e5c2ab864bdb1cea1d6e9de417859bc16f990c03d4",
+      "reviewCoverage": "reviewed_relevant_callers"
+    },
+    {
+      "path": "apps/reach/src/windows_identity.rs",
+      "bytes": 1613,
+      "sha256": "22e2786eff5b3ff406c2b2f404ff4fa80b3aa865f1293d5615c76a4ebec1bd5c",
+      "reviewCoverage": "identity_only_semantic_reaudit_scope_excluded"
+    },
+    {
+      "path": "apps/reach/tests/admin-artifacts.test.ts",
+      "bytes": 4804,
+      "sha256": "91d4c50925ec1a73e621125f3b7d9a4b10a57b95e77490be0df0a0e659971214",
+      "reviewCoverage": "reviewed_relevant_test_and_fixture_logic"
+    },
+    {
+      "path": "apps/reach/tests/admin-http.test.ts",
+      "bytes": 7938,
+      "sha256": "bdf5e1d62667cb4455deb406a1fe419b7a8cae3dfefeef3745fb66afd07f1287",
+      "reviewCoverage": "reviewed_relevant_test_and_fixture_logic"
+    },
+    {
+      "path": "apps/reach/tests/artifacts.test.ts",
+      "bytes": 6689,
+      "sha256": "a6a9bc307d4295b476a10ebc2e7fc95f635211fa928b92935303fcd00bc43a19",
+      "reviewCoverage": "reviewed_relevant_test_and_fixture_logic"
+    },
+    {
+      "path": "apps/reach/tests/desktop-chain.integration.test.ts",
+      "bytes": 16054,
+      "sha256": "b6643ac65ee636a913b8c3899da1820e25ba6587bcafadc9ce91bec8b43dd347",
+      "reviewCoverage": "reviewed_relevant_test_and_fixture_logic"
+    },
+    {
+      "path": "apps/reach/tests/desktop-fixture.ps1",
+      "bytes": 2509,
+      "sha256": "6c482f06506abfd4b8145de442e6617e9755b728b09590effbc7bdb755c55dd2",
+      "reviewCoverage": "identity_only_semantic_reaudit_scope_excluded"
+    },
+    {
+      "path": "apps/reach/tests/native-fixture.ts",
+      "bytes": 9561,
+      "sha256": "cc0c3cc692ab5ffe69eda11f165e103c7b02ecd1d77e91ea840eadce947396c0",
+      "reviewCoverage": "reviewed_relevant_test_and_fixture_logic"
+    },
+    {
+      "path": "apps/reach/tests/node.integration.test.ts",
+      "bytes": 39021,
+      "sha256": "a7f22d37a6caf0f817a3b236c39b69633db66e7d894e166ac0ce9c094012c35b",
+      "reviewCoverage": "reviewed_relevant_test_and_fixture_logic"
+    },
+    {
+      "path": "apps/reach/tests/service-fixture.ts",
+      "bytes": 3323,
+      "sha256": "9c8fafa8e199ff047f84905b47d1a3c41d881a5dc3b1385bb6e2d51b51e5ba73",
+      "reviewCoverage": "identity_only_semantic_reaudit_scope_excluded"
+    },
+    {
+      "path": "apps/reach/tests/text-artifacts.test.ts",
+      "bytes": 6864,
+      "sha256": "5904d7f1cbb3a79e4f5855fa9255446c560ac916fdfadc8d6a0d7e649d6473ea",
+      "reviewCoverage": "reviewed_relevant_test_and_fixture_logic"
+    },
+    {
+      "path": "apps/reach/tsconfig.admin.json",
+      "bytes": 291,
+      "sha256": "a7d2efcf3a5fe01bfb71e1a246e28d65c6e73d512574e500dc24609eb8e68e39",
+      "reviewCoverage": "identity_only_semantic_reaudit_scope_excluded"
+    },
+    {
+      "path": "apps/reach/tsconfig.json",
+      "bytes": 386,
+      "sha256": "0703256a4d77db607cfc6456904c3e0c0095e402da4e1cd6b831a38225ba6d05",
+      "reviewCoverage": "identity_only_semantic_reaudit_scope_excluded"
+    },
+    {
+      "path": "apps/reach/work/text-artifacts-browser.ts",
+      "bytes": 5863,
+      "sha256": "1667a8423bf4b44ee21267ddc9ebe72d4c1342b09406c028ae7fa98cf1fb6b3c",
+      "reviewCoverage": "reviewed_relevant_test_and_fixture_logic"
+    },
+    {
+      "path": "crates/ara-agent-lite-mcp/Cargo.lock",
+      "bytes": 63122,
+      "sha256": "683bc001b2ab52205ff137fdd7fb32c5ab818d9d6d96b8a2834b5a9e2f35ace8",
+      "reviewCoverage": "dependency_changes_only"
+    },
+    {
+      "path": "crates/ara-agent-lite-mcp/Cargo.toml",
+      "bytes": 1413,
+      "sha256": "c133ff98dd8091438aeb768d637cb8b1c32ff10bf2365d9f4024b5f073cbd456",
+      "reviewCoverage": "dependency_changes_only"
+    },
+    {
+      "path": "crates/ara-agent-lite-mcp/src/tool.rs",
+      "bytes": 9591,
+      "sha256": "713ae5a0f5ac00bc7e409ae80546be6f496cd843fded4aaed1103551509d70e9",
+      "reviewCoverage": "reviewed_artifact_logic"
+    },
+    {
+      "path": "crates/ara-agent-lite-mcp/tests/result_props.rs",
+      "bytes": 6384,
+      "sha256": "d3ef6dd2c5bd8f2b2470e73b6d571fbcb4e76a9680e6ef606337778630df13ca",
+      "reviewCoverage": "reviewed_relevant_test_and_fixture_logic"
+    }
+  ],
+  "evidence": [
+    {
+      "path": "docs/evidence/text-artifacts-review-input-checks-20261103.json",
+      "bytes": 29679,
+      "sha256": "7df1139cb980f0b0a9dbb8a319b13a4cefadc970227a36f89b030a8d7270211d"
+    },
+    {
+      "path": "docs/evidence/text-artifacts-originals-review-20261103.json",
+      "bytes": 1046,
+      "sha256": "15a0d9565a43423a52fed2a1a5ecb3059f4ce9e02ecbf6be7c319b5da3a2bc59"
+    },
+    {
+      "path": "docs/evidence/text-artifacts-candidate-review-20261103.json",
+      "bytes": 3710,
+      "sha256": "1545577d896086cc5bf38736f0d4851d7e24773148213dc76cf37113ce35ccdc"
+    },
+    {
+      "path": "docs/evidence/text-artifacts-candidate-inspect-review-20261103.log",
+      "bytes": 1190,
+      "sha256": "b2a3ade3631e0120336787ed572aacef3f4b67874a046ee8ec76099917d4d77d"
+    },
+    {
+      "path": "docs/evidence/text-artifacts-setup-icons-20261103.json",
+      "bytes": 1830,
+      "sha256": "3d08637156ecaf94da891f2ed37a45bb3962331e7bbfeab66d818873d52b6ace"
+    },
+    {
+      "path": "work/text-browser-6ee0835e-5d51-4224-89a3-9e102e0249c2/range-requests.jsonl",
+      "bytes": 2200,
+      "sha256": "a48eea60e81f176d71986858b49501793257e4f57340333de26a8de827a60b3d"
+    },
+    {
+      "path": "work/text-browser-6ee0835e-5d51-4224-89a3-9e102e0249c2/preview.png",
+      "bytes": 67537,
+      "sha256": "997e91533ac8441063f8e24c1a3cda82f6d495d573d0cab07ac62238ddb8d926"
+    },
+    {
+      "path": "outputs/windows-complete-ba1ecd6da6c93150-93fe5dccdd7f/package.json",
+      "bytes": 3182,
+      "sha256": "33965976145b53bbfa0033918dfc266de1609aace03ab7b5c414d2520bada7a3"
+    },
+    {
+      "path": "outputs/windows-complete-ba1ecd6da6c93150-93fe5dccdd7f/verify-payload.txt",
+      "bytes": 65,
+      "sha256": "aadda55589b3b661d66354a7de1932f65bf205dce79516af7e924dc68be41291"
+    }
+  ]
+}

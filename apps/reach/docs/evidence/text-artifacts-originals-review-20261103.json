@@ -1,0 +1,26 @@
+{
+  "sourceIdentity": "289c29ebafc39375db265ade0b107bb29413cb27d336922585d31e92b14e75d7",
+  "desktop": {
+    "operationId": "d866b042-b673-497f-8d64-b6919767c96c",
+    "artifactId": "03dcc6ea-fe1e-4b89-8185-b547e811b55e",
+    "bytes": 378025,
+    "sha256": "eecaa1587bc8321a9edb45592a45f3bd790ba57e1330ff5aadc6b2c0d4b977af",
+    "sourceAndCliAndNodeAndServiceEqual": true,
+    "events": 11,
+    "contiguous": true,
+    "allAcknowledged": true,
+    "chunkCount": 6,
+    "characterCount": 162025,
+    "terminal": "succeeded",
+    "effectCount": "once"
+  },
+  "browser": {
+    "expected": "work\\text-browser-6ee0835e-5d51-4224-89a3-9e102e0249c2\\expected.txt",
+    "downloadPath": "C:\\Users\\loveu\\Downloads\\d98bc208-58a4-44b2-99dd-f11bb08fb698-ac48af24-1b8a-4efd-967e-a361e8d5df7d.txt",
+    "bytes": 93503,
+    "sha256": "4cff3eabc4846b2de7e115c5db3ead4b56b558b11a99843389d2fd1c7d0be1b3",
+    "exact": true,
+    "operationDownloads": 1
+  },
+  "scope": "Independent read-only source/files/SQLite checks; no action execution or browser replay"
+}

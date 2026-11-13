@@ -1,0 +1,144 @@
+diff --git a/apps/provider/cmd/ray_front/main.go b/apps/provider/cmd/ray_front/main.go
+index e959bd2..709a778 100644
+--- a/apps/provider/cmd/ray_front/main.go
++++ b/apps/provider/cmd/ray_front/main.go
+@@ -53,6 +53,7 @@ func reverseProxy(address string) *httputil.ReverseProxy {
+ 	}
+ 	p := httputil.NewSingleHostReverseProxy(u)
+ 	p.FlushInterval = -1
++	p.ModifyResponse = excludeReachCookie
+ 	p.ErrorHandler = func(w http.ResponseWriter, r *http.Request, _ error) {
+ 		http.Error(w, "服务暂时不可用，请稍后重试", 502)
+ 	}
+@@ -61,14 +62,21 @@ func reverseProxy(address string) *httputil.ReverseProxy {
+ 
+ func newPlatform(cfg config, auth *platformAuth) *platform {
+ 	p := &platform{cfg: cfg, auth: auth, edge: reverseProxy("http://127.0.0.1:18081"), arena: reverseProxy("http://127.0.0.1:18090"), rainflow: reverseProxy("http://127.0.0.1:8001"), connections: map[string]map[*context.CancelFunc]struct{}{}}
+-	p.edge.ModifyResponse = adaptHandWaveAvatar
++	p.edge.ModifyResponse = func(response *http.Response) error {
++		if err := adaptHandWaveAvatar(response); err != nil {
++			return err
++		}
++		return excludeReachCookie(response)
++	}
+ 	p.suggestions = newSuggestionBook()
+ 	p.initCloudMemory()
+ 	return p
+ }
+ 
+ func allowedMachine(r *http.Request, role string) bool {
+- if allowed,matched := shiftMachine(r,role); matched { return allowed }
++	if allowed, matched := shiftMachine(r, role); matched {
++		return allowed
++	}
+ 	p := r.URL.Path
+ 	if cloudBrowserOnly(p) {
+ 		return false
+@@ -184,6 +192,7 @@ func (p *platform) handler(role string) http.Handler {
+ 			http.Error(w, "invalid host", 400)
+ 			return
+ 		}
++		selectRequestCookies(r, func(name string) bool { return name != reachCookie })
+ 		if role == "primary" && serveACME(w, r, p.cfg.ACMERoot) {
+ 			return
+ 		}
+@@ -265,7 +274,9 @@ func (p *platform) handler(role string) http.Handler {
+ }
+ 
+ func (p *platform) route(w http.ResponseWriter, r *http.Request, role string, browser bool) {
+- if p.routeShift(w,r,role,browser) { return }
++	if p.routeShift(w, r, role, browser) {
++		return
++	}
+ 	path := r.URL.Path
+ 	if role == "primary" && browser && serveHandWaveAvatar(w, r) {
+ 		return
+@@ -341,6 +352,7 @@ func main() {
+ 	initState := flag.Bool("init-auth", false, "create private pending platform state and provisioning QR")
+ 	qrPath := flag.String("qr-file", "", "private provisioning PNG path")
+ 	export := flag.Bool("export-qr", false, "export the existing private platform QR without changing its binding")
++	reachOnly := flag.Bool("reach-only", false, "run independent Reach HTTPS ingress only; no Ray authentication state")
+ 	flag.Parse()
+ 	if *configPath == "" {
+ 		log.Fatal("set private config path")
+@@ -354,9 +366,21 @@ func main() {
+ 	decoder.DisallowUnknownFields()
+ 	err = decoder.Decode(&cfg)
+ 	f.Close()
+-	if err != nil || net.ParseIP(cfg.PublicIP) == nil || cfg.AuthState == "" {
++	if err != nil || net.ParseIP(cfg.PublicIP) == nil {
+ 		log.Fatal("invalid platform configuration")
+ 	}
++	if *reachOnly {
++		if *initState || *export || cfg.AuthState != "" || cfg.HandWaveToken != "" || cfg.GatewaySessionSecret != "" || cfg.ArenaToken != "" {
++			log.Fatal("Reach ingress requires its own TLS-only configuration")
++		}
++		if err := runReachIngress(cfg); err != nil {
++			log.Fatal("Reach ingress stopped: ", err)
++		}
++		return
++	}
++	if cfg.AuthState == "" {
++		log.Fatal("missing platform authentication state")
++	}
+ 	if *initState {
+ 		if *qrPath == "" {
+ 			log.Fatal("set private QR file path")
+diff --git a/apps/provider/cmd/ray_front/web.go b/apps/provider/cmd/ray_front/web.go
+index 4b53e6f..408e2c9 100644
+--- a/apps/provider/cmd/ray_front/web.go
++++ b/apps/provider/cmd/ray_front/web.go
+@@ -71,7 +71,7 @@ var loginTemplate = template.Must(template.New("login").Parse(`<!doctype html><h
+ :root{color-scheme:dark;font:15px system-ui;background:#151719;color:#ebedef}*{box-sizing:border-box}body{margin:0;min-height:100svh;display:grid;place-items:center;padding:24px}main{width:min(100%,380px);padding:32px;border:1px solid #ffffff20;border-radius:16px;background:#1b1e21}small{color:#a0a8b0}h1{font-size:24px;margin:12px 0}p{color:#aab1b8;line-height:1.6}label{display:block;margin-bottom:8px}input{width:100%;font-size:28px;letter-spacing:.25em;padding:14px;border-radius:9px;border:1px solid #ffffff30;background:#111416;color:inherit;text-align:center}input:focus-visible,button:focus-visible{outline:2px solid #8bade7;outline-offset:3px}button{width:100%;margin-top:16px;padding:14px;border:0;border-radius:9px;background:#dbe5f2;color:#1b2431;font-size:16px;cursor:pointer}.error{color:#ffc2b4;min-height:24px;margin:12px 0 0}
+ </style><main><small>RAY · 统一入口</small><h1>进入 Ray 工作区</h1><p>打开验证器，输入当前的 6 位验证码。</p><form method="post" action="/ray/login"><input type="hidden" name="proof" value="{{.Proof}}"><label for="code">验证码</label><input id="code" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" minlength="6" maxlength="6" required autofocus aria-describedby="error"><button>进入工作区</button><p class="error" id="error" role="status">{{.Error}}</p></form><small>验证码每 30 秒更新。一次登录，进入各个服务。</small></main><script nonce="{{.Nonce}}">` + loginRefreshScript + `</script></html>`))
+ 
+-var portalTemplate = template.Must(template.New("portal").Parse(`<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ray 工作区</title><style>:root{color-scheme:dark;font:16px system-ui;background:#151719;color:#ebedef}body{max-width:780px;margin:64px auto;padding:24px}h1{font-size:30px}nav{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}a{color:inherit;text-decoration:none;padding:24px;border:1px solid #ffffff25;border-radius:12px;display:block;background:#1b1e21}a:hover{border-color:#8bade7}small,p{color:#aab1b8}button{color:inherit;background:transparent;border:1px solid #ffffff30;border-radius:8px;padding:10px 16px;margin-top:24px;cursor:pointer}a:focus-visible,button:focus-visible{outline:2px solid #8bade7;outline-offset:3px}</style><small>RAY · 已验证</small><h1>工作区</h1><p>选择服务，继续工作。</p><nav><a href="/shift/">Shift<br><small>璁板綍鐜板満銆乀odo涓嶢I甯墜</small></a><a href="/handwave/">HandWave<br><small>控制已接入的电脑</small></a><a href="/omp/">OMP Manager<br><small>模型与网关管理</small></a><a href="/arena/">Code Arena<br><small>题目与编译验证</small></a><a href="{{.Rainflow}}">RainFlow<br><small>现场数据与设备</small></a></nav><p><a href="/ray/install">Linux 源码安装<br><small>本机编译独立 Rust 被控端</small></a></p><p><small>验证器绑定保持有效；二维码仅支持服务器本机私有导出。</small></p><form method="post" action="/ray/logout"><button>退出工作区</button></form></html>`))
++var portalTemplate = template.Must(template.New("portal").Parse(`<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ray 工作区</title><style>:root{color-scheme:dark;font:16px system-ui;background:#151719;color:#ebedef}body{max-width:780px;margin:64px auto;padding:24px}h1{font-size:30px}nav{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}a{color:inherit;text-decoration:none;padding:24px;border:1px solid #ffffff25;border-radius:12px;display:block;background:#1b1e21}a:hover{border-color:#8bade7}small,p{color:#aab1b8}button{color:inherit;background:transparent;border:1px solid #ffffff30;border-radius:8px;padding:10px 16px;margin-top:24px;cursor:pointer}a:focus-visible,button:focus-visible{outline:2px solid #8bade7;outline-offset:3px}</style><small>RAY · 已验证</small><h1>工作区</h1><p>选择服务，继续工作。</p><nav>{{if .Reach}}<a href="{{.Reach}}">Reach<br><small>独立远程连接与操作记录</small></a>{{end}}<a href="/shift/">Shift<br><small>璁板綍鐜板満銆乀odo涓嶢I甯墜</small></a><a href="/handwave/">HandWave<br><small>控制已接入的电脑</small></a><a href="/omp/">OMP Manager<br><small>模型与网关管理</small></a><a href="/arena/">Code Arena<br><small>题目与编译验证</small></a><a href="{{.Rainflow}}">RainFlow<br><small>现场数据与设备</small></a></nav><p><a href="/ray/install">Linux 源码安装<br><small>本机编译独立 Rust 被控端</small></a></p><p><small>验证器绑定保持有效；二维码仅支持服务器本机私有导出。</small></p><form method="post" action="/ray/logout"><button>退出工作区</button></form></html>`))
+ 
+ func privateResponse(w http.ResponseWriter) {
+ 	w.Header().Set("Cache-Control", "no-store")
+@@ -189,7 +189,7 @@ func (a *platformAuth) web(w http.ResponseWriter, r *http.Request, rainflowURL s
+ 	if r.URL.Path == "/" && rainflowURL != "" && a.authenticated(r) {
+ 		privateResponse(w)
+ 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+-		_ = portalTemplate.Execute(w, map[string]string{"Rainflow": rainflowURL})
++		_ = portalTemplate.Execute(w, map[string]string{"Rainflow": rainflowURL, "Reach": reachPortalOrigin(r)})
+ 		return true
+ 	}
+ 	return false
+diff --git a/scripts/build.ps1 b/scripts/build.ps1
+index 59da75b..794e42b 100644
+--- a/scripts/build.ps1
++++ b/scripts/build.ps1
+@@ -1,8 +1,30 @@
+-param([switch]$SkipTests)
++param([switch]$SkipTests,[ValidateSet('All','RayFront')][string]$Target='All')
+ $ErrorActionPreference='Stop'
+ $root=Split-Path $PSScriptRoot -Parent
+ Push-Location $root
+ try {
++ if($Target -eq 'RayFront'){
++  if(!$SkipTests){
++   & go test ./apps/provider/cmd/ray_front
++   if($LASTEXITCODE -ne 0){throw 'Ray front tests failed'}
++   & go vet ./apps/provider/cmd/ray_front
++   if($LASTEXITCODE -ne 0){throw 'Ray front vet failed'}
++   # The security helper requires generated adapted files and is executed by
++   # TestHandWaveSecurityFinalAdapterRegression in the Go suite above.
++   $rayFrontTests=@(rg --files apps/provider/cmd/ray_front -g '*.test.cjs' | Where-Object { (Split-Path $_ -Leaf) -ne 'handwave_security.test.cjs' })
++   & node --test @rayFrontTests
++   if($LASTEXITCODE -ne 0){throw 'Ray front browser contract tests failed'}
++  }
++  New-Item -ItemType Directory -Force -Path bin | Out-Null
++  $rayGOOS=$env:GOOS; $rayGOARCH=$env:GOARCH; $rayCGO=$env:CGO_ENABLED
++  try {
++   $env:CGO_ENABLED='0'; $env:GOOS='linux'; $env:GOARCH='amd64'
++   & go build -trimpath -o bin/ray-front-linux-amd64 ./apps/provider/cmd/ray_front
++   if($LASTEXITCODE -ne 0){throw 'Ray front Linux build failed'}
++  } finally { $env:GOOS=$rayGOOS; $env:GOARCH=$rayGOARCH; $env:CGO_ENABLED=$rayCGO }
++  Write-Output (Join-Path $root 'bin/ray-front-linux-amd64')
++  return
++ }
+  if(!$SkipTests){ & go test ./...; if($LASTEXITCODE -ne 0){throw 'go test failed'}; & go vet ./...; if($LASTEXITCODE -ne 0){throw 'go vet failed'} }
+ 
+  # ARA host (root package) and the preserved native agent CLI.

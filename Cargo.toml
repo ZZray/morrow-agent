@@ -6,6 +6,7 @@ members = [
   "crates/morrow-agent-mcp",
 ]
 resolver = "3"
+exclude = ["apps/reach", "apps/reach/desktop", "apps/reach/packaging/windows/setup"]
 
 [workspace.package]
 license = "MIT"

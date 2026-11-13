@@ -1,0 +1,1 @@
+$ tsc --noEmit && tsc --project tsconfig.admin.json --noEmit

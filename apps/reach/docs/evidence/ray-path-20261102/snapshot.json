@@ -1,0 +1,202 @@
+{
+  "araBase": "90f2b1cdd138129e2d331d89a37d70852e849739",
+  "sources": [
+    {
+      "sha256": "76b67f1fa9f08c03e82d5215abd45f100a42088cca1169848b40617f3e203b9c",
+      "path": "bun.lock"
+    },
+    {
+      "sha256": "1fc450d7b3cc8cacfd6cfac9c53fae5ffd1b339ec11ef655f48617459087570b",
+      "path": "Cargo.lock"
+    },
+    {
+      "sha256": "f9248c962c6a0ed438574ebb23bc04c566f05b0588ff93483fc61e1951daf437",
+      "path": "Cargo.toml"
+    },
+    {
+      "sha256": "8111537b75ee17e6b3c273f7d308d8e14ab92a5aa7bebadf73350be40a289171",
+      "path": "deny.toml"
+    },
+    {
+      "sha256": "29eb803678bd2723960f9f24ebaf87fa1640ba6b5f8610143a0c756c84f2d24b",
+      "path": "deploy\\install-first.py"
+    },
+    {
+      "sha256": "ce2e749c53d961ff71ff3e0333474f2b3c68df8c0a13770230494e041e1200e1",
+      "path": "deploy\\ray-front-reach.conf"
+    },
+    {
+      "sha256": "1a92a73b8ff37d81eafeb50493c16e35682fcdc191b649f0e9cf68dd91ab84e4",
+      "path": "deploy\\reach-ingress.service"
+    },
+    {
+      "sha256": "bd3db02060e52b03d640518ee20a4a85ca2975d387ea559f24251f5e287580be",
+      "path": "deploy\\reach.service"
+    },
+    {
+      "sha256": "8eebf71dc34df0cdd2279e5cf44b7cb4d79a7e2a49eeff5ffaa6afe159c7ce45",
+      "path": "deploy\\switch-ray-path.py"
+    },
+    {
+      "sha256": "a1c9d5839a047db9b9fb8f6a8fd446281e65d78ebdc787bb375ff1f6ddcaf34a",
+      "path": "package.json"
+    },
+    {
+      "sha256": "6a76c7287182a6e4233ebc4a2d60ed86d21125989fa7c493b286a780552c0d1b",
+      "path": "src\\admin\\admin.css"
+    },
+    {
+      "sha256": "cbaa18f9900caa0deffd6f7b8e331aaab546936c8c7ba5f21a4b21a5896ca4ed",
+      "path": "src\\admin\\admin.ts"
+    },
+    {
+      "sha256": "7a30ffb80f4afcc05e5fffa6e767a899576122a43884cea2659320446c94c82d",
+      "path": "src\\admin\\index.html"
+    },
+    {
+      "sha256": "92fb5aac7990a52cc03d249fafd6e310d7ad48899e17edb0084e25907db3c49c",
+      "path": "src\\contracts\\protocol.ts"
+    },
+    {
+      "sha256": "ded2051911876f5cac1465c13761e3cc272fefc6e82bf7830eecb7074bb68ee3",
+      "path": "src\\controller\\client.ts"
+    },
+    {
+      "sha256": "0df65ca3062d6b83a2eabcdff6048ed5f7033b242e5e776c362999b6ee6e3f6b",
+      "path": "src\\controller\\main.ts"
+    },
+    {
+      "sha256": "57bebe73d03da575ead9ec10979d84a438cb70e69a784635319ecd897fa12653",
+      "path": "src\\controller\\mcp.ts"
+    },
+    {
+      "sha256": "7f0edd3e2a4229b653bae1f51285395bdf9147740ca7f47383b8f4d5ac44e944",
+      "path": "src\\node\\api.rs"
+    },
+    {
+      "sha256": "83c9e479df6e97acc86e7bf56e6013385c45701c696b15987d245add97400d5f",
+      "path": "src\\node\\job.rs"
+    },
+    {
+      "sha256": "f71715df70fb058e9685ef7fc08a5db12d04409225e7511dd57c6a2924833974",
+      "path": "src\\node\\ledger.rs"
+    },
+    {
+      "sha256": "da39e6a0c2422f1eb9ec139d73cbb248131b992fd57ad45b5a88f0d723afbde7",
+      "path": "src\\node\\main.rs"
+    },
+    {
+      "sha256": "b3267cfe046498f235aa8780b4ae8106af5dc480498a02dab3c2e8266fd1244c",
+      "path": "src\\node\\protocol.rs"
+    },
+    {
+      "sha256": "3dc7bdf16c383c24f8ee0fed87094c2159bf979d8e2aed0b936e2864578faeb6",
+      "path": "src\\node\\runtime.rs"
+    },
+    {
+      "sha256": "2d403f059ce30d091db14e23a8467a21c2faade32a9a9cee13e727efaaaac333",
+      "path": "src\\node\\worker.rs"
+    },
+    {
+      "sha256": "35332da9f89aa6efd540401d210222d19d18c7c6d28aa3a504fa95e210caaa1d",
+      "path": "src\\README.md"
+    },
+    {
+      "sha256": "edbe68e1c30d39648cf8b42ef76bdb704850f37a2337b53f15eb55580375de91",
+      "path": "src\\service\\admin.ts"
+    },
+    {
+      "sha256": "b64a01df31c6183213c7c0675c94e6c93d2a99d9aa669185ecc8988d467ca4b1",
+      "path": "src\\service\\errors.ts"
+    },
+    {
+      "sha256": "b5e710075085fec54f33b728f3f8f8bc0d0a15c5e40dbb559da7683bfc95c11d",
+      "path": "src\\service\\main.ts"
+    },
+    {
+      "sha256": "1a4b4bb1bfe154240ad6aae1b9ccf0dbecf8a43910fcd300db798c3dc3a1c8ea",
+      "path": "src\\service\\server.ts"
+    },
+    {
+      "sha256": "b5b8a8b86ae5c5927b0c2c5ec48213c00d10995dd2f9d281c1d1e13420e6e4cd",
+      "path": "src\\service\\store.ts"
+    },
+    {
+      "sha256": "e2e46bc823e8ef60b057cfc48592dec4283ee368a85b1ca01213eee4c73b0a49",
+      "path": "tests\\admin-http.test.ts"
+    },
+    {
+      "sha256": "208b5f4948586fe29ba8a60904a7d885f156c4e8adf40ce61bede021640a8790",
+      "path": "tests\\deploy-path.test.py"
+    },
+    {
+      "sha256": "c8f63e290a188e1d2b178f500c136dee0ab0f757de7e46d0294774003b0b0c74",
+      "path": "tests\\node.integration.test.ts"
+    },
+    {
+      "sha256": "10b3e11d80f5816b479c38c25a137783f5a564dba29d2bad870bdc41f69b87d3",
+      "path": "tests\\service-process.test.ts"
+    },
+    {
+      "sha256": "9e81ecdacbd9ee991adc957d99e237acdc299a26864effcd260e22719ef91c16",
+      "path": "tests\\service.test.ts"
+    },
+    {
+      "sha256": "a7d2efcf3a5fe01bfb71e1a246e28d65c6e73d512574e500dc24609eb8e68e39",
+      "path": "tsconfig.admin.json"
+    },
+    {
+      "sha256": "0703256a4d77db607cfc6456904c3e0c0095e402da4e1cd6b831a38225ba6d05",
+      "path": "tsconfig.json"
+    }
+  ],
+  "artifacts": [
+    {
+      "sha256": "ff68098472c26d0bbc1df11501133e901e841655f90c0a4ce773fd5d2992abd8",
+      "path": "dist/admin/admin.js"
+    },
+    {
+      "sha256": "b472ef53e5e515a6c4aed3ad5123315e2d2d9f612a85f6b5356d5f9bd6aed7b6",
+      "path": "E:\\usr\\var\\cache\\rust-target\\reach\\debug\\reach.exe"
+    },
+    {
+      "sha256": "8f780bc73af968a184f99ed4314ba07053a66fb739aa3029b4ff9084ae8cbcc3",
+      "path": "E:\\workspace\\ray-front-reach\\bin\\ray-front-linux-amd64"
+    },
+    {
+      "sha256": "227051b674a052a09ca4274eb8c78e60b37004171010a1ec3b460aafebdfb262",
+      "path": "work/reach-ray-path-20261102-v2.tar.gz"
+    }
+  ],
+  "raySources": [
+    {
+      "sha256": "2186d79fb2e1c8dd018bc201b6f04879e2c63edb4ee1b20eeacb12228888693d",
+      "path": "apps/provider/cmd/ray_front/main.go"
+    },
+    {
+      "sha256": "c280960f70ac331c356f948ae5bbf707d1bd87891f2cd861b43bd31908bb4cc2",
+      "path": "apps/provider/cmd/ray_front/web.go"
+    },
+    {
+      "sha256": "61e4dc909b024b6c0f514195b9f527a7d69e1fb3a6ce1720cd314b7d057b14ad",
+      "path": "apps/provider/cmd/ray_front/reach_ingress.go"
+    },
+    {
+      "sha256": "723a575940b7a52b73c91252d3f64af09ce6e78d9ca2c139f6e76027ac55f8f2",
+      "path": "apps/provider/cmd/ray_front/reach_ingress_test.go"
+    },
+    {
+      "sha256": "6d97a93da2169a268fcf6bd453e0ce73512acc33010efb546636e4068e8a231b",
+      "path": "scripts/build.ps1"
+    },
+    {
+      "sha256": "5e778f6fea2dbfbff3316eec1157b11805f57a66b379b6ac7ad226504e53f344",
+      "path": "go.mod"
+    },
+    {
+      "sha256": "849688ab871349d4b9be1e4d6a2bd6a330b53c25c7b146575345efb625c23024",
+      "path": "go.sum"
+    }
+  ],
+  "rayBase": "0b9cb7c3eabf1e4d82bfc1d6147786c2d883721c"
+}

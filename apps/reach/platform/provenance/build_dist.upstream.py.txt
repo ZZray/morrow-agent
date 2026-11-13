@@ -1,0 +1,166 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""重建 4 平台 HandWave 发布包。
+
+- windows-amd64 / linux-amd64 / linux-arm64 / darwin-arm64
+- 交叉编译：CGO_ENABLED=0 go build -trimpath -ldflags "-s -w"
+- zip 布局：windows 带 3 个 .bat；各平台都带 README.md 与 upstreams.example.conf
+
+迁移说明（单根模块 ARA）：
+本脚本随 HandWave 应用迁入 `apps/handwave`，是 ARA 单根模块下的一个 package main 目录。
+`--repo` 语义 = **HandWave 应用目录**（含 main.go/hub.go/node.go/proto.go 的 package main 目录），
+不是 ARA 模块根，也不是任何外部仓库。默认取本脚本所在目录，因此默认只在应用目录内构建、
+只在应用目录的隔离输出目录里落产物，绝不触碰原仓 `ai-handwave` 的 dist。
+
+用法：
+  python build_dist.py                 # 用默认应用目录，产物写到 <app>/dist/
+  python build_dist.py --check         # 离线校验：只解析并打印目标/资源/输出路径，不编译
+  python build_dist.py --repo <app>    # 指定 HandWave 应用目录（须含 package main 标记文件）
+  python build_dist.py --out <dir>     # 指定隔离输出目录（默认 <app>/dist）
+"""
+import argparse
+import os
+import shutil
+import subprocess
+import sys
+import zipfile
+from pathlib import Path
+
+PLATFORMS = [
+    ("windows-amd64", "windows", "amd64", "handwave.exe"),
+    ("linux-amd64",   "linux",   "amd64", "handwave"),
+    ("linux-arm64",   "linux",   "arm64", "handwave"),
+    ("darwin-arm64",  "darwin",  "arm64", "handwave"),
+]
+BATS = {"服务器.bat": "hub/服务器.bat",
+        "启动-被控端.bat": "node/启动-被控端.bat",
+        "连接.bat": "ctl/连接.bat"}
+EXTRA = ["README.md", "upstreams.example.conf"]
+
+# HandWave package main 标记文件：缺任何一个都说明 --repo 指错了目录
+# （例如指到 ARA 模块根，会把宿主 ara 编成 handwave）。
+APP_MARKERS = ["main.go", "hub.go", "node.go", "proto.go"]
+
+
+def run(cmd, cwd, env=None):
+    e = dict(os.environ)
+    if env:
+        e.update(env)
+    r = subprocess.run(cmd, cwd=cwd, env=e, capture_output=True, text=True)
+    if r.returncode != 0:
+        print(r.stdout[-2000:])
+        print(r.stderr[-2000:], file=sys.stderr)
+        raise SystemExit(f"命令失败: {' '.join(cmd)}")
+    return r.stdout
+
+
+def resolve_app(repo_arg):
+    app = Path(repo_arg).resolve() if repo_arg else Path(__file__).resolve().parent
+    missing = [m for m in APP_MARKERS if not (app / m).is_file()]
+    if missing:
+        raise SystemExit(
+            f"--repo 不是 HandWave 应用目录（缺 {', '.join(missing)}）：{app}\n"
+            "请指向 ARA 单根模块下的 apps/handwave（含 main.go/hub.go/node.go/proto.go），"
+            "不要指向 ARA 模块根或外部仓库。"
+        )
+    return app
+
+
+def resolve_out(app, out_arg):
+    out = Path(out_arg).resolve() if out_arg else (app / "dist")
+    if out == app or out in app.parents:
+        raise SystemExit(f"--out 不能是应用目录本身或其祖先目录（会误删源码）：{out}")
+    return out
+
+
+def check(app, out):
+    """离线校验：不编译，只解析并核对目标与资源是否存在。"""
+    print(f"[check] app dir       : {app}")
+    print(f"[check] build target  : go build -o <out>/<binary> .   (cwd={app})")
+    print(f"[check] output dir    : {out}")
+    ok = True
+    for f in EXTRA:
+        src = app / f
+        mark = "ok" if src.is_file() else "MISSING"
+        ok = ok and src.is_file()
+        print(f"[check] resource      : {f:<26} {mark}")
+    for dst, rel in BATS.items():
+        src = app / rel
+        mark = "ok" if src.is_file() else "MISSING"
+        ok = ok and src.is_file()
+        print(f"[check] resource(win) : {rel:<26} {mark}")
+    for name, _goos, _goarch, binary in PLATFORMS:
+        print(f"[check] platform      : {name:<14} -> {out / f'handwave-{name}.zip'}  ({binary})")
+    if not ok:
+        raise SystemExit("资源缺失，发布包会不完整")
+    print("[check] OK")
+
+
+def main():
+    ap = argparse.ArgumentParser(description="构建 HandWave 4 平台发布包（单根模块 ARA 下的 apps/handwave）")
+    ap.add_argument("--repo", default=None,
+                    help="HandWave 应用目录（默认：本脚本所在目录 apps/handwave）")
+    ap.add_argument("--out", default=None,
+                    help="隔离输出目录（默认：<app>/dist）")
+    ap.add_argument("--check", action="store_true",
+                    help="只做离线校验（解析目标/资源/输出路径），不编译")
+    a = ap.parse_args()
+
+    app = resolve_app(a.repo)
+    out = resolve_out(app, a.out)
+
+    if a.check:
+        check(app, out)
+        return
+
+    out.mkdir(parents=True, exist_ok=True)
+
+    results = []
+    for name, goos, goarch, binary in PLATFORMS:
+        stage = out / name
+        if stage.exists():
+            shutil.rmtree(stage)
+        stage.mkdir(parents=True)
+
+        out_bin = stage / binary
+        print(f"[build] {name} …", flush=True)
+        run(["go", "build", "-trimpath", "-ldflags", "-s -w", "-o", str(out_bin), "."],
+            cwd=str(app),
+            env={"CGO_ENABLED": "0", "GOOS": goos, "GOARCH": goarch})
+
+        # 公共文件
+        for f in EXTRA:
+            src = app / f
+            if src.exists():
+                shutil.copy2(src, stage / f)
+        # Windows 额外带 .bat（源文件分布在各角色子目录）
+        if goos == "windows":
+            for name_dst, src_rel in BATS.items():
+                src = app / src_rel
+                if not src.exists():
+                    raise SystemExit(f"缺少 {src_rel}")
+                shutil.copy2(src, stage / name_dst)
+
+        # 打 zip（固定时间戳，保证可重现）
+        zp = out / f"handwave-{name}.zip"
+        if zp.exists():
+            zp.unlink()
+        with zipfile.ZipFile(zp, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as z:
+            for f in sorted(stage.iterdir()):
+                zi = zipfile.ZipInfo(f.name, date_time=(2026, 1, 1, 0, 0, 0))
+                zi.compress_type = zipfile.ZIP_DEFLATED
+                zi.external_attr = (0o755 if f.name.startswith("handwave") or f.name.endswith(".bat") else 0o644) << 16
+                z.writestr(zi, f.read_bytes())
+
+        size = zp.stat().st_size
+        names = zipfile.ZipFile(zp).namelist()
+        results.append((name, size, names))
+        print(f"        → {zp.name}  {size:,} B  {names}")
+
+    print("\n=== 汇总 ===")
+    for name, size, names in results:
+        print(f"  handwave-{name}.zip  {size:>10,} B  ({len(names)} 项)")
+
+
+if __name__ == "__main__":
+    main()

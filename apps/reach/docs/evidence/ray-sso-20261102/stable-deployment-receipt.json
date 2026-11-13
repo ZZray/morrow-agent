@@ -1,0 +1,23 @@
+{
+  "status": "updated-ray-session-keys-and-operation-ledger-preserved",
+  "old_release": "/opt/reach/releases/20261102-sso-fdb8c2099cda",
+  "release": "/opt/reach/releases/20261102-sso-stable-05d25e8c84eb",
+  "archive_sha256": "05d25e8c84eb3ebf5dafe856deedd9de41cf651a58d2961aa9146def3991d1cf",
+  "ray_binary_sha256": "3b21deba87a5df87b19942a7b9557ab842ff92147e5103125d1d4a2b45fe7bd9",
+  "database_restored": false,
+  "state_before": {
+    "nodes": 1,
+    "operations": 2,
+    "operation_events": 10
+  },
+  "health": {
+    "service": "Reach",
+    "version": "0.1.0-dev.1",
+    "protocol": 1
+  },
+  "state_after": {
+    "nodes": 1,
+    "operations": 2,
+    "operation_events": 10
+  }
+}

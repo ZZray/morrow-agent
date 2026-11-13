@@ -1,0 +1,136 @@
+{
+  "baseline": "90f2b1cdd138129e2d331d89a37d70852e849739",
+  "createdAt": "2026-11-02T07:23:57.3604214Z",
+  "outputs": [
+    {
+      "sha256": "f863c18ed2073bd28b3aa076e0695386759c62ea5f3e232e01ef92f648d1fdf9",
+      "path": "dist/admin/admin.js"
+    },
+    {
+      "sha256": "b9d8c39335a24010807be0d640daca43ca4b6d20599fe08c70797172c25b4289",
+      "path": "E:/usr/var/cache/rust-target/reach/debug/reach.exe"
+    }
+  ],
+  "files": [
+    {
+      "sha256": "76b67f1fa9f08c03e82d5215abd45f100a42088cca1169848b40617f3e203b9c",
+      "path": "bun.lock"
+    },
+    {
+      "sha256": "1fc450d7b3cc8cacfd6cfac9c53fae5ffd1b339ec11ef655f48617459087570b",
+      "path": "Cargo.lock"
+    },
+    {
+      "sha256": "f9248c962c6a0ed438574ebb23bc04c566f05b0588ff93483fc61e1951daf437",
+      "path": "Cargo.toml"
+    },
+    {
+      "sha256": "8111537b75ee17e6b3c273f7d308d8e14ab92a5aa7bebadf73350be40a289171",
+      "path": "deny.toml"
+    },
+    {
+      "sha256": "a1c9d5839a047db9b9fb8f6a8fd446281e65d78ebdc787bb375ff1f6ddcaf34a",
+      "path": "package.json"
+    },
+    {
+      "sha256": "6a76c7287182a6e4233ebc4a2d60ed86d21125989fa7c493b286a780552c0d1b",
+      "path": "src/admin/admin.css"
+    },
+    {
+      "sha256": "4de231b8615f7df625e3084db4fbd4d0e8c8b1f6b84dfc0b28bd6b7d6e8ad85b",
+      "path": "src/admin/admin.ts"
+    },
+    {
+      "sha256": "26a6adeafef75b39130f3141d2d46e1b9e6dc6167682fdf63b6e20400226e152",
+      "path": "src/admin/index.html"
+    },
+    {
+      "sha256": "92fb5aac7990a52cc03d249fafd6e310d7ad48899e17edb0084e25907db3c49c",
+      "path": "src/contracts/protocol.ts"
+    },
+    {
+      "sha256": "4521df498e8b469f682e410b055d3e44f5a3f8a033fb4adf0c760b5f10c44868",
+      "path": "src/controller/client.ts"
+    },
+    {
+      "sha256": "0df65ca3062d6b83a2eabcdff6048ed5f7033b242e5e776c362999b6ee6e3f6b",
+      "path": "src/controller/main.ts"
+    },
+    {
+      "sha256": "57bebe73d03da575ead9ec10979d84a438cb70e69a784635319ecd897fa12653",
+      "path": "src/controller/mcp.ts"
+    },
+    {
+      "sha256": "a1c5946e41de6b904fc2186a9c8bfcb4ec693537196af62d98752ecbc53c594c",
+      "path": "src/node/api.rs"
+    },
+    {
+      "sha256": "83c9e479df6e97acc86e7bf56e6013385c45701c696b15987d245add97400d5f",
+      "path": "src/node/job.rs"
+    },
+    {
+      "sha256": "f71715df70fb058e9685ef7fc08a5db12d04409225e7511dd57c6a2924833974",
+      "path": "src/node/ledger.rs"
+    },
+    {
+      "sha256": "da39e6a0c2422f1eb9ec139d73cbb248131b992fd57ad45b5a88f0d723afbde7",
+      "path": "src/node/main.rs"
+    },
+    {
+      "sha256": "b3267cfe046498f235aa8780b4ae8106af5dc480498a02dab3c2e8266fd1244c",
+      "path": "src/node/protocol.rs"
+    },
+    {
+      "sha256": "3dc7bdf16c383c24f8ee0fed87094c2159bf979d8e2aed0b936e2864578faeb6",
+      "path": "src/node/runtime.rs"
+    },
+    {
+      "sha256": "2d403f059ce30d091db14e23a8467a21c2faade32a9a9cee13e727efaaaac333",
+      "path": "src/node/worker.rs"
+    },
+    {
+      "sha256": "edbe68e1c30d39648cf8b42ef76bdb704850f37a2337b53f15eb55580375de91",
+      "path": "src/service/admin.ts"
+    },
+    {
+      "sha256": "b64a01df31c6183213c7c0675c94e6c93d2a99d9aa669185ecc8988d467ca4b1",
+      "path": "src/service/errors.ts"
+    },
+    {
+      "sha256": "a3facbb6759d7d2714fcd9f9364cb9f105291814104ef362a0e83d12a5d7f214",
+      "path": "src/service/main.ts"
+    },
+    {
+      "sha256": "7484471780eef645c8514fb241c3812a3e9f2fb868a2b52b124f7a01cd9227f8",
+      "path": "src/service/server.ts"
+    },
+    {
+      "sha256": "b5b8a8b86ae5c5927b0c2c5ec48213c00d10995dd2f9d281c1d1e13420e6e4cd",
+      "path": "src/service/store.ts"
+    },
+    {
+      "sha256": "67f1b26ee29924512a6fcb7ab8ff205d46711843d8107389cf4817aeae834b74",
+      "path": "tests/admin-http.test.ts"
+    },
+    {
+      "sha256": "ccbfccccc13b374889e1b27483fc585d0946c927f2be72df13483cded238a53b",
+      "path": "tests/node.integration.test.ts"
+    },
+    {
+      "sha256": "10b3e11d80f5816b479c38c25a137783f5a564dba29d2bad870bdc41f69b87d3",
+      "path": "tests/service-process.test.ts"
+    },
+    {
+      "sha256": "9e81ecdacbd9ee991adc957d99e237acdc299a26864effcd260e22719ef91c16",
+      "path": "tests/service.test.ts"
+    },
+    {
+      "sha256": "a7d2efcf3a5fe01bfb71e1a246e28d65c6e73d512574e500dc24609eb8e68e39",
+      "path": "tsconfig.admin.json"
+    },
+    {
+      "sha256": "0703256a4d77db607cfc6456904c3e0c0095e402da4e1cd6b831a38225ba6d05",
+      "path": "tsconfig.json"
+    }
+  ]
+}

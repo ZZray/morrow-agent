@@ -1,0 +1,152 @@
+{
+  "schema": 1,
+  "author": "Ray Zhang",
+  "scope": "installation catalog and atomic-write integration; no production installation or uninstaller entry",
+  "files": [
+    {
+      "path": "packaging/windows/install.ps1",
+      "bytes": 34098,
+      "sha256": "f221fdc37835b3be9a400d7e0cc2fcc236ed2374438a99895272b55ba59fdfd6"
+    },
+    {
+      "path": "packaging/windows/ownership.ps1",
+      "bytes": 8469,
+      "sha256": "151a48c0cb5e8bdeab083992be55810c082d0df6ad487d6e2d505cb9f5bde746"
+    },
+    {
+      "path": "packaging/windows/maintenance-writes.ps1",
+      "bytes": 6123,
+      "sha256": "391a6ba705cb99cae16d1e5f5984488059041e97f9435b705a17c1ddc0259f16"
+    },
+    {
+      "path": "packaging/windows/payload.ps1",
+      "bytes": 10117,
+      "sha256": "e157371a0ca649dd260a2cdaa3bb426db6eb35a35413a17941b79c7bcb51b57e"
+    },
+    {
+      "path": "packaging/windows/setup/src/main.rs",
+      "bytes": 10079,
+      "sha256": "8364eedd33624613d37cce157a9a8de0e6e5a40c453ced0173881c0c3159e078"
+    },
+    {
+      "path": "packaging/windows/setup/build.rs",
+      "bytes": 2539,
+      "sha256": "4d7c6603b03d57f183eca165ecc7cb37fca40889fc4aebf705610abfa201a903"
+    },
+    {
+      "path": "packaging/windows/setup/Cargo.toml",
+      "bytes": 568,
+      "sha256": "40909026c0d327e926f93b3ff1133b0760561b78786d8b7c53cc5bd6694e4596"
+    },
+    {
+      "path": "packaging/windows/setup/Cargo.lock",
+      "bytes": 5351,
+      "sha256": "361a0d7be5a273b3b0f9b88015384af0178426abff9d3d40f6d0fe5721ff245e"
+    },
+    {
+      "path": "packaging/windows/build-complete.ps1",
+      "bytes": 6251,
+      "sha256": "f6b572aa140098a75b0b4fd36f8d936b7985d9733cddb64f1ad4534e2a8187cd"
+    },
+    {
+      "path": "tests/windows-install-catalog.test.ps1",
+      "bytes": 19723,
+      "sha256": "65758c4ddee2bc0bf86b22ddf8299dbd79a2d8430220f95b372f65179f3e96d8"
+    },
+    {
+      "path": "tests/windows-maintenance-writes.test.ps1",
+      "bytes": 8119,
+      "sha256": "8482d777310f40604de0d92b3b4bef2e1ea111b69473d2e2933042eef0a4a8b7"
+    },
+    {
+      "path": "tests/windows-package-stage.test.ps1",
+      "bytes": 4444,
+      "sha256": "2e260d833ef27c6617c4f235c11c5cd77c1a9d4fc7c5ac3c3d83dc17d5c30f6d"
+    },
+    {
+      "path": "tests/windows-installer.test.ps1",
+      "bytes": 19104,
+      "sha256": "18871ab4bced45c645f612bd951c606054c3418053718b3bf945c671b338a74a"
+    },
+    {
+      "path": "docs/evidence/installer-catalog-transaction-r1.log",
+      "bytes": 1659,
+      "sha256": "4c751cb7f6481b299e018a360bb5f6be289d694573c393f31980d5cc31a7d27d"
+    },
+    {
+      "path": "docs/evidence/installer-catalog-stage-r2.log",
+      "bytes": 369,
+      "sha256": "9c11c39eccd710fb6e8165937aad1bdb1ead459df3c3d90f75ebc470f7e3f920"
+    },
+    {
+      "path": "docs/evidence/maintenance-writes-r4.log",
+      "bytes": 987,
+      "sha256": "6f3e8a83d0d6daf88ac7c02cfdfdbdf76127eaf4ddbf3bd19f80c13df4ea90a4"
+    },
+    {
+      "path": "docs/evidence/install-catalog-r2.log",
+      "bytes": 923,
+      "sha256": "69d6eac3c7e9e652acf1f5ff392b13b8c9f145bf3a16f2ff4cf9826020b3e895"
+    },
+    {
+      "path": "docs/evidence/install-catalog-additional-r1.log",
+      "bytes": 621,
+      "sha256": "78ed8417fbffcab89b6d45ad3ff6c97b1923bac100f59920fc1c955bd6f4a5fc"
+    },
+    {
+      "path": "docs/evidence/install-catalog-complete-r2.log",
+      "bytes": 309,
+      "sha256": "07f9d0312ff786eb6b475328c6c14339c056355ef35f78080464fee26869277c"
+    },
+    {
+      "path": "docs/evidence/install-catalog-legacy-complete-r1.log",
+      "bytes": 297,
+      "sha256": "f10c4ff556910a31bd07318b8e350a8714476d922efafa437abd16e4049568f8"
+    },
+    {
+      "path": "docs/evidence/install-catalog-setup-clippy.log",
+      "bytes": 159,
+      "sha256": "c737196229a18155b3a8c1f705a813ac1aba4d52213391f53807632274e8d520"
+    },
+    {
+      "path": "docs/evidence/install-catalog-setup-test.log",
+      "bytes": 515,
+      "sha256": "dd163b4d3d9f61f75975b1a91c7bd619d599ea04c42385146d3d259e66a04468"
+    },
+    {
+      "path": "docs/evidence/install-catalog-setup-deny-r2.log",
+      "bytes": 3058,
+      "sha256": "5c9bdd3667fdcddc285d2b48f9c07f35b1d74782fd4eb8f6d10b8590dfab6fe4"
+    },
+    {
+      "path": "docs/evidence/install-catalog-build-r1.log",
+      "bytes": 979,
+      "sha256": "fae2a388867c3da9f5cef0ac893dec7b6e0739eaed0e2622127aeebecb546fdf"
+    },
+    {
+      "path": "docs/evidence/install-catalog-setup-resources.json",
+      "bytes": 1830,
+      "sha256": "10365699c5c572b9b585d09f9cbcae9a131dc8e7b84f04331fbcb572112ca9f9"
+    },
+    {
+      "path": "outputs/windows-complete-716a23ad70230a1c-ef23a1806457/package.json",
+      "bytes": 2791,
+      "sha256": "855c1dd89037201f8c641389310b115d0370958ba15183549e0273f64228ed96"
+    },
+    {
+      "path": "outputs/windows-complete-716a23ad70230a1c-ef23a1806457/inspect.txt",
+      "bytes": 738,
+      "sha256": "f0c3d59024e6b338932e80d41177caadb763af787e7bfbb88e9a95cb4d9c1cde"
+    },
+    {
+      "path": "outputs/windows-complete-716a23ad70230a1c-ef23a1806457/verify-payload.txt",
+      "bytes": 65,
+      "sha256": "2f5112ece18734131ccdc04402e464d5679495543a9e1e1c8ac12c1b62fae6f2"
+    },
+    {
+      "path": "outputs/windows-complete-716a23ad70230a1c-ef23a1806457/Reach-Setup-0.1.0-preview-08a3b066680d4803.exe",
+      "bytes": 74210816,
+      "sha256": "08a3b066680d4803ab45bfd9dedfa40e57a8d04d89f25ae803a4b74859cd2c4b"
+    }
+  ]
+}

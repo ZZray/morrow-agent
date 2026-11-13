@@ -1,0 +1,298 @@
+ok  	ara/apps/provider/cmd/ray_front	16.681s
+PASS: brand/favicon identity and idempotence; account preserved; historical, streaming, roster avatars; accessibility, load/error fallback and loading removal
+✔ apps\provider\cmd\ray_front\handwave_avatar.test.cjs (204.2536ms)
+console pipe scoped DOM/transport groups PASS (8)
+console terminal groups PASS (8, actual vendored xterm parser + keyboard/IME-input/clipboard handlers; controlled DOM/transport, no OS acceptance)
+✔ apps\provider\cmd\ray_front\handwave_console.test.cjs (454.2335ms)
+PASS: 36 context presentation contracts (controlled VM/DOM; no live browser acceptance).
+✔ apps\provider\cmd\ray_front\handwave_context.test.cjs (169.3825ms)
+ok 1 - new mode capabilities are required and old node retains execute
+ok 2 - plan mode goes to both context and execution wire
+ok 3 - busy mode changes are rejected
+ok 4 - new session creation preserves requested plan but manual selection resets it
+ok 5 - pinned real composer/session creation and snapshot transport carry plan to exact native session
+ok 6 - pinned real composer dispatches verified reference and preserves reference session identity
+ok 7 - goal defaults completion criterion to objective and supports explicit lines
+ok 8 - UTF8 criterion and entry budgets block before dispatch
+ok 9 - at-session is a read-only chip and leaves selected session unchanged
+ok 10 - mentions use only current workspace directory and max four refs
+ok 11 - Arrow/Enter handles mention without submitting; Escape restores input
+ok 12 - Tab closes mention and retains normal focus behavior
+ok 13 - IME composition never selects or submits a mention
+ok 14 - verified references use server hashes and show exact memory receipt
+ok 15 - missing reference receipts reject dispatch
+ok 16 - pinned catch-and-continue cannot dispatch after outer reference admission failed
+ok 17 - pinned first device binding is admitted and retains verified brief
+ok 18 - pinned busy follow uses prior verified run and does not fabricate a new context
+ok 19 - switching session clears references and rejects late directory results
+ok 20 - untrusted display strings stay textContent
+ok 21 - machine hook cannot authorize, switch busy target, or use denied machine
+ok 22 - no machine owner callback reports unavailable rather than approve
+ok 23 - late old-run goal cannot affect newly selected conversation
+ok 24 - new handshake rejects stale goal/candidate events from old peer epoch
+ok 25 - older same-owner run cannot replace a new goal or publish its old candidate
+ok 26 - goal stays awaiting review and confirmation carries exact goal id
+ok 27 - experience card requires matched successful real tool receipt
+ok 28 - busy reference mutations are blocked
+ok 29 - 375px rules bound menu/chips and maintain touch/text targets
+ok 30 - background is explicit and defaults remain 1h 48 calls 8 slices
+agent context failed 会话引用未完整核验，请重新选择后发送。
+ok 31 - trusted goal mirror rejects other device session and old revision
+ok 32 - background accept carries exact revision settled run and waits for Node
+ok 33 - managed jobs require their own explicit selection and preserve new session ownership
+ok 34 - leased blocked goals expose exact stop without misleading continue or implicit resume
+ok 35 - stopped and accepted goals permit explicitly authorized fresh goals without old identity or lease
+ok 36 - goal evidence folds retain user state and keep exact review controls outside
+ok 37 - trusted Goal renders saved criteria and its canonical persistent steps
+ok 38 - goal editor saves a bounded draft without dispatching or granting background authority
+ok 39 - editor cancel rolls back advanced permissions and preserves composer plus previous mode
+ok 40 - saved native objective is read-only and strip controls preserve exact revision and human review
+ok 41 - editor cannot leak a draft across session changes or admit oversized objective
+ok 42 - pinned real composer captures standalone goal with empty input and preserves exact new-session admission
+ok 43 - pinned draft admission keeps visible input intact while pending and never clears newer edits
+agent context failed 云端记忆绑定不匹配
+ok 44 - pinned reference rejection and cancellation before dispatch retain original input and independent goal
+ok 45 - draft re-edit cancel and combined byte validation keep composer unchanged, session switch clears draft
+ok 46 - goal editor Escape isolates the pinned global task-abort handler and preserves active Goal
+46 context link/mode checks passed
+✔ apps\provider\cmd\ray_front\handwave_links.test.cjs (204.6602ms)
+ok 1 - legacy Hub cap absence blocks selection without disconnect or approval
+ok 2 - uses exact online nid/fp and existing controller approval
+ok 3 - accepts explicit mine only when by is absent, never contradictory owner
+ok 4 - busy state never disconnects or retargets
+ok 5 - switch sends bye then connect-approved and never ttl/approve
+ok 6 - connected receipt alone cannot mark success
+ok 7 - pinned paired signal and exact node hello plus receipt complete target
+ok 8 - fast hello before result waits for exact approval receipt
+ok 9 - node hello waits for original workspace PATCH binding acknowledgement
+ok 10 - wrong node hello is blocked before original handler can rebind workspace
+ok 11 - mismatched/late acknowledgement cannot establish success
+ok 12 - timeout fences late handshake and leaves task unsent
+ok 13 - session navigation cancels pending switch and fences late original binding
+ok 14 - external disconnect supersedes switch without automatic replay
+ok 15 - socket send failure is explicit and does not claim target connected
+ok 16 - duplicate action while connecting is rejected and no authorization mutation occurs
+ok 17 - persistent existing header uses actual hello name only after receipt and binding
+ok 18 - failed handshake clears old target in existing header without claiming rollback
+ok 19 - bye, unpair and websocket state remove persistent verified target
+ok 20 - same current target still obtains fresh non-authorizing receipt without disconnect
+ok 21 - new workspace cannot retain a verified target label from old workspace
+ok 22 - transport cleanup clears handshake timer and target without sending or changing grant
+ok 23 - pinned deferred node-hello PATCH cannot rebind a newly selected workspace
+23 machine target checks passed
+✔ apps\provider\cmd\ray_front\handwave_machine_target.test.cjs (147.0445ms)
+ok 1 - unbound device makes no request and blocks writes
+ok 2 - native pairing PATCH followed by rail labels refresh loads newly bound device once
+ok 3 - device rebinding invalidates old in-flight data and unbinding disables immediately
+ok 4 - optional rail function can be absent without blocking initialization
+ok 5 - initial load uses real workspace device fingerprint and bounded active list
+ok 6 - server binding mismatch fails closed
+ok 7 - API error remains visible and can refresh
+ok 8 - opening dialog requires explicit action and cancel never posts
+ok 9 - create posts scoped explicit text with revision zero and operation ID
+ok 10 - edit uses original record ID and revision
+ok 11 - revoke requires its own dialog confirmation and preserves original revision
+ok 12 - project and workspace revocations retain selected scope and delayed-effect notice
+ok 13 - revision conflict blocks replay until refresh
+ok 14 - unknown write outcome blocks replay and requests receipt refresh
+ok 15 - project scope without membership can explicitly join
+ok 16 - joined project can explicitly leave and does not delete records
+ok 17 - late response after scope switch never enters current list
+ok 18 - session navigation closes editor and rejects old scope result
+ok 19 - markup remains text and list is bounded
+ok 20 - repeated append does not add card or fetch
+ok 21 - knowledge view fixes project scope, filters kinds and locks explicit writes to knowledge
+ok 22 - knowledge empty membership requires explicit project application
+ok 23 - rapid view change invalidates same-project stale reads and restores remembered scope
+ok 24 - UTF-8 content limit matches store bytes before issuing a write
+ok 25 - memory editor isolates global new-session and command shortcuts without discarding draft
+ok 26 - evolution seed uses existing editor with device default and explicit independent-copy notice
+ok 27 - evolution seed rejects stale owner and does not silently save
+ok 28 - evolution project promotion requires existing membership and supports explicit global choice
+ok 29 - memory disclosure retains verified scope/count and normal refresh never reopens it
+29 cloud memory UI fixture checks passed
+✔ apps\provider\cmd\ray_front\handwave_memory.test.cjs (139.3766ms)
+PASS: controller snapshot request, bound device, empty workspace bind, late peer, and failure dispatch gates
+PASS: actual upstream event/persistence chain rejects cross-session delta/end/out, preserves new run, binds follow/queue, and keeps legacy flow
+✔ apps\provider\cmd\ray_front\handwave_memory_transport.test.cjs (124.5874ms)
+PASS: input modality, anchor origin, missing/invalid nodes, idempotence; no application callbacks
+✔ apps\provider\cmd\ray_front\handwave_motion.test.cjs (112.9231ms)
+ok 1 - empty native queue is hidden and initialization requires correlated valid list from current peer
+ok 2 - busy send reuses pinned native follow with verified mode/session, keeps draft until authoritative ack
+ok 3 - send failure and backend out.done rejection preserve input and never create local items
+ok 4 - same-value new input generation is not erased by queued acknowledgement
+ok 5 - unknown enqueue only queries; confirmed query clears original draft but absent query remains unknown
+ok 6 - remove waits for matching successful revision receipt and includes active_run target
+ok 7 - edit uses separate dialog, cancellation and rejection retain queue and composer drafts
+ok 8 - old owner, old epoch and lower revision snapshots do not update selected view
+ok 9 - authoritative confirmed queued ID adopts both ledgers only after old out.done; old tail cannot end new run
+ok 10 - arbitrary active ID and unconfirmed sent ID cannot take over; foreign active blocks fresh sending
+ok 11 - old node and rejected initial list never unlock sending or mutation
+ok 12 - desktop busy Enter queues text, empty Enter is inert and empty button still stops
+ok 13 - mobile Enter preserves newline semantics while click queues; IME never submits
+ok 14 - steer submitted is not applied and receipt must match target/epoch
+ok 15 - only final authoritative edited text enters transcript once on real native run handover
+ok 16 - unapplied steer retains text and restores only on explicit click without replacing another draft
+ok 17 - both private ledger APIs reject wrong binding unknown IDs and reconnect epochs
+ok 18 - UTF8 queued limit preserves input and standalone fresh Run retains prior size contract
+ok 19 - cancel race caches next active before old end/out and finalizes old stream before adopting new run
+ok 20 - waiting-grant timeout or rejection out.done also settles current stream before cached queue handover
+ok 21 - queue menu cycles arrows, Escape restores trigger, and Tab closes without preventing native navigation
+ok 22 - queue menu ignores inner pointer and closes outside without stealing the outside focus
+ok 23 - native queue is bounded and responsive and is appended after machine-target module
+ok 24 - idle native and cloud controls restore the pinned send/stop accessible label
+ok 25 - disconnect saves exact scoped queue/edit/pending and unconfirmed steer text without replay
+25 native queue UI checks passed (controlled DOM, pinned real native handlers, no live Node/browser acceptance).
+✔ apps\provider\cmd\ray_front\handwave_queue.test.cjs (196.2704ms)
+ok 1 - exact adapter applies twice to cloud catches and whole pinned app parses
+ok 2 - bounded dial timeout retries and sends no task or approval
+ok 3 - backoff caps but never permanently stops after eight attempts
+ok 4 - error plus close fires one recovery and old open/message cannot change new socket
+ok 5 - heartbeat watchdog drops silent socket without replay and valid status resets backoff
+ok 6 - offline waits and online immediately wakes a bounded dial
+ok 7 - manual reconnect replaces socket and cannot approve or select arbitrary device
+ok 8 - only exact same scope original fp and live grant can restore observation once
+ok 9 - expired foreign missing grants and changed scope cannot auto reconnect device
+ok 10 - native partial settles UI as interrupted without cancel or terminal fabrication
+ok 11 - true API401 retains draft and blocks reconnect while network failure does not auth
+ok 12 - SSE EOF preserves partial and marks interrupted rather than completed
+ok 13 - SSE malformed or wrong-shaped done never completes; explicit late error overrides done
+ok 14 - valid SSE completes without old submitted text preserved on pagehide
+ok 15 - SSE HTTP401 enters auth state but stream network error does not
+ok 16 - WS loss leaves pure cloud SSE running and valid completion intact
+ok 17 - controller tool loss stops next serial tool and never POSTs chat continue
+ok 18 - putRemote waiting for ready releases without sending a chunk after disconnect
+ok 19 - putRemote waiting for chunk ack releases without next chunk or undefined access
+ok 20 - delegate SSE missing done interrupts tool batch while pure delegate ignores WS-only loss
+ok 21 - queue text is recoverable only in exact scope and manual restore cannot replace draft
+ok 22 - sessionStorage reload restores exact text and TTL/entry bounds reject stale invalid records
+ok 23 - oversize and denied storage keep complete memory text and disclose refresh limit
+ok 24 - machine pending timer is cleared on loss and cannot send bye on replacement socket
+ok 25 - WS failure probes protected GET once and only actual401 enters login state
+ok 26 - authentication probe times out, deduplicates and fences old socket generation plus session
+ok 27 - native and SSE partials remain bound to original session after navigation
+ok 28 - done followed by truncated final error frame is interrupted rather than success
+ok 29 - hello or heartbeat send exceptions close immediately and schedule retry without replay
+ok 30 - bounded owner ledger protects active root across64plus queued sends and never guesses missing owner
+ok 31 - 401 before in-flight cloud result blocks fresh native/delegate tool and continue but allows text result
+ok 32 - workspace navigation cannot turn selected fp into automatic peer and confirmed new peer replaces old target
+ok 33 - verified peer refreshes stale device warning without changing draft or replaying task
+ok 34 - restart first status missing peer waits for later own live grant and starts only once
+ok 35 - approved offline waits but expired foreign denied and pair failure never loop recovery
+ok 36 - successful observation cannot cover auth or stream interruption and dismissed toast stays dismissed
+ok 37 - new peer observation waits for exact workspace binding before clearing stale warning
+ok 38 - blocked busy recovery waits for explicit state change and false target result does not spam attempts
+ok 39 - recovery notice mounts before Goal queue and draft in normal flow without taking focus
+39 recovery checks passed (virtual clock/transport, exact pinned source adapter; no live acceptance).
+✔ apps\provider\cmd\ray_front\handwave_recovery.test.cjs (225.466ms)
+ok 1 - one compact card, no request on boot, no duplicate initialization
+ok 2 - Hub capability is required, missing old-Hub declaration sends nothing, pairing preserves Hub capability
+ok 3 - opening requests actual list; only current machine and session are counted
+ok 4 - create dialog snapshots paused goal, sends datetime-local as UNIX seconds and no prompt
+ok 5 - running goal, missing lease, expired grant and pending command cannot create
+ok 6 - future/lease and changed revision gates precede send
+ok 7 - pause/cancel operate only on future appointment and never send abort
+ok 8 - paused appointment restores only original unchanged payload and stale goal cannot restore
+ok 9 - unknown/triggered are truthful and have no retry controls
+ok 10 - late correlated response after session change cannot populate selected view
+ok 11 - wrong correlation cannot settle write and timeout does not resend
+ok 12 - offline send failure is visible; no local schedule is fabricated
+ok 13 - Escape and task shortcuts stay inside dialog
+13 appointment UI checks passed (controlled DOM/signalling only).
+✔ apps\provider\cmd\ray_front\handwave_schedule.test.cjs (124.8082ms)
+ok 1 - no menu/API leaves page alone
+ok 2 - entry reuses account menu and installs once without requests
+ok 3 - dialog opens explicitly, focuses selected tab, closes to account trigger
+ok 4 - native Escape cancel uses protected close and restores focus
+ok 5 - each preference invokes exact public API and disabling suggestions gates controls
+ok 6 - busy/loading/disabled/unknown/error cannot fabricate summary
+ok 7 - ready summary uses text only and delayed event payload is ignored
+ok 8 - owner mismatch hides old session summary even if state ready
+ok 9 - refresh is explicit, does not submit a task, disables duplicate request and renders API state
+ok 10 - refresh rejection is visible without manufacturing successful content
+ok 11 - cloud memory link stays inside settings and restores the same card on close
+ok 12 - missing memory card disables navigation and settings module stores no context
+ok 13 - seven panels use roving keyboard tabs and preserve preference values
+ok 14 - theme uses existing applyTheme and reduced motion persists only one boolean
+ok 15 - Escape is stopped before global task abort and uses guarded close
+ok 16 - old skill entries open same inline node through capture interception
+ok 17 - actual skill owner preserves dirty draft across tabs and declined close
+ok 18 - busy skill save and generation block close and workspace navigation
+ok 19 - actual skill close invalidates delayed detail and restores account focus
+ok 20 - memory tab preserves skill draft; selecting workspace uses existing discard gate
+ok 21 - real memory module is reparented without extra loads and Escape only closes its editor
+ok 22 - no workspace and unbound workspace show actionable real state without automatic binding
+ok 23 - memory write pending and unknown outcome survive settings close/reopen without retry
+ok 24 - knowledge tab uses the same card, returns to memory on close and preserves skill discard refusal
+ok 25 - tab semantics follow compact breakpoint without changing selection or fetching
+25 settings VM checks passed
+✔ apps\provider\cmd\ray_front\handwave_settings.test.cjs (157.3596ms)
+ok 1 - default hint and Tab fills without send
+ok 2 - modified Tab and previously handled event preserve navigation
+ok 3 - IME composition and legacy 229 never accept
+ok 4 - existing and whitespace drafts are never overwritten
+ok 5 - busy states suppress both hint and acceptance
+ok 6 - Escape dismissal persists through focus and allows Tab out
+ok 7 - unfocused, disabled and readonly inputs never accept
+ok 8 - local submitted intent chooses log and code hints
+ok 9 - pending attachments choose references hint without reading contents
+ok 10 - history uses latest user intent and ignores private model reasoning
+ok 11 - late history after switch never supplies a previous session hint
+ok 12 - A to B to A rejects old epoch even with matching identity
+ok 13 - new live intent wins over in-flight history
+ok 14 - newest same-session history request wins
+ok 15 - workspace switch resets suggestion and Escape dismissal
+ok 16 - background local failure cannot change a different session
+ok 17 - first send retains intent when native context creation assigns a session
+ok 18 - native boot/resize placeholder sync retains eligible suggestion and return value
+ok 19 - native responsive placeholder remains fallback for dismissal, draft and busy
+ok 20 - native no-op never promotes the current suggestion into fallback
+ok 21 - append is idempotent and does not duplicate listeners
+ok 22 - history completion debounces one candidate, renders it and Tab only fills
+ok 23 - typing and clearing reuse only a current candidate without requests per key
+ok 24 - draft aborts in-flight request and clearing does not admit its late result
+ok 25 - late session result is rejected even after returning A to B to A
+ok 26 - device change rejects late candidate and updates exposed owner
+ok 27 - first pairing preserves same-conversation history and explicit refresh requests the new device
+ok 28 - rebinding invalidates the old candidate but debounces one new-device request without reselecting
+ok 29 - new conversation does not inherit a history existence bit during device change
+ok 30 - Escape aborts and persists dismissal until a real source changes
+ok 31 - IME aborts without requesting on composition-end or accepting late text
+ok 32 - busy and queued composer cannot request or accept a candidate
+ok 33 - native idle waits for assistant persistence acknowledgement
+ok 34 - pinned native finishLocalRun idle-before-note sequence waits for its actual POST acknowledgement
+ok 35 - native failed-note acknowledgement is a source without claiming verified success
+ok 36 - only current-owner public tool name/status receipts enter bounded recent_result
+ok 37 - successful same-scope memory changes invalidate candidate and debounce fresh request
+ok 38 - failed or other-device memory writes do not create a new source
+ok 39 - preferences persist only booleans and include_memory changes abort old work
+ok 40 - disabled suggestions use native placeholder and tab_accept false preserves navigation
+ok 41 - malformed, cross-scope and expired receipts silently retain local fallback
+ok 42 - network failure falls back without retrying or surfacing raw error
+ok 43 - candidate expires within sixty seconds without automatic regeneration; focus refreshes once
+ok 44 - explicit refresh obeys draft/busy/history gates and returns a state Promise
+ok 45 - empty history and missing binding keep local hints without remote requests
+45 composer suggestion fixture checks passed
+✔ apps\provider\cmd\ray_front\handwave_suggest.test.cjs (144.3194ms)
+✔ refresh is private GET then exactly one native POST, without code in GET (2.694ms)
+✔ pending duplicate submit does not produce another GET or POST (1.0188ms)
+✔ network error preserves code and restores retry (1.3214ms)
+✔ bad status preserves code and restores retry (1.3772ms)
+✔ missing proof preserves code and restores retry (1.2611ms)
+✔ invalid proof preserves code and restores retry (0.8083ms)
+✔ cross-origin response preserves code and restores retry (0.7134ms)
+✔ unexpected path preserves code and restores retry (1.8705ms)
+✔ unexpected content type preserves code and restores retry (0.9603ms)
+✔ eight-second abort restores retry and never posts (0.8654ms)
+✔ same-origin authenticated redirect navigates without OTP POST (1.1388ms)
+✔ invalid input sends nothing (0.607ms)
+✔ input becoming invalid during refresh prevents POST and restores form (1.0235ms)
+ℹ tests 26
+ℹ suites 0
+ℹ pass 26
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 475.7886
+E:\workspace\ray-front-reach\bin\ray-front-linux-amd64

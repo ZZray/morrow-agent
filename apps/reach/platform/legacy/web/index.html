@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0a0d13" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#eef1f4" media="(prefers-color-scheme: light)">
+<title>Reach Desk 工作台</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2307090f'/%3E%3Crect x='4' y='4' width='24' height='24' rx='6' fill='%23f4f6fb'/%3E%3Ctext x='16' y='21' font-family='system-ui,sans-serif' font-size='11' font-weight='700' fill='%230a0c12' text-anchor='middle'%3ERD%3C/text%3E%3C/svg%3E">
+<script>
+(function () {
+  try {
+    var map = { glass: 'dark', obsidian: 'dark', default: 'dark', mist: 'light' };
+    var t = localStorage.getItem('handwave.console.theme');
+    t = map[t] || t;
+    if (t === 'dark' || t === 'light')
+      document.documentElement.setAttribute('data-theme', t);
+    else document.documentElement.setAttribute('data-theme', 'dark');
+  } catch (e) { document.documentElement.setAttribute('data-theme', 'dark'); }
+})();
+</script>
+<link rel="stylesheet" href="/style.css">
+<link rel="stylesheet" href="/skills-ui.css">
+</head>
+<body>
+<div class="aurora" aria-hidden="true"></div>
+<div class="app ws-app">
+
+  <!-- 左：工作区树与会话 -->
+  <aside class="rail" id="railPanel">
+    <div class="rail-head">
+      <div class="brand"><span class="mark">RD</span>Reach Desk <small>工作台</small></div>
+    </div>
+
+    <div class="rail-actions">
+      <button type="button" id="btnNewSess" class="rail-action primary" title="新建会话 (Ctrl+N)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+        <span>新建会话</span>
+        <kbd>Ctrl+N</kbd>
+      </button>
+      <button type="button" id="btnNewWS" class="rail-action" title="新建工作区">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg>
+        <span>新建工作区</span>
+      </button>
+    </div>
+
+    <div class="rail-section grow">
+      <div class="bh">工作区</div>
+      <div id="wsTree" class="ws-tree" role="tree" aria-label="工作区与会话"></div>
+    </div>
+
+    <div class="rail-foot">
+      <button type="button" id="accountTrigger" class="account-trigger" aria-haspopup="menu" aria-expanded="false" title="账户">
+        <span class="account-ava" id="accountAva">本</span>
+        <span class="account-meta">
+          <b>本机账户</b>
+          <span id="myfp">—</span>
+        </span>
+        <svg class="account-chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+    </div>
+  </aside>
+
+  <!-- 中：聊天 -->
+  <section class="main chat-main">
+    <div class="topbar">
+      <button type="button" id="btnOpenRail" class="iconbtn" title="展开或收起侧栏" aria-label="切换侧栏" aria-controls="railPanel" aria-expanded="true">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h10"/></svg>
+      </button>
+      <div id="connState" class="state off">未连接远程</div>
+      <div class="tb-sub" id="chatTitle">选择或创建工作区与会话</div>
+      <span class="spacer"></span>
+      <button type="button" id="btnTheme" class="tb-host-btn" title="切换深浅主题" aria-label="切换深浅主题">◐ <span>外观</span></button>
+      <button type="button" id="btnOpenAside" class="tb-host-btn" title="主机、知识库与工具" aria-controls="asidePanel" aria-expanded="false">☷ <span>工具与连接</span></button>
+    </div>
+
+    <div id="welcome" class="welcome hide">
+      <div class="welcome-greet" id="welcomeGreet">你好</div>
+      <div class="welcome-sub" id="welcomeSub">选择或创建一个会话开始对话</div>
+    </div>
+
+    <div id="msgQueue" class="msg-queue hide">
+      <div class="queue-header">
+        <span>队列 <em id="queueCount">0</em> 条</span>
+        <button type="button" id="queueClear" class="iconbtn sm" title="清空队列">×</button>
+      </div>
+      <div id="queueList" class="queue-list"></div>
+    </div>
+
+    <div id="messages" class="messages" tabindex="0"></div>
+
+    <div class="composer">
+      <div class="composer-bar composer-box">
+        <div id="skillBar" class="skill-bar hide" aria-label="本条消息的技能"></div>
+        <div id="clarifyBar" class="clarify-bar hide" role="group" aria-label="请选择"></div>
+        <div id="attachBar" class="attach-bar hide"></div>
+        <textarea id="input" rows="2" placeholder="输入消息…" data-ph-desktop="输入消息…（Enter 发送，Shift+Enter 换行；可粘贴图片）" data-ph-mobile="输入消息…（点发送键提交）"></textarea>
+        <div class="composer-toolbar">
+          <div class="ct-left">
+            <input id="fileInput" type="file" accept="image/*,.txt,.md,.json,.csv,.log,.pdf" multiple hidden>
+            <button type="button" id="btnAttach" class="ct-icon" aria-haspopup="menu" aria-expanded="false" aria-controls="attachMenu" title="添加附件或技能">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+            </button>
+            <button type="button" id="btnLocalMode" class="model-trigger" aria-pressed="false" title="让已接入的本机执行。关闭则仍走云端对话">本机</button>
+            <div class="model-picker">
+              <button type="button" id="modelTrigger" class="model-trigger" aria-haspopup="listbox" aria-expanded="false" title="选择模型">
+                <span id="modelLabel">服务端默认</span>
+                <svg class="model-chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg>
+              </button>
+              <input type="hidden" id="modelSel" value="default">
+            </div>
+          </div>
+          <div class="ct-right">
+            <button type="button" id="btnSend" class="ct-send" title="发送">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="welcome-chips" id="welcomeChips"></div>
+  </section>
+
+  <div id="sheetScrim" class="sheet-scrim hide" aria-hidden="true"></div>
+
+  <!-- 按需展开的工具抽屉 -->
+  <aside class="aside" id="asidePanel" role="dialog" aria-labelledby="asideTitle" aria-hidden="true" inert>
+    <div class="drawer-head"><h2 id="asideTitle">工具与连接</h2><button type="button" id="btnCloseAside" class="iconbtn" data-close-sheet aria-label="关闭工具面板">×</button></div>
+    <div class="block">
+      <div class="bh">对话选项</div>
+      <div class="sheet-opts">
+        <label class="chk tight"><input type="checkbox" id="kbGlobal" checked>全局 KB</label>
+        <label class="chk tight"><input type="checkbox" id="kbProject" checked>项目 KB</label>
+        <label class="chk tight"><input type="checkbox" id="useTools" checked>远程工具</label>
+        <label class="chk tight"><input type="checkbox" id="useAgents" checked>智能体协作</label>
+      </div>
+    </div>
+    <div class="block">
+      <div class="bh">远程主机</div>
+      <div class="conn-panel">
+        <div id="devHint" class="note">目标机运行被控端小程序后会出现在此（普通程序即可）。可在左下角账户菜单下载。设备出现后点「允许」再「接入」。</div>
+        <div id="devList" class="dev-mini"></div>
+        <div class="conn-acts row">
+          <button id="btnDisconnectDev" class="btn ghost" disabled>断开</button>
+          <button id="btnReconnect" class="btn ghost" disabled>重连</button>
+        </div>
+        <div id="devFeat" class="feat-card hide"></div>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="bh">项目知识库
+        <em><label class="file-btn">上传<input id="kbProjFile" type="file" hidden></label></em>
+      </div>
+      <div id="kbProj" class="kb-list"></div>
+    </div>
+
+    <div class="block" id="projectTreeBlock">
+      <div class="bh">项目文件
+        <em><button type="button" id="btnSetProjectPath" class="iconbtn sm" title="设置项目路径">📁</button></em>
+      </div>
+      <div id="projectTreeHint" class="note">未配置项目路径</div>
+      <div id="projectTree" class="project-tree hide" role="tree" aria-label="项目文件"></div>
+    </div>
+
+    <div class="block">
+      <div class="bh">全局知识库
+        <em><label class="file-btn">上传<input id="kbGlobFile" type="file" hidden></label></em>
+      </div>
+      <div id="kbGlob" class="kb-list"></div>
+    </div>
+
+    <div class="block">
+      <div class="bh">工具明细</div>
+      <div id="toolLog" class="tool-well note">尚无工具调用</div>
+    </div>
+  </aside>
+</div>
+
+<!-- 运行中的 Agent 任务坞 -->
+<section id="agentDock" class="agent-dock hide" aria-label="Agent 任务" aria-live="polite">
+  <button type="button" id="agentDockHead" class="agent-dock-head" aria-expanded="true">
+    <span class="agent-dock-orbit" aria-hidden="true"><i></i></span>
+    <span class="agent-dock-title"><b>智能体</b><small id="agentDockMeta">准备中</small></span>
+    <span id="agentDockProgress" class="agent-dock-progress">0/0</span>
+    <span class="agent-dock-chev">⌃</span>
+  </button>
+  <div id="agentAsk" class="agent-ask hide"></div>
+  <div id="agentTasks" class="agent-tasks"></div>
+  <div id="agentQueuePanel" class="agent-queue hide" aria-label="旧队列处置"></div>
+  <div id="agentRoster" class="agent-roster"></div>
+  <div id="agentTimeline" class="agent-timeline hide"></div>
+  <div id="agentCtl" class="agent-ctl">
+    <div id="agentBashLine" class="agent-bash"></div>
+    <input id="agentSteer" class="agent-steer" type="text" placeholder="转向当前任务，或追加下一步" aria-label="转向或追加">
+    <div class="agent-ctl-row">
+      <button type="button" id="agentSteerBtn">转向</button>
+      <button type="button" id="agentFollowBtn">稍后</button>
+      <button type="button" id="agentAbortBtn">停止</button>
+      <button type="button" id="agentBashBtn">命令</button>
+      <button type="button" id="agentBashAbortBtn">停命令</button>
+      <button type="button" id="agentInterruptBtn" aria-pressed="false">等工具结束</button>
+      <button type="button" id="agentRetryBtn">重试</button>
+      <button type="button" id="agentQueueBtn">旧队列</button>
+    </div>
+    <div class="agent-kbd-hints" aria-hidden="true">
+      <span><kbd>⏎</kbd> 转向</span>
+      <span><kbd>Shift</kbd>+<kbd>⏎</kbd> 稍后</span>
+      <span><kbd>Esc</kbd> 停止</span>
+    </div>
+  </div>
+</section>
+
+<section id="thinkingPanel" class="thinking-panel hide" aria-label="思考过程" aria-live="polite">
+  <div class="thinking-head">
+    <b>思考中...</b>
+    <button type="button" class="thinking-clear" onclick="clearThinking()">清空</button>
+  </div>
+  <div id="thinkingContent" class="thinking-content"></div>
+</section>
+
+
+<div id="skillMenu" class="model-menu skill-menu hide" role="dialog" aria-label="选择技能">
+  <div class="skill-menu-head"><b>技能</b><button type="button" id="skillRefresh" class="iconbtn sm" aria-label="刷新技能">刷新</button><button type="button" id="skillClose" class="iconbtn sm" aria-label="关闭技能列表">×</button></div>
+  <input id="skillSearch" class="model-search" type="search" placeholder="搜索技能名称或描述" aria-label="搜索技能" autocomplete="off">
+  <div id="skillStatus" class="model-empty" role="status" aria-live="polite"></div>
+  <div id="skillList" class="model-list" aria-label="技能列表"></div>
+  <div class="model-sep"></div>
+  <button type="button" id="skillManage" class="attach-item">⚙ <span>管理技能</span></button>
+</div>
+
+<dialog id="skillManager" class="skill-manager" aria-labelledby="skillManagerTitle">
+  <div class="dlg-head"><h2 id="skillManagerTitle">管理技能</h2><button type="button" id="skillManagerClose" class="dlg-x" aria-label="关闭技能管理">×</button></div>
+  <p class="hint">将常用工作流程保存为技能，选中后用于本条消息。技能保存在 hub，不自动执行脚本。</p>
+  <div class="skill-manager-toolbar">
+    <input id="skillManagerSearch" class="model-search" type="search" placeholder="搜索已保存的技能" aria-label="搜索已保存的技能">
+    <button type="button" id="skillNew" class="btn primary">新建技能</button>
+    <button type="button" id="skillManagerRefresh" class="btn ghost">刷新</button>
+  </div>
+  <p id="skillManagerStatus" class="hint" role="status" aria-live="polite"></p>
+  <div class="skill-manager-body">
+    <div id="skillManagerList" class="skill-manager-list" aria-label="已保存的技能"></div>
+    <form id="skillForm" class="skill-create">
+      <h3 id="skillEditorTitle">新建技能</h3>
+      <div class="skill-editor-ai">
+        <label>让 AI 创建技能<textarea id="skillAIPrompt" class="field" rows="3" maxlength="8192" placeholder="描述你希望这个技能如何工作，例如：审查事故报告，先核对证据，再给出按优先级排序的修复建议"></textarea></label>
+        <div class="skill-ai-actions"><button type="button" id="skillGenerate" class="btn ghost">AI 生成草稿</button><span id="skillAIStatus" class="hint" role="status" aria-live="polite"></span></div>
+      </div>
+      <label>名称<input id="skillName" class="field" required maxlength="128" placeholder="例如：engineering-docs"></label>
+      <label>描述<input id="skillDescription" class="field" maxlength="1024" placeholder="说明技能适用场景"></label>
+      <label>技能指令<textarea id="skillContent" class="field" rows="10" required placeholder="填写 Markdown 指令（最多 64 KiB）"></textarea></label>
+      <p id="skillEditorStatus" class="hint" role="status" aria-live="polite"></p>
+      <div class="skill-editor-actions"><button type="submit" id="skillSave" class="btn primary">保存技能</button><button type="button" id="skillDelete" class="btn ghost" disabled>删除技能</button></div>
+    </form>
+  </div>
+</dialog>
+
+<!-- + 号弹出菜单：附件 / 技能 -->
+<div id="attachMenu" class="model-menu attach-menu hide" role="menu" aria-label="添加附件或技能">
+  <button type="button" id="attachFileItem" class="attach-item" role="menuitem">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+    <span>添加附件</span>
+  </button>
+  <button type="button" id="attachSkillItem" class="attach-item" role="menuitem">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3z"/></svg>
+    <span>技能</span>
+    <span class="attach-item-meta" id="attachSkillCount"></span>
+  </button>
+</div>
+
+<!-- 模型悬浮菜单（挂在 body，避免被面板裁切） -->
+<div id="modelMenu" class="model-menu hide" role="listbox" aria-label="模型">
+  <input id="modelSearch" class="model-search" type="search" placeholder="搜索模型" autocomplete="off" spellcheck="false">
+  <div class="model-auto">
+    <span title="关掉开关后必须自己点选一个模型；目录不会替你挑第一个">服务端默认</span>
+    <button type="button" id="modelAutoToggle" class="tog" role="switch" aria-checked="true" title="跟随网关保存的默认模型与默认协议；关闭后请在下方显式点选模型"></button>
+  </div>
+  <div class="model-sep"></div>
+  <div id="modelProto" class="model-proto hide">
+    <span class="model-proto-label">协议</span>
+    <div id="modelProtoList" class="model-proto-list" role="group" aria-label="模型协议"></div>
+  </div>
+  <div id="modelList" class="model-list"></div>
+  <div id="modelStatus" class="model-empty hide" role="status" aria-live="polite"></div>
+</div>
+
+<!-- 账户悬浮菜单 -->
+<div id="accountMenu" class="account-menu hide" role="menu" aria-label="账户">
+  <div class="account-menu-head">
+    <span class="account-ava sm" id="accountMenuAva">本</span>
+    <div class="account-menu-who">
+      <b>本机账户</b>
+      <span id="accountMenuFp" class="mono">—</span>
+    </div>
+  </div>
+  <div class="model-sep"></div>
+  <div class="account-menu-label">主题</div>
+  <div id="themeList" class="account-theme-list" role="group" aria-label="主题"></div>
+  <div class="model-sep"></div>
+  <button type="button" class="account-item" id="btnCloudModel" role="menuitem">网关模型配置</button>
+  <button type="button" class="account-item" id="btnSkillManager" role="menuitem">管理技能</button>
+  <a class="account-item" href="/download" target="_blank" rel="noopener" role="menuitem">下载被控端</a>
+  <button type="button" class="account-item danger" id="btnLogout" role="menuitem">退出登录</button>
+</div>
+
+<dialog id="cloudModelDialog" class="cloud-model-dialog" aria-labelledby="cloudModelTitle">
+  <div class="dlg-head"><h2 id="cloudModelTitle">网关模型配置</h2><button type="button" id="cloudModelClose" class="dlg-x" aria-label="关闭网关模型配置">×</button></div>
+  <p class="hint">Hub 只保存共享网关的根地址、令牌环境变量名与显式默认模型 / 协议。令牌值不入库、不回显、不经本界面提交，只填写环境变量名。默认模型可以直接填准确的模型 ID，已保存配置的真实目录只作为建议；聊天与 Skills 的 AI 生成共用这份配置。</p>
+  <form id="cloudModelForm" class="cloud-model-form">
+    <label>网关根地址（gateway_root）<input id="gwRoot" class="field" type="text" inputmode="url" maxlength="512" placeholder="https://gateway.example 或 http://127.0.0.1:8787" autocomplete="off" spellcheck="false"></label>
+    <label>令牌环境变量名（gateway_token_env）<input id="gwTokenEnv" class="field" type="text" maxlength="64" placeholder="HW_GATEWAY_TOKEN" autocomplete="off" spellcheck="false"></label>
+    <p id="gwTokenStatus" class="hint" role="status" aria-live="polite"></p>
+    <label>默认模型 ID（default_model）<input id="gwModel" class="field" type="text" maxlength="256" list="gwModelOptions" autocomplete="off" spellcheck="false" placeholder="填准确 model id，或从已保存目录建议里选"><datalist id="gwModelOptions"></datalist></label>
+    <label>默认协议（default_protocol）<select id="gwProtocol" class="field"></select></label>
+    <p id="gwModelHint" class="hint" role="status" aria-live="polite"></p>
+    <div class="cloud-model-actions"><button type="button" id="gwCatalogRefresh" class="btn ghost" title="只按服务器上已保存的 gateway_root 与令牌环境变量重读模型目录，不验证未保存的地址">刷新已保存配置的目录</button></div>
+    <label class="cloud-check"><input id="cloudAllowLoopback" type="checkbox"> 允许本机回环地址（allow_loopback，仅本机网关需要勾选）</label>
+    <div id="gwCatalogError" class="cloud-alert hide" role="alert"></div>
+    <div id="gwMigration" class="cloud-alert hide" role="note"></div>
+    <p id="cloudModelStatus" class="hint" role="status" aria-live="polite"></p>
+    <div class="cloud-model-actions"><button type="button" id="cloudModelTest" class="btn ghost">保存并测试目录连通</button><button type="submit" id="cloudModelSave" class="btn primary">仅保存</button></div>
+  </form>
+</dialog>
+
+<!-- 侧栏右键菜单（工作区 / 会话） -->
+<div id="railCtxMenu" class="ctx-menu hide" role="menu" aria-hidden="true">
+  <button type="button" class="ctx-item" data-scope="ws" data-act="newSess" role="menuitem">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+    <span>新建会话</span>
+  </button>
+  <button type="button" class="ctx-item" data-scope="sess" data-act="pin" role="menuitem">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg>
+    <span data-label>置顶</span>
+  </button>
+  <button type="button" class="ctx-item" data-scope="sess ws" data-act="rename" role="menuitem">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+    <span>重命名</span>
+  </button>
+  <div class="ctx-sep" data-scope="sess ws"></div>
+  <button type="button" class="ctx-item danger" data-scope="sess ws" data-act="delete" role="menuitem">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg>
+    <span>删除</span>
+  </button>
+</div>
+
+<!-- 毛玻璃弹窗 -->
+<div id="dlg" class="dlg hide" aria-hidden="true">
+  <div class="dlg-scrim" id="dlgScrim"></div>
+  <div class="dlg-card" role="dialog" aria-modal="true" aria-labelledby="dlgTitle">
+    <div class="dlg-head">
+      <h2 id="dlgTitle">提示</h2>
+      <button type="button" class="dlg-x" id="dlgClose" title="关闭" aria-label="关闭">×</button>
+    </div>
+    <p id="dlgMsg" class="dlg-msg"></p>
+    <div id="dlgFieldWrap" class="dlg-field hide">
+      <input id="dlgInput" class="field" type="text" spellcheck="false" autocomplete="off">
+    </div>
+    <div class="dlg-acts">
+      <button type="button" class="btn ghost" id="dlgCancel">取消</button>
+      <button type="button" class="btn primary" id="dlgOk">确定</button>
+    </div>
+  </div>
+</div>
+
+<script src="/render.js"></script>
+<script src="/node-queue-recovery.js"></script>
+<script src="/skills-ui.js"></script>
+<script src="/app.js"></script>
+</body>
+</html>

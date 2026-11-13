@@ -1,0 +1,10 @@
+{
+  "release": "/opt/reach/releases/20261102-f5bf3af0f024",
+  "archive_sha256": "f5bf3af0f0244923a327ff4bd894e34c92bb3c78282f6110955d9e995c6a0956",
+  "workbench_changed": false,
+  "status": "started-awaiting-live-verification",
+  "services": {
+    "reach.service": "active",
+    "reach-ingress.service": "active"
+  }
+}

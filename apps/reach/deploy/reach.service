@@ -1,0 +1,27 @@
+# Copyright (c) Ray Zhang. Reach application and data have their own service user.
+[Unit]
+Description=Reach independent management and relay service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=reach
+Group=reach
+WorkingDirectory=/opt/reach/current/service
+EnvironmentFile=/etc/reach/service.env
+ExecStart=/usr/local/bin/node src/service/main.ts
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=20
+UMask=0077
+StateDirectory=reach
+StateDirectoryMode=0700
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/reach
+
+[Install]
+WantedBy=multi-user.target

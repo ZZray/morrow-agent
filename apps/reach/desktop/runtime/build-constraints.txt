@@ -1,0 +1,2 @@
+# Copyright (c) Ray Zhang. Build tooling only, not part of the desktop runtime.
+setuptools==84.2.1

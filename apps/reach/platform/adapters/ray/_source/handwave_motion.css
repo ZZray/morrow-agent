@@ -1,0 +1,41 @@
+/* HandWave motion: settled geometry and existing visual tokens stay unchanged. */
+:root{
+  --hw-motion-out:cubic-bezier(.23,1,.32,1);
+  --hw-motion-in:180ms;
+  --hw-motion-exit:120ms;
+}
+@supports (transition-behavior:allow-discrete){
+  html[data-hw-motion="pointer"] :is(#modelMenu,#accountMenu,#attachMenu){
+    opacity:1;
+    transform:none;
+    transition:opacity var(--hw-motion-in) var(--hw-motion-out),transform var(--hw-motion-in) var(--hw-motion-out),display var(--hw-motion-in) allow-discrete;
+  }
+  html[data-hw-motion="pointer"] :is(#modelMenu,#accountMenu,#attachMenu).hide{
+    opacity:0;
+    transform:translateY(4px) scale(.98);
+    pointer-events:none;
+    transition-duration:var(--hw-motion-exit);
+  }
+  @starting-style{
+    html[data-hw-motion="pointer"] :is(#modelMenu,#accountMenu,#attachMenu):not(.hide){
+      opacity:0;
+      transform:translateY(4px) scale(.98);
+    }
+  }
+}
+@media (hover:hover) and (pointer:fine){
+  html[data-hw-motion="pointer"] :is(#btnSend,#btnAttach,#modelTrigger,#btnTheme,#btnOpenAside,#btnNewSess){
+    transition:background-color 100ms var(--hw-motion-out),border-color 100ms var(--hw-motion-out),color 100ms var(--hw-motion-out),scale 120ms var(--hw-motion-out);
+  }
+  html[data-hw-motion="pointer"] :is(#btnSend,#btnAttach,#modelTrigger,#btnTheme,#btnOpenAside,#btnNewSess):active:not(:disabled):not([aria-disabled="true"]):not([aria-busy="true"]){scale:.97}
+}
+/* Keyboard paths never wait for a menu, switch or existing sheet animation. */
+html[data-hw-motion="keyboard"] :is(#modelMenu,#accountMenu,#attachMenu,#modelAutoToggle,#btnSend,#btnAttach,#modelTrigger,#btnTheme,#btnOpenAside,#btnNewSess),
+html[data-hw-motion="keyboard"] #modelAutoToggle::after{transition-duration:0s!important}
+html[data-hw-motion="keyboard"] :is(#railPanel,#asidePanel).sheet-open{animation:none!important}
+@media (prefers-reduced-motion:reduce){
+  html[data-hw-motion] :is(#modelMenu,#accountMenu,#attachMenu){transform:none!important;transition-property:opacity,display!important;transition-duration:100ms!important}
+  html[data-hw-motion] :is(#btnSend,#btnAttach,#modelTrigger,#btnTheme,#btnOpenAside,#btnNewSess){scale:none!important;transition-property:background-color,border-color,color!important;transition-duration:100ms!important}
+  html[data-hw-motion] :is(#railPanel,#asidePanel).sheet-open{animation:none!important}
+  html[data-hw-motion="keyboard"] :is(#modelMenu,#accountMenu,#attachMenu,#btnSend,#btnAttach,#modelTrigger,#btnTheme,#btnOpenAside,#btnNewSess){transition-duration:0s!important}
+}

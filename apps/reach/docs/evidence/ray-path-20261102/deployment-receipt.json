@@ -1,0 +1,40 @@
+{
+  "status": "switched-local-tls-verified-public-browser-pending",
+  "old_binary_sha256": "72c4eff9bd3f747ff9c111dbdbb53803816683634e4818ab4df453c4ef61a188",
+  "old_release": "/opt/reach/releases/20261102-f5bf3af0f024",
+  "release": "/opt/reach/releases/20261102-path-227051b674a0",
+  "archive_sha256": "227051b674a052a09ca4274eb8c78e60b37004171010a1ec3b460aafebdfb262",
+  "binary_sha256": "8f780bc73af968a184f99ed4314ba07053a66fb739aa3029b4ff9084ae8cbcc3",
+  "state_before": {
+    "nodes": 0,
+    "operations": 0,
+    "sessions": 0
+  },
+  "original_routes_before": {
+    "/": 303,
+    "/ray/login": 200,
+    "/healthz": 200,
+    "/handwave/healthz": 200,
+    "/arena/health": 200,
+    ":8000/api/health": 200
+  },
+  "database_restored": false,
+  "state_after_stop": {
+    "nodes": 0,
+    "operations": 0
+  },
+  "reach_health": {
+    "service": "Reach",
+    "version": "0.1.0-dev.1",
+    "protocol": 1
+  },
+  "original_routes_after": {
+    "/": 303,
+    "/ray/login": 200,
+    "/healthz": 200,
+    "/handwave/healthz": 200,
+    "/arena/health": 200,
+    ":8000/api/health": 200
+  },
+  "account_login_after_bootstrap_removal": true
+}

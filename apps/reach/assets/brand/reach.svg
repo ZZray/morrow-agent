@@ -1,0 +1,22 @@
+<!-- Copyright (c) Ray Zhang. Reach app mark; canonical vector source. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <linearGradient id="tile" x1="72" y1="40" x2="432" y2="496" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7488FF"/>
+      <stop offset=".48" stop-color="#5263E3"/>
+      <stop offset="1" stop-color="#343797"/>
+    </linearGradient>
+    <linearGradient id="edge" x1="128" y1="24" x2="384" y2="488" gradientUnits="userSpaceOnUse">
+      <stop stop-color="white" stop-opacity=".34"/>
+      <stop offset="1" stop-color="white" stop-opacity=".04"/>
+    </linearGradient>
+    <linearGradient id="reach" x1="244" y1="280" x2="353" y2="370" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#D5DCFF"/>
+      <stop offset="1" stop-color="#A9B9FF"/>
+    </linearGradient>
+  </defs>
+  <rect x="16" y="16" width="480" height="480" rx="112" fill="url(#tile)"/>
+  <rect x="18" y="18" width="476" height="476" rx="110" stroke="url(#edge)" stroke-width="4"/>
+  <path d="M248 284 350 370" stroke="url(#reach)" stroke-width="48" stroke-linecap="round"/>
+  <path d="M162 370V146H266C318 146 350 171 350 215S318 284 266 284H218" stroke="#F8FAFF" stroke-width="48" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

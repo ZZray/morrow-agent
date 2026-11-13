@@ -1,0 +1,20 @@
+{
+  "historicalSource": "work/install-catalog-snapshot-0a291496a0be4879a7a1a704b035a3d3/packaging/windows/install.ps1",
+  "historicalSourceSha256": "f221fdc37835b3be9a400d7e0cc2fcc236ed2374438a99895272b55ba59fdfd6",
+  "fixture": "tests/fixtures/windows-legacy-install-recovery.ps1",
+  "fixtureSha256": "3f71e03e16d2f7872d505bb61351dd2741b1f851734af4f6134bb331b1fceeac",
+  "checks": [
+    {
+      "function": "RecoverJournal",
+      "sourceCount": 1,
+      "fixtureCount": 1,
+      "extentTextIdentical": true
+    },
+    {
+      "function": "ValidateManifestIdentity",
+      "sourceCount": 1,
+      "fixtureCount": 1,
+      "extentTextIdentical": true
+    }
+  ]
+}
