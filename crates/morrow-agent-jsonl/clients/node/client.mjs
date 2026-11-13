@@ -338,6 +338,9 @@ export async function startTask({ binary, start, modelToken, operationDirectory,
   requireValue(!Object.hasOwn(start, 'artifact_review') || typeof start.artifact_review === 'boolean', 'invalid artifact_review policy');
   const artifactEnabled = start.artifact_review === true;
   requireValue(!artifactEnabled || typeof callbacks.reviewArtifacts === 'function', 'artifact_review requires reviewArtifacts callback');
+  for (const key of ['event_payloads', 'guidance']) {
+    requireValue(!Object.hasOwn(start, key) || typeof start[key] === 'boolean', `invalid ${key} opt-in`);
+  }
   // 12.1: `resume` needs the settlement callback; without `resume` it is optional and unused.
   const resumeEnabled = Object.hasOwn(start, 'resume');
   if (resumeEnabled && typeof callbacks.reconcileResume !== 'function') throw new Error('reconcile_callback_missing');
@@ -359,6 +362,7 @@ export async function startTask({ binary, start, modelToken, operationDirectory,
   const state = { phase: 'running', cancelled: false, forced: false, fault: null, terminal: null,
     exit_code: null, exit_signal: null, closed: false, pending_callbacks: 0 };
   const active = new Map(); const seen = new Set(); const startedRuns = new Set([start.run.run_id]);
+  const guidanceMessages = new Set();
   const journalTasks = []; const stderrHash = createHash('sha256');
   let stderrPreview = Buffer.alloc(0); let stderrBytes = 0; let buffered = Buffer.alloc(0);
   let queuedBytes = 0; let queue = Promise.resolve(); let terminalCount = 0;
@@ -380,6 +384,13 @@ export async function startTask({ binary, start, modelToken, operationDirectory,
     if (state.cancelled || state.closed) return;
     state.cancelled = true; abortCallbacks();
     send({ kind: 'cancel', version: VERSION, task_id: start.task.task_id }).catch(() => { state.fault ??= 'cancel_delivery_unknown'; });
+  };
+  const guide = (messageId, text) => {
+    requireValue(start.guidance === true, 'guidance_not_enabled');
+    requireValue(nonempty(messageId) && nonempty(text), 'invalid guidance');
+    requireValue(!state.closed && !state.cancelled && !state.terminal, 'task_not_running');
+    guidanceMessages.add(messageId);
+    return send({ kind: 'guide', version: VERSION, task_id: start.task.task_id, message_id: messageId, text });
   };
   const forceKill = () => {
     state.forced = true; state.fault ??= 'forced_process_termination'; abortCallbacks();
@@ -569,10 +580,22 @@ export async function startTask({ binary, start, modelToken, operationDirectory,
       return;
     }
     if (frame.kind === 'event') {
-      requireValue(exact(frame, ['kind','version','task_id','run_id','seq','event_type','delivery'])
+      const keys = ['kind','version','task_id','run_id','seq','event_type','delivery'];
+      const rich = Object.hasOwn(frame, 'payload');
+      requireValue((exact(frame, keys) || (start.event_payloads === true && exact(frame, [...keys, 'payload'])))
+        && startedRuns.has(frame.run_id) && Number.isSafeInteger(frame.seq) && frame.seq >= 0
+        && nonempty(frame.event_type) && (!rich || (object(frame.payload) && frame.payload.type === frame.event_type))
         && frame.delivery === 'best_effort_not_complete_evidence', 'invalid event delivery marker');
       try { void Promise.resolve(onEvent(frame)).catch(() => {}); }
       catch { /* UI observer never controls execution or backpressures Core. */ }
+      return;
+    }
+    if (frame.kind === 'guidance_ack') {
+      requireValue(start.guidance === true && exact(frame, ['kind','version','task_id','message_id','status'])
+        && guidanceMessages.has(frame.message_id)
+        && ['queued','duplicate','applied','unapplied','unknown'].includes(frame.status), 'unsolicited or invalid guidance acknowledgement');
+      try { void Promise.resolve(onEvent(frame)).catch(() => {}); }
+      catch { /* Acknowledgement observation does not establish Task acceptance. */ }
       return;
     }
     if (frame.kind === 'task_result') {
@@ -691,7 +714,7 @@ export async function startTask({ binary, start, modelToken, operationDirectory,
       outcome_sha256: outcome ? digest(outcome) : null, stderr_bytes: stderrBytes });
     state.phase = 'finished'; return result;
   })();
-  return { wait: () => waiting, cancel, forceKill,
+  return { wait: () => waiting, cancel, guide, forceKill,
     status: () => ({ phase: state.phase, cancelled: state.cancelled, forced: state.forced,
       closed: state.closed, pending_callbacks: state.pending_callbacks, pid: child.pid ?? null }) };
 }

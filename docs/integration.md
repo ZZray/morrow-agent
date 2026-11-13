@@ -6,6 +6,11 @@ registers business tools, and decides whether the resulting work is accepted.
 
 ## Rust host
 
+Node hosts can use the JSONL client and its `management` export for Goal,
+Skill, context, provenance and queue operations. The [JSONL protocol](../crates/morrow-agent-jsonl/docs/protocol-v1.md)
+documents the opt-in fields and request shapes. [SpinMind verification](evidence/spinmind-management-20261113.md)
+records the desktop integration tests and their limits.
+
 Use `morrow-agent-core` for a single Run. Use `morrow-agent-harness` when the
 host needs candidate review, feedback continuation, cumulative budgets, or
 cross-process Session ownership.

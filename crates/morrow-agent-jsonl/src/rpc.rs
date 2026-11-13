@@ -1,5 +1,5 @@
 use std::{
-    collections::HashMap,
+    collections::{BTreeMap, HashMap},
     path::PathBuf,
     sync::{
         atomic::{AtomicU64, AtomicUsize, Ordering},
@@ -9,7 +9,11 @@ use std::{
 };
 
 use anyhow::{bail, ensure, Context, Result};
-use morrow_agent_harness::{core::artifact_provenance::ToolArtifact, ResumeReceipt, ReviewReceipt};
+use morrow_agent_harness::{
+    core::{artifact_provenance::ToolArtifact, steering::SteeringBuffer},
+    task_set::{MAX_GUIDANCE_BYTES, MAX_MESSAGE_ID_BYTES},
+    ResumeReceipt, ReviewReceipt, TaskHandle,
+};
 use serde_json::{json, Value};
 use tokio::sync::{oneshot, Notify};
 use tokio_util::sync::CancellationToken;
@@ -71,6 +75,8 @@ pub struct Bridge {
     pub evidence_dir: PathBuf,
     pub fault: CancellationToken,
     pub active_run: Mutex<String>,
+    pub steering: Arc<Mutex<SteeringBuffer>>,
+    guidance_messages: Mutex<BTreeMap<String, String>>,
     stop: CancellationToken,
     local_calls: AtomicUsize,
     local_done: Notify,
@@ -88,6 +94,8 @@ impl Bridge {
             evidence_dir,
             fault: CancellationToken::new(),
             active_run: Mutex::new(run_id),
+            steering: Arc::new(Mutex::new(SteeringBuffer::default())),
+            guidance_messages: Mutex::new(BTreeMap::new()),
             stop: CancellationToken::new(),
             local_calls: AtomicUsize::new(0),
             local_done: Notify::new(),
@@ -119,6 +127,53 @@ impl Bridge {
 
     pub fn pending_count(&self) -> usize {
         self.pending.lock().unwrap().len()
+    }
+
+    /// Deduplication belongs to this Task's JSONL Host and lasts for this process.
+    /// The source text is only delivered once to the original steering buffer.
+    pub fn guide(&self, handle: &TaskHandle, message_id: &str, text: &str) -> Result<&'static str, &'static str> {
+        if message_id.trim().is_empty()
+            || message_id.len() > MAX_MESSAGE_ID_BYTES
+            || text.trim().is_empty()
+            || text.len() > MAX_GUIDANCE_BYTES
+        {
+            return Err("guidance_invalid_message");
+        }
+        let digest = evidence::hash(text.as_bytes());
+        let mut messages = self.guidance_messages.lock().unwrap();
+        if let Some(previous) = messages.get(message_id) {
+            return if *previous == digest { Ok("duplicate") } else { Err("guidance_identity_conflict") };
+        }
+        // The deduplication ledger outlives individual buffer consumption.
+        if messages.len() >= 256 {
+            return Err("guidance_capacity_reached");
+        }
+        handle
+            .guide(text.into(), json!({"task_id":self.task_id,"message_id":message_id}))
+            .map_err(|_| "guidance_rejected")?;
+        messages.insert(message_id.into(), digest);
+        Ok("queued")
+    }
+
+    /// Call only after Task completion and after joining the input dispatcher.
+    /// Preserve the Core's actual context-admission result for every submitted ID.
+    pub fn finish_guidance(&self) -> Vec<Value> {
+        let messages = self.guidance_messages.lock().unwrap();
+        let mut steering = self.steering.lock().unwrap();
+        steering.finish();
+        let receipts = steering.outcomes_snapshot();
+        messages
+            .iter()
+            .map(|(message_id, input_sha256)| {
+                let status = receipts
+                    .iter()
+                    .find(|receipt| receipt["task_id"] == self.task_id && receipt["message_id"] == *message_id)
+                    .and_then(|receipt| receipt["status"].as_str())
+                    .filter(|status| matches!(*status, "applied" | "unapplied"))
+                    .unwrap_or("unknown");
+                json!({"message_id":message_id,"input_sha256":input_sha256,"status":status})
+            })
+            .collect()
     }
 
     pub async fn finish_local_callbacks(&self) {
@@ -349,7 +404,7 @@ impl Bridge {
                     Reply::Prepare { run_id: run_id_next, objective },
                 )
             }
-            Incoming::Cancel { .. } => return Err(RPC_MISMATCH),
+            Incoming::Cancel { .. } | Incoming::Guide { .. } => return Err(RPC_MISMATCH),
         };
         check(version == 1 && task == self.task_id, RPC_MISMATCH)?;
         let mut pending = self.pending.lock().unwrap();
@@ -607,6 +662,36 @@ mod tests {
         let other = Fixture::new();
         other.bridge.fail();
         assert_eq!(other.bridge.failure_category(), Some(CALLBACK_UNKNOWN));
+    }
+
+    #[test]
+    fn guidance_completion_preserves_context_admission_and_closes_pending_messages() {
+        let fixture = Fixture::new();
+        let bridge = &fixture.bridge;
+        bridge.guidance_messages.lock().unwrap().extend([
+            ("applied".into(), evidence::hash(b"first")),
+            ("pending".into(), evidence::hash(b"second")),
+            ("missing".into(), evidence::hash(b"third")),
+        ]);
+        {
+            let mut steering = bridge.steering.lock().unwrap();
+            steering.submit("first".into(), json!({"task_id":bridge.task_id,"message_id":"applied"})).unwrap();
+            let notes = steering.take_pending();
+            steering.complete(notes, true);
+            steering.submit("second".into(), json!({"task_id":bridge.task_id,"message_id":"pending"})).unwrap();
+            steering.submit("other Task".into(), json!({"task_id":"other","message_id":"missing"})).unwrap();
+        }
+        let receipts = bridge.finish_guidance();
+        assert_eq!(
+            receipts,
+            vec![
+                json!({"message_id":"applied","input_sha256":evidence::hash(b"first"),"status":"applied"}),
+                json!({"message_id":"missing","input_sha256":evidence::hash(b"third"),"status":"unknown"}),
+                json!({"message_id":"pending","input_sha256":evidence::hash(b"second"),"status":"unapplied"}),
+            ]
+        );
+        assert_eq!(bridge.finish_guidance(), receipts);
+        assert!(bridge.steering.lock().unwrap().is_empty());
     }
 
     fn artifact_reply() -> Value {

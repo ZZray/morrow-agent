@@ -69,7 +69,7 @@ pub fn tools(roots: Roots, run_id: String, grant: String, evidence: Evidence) ->
         ("skill_verify", "Attach successful current Run native exec/run_script receipts to an exact current bundle SHA256. Test the actual skill and inspect its result first. Status execution_evidence_attached proves receipt provenance and the hash association only; it does not automatically prove those commands tested this bundle, accept a Task or elevate permissions. Changed content becomes unverified.", json!({"scope":scope,"name":name,"expected_hash":hash,"evidence_ids":{"type":"array","items":{"type":"string"},"minItems":1,"maxItems":8}}), vec!["scope","name","expected_hash","evidence_ids"]),
         ("skill_remove", "Retire an exact owned skill bundle hash from discovery, preserving its files in the same library's hidden .retired directory. Does not uninstall external tools. Builtin and unknown/manual directories cannot be retired.", json!({"scope":scope,"name":name,"expected_hash":hash}), vec!["scope","name","expected_hash"]),
     ].into_iter().map(|(name,description,properties,required)| Arc::new(SkillTool {
-        roots: roots.clone(), run_id: run_id.clone(), grant: grant.clone(), evidence: evidence.clone(),
+        roots: roots.clone(), run_id: run_id.clone(), grant: grant.clone(), evidence: evidence.clone(), host_management: false,
         schema: Tool { name:name.into(),description:description.into(),parameters:Schema(json!({"type":"object","properties":properties,"required":required,"additionalProperties":false})),constrained_sampling:None }
     }) as Arc<dyn AgentTool>).collect()
 }
@@ -80,6 +80,34 @@ struct SkillTool {
     grant: String,
     evidence: Evidence,
     schema: Tool,
+    host_management: bool,
+}
+
+/// Explicit Host management uses the same publication, ownership, hash and lock
+/// checks as native tools. It cannot attach execution verification evidence.
+pub fn manage(roots: &Roots, command_id: &str, operation: &str, args: Value) -> Result<Value> {
+    anyhow::ensure!(
+        matches!(operation, "skill_read" | "skill_create" | "skill_install" | "skill_remove" | "skill_enable"),
+        "unsupported skill management operation"
+    );
+    anyhow::ensure!(
+        !command_id.is_empty() && command_id.len() <= 256 && !command_id.chars().any(char::is_control),
+        "invalid management command ID"
+    );
+    let tool = SkillTool {
+        roots: roots.clone(),
+        run_id: command_id.into(),
+        grant: String::new(),
+        host_management: true,
+        evidence: Arc::new(|_| bail!("Host management does not supply native execution evidence")),
+        schema: Tool {
+            name: operation.into(),
+            description: String::new(),
+            parameters: Schema(json!({})),
+            constrained_sampling: None,
+        },
+    };
+    tool.apply(args, &CancellationToken::new())
 }
 #[async_trait]
 impl AgentTool for SkillTool {
@@ -524,10 +552,99 @@ pub fn read_verification(roots: &Roots, scope: &str, name: &str) -> Result<Skill
     })
 }
 fn item(name: &str, description: &str, scope: &str, hash: &str, meta: Option<&Value>) -> Value {
-    json!({"name":name,"description":description,"scope":scope,"content_hash":hash,"status":if scope=="builtin" {"builtin"} else if meta.is_some_and(|m|m["verified_hash"]==hash) {"execution_evidence_attached"} else {"unverified"},"source":meta.and_then(|m|m.get("source")).cloned().unwrap_or_else(||json!(if scope=="builtin" {"embedded"} else {"local_directory"}))})
+    json!({"name":name,"description":description,"scope":scope,"content_hash":hash,"enabled":enabled(meta),"status":if scope=="builtin" {"builtin"} else if meta.is_some_and(|m|m["verified_hash"]==hash) {"execution_evidence_attached"} else {"unverified"},"source":meta.and_then(|m|m.get("source")).cloned().unwrap_or_else(||json!(if scope=="builtin" {"embedded"} else {"local_directory"}))})
 }
 
 pub fn catalog(roots: &Roots) -> Result<Value> {
+    catalog_with_disabled(roots, false)
+}
+
+pub fn management_catalog(roots: &Roots) -> Result<Value> {
+    management_catalog_page(roots, 0, 32)
+}
+
+/// Host discovery pages use stable scope/name ordering and retain disabled items.
+/// `partial` reports source errors; `next_offset` reports ordinary pagination.
+pub fn management_catalog_page(roots: &Roots, offset: usize, limit: usize) -> Result<Value> {
+    anyhow::ensure!((1..=64).contains(&limit), "catalog limit must be 1..64");
+    let signal = CancellationToken::new();
+    let mut candidates: Vec<(&str, String)> = BUILTINS.iter().map(|(name, _)| ("builtin", (*name).into())).collect();
+    let mut issues = Vec::new();
+    for scope in ["project", "global"] {
+        let base = scope_root(roots, scope)?;
+        let entries = (|| -> Result<Vec<String>> {
+            no_links(base)?;
+            if !base.exists() {
+                return Ok(vec![]);
+            }
+            let mut names = Vec::new();
+            for entry in fs::read_dir(base)? {
+                let name = entry?.file_name().to_string_lossy().to_string();
+                if valid_name(&name) {
+                    names.push(name);
+                }
+                anyhow::ensure!(names.len() <= 8192, "management skill directory exceeds 8192 entries");
+            }
+            Ok(names)
+        })();
+        match entries {
+            Ok(names) => candidates.extend(names.into_iter().map(|name| (scope, name))),
+            Err(error) => issues.push(json!({"scope":scope,"name":null,"error":error.to_string()})),
+        }
+    }
+    candidates.sort();
+    let mut skills = Vec::new();
+    let mut cursor = offset.min(candidates.len());
+    while cursor < candidates.len() && cursor - offset < limit {
+        let (scope, name) = &candidates[cursor];
+        let result = (|| -> Result<Value> {
+            if *scope == "builtin" {
+                let (_, text) =
+                    BUILTINS.iter().find(|(builtin, _)| *builtin == name.as_str()).context("builtin skill missing")?;
+                let (_, description) = header(text.as_bytes())?;
+                return Ok(item(
+                    name,
+                    &description,
+                    scope,
+                    &bundle_hash(&BTreeMap::from([("SKILL.md".into(), text.as_bytes().to_vec())])),
+                    None,
+                ));
+            }
+            let base = scope_root(roots, scope)?;
+            let _guard = lock(base, LockMode::Shared)?;
+            let directory = base.join(name);
+            let files = scan(&directory, &signal)?;
+            let (actual, description) = header(files.get("SKILL.md").context("missing SKILL.md")?)?;
+            anyhow::ensure!(actual == *name, "skill name does not match directory");
+            let meta = metadata(&directory);
+            Ok(item(name, &description, scope, &bundle_hash(&files), meta.as_ref().filter(|m| owned(m, name, scope))))
+        })();
+        match result {
+            Ok(value) => skills.push(value),
+            Err(error) => issues.push(json!({"scope":scope,"name":name,"error":error.to_string()})),
+        }
+        if serde_json::to_vec(&json!({"skills":skills,"issues":issues}))?.len() > 128 * 1024 {
+            // Each individual item is bounded by the bundle metadata limit.
+            // Leave the last candidate for the following page.
+            if issues.last().is_some_and(|issue| issue["scope"] == *scope && issue["name"] == *name) {
+                issues.pop();
+            } else {
+                skills.pop();
+            }
+            break;
+        }
+        cursor += 1;
+    }
+    let next_offset = (cursor < candidates.len()).then_some(cursor);
+    Ok(json!({"skills":skills,"offset":offset,"next_offset":next_offset,"total_candidates":candidates.len(),
+        "partial":!issues.is_empty(),"issues":issues}))
+}
+
+fn enabled(meta: Option<&Value>) -> bool {
+    meta.and_then(|value| value.get("enabled")).and_then(Value::as_bool).unwrap_or(true)
+}
+
+fn catalog_with_disabled(roots: &Roots, include_disabled: bool) -> Result<Value> {
     let signal = CancellationToken::new();
     let mut items = Vec::new();
     let mut partial = false;
@@ -573,6 +690,9 @@ pub fn catalog(roots: &Roots) -> Result<Value> {
                 continue;
             }
             let meta = metadata(&entry.path());
+            if !include_disabled && !enabled(meta.as_ref().filter(|m| owned(m, &name, scope))) {
+                continue;
+            }
             let hash = bundle_hash(&files);
             let candidate = item(&name, &description, scope, &hash, meta.as_ref().filter(|m| owned(m, &name, scope)));
             items.push(candidate);
@@ -687,6 +807,9 @@ impl SkillTool {
             let content = std::str::from_utf8(files.get(path).context("skill resource not found")?)
                 .context("resource is not UTF-8; use explicit tools for binary assets")?;
             let meta = metadata(&dir);
+            if !self.host_management && !enabled(meta.as_ref().filter(|m| owned(m, name, scope))) {
+                bail!("skill is disabled by the Host");
+            }
             let status = if meta.as_ref().is_some_and(|m| owned(m, name, scope) && m["verified_hash"] == hash) {
                 "execution_evidence_attached"
             } else {
@@ -705,6 +828,13 @@ impl SkillTool {
             bail!("skill metadata ownership mismatch")
         }
         match self.schema.name.as_str() {
+            "skill_enable" if self.host_management => {
+                let enabled = args.get("enabled").and_then(Value::as_bool).context("enabled must be boolean")?;
+                checked(signal)?;
+                meta["enabled"] = json!(enabled);
+                self.save_meta(&dir, &meta, signal)?;
+                Ok(json!({"name":name,"scope":scope,"content_hash":hash,"enabled":enabled}))
+            }
             "skill_verify" => {
                 let ids = args
                     .get("evidence_ids")

@@ -366,6 +366,37 @@ impl Journal {
         ensure!(settled.run == run && settled.seq <= head.seq, "unconfirmed completed Run receipt");
         Ok(settled.data)
     }
+
+    /// Committed Goal commands after an anchored head. Ordinary Runs and missing
+    /// command data are refused rather than interpreted as metadata-only changes.
+    pub fn goal_command_receipts_after(&self, sequence: u64) -> Result<Vec<(u64, Value)>> {
+        let head = self.load_head()?;
+        ensure!(sequence <= head.seq, "Goal command anchor is ahead of the journal");
+        let mut receipts = Vec::new();
+        for entry in std::fs::read_dir(self.directory.join("runs"))? {
+            let path = entry?.path();
+            if path.extension().and_then(|extension| extension.to_str()) != Some("json") {
+                continue;
+            }
+            let settled: Settled = serde_json::from_slice(&bounded_read(&path, 128 * 1024)?)?;
+            if settled.seq <= sequence {
+                continue;
+            }
+            ensure!(settled.seq <= head.seq, "unconfirmed completed Run receipt");
+            ensure!(
+                path == self.directory.join("runs").join(format!("{}.json", digest(settled.run.as_bytes()))),
+                "completed Run receipt filename differs from identity"
+            );
+            let receipt = settled.data.context("intervening Run has no Goal command receipt")?;
+            ensure!(
+                receipt.get("id").and_then(Value::as_str) == Some(settled.run.as_str()),
+                "Goal command receipt identity differs from completed Run"
+            );
+            receipts.push((settled.seq, receipt));
+        }
+        receipts.sort_by_key(|(sequence, _)| *sequence);
+        Ok(receipts)
+    }
     fn visit(
         &self,
         head: &Head,

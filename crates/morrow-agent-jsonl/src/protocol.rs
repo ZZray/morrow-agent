@@ -6,7 +6,8 @@ use morrow_agent_harness::{
         model::{GenerationPolicy, LengthRecoveryPolicy},
         model_caps::ModelCaps,
     },
-    BudgetStopReviewPolicy, LengthStopReviewPolicy, ResumeReceipt, ReviewReceipt, Settlement, TaskKind, TaskSpec,
+    BudgetStopReviewPolicy, LengthStopReviewPolicy, ResumeReceipt, ReviewReceipt, ReviewedContinuation, Settlement,
+    TaskKind, TaskSpec,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -42,6 +43,32 @@ pub struct Start {
     /// original start path; `null` is a type error, not an absent field.
     #[serde(default, deserialize_with = "present")]
     pub resume: Option<ResumeStart>,
+    /// Continue one settled, reviewed result under the original Task authority.
+    #[serde(default, deserialize_with = "present_continuation")]
+    pub continue_reviewed: Option<ReviewedContinuation>,
+    #[serde(default, deserialize_with = "present_orchestration")]
+    pub orchestration: Option<OrchestrationStart>,
+    /// Explicit Host opt-in for Goal execution. Absent preserves v1 behavior.
+    #[serde(default)]
+    pub goal: Option<GoalStart>,
+    /// Rich event payloads are opt-in and remain best-effort UI evidence.
+    #[serde(default)]
+    pub event_payloads: bool,
+    #[serde(default)]
+    pub guidance: bool,
+}
+
+#[derive(Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct GoalStart {
+    pub goal_id: String,
+    #[serde(default)]
+    pub criteria: Vec<String>,
+    pub lease: morrow_agent_harness::core::goal_runtime::Lease,
+    #[serde(default)]
+    pub expected_revision: Option<u64>,
+    #[serde(default)]
+    pub reviewed_run_id: String,
 }
 
 fn grace() -> u64 {
@@ -50,6 +77,31 @@ fn grace() -> u64 {
 
 fn present<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result<Option<ResumeStart>, D::Error> {
     ResumeStart::deserialize(deserializer).map(Some)
+}
+
+fn present_continuation<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> Result<Option<ReviewedContinuation>, D::Error> {
+    ReviewedContinuation::deserialize(deserializer).map(Some)
+}
+
+fn present_orchestration<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> Result<Option<OrchestrationStart>, D::Error> {
+    OrchestrationStart::deserialize(deserializer).map(Some)
+}
+
+#[derive(Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct OrchestrationStart {
+    pub directory: PathBuf,
+    pub assignment_id: String,
+    pub worker_id: String,
+    pub lease_expires_at_ms: u64,
+    pub configuration_sha256: String,
+    pub attempt_id: String,
+    pub recovery_authorization_ref: Option<Reference>,
+    pub retry_unadmitted_ref: Option<Reference>,
 }
 
 /// The fence the Host inspected; `validate` requires version 1 and 64
@@ -118,6 +170,9 @@ pub struct RunConfig {
     pub max_calls: usize,
     pub max_seconds: u64,
     pub max_output: u32,
+    /// Host-selected managed Job worker. The Goal lease controls Job creation.
+    #[serde(default)]
+    pub worker_executable: Option<PathBuf>,
     /// Optional Host output ceiling (15.5); absent keeps the builtin 8192 rule.
     #[serde(default)]
     pub host_output_ceiling: Option<u32>,
@@ -255,6 +310,12 @@ pub enum Incoming {
         run_id: String,
         receipt: ResumeReceipt,
     },
+    Guide {
+        version: u32,
+        task_id: String,
+        message_id: String,
+        text: String,
+    },
 }
 
 /// One stdin frame as the typed message and its raw value. Deserializing the
@@ -266,7 +327,8 @@ pub fn decode(bytes: &[u8]) -> Option<(Incoming, Value)> {
     Some((message, value))
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Reference {
     pub path: PathBuf,
     pub sha256: String,
@@ -340,6 +402,56 @@ mod tests {
 
     fn admitted(frame: &Value) -> bool {
         serde_json::from_value::<Start>(frame.clone()).is_ok_and(|start| crate::runtime::validate(&start).is_ok())
+    }
+
+    #[test]
+    fn goal_and_rich_event_opt_ins_are_typed() {
+        let mut value = frame(None, 256, "none");
+        value["goal"] = json!({"goal_id":"goal-1","criteria":["result"],"lease":{"goal_id":"goal-1","controller":"host","device":"prop","session":"prop/session","expires_at":morrow_agent_harness::core::goal_runtime::now()+3600,"max_calls":4,"max_slices":2,"allow_jobs":false}});
+        value["event_payloads"] = json!(true);
+        value["emit_events"] = json!(true);
+        value["guidance"] = json!(true);
+        let start: Start = serde_json::from_value(value.clone()).unwrap();
+        assert!(crate::runtime::validate(&start).is_ok(), "{:?}", crate::runtime::validate(&start).err());
+        value["goal"]["lease"]["device"] = json!("different-device");
+        assert!(!admitted(&value));
+    }
+
+    #[test]
+    fn goal_opt_in_control_commands_require_management_before_admission() {
+        for command in ["status", "accept", "pause", "resume", "stop"] {
+            let mut value = frame(None, 256, "none");
+            value["run"]["objective"] = json!(format!(" /goal {command} goal-1 "));
+            // The existing, non-opt-in Start keeps its original validation behavior.
+            assert!(admitted(&value));
+            value["goal"] = json!({"goal_id":"goal-1","criteria":["result"],"lease":{
+                "goal_id":"goal-1","controller":"host","device":"prop","session":"prop/session",
+                "expires_at":morrow_agent_harness::core::goal_runtime::now()+3600,
+                "max_calls":4,"max_slices":2,"allow_jobs":false}});
+            let start: Start = serde_json::from_value(value).unwrap();
+            assert_eq!(crate::runtime::validate(&start).unwrap_err().to_string(), "goal_commands_require_management");
+        }
+    }
+
+    #[test]
+    fn reviewed_continuation_requires_exact_source_and_excludes_resume() {
+        let mut value = frame(None, 256, "none");
+        let continuation = json!({"previous_evidence_dir":std::env::temp_dir().join("original-evidence"),
+            "expected_released_sha256":FENCE,"review":null});
+        value["continue_reviewed"] = continuation.clone();
+        assert!(admitted(&value));
+        value["resume"] = json!({"version":1,"fence_sha256":FENCE});
+        assert!(!admitted(&value));
+        value.as_object_mut().unwrap().remove("resume");
+        for invalid in
+            [Value::Null, json!({}), json!({"previous_evidence_dir":"relative", "expected_released_sha256":FENCE})]
+        {
+            value["continue_reviewed"] = invalid;
+            assert!(!admitted(&value));
+        }
+        value["continue_reviewed"] = continuation;
+        value["continue_reviewed"]["expected_released_sha256"] = json!("bad-hash");
+        assert!(!admitted(&value));
     }
 
     proptest! {

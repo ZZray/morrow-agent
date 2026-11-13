@@ -1,0 +1,21 @@
+{
+  "name": "@ry/morrow-agent",
+  "version": "0.1.0",
+  "description": "Node Host client for the Morrow Agent JSONL sidecar",
+  "type": "module",
+  "main": "./client.mjs",
+  "types": "./client.d.mts",
+  "exports": {
+    ".": {
+      "types": "./client.d.mts",
+      "import": "./client.mjs"
+    },
+    "./management": {
+      "types": "./management.d.mts",
+      "import": "./management.mjs"
+    }
+  },
+  "files": ["client.mjs", "client.d.mts", "management.mjs", "management.d.mts", "README.md"],
+  "author": "Ray Zhang",
+  "license": "MIT"
+}

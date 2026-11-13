@@ -6,7 +6,7 @@
 
 ## 初始帧
 
-一个进程只接受一个 `start_task`。下面是结构示例；Host 必须提供实际模型入口、
+每个进程接受一个初始请求。任务使用 `start_task`，管理使用文末的 `manage` 入口。Host 必须提供实际模型入口、
 有效的绝对截止时间和新目录，不应直接执行示例中的占位值。
 
 ```json
@@ -75,8 +75,81 @@
 `thinking.type=disabled`，其余协议由 Core 在模型和工具调用前拒绝。宿主负责确认
 实际服务支持这一契约，不能从模型名称推断。它不改变模型、输出上限、累计调用数或截止时间。
 策略固定于整个 Task，反馈后的 Run 和同 Run 长度恢复继续沿用。
-null、对象和未知字符串被拒绝；初始帧仍不接受任意 provider body 或 sampling 覆盖。
-旧 JSONL 程序不支持这个字段，消费者必须固定支持该字段的源码或镜像。
+
+可选 `run.worker_executable` 由 Host 指定已存在的绝对可执行文件路径，作为原 Task authority 的一部分保存。后台 Job 创建还需要 Goal lease 的 `allow_jobs:true`。JSONL 的通用本地工具开关保持关闭，Worker 路径由固定 Run 模板传递，模型只能调用已注册的 Job 工具。兼容 Worker 可采用 Core 的 `business_host` 示例，其入口优先处理 `managed_jobs::worker_entry_from_args()`。
+
+## Goal and guided continuation opt-ins
+
+Existing start frames remain unchanged when these fields are omitted. A Host may
+set `goal` to select Goal mode with a fixed `goal_id`, up to eight completion
+criteria and a serialized Core Goal lease. The lease identity must match
+`goal_id`, and the sidecar passes it to the Rust Core without extending it.
+Goal state changes use the management `goal_control` endpoint, which checks
+its required `expected_revision` and `reviewed_run`. Ordinary Goal slices use
+Goal identity, lease and Harness continuation evidence for admission. The nested
+`goal.expected_revision` and `goal.reviewed_run_id` fields remain accepted for wire
+compatibility. A continued slice reuses the original Session and cumulative Task budget.
+
+`guidance: true` enables Host `guide` frames during the admitted Task.
+
+```json
+{"kind":"guide","version":1,"task_id":"task-1","message_id":"msg-1","text":"Continue with the next authorized slice."}
+```
+
+The sidecar acknowledges a queued message with `guidance_ack`. Within the same
+sidecar process, the same ID and text returns `duplicate`; the same ID with
+different text stops the request with `guidance_identity_conflict`. Guidance
+uses the existing SteeringBuffer and does not create a Run or increase a budget.
+Before the terminal frame, the sidecar records `jsonl-guidance.json` and emits
+`applied`, `unapplied`, or `unknown` for each accepted message. `applied` means
+the source was saved and admitted to the execution context, not that the model
+read or obeyed it. A killed process can leave delivery unknown. Cross-process
+controllers must inspect the stored receipts instead of replaying messages.
+
+`event_payloads: true`, together with `emit_events: true`, adds the original typed
+event payload to each best-effort event frame. The payload is observational
+evidence and does not replace the durable outcome or Host acceptance.
+
+### Reviewed continuation
+
+`continue_reviewed` selects the existing Harness continuation API. It is
+mutually exclusive with `resume`; neither field accepts `null`.
+
+```json
+{"continue_reviewed":{"previous_evidence_dir":"C:/host/task/first/evidence","expected_released_sha256":"<64 lowercase hex digits>","review":{"basis":"<original ReviewBasis>","committed":true,"settlement":"Settled","verdict":{"NeedsChanges":{"feedback":"Verify the source citation."}},"evidence":["host-correction-receipt"]}}}
+```
+
+The new start frame retains the original Task ID, terms, deadline, lease and
+authority, uses a new Run ID and evidence directory, and supplies the exact hash
+of the previous `released.json`. The Harness validates the review and original
+evidence, carries cumulative Runs/Calls forward, and claims the released result
+for one successor. Unknown effects or an existing fence require checked resume;
+they cannot enter this path. Transport success still leaves `task_accepted`
+false. `review` may be omitted only when the original settled receipt already
+contains `NeedsChanges` feedback.
+
+### Host management
+
+A separate process accepts a `manage` first frame with version 1, a command ID
+and a typed operation. It requires no model token and never starts an Agent loop.
+The Node entry is `@ry/morrow-agent/management`.
+
+```json
+{"kind":"manage","version":1,"id":"inspect-queue","request":{"operation":"queue_snapshot","directory":"C:/host/queue"}}
+```
+
+Operations cover library root resolution, Skill catalog/read/create/install/
+enable/remove/verification, context snapshots and explicit memory/reference
+commands, and queue enqueue/snapshot/events/cancel/watchdog. Skill removal
+preserves the bundle in its library's retired directory. Builtins are read-only.
+Host management may inspect a disabled bundle; runtime discovery and reads
+exclude disabled bundles. Installing or enabling a bundle is not execution
+verification or a grant of tool/device authority.
+
+Management requests reject unknown fields and duplicate typed fields. The Node
+client bounds frames, output and execution time, and reports `not_started`,
+`validated`, or `unknown` delivery on failure. After timeout or output loss, a
+Host must inspect state before retrying a mutation.
 
 ## 工具回调
 
@@ -432,3 +505,35 @@ Node 客户端：`callbacks.reconcileResume(review, {signal, frame})`。`start.r
                              "settlement": {"kind": "completed", "output": "deploy step a applied once (Host receipt deploy-call-1)"}}],
              "evidence": ["host-receipt:deploy-call-1"]}}
 ```
+
+## 持久队列执行
+
+Host 先通过 `queue_enqueue` 保存 Trigger、Mandate 和 Assignment，再在原任务 Start 帧中增加 `orchestration`。
+
+```json
+{"orchestration":{"directory":"C:/host/queue","assignment_id":"assignment-1","worker_id":"host-worker-1","lease_expires_at_ms":0,"configuration_sha256":"<64 lowercase hex digits>","attempt_id":"attempt-1"}}
+```
+
+`lease_expires_at_ms` 必须采用实际未来时间。Assignment 的 Task ID、预算、截止时间、criteria/authorization revision、Session、cwd、TaskOptions 和配置 hash 与 Start 保持一致。首次执行使用原证据目录，后续 Resume 或 Continue 使用新目录与新的 attempt/Run ID。Harness 的原 supervisor 持有进程锁、续租、取消、执行和结果落盘职责，JSONL 复用它实际创建的 TaskHandle。`task_result` 发送前，原 Harness outcome 已记录到队列。
+
+已审核续作在同一 Assignment 下传原有 `continue_reviewed`。故障恢复传原有 `resume`，Host 回调 `reconcileResume` 结算原工具效果。Watchdog 或取消后的恢复还需 `orchestration.recovery_authorization_ref`，引用原生 `RecoveryAuthorization`，decision 为 `continue_after_reconciliation`。尚未准入的原 intent 可通过 `retry_unadmitted_ref` 加 `never_admitted` 授权重试，保留原 attempt ID、Run ID 和证据目录，并省略顶层 resume/continue_reviewed。
+
+`queue_snapshot` 中的 phase 记录执行阶段。`queued` 等待领取，`claimed/dispatching/running` 表示 supervisor 的领取、准入与执行阶段，`recovery_required` 需要原效果对账，`settled` 表示队列已收齐结果。业务验收继续由 Host 根据原 outcome 和明确审核操作决定。
+
+## Host 管理入口
+
+每个管理进程接收一帧 `{"kind":"manage","version":1,"id":"请求 ID","request":{...}}`。`request.operation` 选择方法库、上下文、Goal 或持久队列操作。管理请求沿用 256 KiB 帧限制，重复字段、未知字段和不匹配的版本会被拒绝。Node 入口为 `@ry/morrow-agent/management` 的 `sendManagement`。
+
+`skill_catalog` 接受 `roots`、可选 `offset` 和 `limit`。默认 offset 为 0，limit 为 32，可配置范围为 1–64。管理目录按 scope/name 排序，返回 `skills`、`offset`、`next_offset`、`total_candidates`、`partial` 和 `issues`。`next_offset` 为 null 时已到末页，`partial` 表示来源读取错误，详情位于 `issues`。单页结果预算为 128 KiB，每个库最多枚举 8192 个有效名称。Host 应连续读取后续页，并向用户展示来源错误。
+
+上下文操作使用原 Session 的规范化路径。`context_snapshot` 返回来源、记忆和摘要。`context_command` 支持 Core 原生 `/memory` 与 `/reference` 命令，`context_add_reference` 保存带来源 hash 的引用。这两个写操作可传 `compact:true`，分别返回 `command_id/output` 或 `command_id/reference_id`。默认响应保留原有 context 字段。
+
+小响应在 `management_result.value` 中返回。超过单帧大小的 Session 或队列结果使用互斥的 `value_ref`，包含文件 `path` 和 `sha256`。Session 结果文件位于 `<session>.management`，队列结果文件位于 `<directory>/management-results`。文件采用独立名称并在发布引用前落盘，最大结果为 64 MiB。Node 客户端从原始请求推导允许目录，复用 `readCheckedJsonReference` 校验 hash、路径、链接和大小，然后返回与小响应相同的值结构。文件引用写入失败、超时和传输失败可能发生在操作已提交之后，Host 应先检查原状态。
+
+`goal_snapshot` 接受 `session/cwd`，返回当前 Goal 或 null。`goal_control` 接受 `session/cwd/goal_id/command/command_id/expected_revision/reviewed_run`，command 支持 `status/accept/pause/resume/stop`。`command_id` 是 Core 持久化幂等键，外层 `id` 用于传输关联。操作取得已释放 Session 的锁后调用 Core，审核接受会检查最新 settled Run 和 revision。未知副作用留下的 Session fence 需要先对账恢复。
+
+`job_snapshot` 接受 `session/cwd/device/session_id` 和可选 `job_id`。Host 从持久 Goal lease 核对 owner，返回该 Goal 的 `goal_id/device/session_id/jobs`。Job 状态来自原生 Manager，保留 `interrupted`、`effects_unknown` 和终态时间，响应省略私有 `worker_nonce`。此观察入口可在等待 Job 的 Task fence 存在时调用。
+
+启动后台 Job 后，Core 可返回 `GoalWaiting` 并保留 fence。Host 等待原生 Job 终态回执，保存观察证据，再通过原 Task 的 checked resume 继续。已闭合的 job_start 工具回合通常没有待结算 open tool calls，Host 仍须按实际 ResumeReview 返回对应回执。后续 Run 继承原 lease、worker、Task 预算和截止时间。
+
+`provenance_query` 接受 `scopes` 和原生 `ProvenanceQuery` 的 `query` 过滤字段。每次请求提供一个明确的 Task/Session/evidence_dir scope，Host 逐 Task 汇总跨任务查询。返回原生 `entries/scope_errors`，保留 ledger hash 和来源状态。大结果引用仅位于所授予 evidence_dir 下的 `management-results`，查询结果的来源证明与业务 Task acceptance 各自保留。

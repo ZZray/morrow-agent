@@ -427,9 +427,9 @@ pub fn control_goal(
     reviewed_run: &str,
 ) -> Result<crate::execution::GoalState> {
     anyhow::ensure!(!command_id.is_empty(), "goal command requires an idempotency ID");
-    let payload = context_memory::hash(&serde_json::to_vec(
-        &json!({"goal_id":goal_id,"command":command,"expected_revision":expected_revision,"reviewed_run":reviewed_run}),
-    )?);
+    let request =
+        json!({"goal_id":goal_id,"command":command,"expected_revision":expected_revision,"reviewed_run":reviewed_run});
+    let payload = context_memory::hash(&serde_json::to_vec(&request)?);
     let journal = session_journal::Journal::for_session(path);
     if journal.exists() {
         if let Some(receipt) = journal.run_receipt(command_id)? {
@@ -466,7 +466,7 @@ pub fn control_goal(
     goal.command_checked(command, command_id, expected_revision, reviewed_run)?;
     state.goal = Some(goal.clone());
     state.completed_runs.push(command_id.into());
-    state.goal_commands.push(json!({"id":command_id,"payload_hash":payload,"goal":goal}));
+    state.goal_commands.push(json!({"id":command_id,"payload_hash":payload,"request":request,"goal":goal}));
     if state.goal_commands.len() > 64 {
         state.goal_commands.drain(..state.goal_commands.len() - 64);
     }
@@ -1211,7 +1211,11 @@ pub async fn execute(
     session.archive_covered(context_store.covered_prefix())?;
     context_store.raw_base = session.raw_base;
     if request.mode == crate::execution::RunMode::Goal {
-        if request.goal_id.is_empty() {
+        let replaces_settled_goal = session
+            .goal
+            .as_ref()
+            .is_some_and(|goal| goal.id != request.goal_id && matches!(goal.status.as_str(), "accepted" | "canceled"));
+        if request.goal_id.is_empty() || session.goal.is_none() || replaces_settled_goal {
             anyhow::ensure!(
                 session
                     .goal
@@ -1220,8 +1224,12 @@ pub async fn execute(
                 "another leased goal owns this Session; stop or accept it first"
             );
             let criteria: Vec<_> = request.goal_criteria.iter().map(|text| redact(text, &request.token)).collect();
-            let mut goal =
-                crate::execution::GoalState::new(&request.id, &redact(&request.objective, &request.token), &criteria)?;
+            let mut goal = crate::execution::GoalState::new(
+                if request.goal_id.is_empty() { &request.id } else { &request.goal_id },
+                &redact(&request.objective, &request.token),
+                &criteria,
+            )?;
+            goal.run = request.id.clone();
             if let Some(lease) = &request.goal_lease {
                 lease.validate(
                     &lease.controller,
@@ -1357,7 +1365,7 @@ pub async fn execute(
         .or_else(|| state.lock().unwrap().goal.as_ref().and_then(|g| g.budget.as_ref().map(|b| b.lease.clone())));
     let managed_jobs = jobs_lease
         .as_ref()
-        .filter(|_| request.enable_local_tools)
+        .filter(|_| request.enable_local_tools || request.worker_executable.is_some())
         .map(|lease| {
             crate::managed_jobs::Manager::new(
                 &request.state_path,

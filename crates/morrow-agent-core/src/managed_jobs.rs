@@ -387,6 +387,19 @@ impl Manager {
         Ok(items)
     }
 
+    /// Host observation of Jobs belonging to this exact Goal within the native owner scope.
+    pub fn inventory_for_goal(&self) -> Result<Vec<Receipt>> {
+        ensure!(!self.policy.goal_id.is_empty(), "Goal identity required for Job inventory");
+        let mut items = Vec::new();
+        for receipt in self.inventory()? {
+            let request = self.request(&self.job_dir(&receipt.job_id)?)?;
+            if request.goal_id == self.policy.goal_id {
+                items.push(receipt);
+            }
+        }
+        Ok(items)
+    }
+
     pub fn read_log(&self, job_id: &str, stream: &str, cursor: u64, limit: usize) -> Result<Value> {
         ensure!(matches!(stream, "stdout" | "stderr"), "stream must be stdout or stderr");
         ensure!((4..=READ_LIMIT).contains(&limit), "log limit must be 4..32768 bytes");
@@ -1966,6 +1979,13 @@ mod tests {
         write_json(&dir.join("request.json"), &request).unwrap();
         write_json(&dir.join("receipt.json"), &Receipt::initial(&request)).unwrap();
         assert_eq!(manager.status(&id).unwrap().state, "interrupted");
+        let observed = manager.inventory_for_goal().unwrap();
+        assert_eq!(observed.len(), 1);
+        assert_eq!(observed[0].state, "interrupted");
+        assert!(observed[0].effects_unknown);
+        let mut other_goal = manager.clone();
+        other_goal.policy.goal_id = "another-goal".into();
+        assert!(other_goal.inventory_for_goal().unwrap().is_empty());
         let other = super::tests::manager(&temp, "two");
         assert!(other.status(&id).is_err());
         let rt = tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap();

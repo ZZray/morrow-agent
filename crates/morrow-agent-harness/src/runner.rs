@@ -44,6 +44,7 @@ pub struct TaskHandle {
     cancellation: CancellationToken,
     outcome: watch::Receiver<Option<Arc<TaskOutcome>>>,
     events: broadcast::Sender<EventEnvelope>,
+    steering: Arc<std::sync::Mutex<morrow_agent_core::steering::SteeringBuffer>>,
 }
 
 impl TaskHandle {
@@ -62,6 +63,13 @@ impl TaskHandle {
 
     pub fn subscribe(&self) -> broadcast::Receiver<EventEnvelope> {
         self.events.subscribe()
+    }
+
+    /// Queue one Host-owned follow-up message. The Host remains responsible for
+    /// identity, deduplication and whether the message is ultimately applied.
+    pub fn guide(&self, text: String, identity: serde_json::Value) -> anyhow::Result<()> {
+        ensure!(!self.cancellation.is_cancelled() && self.try_outcome().is_none(), "Task is finished or canceled");
+        self.steering.lock().unwrap().submit(text, identity)
     }
 
     pub async fn wait(&self) -> Arc<TaskOutcome> {
@@ -323,7 +331,8 @@ fn spawn(
     let cancellation = CancellationToken::new();
     let (events, _) = broadcast::channel(128);
     let (send, outcome) = watch::channel(None);
-    let handle = TaskHandle { cancellation: cancellation.clone(), outcome, events: events.clone() };
+    let steering = initial.steering.clone();
+    let handle = TaskHandle { cancellation: cancellation.clone(), outcome, events: events.clone(), steering };
     tokio::spawn(async move {
         let mut admission = admission;
         let mut progress = progress;
@@ -856,6 +865,7 @@ async fn run_task(
             raw_end,
             raw_proof: journal.proof(raw_start, raw_end)?,
         };
+        write_new(&spec.evidence_dir.join(format!("run-{run_number}-journal-head.json")), &head)?;
         check_basis(&basis)?;
         let mut native_unknown = false;
         let mut cursor = raw_start;

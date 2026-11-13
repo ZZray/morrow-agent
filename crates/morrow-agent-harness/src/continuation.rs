@@ -115,7 +115,7 @@ pub fn continue_reviewed(
             && basis.total_calls == outcome.observed_calls,
         "reviewed continuation source identity or consumption mismatch"
     );
-    check_basis(basis)?;
+    check_continuation_basis(basis, &previous)?;
     let journal = morrow_agent_core::session_journal::Journal::for_session(&next.state_path);
     ensure!(!journal.contains_run(&next.id)?, "continued Run ID already exists");
     ensure!(
@@ -177,4 +177,73 @@ pub fn continue_reviewed(
     progress.outcome.observed_calls = consumed_calls;
     progress.outcome.detail = "Task continued after committed Host correction feedback".into();
     spawn(spec, authority, admission, progress, next, host, options)
+}
+
+/// A reviewed Goal may be paused and resumed by the Host before its next slice.
+/// Prove those exact metadata transitions while retaining the original raw and
+/// event evidence. All ordinary review paths still use the exact-head check.
+fn check_continuation_basis(basis: &ReviewBasis, evidence: &Path) -> Result<()> {
+    let journal = morrow_agent_core::session_journal::Journal::for_session(&basis.session_path);
+    let current = journal.open()?;
+    if crate::storage::hash(&serde_json::to_vec(&current)?) == basis.journal_head_sha256 {
+        return check_basis(basis);
+    }
+    let mut expected: morrow_agent_core::session_journal::Head = serde_json::from_slice(
+        &std::fs::read(evidence.join(format!("run-{}-journal-head.json", basis.run_number)))
+            .context("original journal head snapshot unavailable; changed legacy evidence requires reconciliation")?,
+    )?;
+    ensure!(
+        crate::storage::hash(&serde_json::to_vec(&expected)?) == basis.journal_head_sha256,
+        "original review journal head snapshot changed"
+    );
+    let mut goal: morrow_agent_core::execution::GoalState =
+        serde_json::from_value(expected.metadata.get("goal").context("original review has no Goal")?.clone())?;
+    for (sequence, receipt) in journal.goal_command_receipts_after(expected.seq)? {
+        ensure!(Some(sequence) == expected.seq.checked_add(1), "unaccounted journal commit after review");
+        let id = receipt.get("id").and_then(Value::as_str).context("Goal command ID missing")?;
+        let request = receipt.get("request").context("Goal command arguments unavailable")?;
+        ensure!(
+            request.get("goal_id").and_then(Value::as_str) == Some(goal.id.as_str()),
+            "Goal command changed reviewed goal identity"
+        );
+        ensure!(
+            receipt.get("payload_hash").and_then(Value::as_str)
+                == Some(crate::storage::hash(&serde_json::to_vec(request)?).as_str()),
+            "Goal command payload hash changed"
+        );
+        let command = request.get("command").and_then(Value::as_str).context("Goal command missing")?;
+        ensure!(
+            matches!(command, "status" | "pause" | "resume"),
+            "Goal acceptance or cancellation cannot authorize continuation"
+        );
+        let revision: Option<u64> =
+            serde_json::from_value(request.get("expected_revision").context("Goal revision missing")?.clone())?;
+        let reviewed_run = request.get("reviewed_run").and_then(Value::as_str).context("reviewed Run field missing")?;
+        goal.command_checked(command, id, revision, reviewed_run)?;
+        ensure!(
+            receipt.get("goal") == Some(&serde_json::to_value(&goal)?),
+            "Goal command result differs from authorized transition"
+        );
+        expected.metadata["goal"] = serde_json::to_value(&goal)?;
+        for (field, appended) in [("completed_runs", json!(id)), ("goal_commands", receipt.clone())] {
+            let list = expected
+                .metadata
+                .get_mut(field)
+                .and_then(Value::as_array_mut)
+                .context("original Goal bookkeeping missing")?;
+            list.push(appended);
+            if list.len() > 64 {
+                list.drain(..list.len() - 64);
+            }
+        }
+        expected.seq = sequence;
+    }
+    ensure!(
+        serde_json::to_value(&expected)? == serde_json::to_value(&current)?,
+        "journal changed beyond the committed Goal controls"
+    );
+    ensure!(crate::storage::file_hash(&basis.events_path)? == basis.events_sha256, "review event bytes changed");
+    journal.verify_range(basis.raw_start, basis.raw_end)?;
+    ensure!(journal.proof(basis.raw_start, basis.raw_end)? == basis.raw_proof, "review journal source changed");
+    Ok(())
 }

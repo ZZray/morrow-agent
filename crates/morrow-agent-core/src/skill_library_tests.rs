@@ -21,6 +21,7 @@ impl Fixture {
             roots: self.roots.clone(),
             run_id: "run-test".into(),
             grant: "private-grant-value".into(),
+            host_management: false,
             evidence: Arc::new(|ids| {
                 Ok(
                     json!({"source":"native_current_run","run":"run-test","receipts":ids.iter().map(|id|json!({"tool_call_id":id,"tool_name":"run_script","is_error":false,"output_hash":"a".repeat(64)})).collect::<Vec<_>>()}),
@@ -37,6 +38,97 @@ impl Fixture {
     fn create(&self) -> Value {
         self.tool("skill_create").apply(json!({"scope":"project","name":"hello-tool","description":"Repeatable fixture workflow","instructions":"Run scripts/hello.sh and inspect its output.","resources":{"scripts/hello.sh":"echo hello\n","LICENSE":"Fixture license"}}),&CancellationToken::new()).unwrap()
     }
+}
+
+#[test]
+fn host_management_enable_persists_and_runtime_read_obeys_it() {
+    let f = Fixture::new();
+    let created = manage(&f.roots, "create-1", "skill_create", json!({"scope":"project","name":"managed-method","description":"Managed method","instructions":"Inspect the result."})).unwrap();
+    let hash = created["content_hash"].as_str().unwrap();
+    let args = json!({"scope":"project","name":"managed-method","expected_hash":hash,"enabled":false});
+    manage(&f.roots, "disable-1", "skill_enable", args).unwrap();
+    assert!(!catalog(&f.roots).unwrap()["skills"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|item| item["name"] == "managed-method"));
+    let managed = management_catalog(&f.roots).unwrap();
+    assert_eq!(
+        managed["skills"].as_array().unwrap().iter().find(|item| item["name"] == "managed-method").unwrap()["enabled"],
+        false
+    );
+    let read = json!({"scope":"project","name":"managed-method"});
+    assert!(f.tool("skill_read").apply(read.clone(), &CancellationToken::new()).is_err());
+    assert!(manage(&f.roots, "read-1", "skill_read", read.clone()).unwrap()["content"]
+        .as_str()
+        .unwrap()
+        .contains("Inspect the result."));
+    // Reconstructing the management call loads state from disk.
+    manage(
+        &f.roots,
+        "enable-1",
+        "skill_enable",
+        json!({"scope":"project","name":"managed-method","expected_hash":hash,"enabled":true}),
+    )
+    .unwrap();
+    assert!(f.tool("skill_read").apply(read, &CancellationToken::new()).is_ok());
+    assert!(manage(
+        &f.roots,
+        "bad-hash",
+        "skill_enable",
+        json!({"scope":"project","name":"managed-method","expected_hash":"0".repeat(64),"enabled":false})
+    )
+    .is_err());
+    assert!(manage(
+        &f.roots,
+        "builtin",
+        "skill_enable",
+        json!({"scope":"builtin","name":"skill-creator","expected_hash":hash,"enabled":false})
+    )
+    .is_err());
+}
+
+#[test]
+fn management_catalog_pages_past_runtime_budget_and_reports_source_errors_separately() {
+    let f = Fixture::new();
+    for index in 0..40 {
+        let name = format!("method-{index:03}");
+        let directory = f.roots.project_skills.join(&name);
+        fs::create_dir_all(&directory).unwrap();
+        fs::write(
+            directory.join("SKILL.md"),
+            format!("---\nname: {name}\ndescription: {}\n---\nInspect the source.\n", "Long description ".repeat(20)),
+        )
+        .unwrap();
+    }
+    let broken = f.roots.project_skills.join("broken-method");
+    fs::create_dir_all(&broken).unwrap();
+    fs::write(broken.join("SKILL.md"), "missing frontmatter").unwrap();
+    let mut offset = 0;
+    let mut names = Vec::new();
+    let mut issues = Vec::new();
+    loop {
+        let page = management_catalog_page(&f.roots, offset, 7).unwrap();
+        assert_eq!(page["total_candidates"], 43);
+        assert_eq!(page["partial"], !page["issues"].as_array().unwrap().is_empty());
+        assert!(page["skills"].as_array().unwrap().len() <= 7);
+        names.extend(page["skills"].as_array().unwrap().iter().map(|item| item["name"].as_str().unwrap().to_owned()));
+        issues.extend(page["issues"].as_array().unwrap().iter().cloned());
+        match page["next_offset"].as_u64() {
+            Some(next) => {
+                assert!(next as usize > offset);
+                offset = next as usize;
+            }
+            None => break,
+        }
+    }
+    assert_eq!(names.len(), 42);
+    assert_eq!(names.iter().collect::<std::collections::HashSet<_>>().len(), 42);
+    assert_eq!(issues.len(), 1);
+    assert_eq!(issues[0]["name"], "broken-method");
+    assert_eq!(catalog(&f.roots).unwrap()["partial"], true);
+    assert!(management_catalog_page(&f.roots, 0, 0).is_err());
+    assert!(management_catalog_page(&f.roots, 0, 65).is_err());
 }
 impl Drop for Fixture {
     fn drop(&mut self) {

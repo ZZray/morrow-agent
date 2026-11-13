@@ -27,7 +27,7 @@ use url::{Host, Url};
 
 use crate::{
     evidence,
-    protocol::{Resolution, RunConfig, Start},
+    protocol::{GoalStart, Resolution, RunConfig, Start},
     rpc::{Bridge, CallFailure, Reply, ToolKey},
 };
 
@@ -37,6 +37,24 @@ pub fn validate(start: &Start) -> Result<Option<McpConfig>> {
     ensure!(start.kind == "start_task" && start.version == 1, "start_kind_or_version");
     ensure!((1000..=15000).contains(&start.cancel_grace_ms), "cancel_grace_range");
     let run = &start.run;
+    if let Some(goal) = &start.goal {
+        ensure!(run.objective.split_whitespace().next() != Some("/goal"), "goal_commands_require_management");
+        ensure!(!goal.goal_id.trim().is_empty() && goal.goal_id.len() <= 256, "goal_id_invalid");
+        ensure!(goal.criteria.len() <= 8, "goal_criteria_invalid");
+        ensure!(
+            goal.criteria.iter().all(|item| !item.trim().is_empty() && item.len() <= 1024),
+            "goal_criteria_invalid"
+        );
+        let lease = &goal.lease;
+        ensure!(lease.goal_id == goal.goal_id, "goal_lease_identity_invalid");
+        lease.validate(
+            &lease.controller,
+            &run.device_fp,
+            &run.session_key,
+            &goal.goal_id,
+            morrow_agent_harness::core::goal_runtime::now(),
+        )?;
+    }
     ensure!(
         start.budget_stop_review == BudgetStopReviewPolicy::Reject || run.mode == "execute",
         "budget_stop_review_execute_only"
@@ -45,7 +63,8 @@ pub fn validate(start: &Start) -> Result<Option<McpConfig>> {
         start.length_stop_review == LengthStopReviewPolicy::Reject || run.mode == "execute",
         "length_stop_review_execute_only"
     );
-    ensure!(matches!(run.mode.as_str(), "execute" | "plan"), "mode_not_supported");
+    ensure!(matches!(run.mode.as_str(), "execute" | "plan" | "goal"), "mode_not_supported");
+    ensure!(run.mode != "goal" || start.goal.is_some(), "goal_mode_requires_goal");
     ensure!(run.length_recovery == LengthRecoveryPolicy::Stop || run.mode == "execute", "length_recovery_execute_only");
     ensure!(
         run.cwd.is_absolute()
@@ -56,6 +75,9 @@ pub fn validate(start: &Start) -> Result<Option<McpConfig>> {
         "absolute_paths_required"
     );
     ensure!(!run.session_path.is_dir(), "session_file_required");
+    if let Some(worker) = &run.worker_executable {
+        ensure!(worker.is_absolute() && worker.is_file(), "worker_executable_must_be_absolute_file");
+    }
     ensure!(
         !run.model.trim().is_empty()
             && !run.run_id.trim().is_empty()
@@ -70,6 +92,52 @@ pub fn validate(start: &Start) -> Result<Option<McpConfig>> {
                 && resume.fence_sha256.len() == 64
                 && resume.fence_sha256.bytes().all(|byte| matches!(byte, b'0'..=b'9' | b'a'..=b'f')),
             "resume_start_invalid"
+        );
+    }
+    if let Some(continuation) = &start.continue_reviewed {
+        ensure!(start.resume.is_none(), "resume_and_continue_are_exclusive");
+        ensure!(continuation.previous_evidence_dir.is_absolute(), "previous_evidence_path_required");
+        ensure!(
+            continuation.expected_released_sha256.len() == 64
+                && continuation.expected_released_sha256.bytes().all(|byte| matches!(byte, b'0'..=b'9' | b'a'..=b'f')),
+            "released_sha256_invalid"
+        );
+    }
+    if let Some(dispatch) = &start.orchestration {
+        ensure!(dispatch.directory.is_absolute(), "orchestration_directory_required");
+        for id in [&dispatch.assignment_id, &dispatch.worker_id, &dispatch.attempt_id] {
+            ensure!(
+                !id.is_empty() && id.len() <= 256 && id.trim() == id && !id.chars().any(char::is_control),
+                "orchestration_identity_invalid"
+            );
+        }
+        for hash in std::iter::once(&dispatch.configuration_sha256).chain(
+            [&dispatch.recovery_authorization_ref, &dispatch.retry_unadmitted_ref]
+                .into_iter()
+                .flatten()
+                .map(|reference| &reference.sha256),
+        ) {
+            ensure!(
+                hash.len() == 64 && hash.bytes().all(|byte| matches!(byte, b'0'..=b'9' | b'a'..=b'f')),
+                "orchestration_hash_invalid"
+            );
+        }
+        for reference in [&dispatch.recovery_authorization_ref, &dispatch.retry_unadmitted_ref].into_iter().flatten() {
+            ensure!(reference.path.is_absolute(), "orchestration_receipt_path_required");
+        }
+        ensure!(dispatch.lease_expires_at_ms > 0, "orchestration_lease_invalid");
+        ensure!(
+            dispatch.retry_unadmitted_ref.is_none()
+                || (start.resume.is_none()
+                    && start.continue_reviewed.is_none()
+                    && dispatch.recovery_authorization_ref.is_none()),
+            "orchestration_retry_mode_conflict"
+        );
+        ensure!(
+            dispatch.recovery_authorization_ref.is_none()
+                || start.resume.is_some()
+                || start.continue_reviewed.is_some(),
+            "orchestration_recovery_mode_required"
         );
     }
     ensure!(run.host_output_ceiling != Some(0), "start_config_rejected");
@@ -250,10 +318,17 @@ pub struct Template {
     /// Tools of the Task's MCP session, executed inside the sidecar (42.9).
     mcp_tools: Vec<Arc<dyn AgentTool>>,
     steering: Arc<Mutex<SteeringBuffer>>,
+    goal: Option<GoalStart>,
 }
 
 impl Template {
-    pub fn new(config: RunConfig, token: String, bridge: Arc<Bridge>, mcp_tools: Vec<Arc<dyn AgentTool>>) -> Self {
+    pub fn new(
+        config: RunConfig,
+        token: String,
+        bridge: Arc<Bridge>,
+        mcp_tools: Vec<Arc<dyn AgentTool>>,
+        goal: Option<GoalStart>,
+    ) -> Self {
         let base: Arc<dyn ModelHost> = match &config.model_resolution {
             Resolution::Catalog => Arc::new(CatalogModelHost),
             Resolution::HostDeclaredLoopback { capabilities } => Arc::new(DeclaredModelHost(capabilities.model_caps())),
@@ -282,7 +357,7 @@ impl Template {
                 }) as Arc<dyn AgentTool>
             })
             .collect();
-        Self { config, token, model_host, tools, mcp_tools, steering: Arc::new(Mutex::new(SteeringBuffer::default())) }
+        Self { config, token, model_host, tools, mcp_tools, steering: bridge.steering.clone(), goal }
     }
 
     pub fn initial(&self) -> RunRequest {
@@ -298,6 +373,14 @@ impl Template {
         );
         request.model_host = self.model_host.clone();
         request.mode = if config.mode == "execute" { RunMode::Execute } else { RunMode::Plan };
+        if let Some(goal) = &self.goal {
+            request.mode = RunMode::Goal;
+            request.goal_id = goal.goal_id.clone();
+            request.goal_criteria = goal.criteria.clone();
+            request.goal_lease = Some(goal.lease.clone());
+            request.expected_revision = goal.expected_revision;
+            request.reviewed_run_id = goal.reviewed_run_id.clone();
+        }
         request.endpoint = config.endpoint.clone();
         request.model = config.model.clone();
         request.route = Route {
@@ -323,9 +406,9 @@ impl Template {
             })
             .chain(self.mcp_tools.iter().map(|tool| ToolRegistration { tool: tool.clone(), allow_in_plan: false }))
             .collect();
-        // These are deliberately never configurable through this protocol.
+        // General local tools remain outside this protocol's registered Host tools.
         request.enable_local_tools = false;
-        request.worker_executable = None;
+        request.worker_executable = config.worker_executable.clone();
         request
     }
 }
@@ -716,7 +799,7 @@ mod tests {
             "run-1".into(),
             1000,
         ));
-        let template = Template::new(config, "test-token".into(), bridge.clone(), Vec::new());
+        let template = Template::new(config, "test-token".into(), bridge.clone(), Vec::new(), None);
         let host = ExternalHost { template, bridge: bridge.clone(), artifact_review: false };
         let basis: ReviewBasis = serde_json::from_value(json!({
             "task_id":"task-1","criteria_revision":"c1","authorization_revision":"a1","session_id":"session-1",

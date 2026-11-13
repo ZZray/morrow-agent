@@ -9,6 +9,7 @@
 //! Task only after the Host committed a settled reconciliation of what it left behind.
 
 mod auto_artifacts;
+pub mod management;
 pub mod orchestration;
 mod provenance;
 mod provenance_query;

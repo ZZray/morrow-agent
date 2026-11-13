@@ -205,6 +205,7 @@ pub struct DispatchHandle {
     store: Store,
     assignment_id: String,
     result: watch::Receiver<Option<Arc<DispatchReport>>>,
+    admitted: watch::Receiver<Option<crate::TaskHandle>>,
 }
 
 #[derive(Debug)]
@@ -331,6 +332,49 @@ impl Store {
     pub fn events_after(&self, sequence: u64) -> Result<Vec<Event>> {
         Ok(self.snapshot()?.events.into_iter().filter(|e| e.sequence > sequence).collect())
     }
+
+    /// Check a reconstructed Host request against the durable assignment before claiming it.
+    pub fn validate_dispatch(
+        &self,
+        id: &str,
+        task: &TaskSpec,
+        request: &RunRequest,
+        options: TaskOptions,
+        configuration_sha256: &str,
+        retry_attempt: Option<&str>,
+    ) -> Result<()> {
+        let state = self.snapshot()?;
+        let assignment = state.assignments.get(id).context("unknown assignment")?;
+        let original = &assignment.specification;
+        let mut supplied = task.clone();
+        let evidence = storage::canonical(&supplied.evidence_dir)?;
+        supplied.evidence_dir = original.task.evidence_dir.clone();
+        ensure!(
+            equal(&supplied, &original.task)?
+                && options == original.options
+                && configuration_sha256 == original.configuration_sha256,
+            "Task terms differ from queued assignment"
+        );
+        ensure!(
+            request.session_key == original.session_id
+                && storage::canonical(&request.state_path)? == original.session_path
+                && storage::canonical(&request.cwd)? == original.cwd,
+            "request Session differs from queued assignment"
+        );
+        if assignment.attempts.is_empty() {
+            ensure!(evidence == original.task.evidence_dir, "initial evidence differs from queued assignment");
+        }
+        if let Some(attempt_id) = retry_attempt {
+            let previous = assignment.attempts.last().context("no original dispatch intent")?;
+            ensure!(
+                previous.intent.attempt_id == attempt_id
+                    && previous.intent.run_id == request.id
+                    && previous.intent.evidence_dir == evidence,
+                "retry changed original attempt identity"
+            );
+        }
+        Ok(())
+    }
     pub fn enqueue(
         &self,
         trigger: Trigger,
@@ -406,16 +450,39 @@ impl Store {
         Ok(file)
     }
     pub fn claim_next(&self, worker_id: &str, at_ms: u64, expires_at_ms: u64) -> Result<Option<Claim>> {
+        self.claim_queued_matching(None, worker_id, at_ms, expires_at_ms)
+    }
+
+    /// Claim one Host-selected queued assignment under the same process lock and lease rules.
+    pub fn claim_queued(&self, id: &str, worker_id: &str, at_ms: u64, expires_at_ms: u64) -> Result<Claim> {
+        identifier(id)?;
+        self.claim_queued_matching(Some(id), worker_id, at_ms, expires_at_ms)?.context("assignment is not queued")
+    }
+
+    fn claim_queued_matching(
+        &self,
+        requested: Option<&str>,
+        worker_id: &str,
+        at_ms: u64,
+        expires_at_ms: u64,
+    ) -> Result<Option<Claim>> {
         identifier(worker_id)?;
         ensure!(expires_at_ms > at_ms, "worker lease must be in the future");
         let _guard = self.lock(true)?;
         let mut state = self.load()?;
-        let id = state
-            .assignments
-            .values()
-            .filter(|a| a.phase == Phase::Queued)
-            .min_by_key(|a| a.queued_sequence)
-            .map(|a| a.specification.id.clone());
+        let id = match requested {
+            Some(id) => {
+                let assignment = state.assignments.get(id).context("unknown assignment")?;
+                ensure!(assignment.phase == Phase::Queued, "assignment is not queued");
+                Some(id.to_owned())
+            }
+            None => state
+                .assignments
+                .values()
+                .filter(|a| a.phase == Phase::Queued)
+                .min_by_key(|a| a.queued_sequence)
+                .map(|a| a.specification.id.clone()),
+        };
         let Some(id) = id else { return Ok(None) };
         let lock = self.worker_lock(&id)?;
         let assignment = state.assignments.get_mut(&id).unwrap();
@@ -880,10 +947,15 @@ impl Claim {
         host: Arc<dyn HarnessHost>,
     ) -> DispatchHandle {
         let (send, receiver) = watch::channel(None);
-        let handle =
-            DispatchHandle { store: self.store.clone(), assignment_id: self.assignment_id.clone(), result: receiver };
+        let (admitted, admitted_receiver) = watch::channel(None);
+        let handle = DispatchHandle {
+            store: self.store.clone(),
+            assignment_id: self.assignment_id.clone(),
+            result: receiver,
+            admitted: admitted_receiver,
+        };
         tokio::spawn(async move {
-            let result = self.supervise(intent, spec, request, host).await;
+            let result = self.supervise(intent, spec, request, host, admitted).await;
             let report = match result {
                 Ok(outcome) => DispatchReport { outcome: Some(outcome), error: None },
                 Err(error) => DispatchReport { outcome: None, error: Some(format!("{error:#}")) },
@@ -898,6 +970,7 @@ impl Claim {
         spec: TaskSpec,
         request: RunRequest,
         host: Arc<dyn HarnessHost>,
+        admitted: watch::Sender<Option<crate::TaskHandle>>,
     ) -> Result<Arc<TaskOutcome>> {
         let state = self.store.snapshot()?;
         let assignment = &state.assignments[&self.assignment_id];
@@ -942,6 +1015,7 @@ impl Claim {
                 return Err(error);
             }
         };
+        admitted.send_replace(Some(task.clone()));
         // From here on, every failure must still join Core and Host callbacks.
         let mut persistence_failed = false;
         if let Err(error) = self.store.mutate(|state| {
@@ -1098,6 +1172,29 @@ impl Claim {
     }
 }
 impl DispatchHandle {
+    /// Observe the original Harness admission owned by this supervisor.
+    /// Waiting or dropping the observer never starts a second Task.
+    pub async fn wait_admitted(&self) -> Result<crate::TaskHandle> {
+        let mut admitted = self.admitted.clone();
+        loop {
+            if let Some(task) = admitted.borrow().clone() {
+                return Ok(task);
+            }
+            tokio::select! {
+                report = self.wait() => {
+                    if let Some(task) = admitted.borrow().clone() { return Ok(task); }
+                    anyhow::bail!("{}", report.error.as_deref().unwrap_or("dispatch ended without Harness admission"));
+                }
+                changed = admitted.changed() => {
+                    if changed.is_err() {
+                        let report = self.wait().await;
+                        anyhow::bail!("{}", report.error.as_deref().unwrap_or("dispatch ended without Harness admission"));
+                    }
+                }
+            }
+        }
+    }
+
     pub fn cancel(&self) -> Result<()> {
         self.store.cancel(&self.assignment_id, clock_ms()?)
     }

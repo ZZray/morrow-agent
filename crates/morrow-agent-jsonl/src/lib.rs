@@ -5,6 +5,8 @@
 //! LOCAL future only; it never proves remote join, rollback or safe replay.
 
 mod evidence;
+mod management;
+mod orchestration;
 mod protocol;
 mod rpc;
 mod runtime;
@@ -51,8 +53,18 @@ pub fn main_entry() -> i32 {
 fn stdio() -> Result<(), &'static str> {
     let mut reader = BufReader::new(std::io::stdin());
     let bytes = read_frame(&mut reader).map_err(|_| "start_frame_rejected")?.ok_or("start_frame_required")?;
+    let raw: Value = serde_json::from_slice(&bytes).map_err(|_| "start_config_rejected")?;
+    if raw.get("kind").and_then(Value::as_str) == Some("manage") {
+        return management::stdio(&bytes);
+    }
     let start: Start = serde_json::from_slice(&bytes).map_err(|_| "start_config_rejected")?;
-    let mcp = runtime::validate(&start).map_err(|_| "start_config_rejected")?;
+    let mcp = runtime::validate(&start).map_err(|error| {
+        if error.to_string() == "goal_commands_require_management" {
+            "goal_commands_require_management"
+        } else {
+            "start_config_rejected"
+        }
+    })?;
     let token = std::env::var("MORROW_AGENT_MODEL_TOKEN").map_err(|_| "model_token_unavailable")?;
     if token.is_empty() || token.len() > 4096 {
         return Err("model_token_rejected");
@@ -82,7 +94,9 @@ async fn task(
     };
     let tools = session.as_ref().map(McpSession::tools).unwrap_or_default();
     let status = session.as_ref().map(|session| json!({"servers":session.status(),"excluded":session.excluded()}));
-    let result = if start.resume.is_some() {
+    let result = if start.orchestration.is_some() {
+        orchestration::run(start, reader, token, tools, status).await
+    } else if start.resume.is_some() {
         resumed(start, reader, token, tools, status).await
     } else {
         ordinary(start, reader, token, tools, status).await
@@ -96,6 +110,8 @@ async fn task(
 /// What the Task keeps after Admission, shared by both start paths.
 struct Prepared {
     emit_events: bool,
+    event_payloads: bool,
+    guidance: bool,
     budget_stop_review: BudgetStopReviewPolicy,
     output: Output,
     spec: TaskSpec,
@@ -112,6 +128,8 @@ async fn prepare(
     mcp_status: Option<Value>,
 ) -> Result<(Prepared, Admit), &'static str> {
     let emit_events = start.emit_events;
+    let event_payloads = start.event_payloads && emit_events;
+    let guidance = start.guidance;
     let budget_stop_review = start.budget_stop_review;
     let length_stop_review = start.length_stop_review;
     let artifact_review = start.artifact_review;
@@ -130,11 +148,15 @@ async fn prepare(
         start.run.run_id.clone(),
         start.cancel_grace_ms,
     ));
-    let template = Template::new(start.run, token, bridge.clone(), mcp_tools);
+    let goal = start.goal.clone();
+    let template = Template::new(start.run, token, bridge.clone(), mcp_tools, goal);
     let initial = template.initial();
     let host = Arc::new(ExternalHost { template, bridge: bridge.clone(), artifact_review });
     let options = TaskOptions { budget_stop_review, length_stop_review };
-    Ok((Prepared { emit_events, budget_stop_review, output, spec, bridge }, (initial, host, options)))
+    Ok((
+        Prepared { emit_events, event_payloads, guidance, budget_stop_review, output, spec, bridge },
+        (initial, host, options),
+    ))
 }
 
 async fn ordinary(
@@ -144,14 +166,18 @@ async fn ordinary(
     mcp_tools: Vec<Arc<dyn AgentTool>>,
     mcp_status: Option<Value>,
 ) -> Result<(), &'static str> {
+    let continuation = start.continue_reviewed.clone();
     let (prepared, (initial, host, options)) = prepare(start, token, mcp_tools, mcp_status).await?;
-    let handle = harness::start_with_options(prepared.spec.clone(), initial, host, options)
-        .map_err(|_| "task_admission_rejected")?;
+    let handle = match continuation {
+        Some(continuation) => harness::continue_reviewed(prepared.spec.clone(), initial, host, options, continuation),
+        None => harness::start_with_options(prepared.spec.clone(), initial, host, options),
+    }
+    .map_err(|_| "task_admission_rejected")?;
     // The reader starts after Admission, as before the resume path existed.
     let admitted = Arc::new(OnceLock::new());
     let _ = admitted.set(handle.clone());
-    let input_task = spawn_dispatch(spawn_reader(reader), prepared.bridge.clone(), admitted);
-    finish(prepared, handle, input_task).await
+    let input_task = spawn_dispatch(spawn_reader(reader), prepared.bridge.clone(), admitted, prepared.guidance, None);
+    finish(prepared, handle, input_task, None).await
 }
 
 /// 9.1, 10.2: the reader runs before Admission so a `reconcile_reply` written
@@ -169,7 +195,8 @@ async fn resumed(
     // waits until the resume is admitted.
     let (prepared, (initial, host, options)) = prepare(start, token, mcp_tools, None).await?;
     let admitted = Arc::new(OnceLock::new());
-    let input_task = spawn_dispatch(spawn_reader(reader), prepared.bridge.clone(), admitted.clone());
+    let input_task =
+        spawn_dispatch(spawn_reader(reader), prepared.bridge.clone(), admitted.clone(), prepared.guidance, None);
     let evidence_existed = prepared.spec.evidence_dir.exists();
     let checks = ResumeChecks { expected_fence_sha256: fence_sha256, refuse_larger_run_caps: true };
     let result = harness::resume_checked(prepared.spec.clone(), initial, host, options, checks).await;
@@ -184,7 +211,7 @@ async fn resumed(
                     handle.cancel();
                 }
             }
-            finish(prepared, handle, input_task).await
+            finish(prepared, handle, input_task, None).await
         }
         Err(error) => {
             input_task.abort();
@@ -244,6 +271,8 @@ fn spawn_dispatch(
     mut incoming: mpsc::Receiver<Result<(Incoming, Value), ReadFault>>,
     bridge: Arc<Bridge>,
     admitted: Arc<OnceLock<TaskHandle>>,
+    guidance_enabled: bool,
+    dispatch: Option<harness::orchestration::DispatchHandle>,
 ) -> tokio::task::JoinHandle<()> {
     tokio::spawn(async move {
         let fail = |category: &'static str| match admitted.get() {
@@ -254,15 +283,49 @@ fn spawn_dispatch(
             match item {
                 Ok((Incoming::Cancel { version, task_id }, _)) => {
                     if version == 1 && task_id == bridge.task_id {
-                        match admitted.get() {
-                            Some(handle) => handle.cancel(),
-                            None => {
-                                bridge.fail_with("resume_cancelled");
+                        if let Some(dispatch) = &dispatch {
+                            if dispatch.cancel().is_err() {
+                                bridge.fail_with("orchestration_cancel_failed");
                                 break;
+                            }
+                        } else {
+                            match admitted.get() {
+                                Some(handle) => handle.cancel(),
+                                None => {
+                                    bridge.fail_with("resume_cancelled");
+                                    break;
+                                }
                             }
                         }
                     } else {
                         fail(rpc::RPC_MISMATCH);
+                        break;
+                    }
+                }
+                Ok((Incoming::Guide { version, task_id, message_id, text }, _)) => {
+                    if !guidance_enabled || !matches!(version, 1) || task_id != bridge.task_id {
+                        fail(rpc::RPC_MISMATCH);
+                        break;
+                    }
+                    let result = admitted
+                        .get()
+                        .ok_or("guidance_rejected")
+                        .and_then(|handle| bridge.guide(handle, &message_id, &text));
+                    let status = match result {
+                        Ok(status) => status,
+                        Err(category) => {
+                            bridge.fail_with(category);
+                            break;
+                        }
+                    };
+                    if bridge
+                        .output
+                        .control(json!({"kind":"guidance_ack","version":1,
+                        "task_id":bridge.task_id,"message_id":message_id,"status":status}))
+                        .await
+                        .is_err()
+                    {
+                        bridge.fail_with("guidance_ack_delivery_unknown");
                         break;
                     }
                 }
@@ -288,8 +351,9 @@ async fn finish(
     prepared: Prepared,
     handle: TaskHandle,
     input_task: tokio::task::JoinHandle<()>,
+    dispatch: Option<harness::orchestration::DispatchHandle>,
 ) -> Result<(), &'static str> {
-    let Prepared { emit_events, budget_stop_review, output, spec, bridge } = prepared;
+    let Prepared { emit_events, event_payloads, guidance, budget_stop_review, output, spec, bridge } = prepared;
     let fault_bridge = bridge.clone();
     let fault_output = output.clone();
     let fault_handle = handle.clone();
@@ -308,9 +372,15 @@ async fn finish(
         }
         loop {
             match events.recv().await {
-                Ok(event) => ui_output.ui(json!({"kind":"event","version":1,"task_id":event.task_id,
-                    "run_id":event.run_id,"seq":event.seq,"event_type":event.event["type"],
-                    "delivery":"best_effort_not_complete_evidence"})),
+                Ok(event) => {
+                    let mut frame = json!({"kind":"event","version":1,"task_id":event.task_id,
+                        "run_id":event.run_id,"seq":event.seq,"event_type":event.event["type"],
+                        "delivery":"best_effort_not_complete_evidence"});
+                    if event_payloads {
+                        frame["payload"] = event.event.clone();
+                    }
+                    ui_output.ui(frame)
+                }
                 Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => continue,
                 Err(_) => break,
             }
@@ -321,10 +391,43 @@ async fn finish(
     // All Core/Host callback futures have now locally finished. A remote Host
     // operation may remain unknown; its original receipt and fence are authority.
     input_task.abort();
+    let _ = input_task.await;
     fault_task.abort();
     ui_task.abort();
+    if let Some(dispatch) = dispatch {
+        let report = dispatch.wait().await;
+        let stored = report
+            .outcome
+            .as_ref()
+            .map(|stored| serde_json::to_value(stored.as_ref()))
+            .transpose()
+            .map_err(|_| "orchestration_delivery_unknown")?;
+        let expected = serde_json::to_value(outcome.as_ref()).map_err(|_| "orchestration_delivery_unknown")?;
+        if report.error.is_some() || stored != Some(expected) {
+            return Err("orchestration_delivery_unknown");
+        }
+    }
     if bridge.pending_count() != 0 {
         return Err("terminal_delivery_unknown");
+    }
+    if guidance {
+        let receipts = bridge.finish_guidance();
+        evidence::write_new(
+            &spec.evidence_dir.join("jsonl-guidance.json"),
+            &json!({
+                "version":1,"task_id":spec.task_id,"messages":receipts,
+                "failure_category":bridge.failure_category(),
+                "applied_means":"source_saved_and_admitted_to_execution_context"
+            }),
+        )
+        .map_err(|_| "guidance_evidence_write_failed")?;
+        for receipt in receipts {
+            output
+                .control(json!({"kind":"guidance_ack","version":1,"task_id":spec.task_id,
+                "message_id":receipt["message_id"],"status":receipt["status"]}))
+                .await
+                .map_err(|_| "guidance_ack_delivery_unknown")?;
+        }
     }
     let outcome_path = spec.evidence_dir.join(if outcome.fence_presence == FencePresence::Released {
         "released.json"
