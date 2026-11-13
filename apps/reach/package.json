@@ -1,0 +1,30 @@
+{
+  "name": "@ry/reach",
+  "version": "0.1.0-dev.1",
+  "private": true,
+  "type": "module",
+  "author": "Ray Zhang",
+  "engines": {
+    "node": ">=24.20.0"
+  },
+  "scripts": {
+    "build:icons": "node scripts/build-icons.ts",
+    "check": "tsc --noEmit && tsc --project tsconfig.admin.json --noEmit",
+    "build:admin": "tsc --project tsconfig.admin.json",
+    "test": "node --test --test-concurrency=1 tests/service.test.ts tests/service-process.test.ts",
+    "test:node": "node --test --test-concurrency=1 tests/node.integration.test.ts",
+    "test:admin": "bun run build:admin && node --test --test-concurrency=1 tests/admin-http.test.ts",
+    "service": "node src/service/main.ts",
+    "controller": "node src/controller/main.ts"
+  },
+  "dependencies": {
+    "pngjs": "7.0.0",
+    "zod": "4.6.6"
+  },
+  "devDependencies": {
+    "@resvg/resvg-js": "2.6.2",
+    "@types/node": "24.10.0",
+    "@types/pngjs": "6.0.5",
+    "typescript": "5.9.3"
+  }
+}

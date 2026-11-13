@@ -1,0 +1,91 @@
+{
+  "exe": "outputs\\windows-complete-716a23ad70230a1c-93fe5dccdd7f\\Reach-Setup-0.1.0-preview-83a2a8e840a43c36.exe",
+  "actualSha256": "83a2a8e840a43c36a3662d02d0c53a473825bf14cde73c79c5d6a9a9f82a491d",
+  "receiptMatches": true,
+  "sourceInputs": [
+    {
+      "source": "install.ps1",
+      "match": true,
+      "actual": "66bdc4d93a3821ce5c4b4aec80d841cf4a5ff1feb2163829fb0e8d7014dbe63f"
+    },
+    {
+      "source": "payload.ps1",
+      "match": true,
+      "actual": "e157371a0ca649dd260a2cdaa3bb426db6eb35a35413a17941b79c7bcb51b57e"
+    },
+    {
+      "source": "ownership.ps1",
+      "match": true,
+      "actual": "f61f53e7d93a81ca788c0f42f50fbb07e60c4ccc99e254f5e69817710ac6a08c"
+    },
+    {
+      "source": "maintenance-writes.ps1",
+      "match": true,
+      "actual": "391a6ba705cb99cae16d1e5f5984488059041e97f9435b705a17c1ddc0259f16"
+    },
+    {
+      "source": "maintenance-entry.ps1",
+      "match": true,
+      "actual": "0a6b8569ba60bda4a1a361b624952ad77340672066dc2a34552919da8bd281ac"
+    },
+    {
+      "source": "uninstall-files.ps1",
+      "match": true,
+      "actual": "ac9eb912229683bc7e068eb0fc9f4cda0b26933051f39d6df0398b255e1a84fc"
+    },
+    {
+      "source": "uninstall-transaction.ps1",
+      "match": true,
+      "actual": "51419f58763747488c84ab200ea010b3102fac6a2a6350ec8979aef69b9bc60e"
+    },
+    {
+      "source": "uninstall-host.ps1",
+      "match": true,
+      "actual": "8fd2b657aea3a5da653d9691e13750308efbde8e77fe167d1f0382c21ac38a45"
+    },
+    {
+      "source": "setup/src/main.rs",
+      "match": true,
+      "actual": "e132bb8ebbd9c40cd89cf927c890436bfb2e672684b9802d343c0d4562724c7e"
+    },
+    {
+      "source": "setup/build.rs",
+      "match": true,
+      "actual": "f7d951e0e833e111dc6a04fa3c02da6bce142a9293441af66acab2e9acc0f714"
+    },
+    {
+      "source": "setup/Cargo.toml",
+      "match": true,
+      "actual": "40909026c0d327e926f93b3ff1133b0760561b78786d8b7c53cc5bd6694e4596"
+    },
+    {
+      "source": "setup/Cargo.lock",
+      "match": true,
+      "actual": "361a0d7be5a273b3b0f9b88015384af0178426abff9d3d40f6d0fe5721ff245e"
+    },
+    {
+      "source": "resources.rs",
+      "match": true,
+      "actual": "2ab606fbe5d250bd19c57cf3087caebd54edd9bd6abdcc053d173684747aca96"
+    },
+    {
+      "source": "build-complete.ps1",
+      "match": true,
+      "actual": "cdda8434ef8cb999541f9b1f39c80d163467d9c6a954861ca1a5454e49f62a0e"
+    },
+    {
+      "source": "../../src/windows_identity.rs",
+      "match": true,
+      "actual": "22e2786eff5b3ff406c2b2f404ff4fa80b3aa865f1293d5615c76a4ebec1bd5c"
+    },
+    {
+      "source": "../../assets/brand/reach.ico",
+      "match": true,
+      "actual": "fe2ee6dfef2435aa8cc3a660c9c4abe263f30bf35522a1f27f4b902356cb5fda"
+    }
+  ],
+  "recoveryScriptSha256": "134bf3659e9d58e36d5771800f6b69fdb02abe2aabdfe41e416072dd784cb0f5",
+  "allEmbeddedModuleHashesMatched": true,
+  "independentAction": "--inspect only; no installation",
+  "payloadVerification": "parent build log read; 6327 files and 190316383 bytes"
+}

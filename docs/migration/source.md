@@ -32,3 +32,15 @@ The old Full ARA/OMP crates, `tools/ara-lite`, product Hosts, and the Lite
 evaluation gate were not copied into this first independent repository. They
 remain in the source repository until a separate migration plan covers their
 interfaces and evidence.
+
+## Reach business Host — 2026-11-13
+
+At the user's request, Reach is now maintained in `apps/reach/` in this
+repository. Its imported source includes the old ARA working tree's uncommitted
+Reach implementation, not just the clean source commit used for the runtime
+extraction. The [file manifest](../../apps/reach/provenance/migration-20261113.json)
+records that distinct baseline and each original file hash. Reach consumes the
+current Morrow packages; the old Full project and a second copy of the Lite
+runtime are not imported. Historical evidence retains its original identifiers.
+The [handoff](../../apps/reach/docs/handoffs/2026-11-13-morrow-subproject.md)
+records verification and incomplete recovery/installation work.

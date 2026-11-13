@@ -1,0 +1,96 @@
+[
+  {
+    "name": "eventsource-stream",
+    "version": "0.2.3",
+    "revision": "3d46f1c758f9ee4681e9da0427556d24c53f9c01",
+    "source": "https://codeload.github.com/jpopesculian/eventsource-stream/tar.gz/3d46f1c758f9ee4681e9da0427556d24c53f9c01",
+    "archiveSha256": "a0e3127364232a5a7037d1cc42b72515ae37575fac4d37e23fd5693dcfda6bfc",
+    "files": [
+      {
+        "path": "eventsource-stream-0.2.3-Cargo.toml",
+        "sourcePath": "Cargo.toml",
+        "sha256": "725711996fb72721abc35595e0703ca2d1b55cb4d98cc5ade959fc0f8c2e86a4"
+      },
+      {
+        "path": "eventsource-stream-0.2.3-README.md",
+        "sourcePath": "README.md",
+        "sha256": "f17f6cc26f19643dbadaaad9901d245d4645ef8fbac8266b33105392dd1f8601"
+      },
+      {
+        "path": "eventsource-stream-0.2.3-Apache-2.0.txt",
+        "sourcePath": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+        "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+      }
+    ],
+    "licenseChoice": "Apache-2.0",
+    "note": "Fixed source Cargo.toml and README offer MIT OR Apache-2.0 but contain no LICENSE or NOTICE file. Canonical Apache text is supplied without inventing upstream copyright text."
+  },
+  {
+    "name": "jsonschema",
+    "version": "0.18.3",
+    "revision": "11ebbaaececc1830f093dca229a28c0a5ebdf877",
+    "source": "https://codeload.github.com/Stranger6667/jsonschema-rs/tar.gz/11ebbaaececc1830f093dca229a28c0a5ebdf877",
+    "archiveSha256": "ceab1d355678192fe8d282587e6893cde479beea971ce9bfda954d0f25bdb71b",
+    "files": [
+      {
+        "path": "jsonschema-0.18.3-LICENSE",
+        "sourcePath": "LICENSE",
+        "sha256": "0f614c290631feb320f6c0d54c72fc0f85b17ca6d6dc0b5a3383ea7de3e9dc69"
+      }
+    ]
+  },
+  {
+    "name": "rpi-agent",
+    "version": "0.3.23",
+    "revision": "8ec462672d90e62712d96074638efef89436cebe",
+    "source": "https://github.com/bigfish1913/pi-rust",
+    "files": [
+      {
+        "path": "pi-rust-8ec4626-LICENSE",
+        "sourcePath": "LICENSE",
+        "sha256": "0f4200057ab88da0fd0f73d48dea6f3e984b7fadf8aa441befbc578ad9ba13a4"
+      },
+      {
+        "path": "pi-rust-8ec4626-NOTICE",
+        "sourcePath": "NOTICE",
+        "sha256": "374b7bec7bcc27136dc47528e98d3fe32599a97c5ab6768044ce61a32560505e"
+      }
+    ]
+  },
+  {
+    "name": "rpi-ai",
+    "version": "0.3.23",
+    "revision": "8ec462672d90e62712d96074638efef89436cebe",
+    "source": "https://github.com/bigfish1913/pi-rust",
+    "files": [
+      {
+        "path": "pi-rust-8ec4626-LICENSE",
+        "sourcePath": "LICENSE",
+        "sha256": "0f4200057ab88da0fd0f73d48dea6f3e984b7fadf8aa441befbc578ad9ba13a4"
+      },
+      {
+        "path": "pi-rust-8ec4626-NOTICE",
+        "sourcePath": "NOTICE",
+        "sha256": "374b7bec7bcc27136dc47528e98d3fe32599a97c5ab6768044ce61a32560505e"
+      }
+    ]
+  },
+  {
+    "name": "rpi-telemetry",
+    "version": "0.3.23",
+    "revision": "8ec462672d90e62712d96074638efef89436cebe",
+    "source": "https://github.com/bigfish1913/pi-rust",
+    "files": [
+      {
+        "path": "pi-rust-8ec4626-LICENSE",
+        "sourcePath": "LICENSE",
+        "sha256": "0f4200057ab88da0fd0f73d48dea6f3e984b7fadf8aa441befbc578ad9ba13a4"
+      },
+      {
+        "path": "pi-rust-8ec4626-NOTICE",
+        "sourcePath": "NOTICE",
+        "sha256": "374b7bec7bcc27136dc47528e98d3fe32599a97c5ab6768044ce61a32560505e"
+      }
+    ]
+  }
+]

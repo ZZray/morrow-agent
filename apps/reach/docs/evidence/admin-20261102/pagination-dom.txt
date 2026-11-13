@@ -1,0 +1,147 @@
+- link "跳到内容":
+  - /url: "#main"
+- complementary:
+  - generic: ↗
+  - generic: Reach
+  - navigation "Reach 导航":
+    - button "设备连接"
+    - button "操作记录"
+  - generic: reach-browser-test
+  - generic: Reach · RY
+  - button "退出登录"
+- banner:
+  - generic: RAY / REACH
+  - generic: 设备与运行管理
+- main:
+  - button "← 返回操作记录"
+  - heading "command.run" [level=1]
+  - paragraph: 设备：Reach 浏览器验收机
+  - button "刷新记录"
+  - term: 操作 ID
+  - definition: 83cb4247-9e85-443f-a82f-94377519c504
+  - term: 请求 ID
+  - definition: 0102037d-322e-4454-bcce-7503d93f8431
+  - term: 执行状态
+  - definition: 已成功
+  - term: 投递状态
+  - definition: 已收到回执
+  - term: 取消请求
+  - definition: 未请求
+  - term: 发起时间
+  - definition: 2026/11/2 15:09:53
+  - term: 最近更新
+  - definition: 2026/11/2 15:10:02
+  - heading "原始请求" [level=3]
+  - button "下载原始内容"
+  - generic: "{ \"kind\": \"command.run\", \"command\": \"Set-Content -LiteralPath 'E:\\\\repos\\\\ara\\\\apps\\\\reach\\\\work\\\\admin-browser-effect.txt' -Value 'Reach admin browser acceptance'; Write-Output '<script>alert(1)</script>'; 1..25 | ForEach-Object { Write-Output ('receipt-' + $_); Start-Sleep -Milliseconds 80 }\", \"timeoutMs\": 30000 }"
+  - heading "结果记录" [level=3]
+  - button "下载原始内容" [active]
+  - generic: "{ \"exitCode\": 0, \"pid\": 28408, \"processTreeStopped\": true }"
+  - heading "原始回执" [level=2]
+  - generic: 按服务接收顺序 · 不触发重执行
+  - article:
+    - strong: "#41 · 输出"
+    - generic: 2026/11/2 15:10:00
+    - text: 665d2a90-44bb-4d5d-b76a-9d878ff0d540
+    - heading "输出片段" [level=3]
+    - button "下载原始内容"
+  - article:
+    - strong: "#42 · 输出"
+    - generic: 2026/11/2 15:10:00
+    - text: a736c8bc-cd99-43fb-b090-7b33a034bb34
+    - heading "输出片段" [level=3]
+    - button "下载原始内容"
+    - generic: receipt-19
+  - article:
+    - strong: "#43 · 输出"
+    - generic: 2026/11/2 15:10:00
+    - text: 112fd386-76f2-4724-ba20-fb3dcfc320ad
+    - heading "输出片段" [level=3]
+    - button "下载原始内容"
+  - article:
+    - strong: "#44 · 输出"
+    - generic: 2026/11/2 15:10:00
+    - text: 4b0dffb2-d4bb-4846-8fcf-91499528ba79
+    - heading "输出片段" [level=3]
+    - button "下载原始内容"
+    - generic: receipt-20
+  - article:
+    - strong: "#45 · 输出"
+    - generic: 2026/11/2 15:10:01
+    - text: 2e3c4c0d-cf24-46a2-9645-80956ca06317
+    - heading "输出片段" [level=3]
+    - button "下载原始内容"
+  - article:
+    - strong: "#46 · 输出"
+    - generic: 2026/11/2 15:10:01
+    - text: 3c3bdd4f-e245-41a0-b2f0-09ba9238c10d
+    - heading "输出片段" [level=3]
+    - button "下载原始内容"
+    - generic: receipt-21
+  - article:
+    - strong: "#47 · 输出"
+    - generic: 2026/11/2 15:10:01
+    - text: c0c05bc3-e85c-4b5a-a876-8cda1a1d4690
+    - heading "输出片段" [level=3]
+    - button "下载原始内容"
+  - article:
+    - strong: "#48 · 输出"
+    - generic: 2026/11/2 15:10:01
+    - text: 0cf3544a-3aa4-4884-a80f-b601d3c58bdf
+    - heading "输出片段" [level=3]
+    - button "下载原始内容"
+    - generic: receipt-22
+  - article:
+    - strong: "#49 · 输出"
+    - generic: 2026/11/2 15:10:01
+    - text: c323506e-cb16-4940-ab0f-30d65791dd77
+    - heading "输出片段" [level=3]
+    - button "下载原始内容"
+  - article:
+    - strong: "#50 · 输出"
+    - generic: 2026/11/2 15:10:01
+    - text: 0b281e54-a9a4-4470-94e6-95054cad6a8e
+    - heading "输出片段" [level=3]
+    - button "下载原始内容"
+    - generic: receipt-23
+  - article:
+    - strong: "#51 · 输出"
+    - generic: 2026/11/2 15:10:01
+    - text: 459704eb-3cdd-439d-8a62-a11bc4352576
+    - heading "输出片段" [level=3]
+    - button "下载原始内容"
+  - article:
+    - strong: "#52 · 输出"
+    - generic: 2026/11/2 15:10:01
+    - text: 39cdfc38-1156-4809-8c5f-f595d3776811
+    - heading "输出片段" [level=3]
+    - button "下载原始内容"
+    - generic: receipt-24
+  - article:
+    - strong: "#53 · 输出"
+    - generic: 2026/11/2 15:10:01
+    - text: 014898ab-c3ba-448d-975b-12ba42934e53
+    - heading "输出片段" [level=3]
+    - button "下载原始内容"
+  - article:
+    - strong: "#54 · 输出"
+    - generic: 2026/11/2 15:10:01
+    - text: bc8ad13e-b540-4817-a1fb-9845433796ff
+    - heading "输出片段" [level=3]
+    - button "下载原始内容"
+    - generic: receipt-25
+  - article:
+    - strong: "#55 · 输出"
+    - generic: 2026/11/2 15:10:02
+    - text: f0571897-ca0b-4163-aa32-c1a7b9e8ca2c
+    - heading "输出片段" [level=3]
+    - button "下载原始内容"
+  - article:
+    - strong: "#56 · 已成功"
+    - generic: 2026/11/2 15:10:02
+    - text: dc09f198-1b88-46fd-8e14-1f7f0f95ea9b
+    - heading "回执内容" [level=3]
+    - button "下载原始内容"
+    - generic: "{ \"exitCode\": 0, \"pid\": 28408, \"processTreeStopped\": true }"
+  - button "查询新回执"
+  - generic: "当前 #41–56 · 已读至当前末尾"

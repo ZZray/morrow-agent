@@ -1,0 +1,12 @@
+[
+  {
+    "old": "                // Show thinking panel for reasoning content\n                if (text.includes('•') || text.includes('- ') || text.includes('* ') || text.match(/^\\d+\\./)) {\n                  showThinking();\n                  processThinkingText(text);\n                }\n",
+    "new": "",
+    "count": 1
+  },
+  {
+    "old": "              finishThinking();\n              hideThinking();",
+    "new": "              finishThinking();",
+    "count": 1
+  }
+]

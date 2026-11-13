@@ -1,0 +1,30 @@
+✔ native pair, single owner, streamed command, duplicate request and file effects (18106.314ms)
+✔ lost pairing response retries one persisted binding; rejected expired code can be replaced (4904.3243ms)
+✔ cancel stops actual Windows descendants and records uncertain effects (8320.9409ms)
+✔ killed Node retains receipts and never reexecutes a command on restart (9142.8439ms)
+✔ server claim lost before local admission becomes unknown at the original cursor (6690.2625ms)
+✔ lost server ACK and unavailable uploads replay original events only, even after unpair (10087.7662ms)
+✔ pending service outage recovers on the same Node process (9888.9176ms)
+✔ lost accepted pair response followed by unpair recovers installation before new pairing (9615.0592ms)
+✔ CLI and MCP control the same real Node and preserve request identity (6623.3682ms)
+✔ interrupted local running state must recover original receipts before re-pair after reconciliation (13649.3694ms)
+✔ MCP retrieves more than 2 MiB of real output in bounded consecutive pages (67265.9921ms)
+✔ ordinary service process retains pairing, sessions, claimed operation and original result across forced restart (2594.1379ms)
+✔ pairing retry survives a lost response; consumed code and changed attempt cannot create a second identity (1455.8601ms)
+✔ concurrent claims deliver once, duplicate submission returns original, changed input is rejected (2000.3262ms)
+✔ durable ordered event outbox accepts duplicate uploads and rejects mutated, skipped, or late events (1987.4848ms)
+✔ cancel is a request after claim; unpair rejects new work but lets original receipts settle (1785.6696ms)
+✔ ownership, auth kinds, CSRF, and schema reject untrusted requests (1618.6857ms)
+✔ explicit reconciliation preserves unknown history and permits re-pairing without re-execution (2014.9594ms)
+✔ trusted proxy client buckets are independent; untrusted source headers cannot bypass throttling (3800.4569ms)
+✔ accepted pairing receipt remains recoverable after unpair without reactivating old binding (2008.3325ms)
+✔ late original receipts remain readable after explicit reconciliation without changing its decision (2247.4046ms)
+✔ a newer persistent schema is rejected without silently downgrading its version (1738.1659ms)
+ℹ tests 22
+ℹ suites 0
+ℹ pass 22
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 187988.6221

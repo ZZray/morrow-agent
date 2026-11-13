@@ -1,0 +1,21 @@
+[
+  {
+    "file": "Visual_Studio_2026-License-Community_ENU.docx",
+    "sha256": "02ac07637f4a513a807cd3721c7620433fc483bc049d25784b0c10c54b05e1fb",
+    "text": "Visual_Studio_2026-License-Community_ENU.docx.txt",
+    "textSha256": "ef616cae10d627cdc97238749de23ba1fcae68c329879c7b63ec65bfadc89c0b",
+    "textMethod": "word/document.xml paragraph w:t text in document order; original DOCX retained"
+  },
+  {
+    "file": "Visual-C-V14-License-Redistributable_and_Runtime_ENU.docx",
+    "sha256": "08651651a7602fc7c0e2763de0fde1ff9f868df2780597cd1775ee9d6441c783",
+    "text": "Visual-C-V14-License-Redistributable_and_Runtime_ENU.docx.txt",
+    "textSha256": "fcd3649a1ea1ed04d849521aca4950ca3db98b3a69f542b51d94cf71f4f17b64",
+    "textMethod": "word/document.xml paragraph w:t text in document order; original DOCX retained"
+  },
+  {
+    "file": "vs2026-redistribution.html",
+    "sha256": "32532f7b81918db91db11967176ca165c92f49195d282d54d387f0fa7a248cfa",
+    "source": "https://learn.microsoft.com/en-us/visualstudio/releases/2026/redistribution"
+  }
+]

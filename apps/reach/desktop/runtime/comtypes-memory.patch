@@ -1,0 +1,11 @@
+--- a/comtypes/client/__init__.py
++++ b/comtypes/client/__init__.py
+@@ -12,7 +12,7 @@
+ from comtypes.client._managing import GetBestInterface, _manage, wrap_outparam  # noqa
+ from comtypes.hresult import *  # noqa
+ 
+-gen_dir = _find_gen_dir()
++gen_dir = None  # Reach: process-local wrappers; no mutable import cache.
+ import comtypes.gen  # noqa
+ 
+ ### for testing

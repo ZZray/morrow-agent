@@ -1,0 +1,721 @@
+diff --git a/pyproject.toml b/pyproject.toml
+index f8b761e..454e1eb 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -1,6 +1,6 @@
+ [project]
+ name = "windows-mcp"
+-version = "0.8.8"
++version = "0.8.8+reach.4"
+ description = "Lightweight MCP Server for interacting with Windows Operating System."
+ authors = [
+     { name = "Jeomon George", email = "jeogeoalukka@gmail.com" }
+@@ -23,14 +23,12 @@ dependencies = [
+     "comtypes>=1.4.15",
+     "dxcam>=0.3.0",
+     "fastmcp>=3.0",
+-    "fuzzywuzzy>=0.18.0",
+     "markdownify>=1.1.0",
+     "pillow>=11.2.1",
+     "platformdirs>=4.3.8",
+     "posthog>=7.4.0",
+     "psutil>=7.0.0",
+     "pygments>=2.20.0",
+-    "python-levenshtein>=0.27.1",
+     "pywin32>=311",
+     "requests>=2.33.0",
+     "tabulate>=0.9.0",
+diff --git a/src/windows_mcp/desktop/service.py b/src/windows_mcp/desktop/service.py
+index 0b0eabd..5348afc 100644
+--- a/src/windows_mcp/desktop/service.py
++++ b/src/windows_mcp/desktop/service.py
+@@ -22,7 +22,7 @@ from urllib.parse import urljoin
+ from locale import getpreferredencoding
+ from typing import Literal
+ from markdownify import markdownify
+-from fuzzywuzzy import process
++from thefuzz import process
+ from time import sleep, time, perf_counter
+ from psutil import Process
+ import math
+@@ -528,7 +528,8 @@ class Desktop:
+                 size = (width, height)
+             x, y = loc
+             width, height = size
+-            window_control.MoveWindow(x, y, width, height)
++            if not window_control.MoveWindow(x, y, width, height):
++                raise RuntimeError("Windows rejected the window resize")
+             return (f"{target_window.name} resized to {width}x{height} at {x},{y}.", 0)
+ 
+     def app(
+@@ -542,7 +543,7 @@ class Desktop:
+             case "launch":
+                 response, status, pid = self.launch_app(name)
+                 if status != 0:
+-                    return response
++                    raise RuntimeError(response)
+ 
+                 # Smart wait using UIA Exists (avoids manual Python loops)
+                 launched = False
+@@ -560,11 +561,11 @@ class Desktop:
+ 
+                 if launched:
+                     return f"{name.title()} launched."
+-                return f"Launching {name.title()} sent, but window not detected yet."
++                raise RuntimeError(f"Launching {name.title()} sent, but window not detected yet; effects unconfirmed.")
+             case "resize":
+                 response, status = self.resize_app(name=name, size=size, loc=loc)
+                 if status != 0:
+-                    return response
++                    raise RuntimeError(response)
+                 else:
+                     return response
+             case "switch":
+@@ -1718,4 +1719,5 @@ class Desktop:
+             semantic_tree_root=filtered_semantic_root,
+             truncated=tree_state.truncated,
+             element_limit=tree_state.element_limit,
++            word_geometry_incomplete=tree_state.word_geometry_incomplete,
+         )
+diff --git a/src/windows_mcp/filesystem/service.py b/src/windows_mcp/filesystem/service.py
+index 12c6e06..5512f03 100644
+--- a/src/windows_mcp/filesystem/service.py
++++ b/src/windows_mcp/filesystem/service.py
+@@ -64,13 +64,13 @@ def read_file(path: str, offset: int | None = None, limit: int | None = None, en
+     file_path = Path(path).resolve()
+ 
+     if not file_path.exists():
+-        return f'Error: File not found: {file_path}'
++        raise ValueError(f'Error: File not found: {file_path}')
+     if not file_path.is_file():
+-        return f'Error: Path is not a file: {file_path}'
++        raise ValueError(f'Error: Path is not a file: {file_path}')
+     if limit is not None and limit < 0:
+-        return 'Error: limit cannot be negative.'
++        raise ValueError('Error: limit cannot be negative.')
+     if offset is None and limit is None and file_path.stat().st_size > MAX_READ_SIZE:
+-        return f'Error: File too large ({file_path.stat().st_size:,} bytes). Maximum is {MAX_READ_SIZE:,} bytes. Use offset/limit parameters or the PowerShell tool for large files.'
++        raise ValueError(f'Error: File too large ({file_path.stat().st_size:,} bytes). Maximum is {MAX_READ_SIZE:,} bytes. Use offset/limit parameters or the PowerShell tool for large files.')
+ 
+     try:
+         encoding = _bom_encoding(file_path, encoding)
+@@ -92,7 +92,7 @@ def read_file(path: str, offset: int | None = None, limit: int | None = None, en
+                     if start < total <= end:
+                         size += len(piece)
+                         if size > MAX_READ_SIZE:
+-                            return f'Error: The requested lines add up to more than {MAX_READ_SIZE:,} characters. Use a smaller limit or the PowerShell tool.'
++                            raise ValueError(f'Error: The requested lines add up to more than {MAX_READ_SIZE:,} characters. Use a smaller limit or the PowerShell tool.')
+                         selected.append(piece)
+                 content = ''.join(selected)
+                 return f'File: {file_path}\nLines {start + 1}-{min(end, total)} of {total}:\n{content}'
+@@ -100,14 +100,14 @@ def read_file(path: str, offset: int | None = None, limit: int | None = None, en
+                 content = f.read()
+                 return f'File: {file_path}\n{content}'
+     except UnicodeDecodeError:
+-        return f'Error: Unable to read file as text with encoding "{encoding}". File may be binary.'
++        raise ValueError(f'Error: Unable to read file as text with encoding "{encoding}". File may be binary.')
+     except PermissionError:
+         msg = f'Error: Permission denied: {file_path}'
+         if not is_elevated():
+             msg += "\n\nHINT: This operation may require an elevated (Administrator) terminal."
+-        return msg
++        raise RuntimeError(msg)
+     except Exception as e:
+-        return f'Error reading file: {e}'
++        raise RuntimeError(f'Error reading file: {e}')
+ 
+ 
+ def write_file(path: str, content: str, append: bool = False, encoding: str = 'utf-8', create_parents: bool = True) -> str:
+@@ -130,9 +130,9 @@ def write_file(path: str, content: str, append: bool = False, encoding: str = 'u
+         msg = f'Error: Permission denied: {file_path}'
+         if not is_elevated():
+             msg += "\n\nHINT: This operation may require an elevated (Administrator) terminal."
+-        return msg
++        raise RuntimeError(msg)
+     except Exception as e:
+-        return f'Error writing file: {e}'
++        raise RuntimeError(f'Error writing file: {e}')
+ 
+ 
+ def _kind_mismatch(src: Path, dst: Path, verb: str) -> str | None:
+@@ -144,11 +144,9 @@ def _kind_mismatch(src: Path, dst: Path, verb: str) -> str | None:
+     if not dst.exists() or src.is_dir() == dst.is_dir():
+         return None
+     if dst.is_dir():
+-        return (
+-            f'Error: Destination is a directory: {dst}. A file cannot replace a directory; '
+-            f'to {verb} the file into it, use {dst / src.name} as the destination.'
+-        )
+-    return f'Error: Destination is a file: {dst}. A directory cannot replace a file.'
++        raise ValueError(f'Error: Destination is a directory: {dst}. A file cannot replace a directory; '
++            f'to {verb} the file into it, use {dst / src.name} as the destination.')
++    raise ValueError(f'Error: Destination is a file: {dst}. A directory cannot replace a file.')
+ 
+ 
+ def copy_path(source: str, destination: str, overwrite: bool = False) -> str:
+@@ -157,16 +155,16 @@ def copy_path(source: str, destination: str, overwrite: bool = False) -> str:
+     dst = Path(destination).resolve()
+ 
+     if not src.exists():
+-        return f'Error: Source not found: {src}'
++        raise ValueError(f'Error: Source not found: {src}')
+ 
+     if src == dst or dst in src.parents or (src.is_dir() and src in dst.parents):
+-        return 'Error: Source and destination paths overlap.'
++        raise ValueError('Error: Source and destination paths overlap.')
+ 
+     if error := _kind_mismatch(src, dst, 'copy'):
+-        return error
++        raise RuntimeError(error)
+ 
+     if dst.exists() and not overwrite:
+-        return f'Error: Destination already exists: {dst}. Set overwrite=True to replace.'
++        raise ValueError(f'Error: Destination already exists: {dst}. Set overwrite=True to replace.')
+ 
+     try:
+         if src.is_file():
+@@ -179,14 +177,14 @@ def copy_path(source: str, destination: str, overwrite: bool = False) -> str:
+             shutil.copytree(str(src), str(dst))
+             return f'Copied directory: {src} -> {dst}'
+         else:
+-            return f'Error: Unsupported file type: {src}'
++            raise ValueError(f'Error: Unsupported file type: {src}')
+     except PermissionError:
+         msg = 'Error: Permission denied.'
+         if not is_elevated():
+             msg += "\n\nHINT: This operation may require an elevated (Administrator) terminal."
+-        return msg
++        raise RuntimeError(msg)
+     except Exception as e:
+-        return f'Error copying: {e}'
++        raise RuntimeError(f'Error copying: {e}')
+ 
+ 
+ def move_path(source: str, destination: str, overwrite: bool = False) -> str:
+@@ -195,7 +193,7 @@ def move_path(source: str, destination: str, overwrite: bool = False) -> str:
+     dst = Path(destination).resolve()
+ 
+     if not src.exists():
+-        return f'Error: Source not found: {src}'
++        raise ValueError(f'Error: Source not found: {src}')
+ 
+     # On a case-insensitive file system, renaming 'a.txt' to 'A.txt' resolves to the source.
+     raw_dst = Path(destination).absolute()
+@@ -209,16 +207,16 @@ def move_path(source: str, destination: str, overwrite: bool = False) -> str:
+             src.rename(src.with_name(raw_dst.name))
+             return f'Moved: {src} -> {src.with_name(raw_dst.name)}'
+         except Exception as e:
+-            return f'Error moving: {e}'
++            raise RuntimeError(f'Error moving: {e}')
+ 
+     if src == dst or dst in src.parents or (src.is_dir() and src in dst.parents):
+-        return 'Error: Source and destination paths overlap.'
++        raise ValueError('Error: Source and destination paths overlap.')
+ 
+     if error := _kind_mismatch(src, dst, 'move'):
+-        return error
++        raise RuntimeError(error)
+ 
+     if dst.exists() and not overwrite:
+-        return f'Error: Destination already exists: {dst}. Set overwrite=True to replace.'
++        raise ValueError(f'Error: Destination already exists: {dst}. Set overwrite=True to replace.')
+ 
+     try:
+         dst.parent.mkdir(parents=True, exist_ok=True)
+@@ -233,9 +231,9 @@ def move_path(source: str, destination: str, overwrite: bool = False) -> str:
+         msg = 'Error: Permission denied.'
+         if not is_elevated():
+             msg += "\n\nHINT: This operation may require an elevated (Administrator) terminal."
+-        return msg
++        raise RuntimeError(msg)
+     except Exception as e:
+-        return f'Error moving: {e}'
++        raise RuntimeError(f'Error moving: {e}')
+ 
+ 
+ def delete_path(path: str, recursive: bool = False) -> str:
+@@ -250,7 +248,7 @@ def delete_path(path: str, recursive: bool = False) -> str:
+             target.rmdir()
+             return f'Deleted directory: {target}'
+         if not target.exists():
+-            return f'Error: Path not found: {target}'
++            raise ValueError(f'Error: Path not found: {target}')
+         if target.is_file():
+             target.unlink()
+             return f'Deleted file: {target}'
+@@ -258,20 +256,20 @@ def delete_path(path: str, recursive: bool = False) -> str:
+             if not recursive:
+                 # Check if directory is empty
+                 if any(target.iterdir()):
+-                    return f'Error: Directory is not empty: {target}. Set recursive=True to delete non-empty directories.'
++                    raise ValueError(f'Error: Directory is not empty: {target}. Set recursive=True to delete non-empty directories.')
+                 target.rmdir()
+             else:
+                 _rmtree(target)
+             return f'Deleted directory: {target}'
+         else:
+-            return f'Error: Unsupported file type: {target}'
++            raise ValueError(f'Error: Unsupported file type: {target}')
+     except PermissionError:
+         msg = f'Error: Permission denied: {target}'
+         if not is_elevated():
+             msg += "\n\nHINT: This operation may require an elevated (Administrator) terminal."
+-        return msg
++        raise RuntimeError(msg)
+     except Exception as e:
+-        return f'Error deleting: {e}'
++        raise RuntimeError(f'Error deleting: {e}')
+ 
+ 
+ def list_directory(path: str, pattern: str | None = None, recursive: bool = False, show_hidden: bool = False) -> str:
+@@ -279,9 +277,9 @@ def list_directory(path: str, pattern: str | None = None, recursive: bool = Fals
+     dir_path = Path(path).resolve()
+ 
+     if not dir_path.exists():
+-        return f'Error: Directory not found: {dir_path}'
++        raise ValueError(f'Error: Directory not found: {dir_path}')
+     if not dir_path.is_dir():
+-        return f'Error: Path is not a directory: {dir_path}'
++        raise ValueError(f'Error: Path is not a directory: {dir_path}')
+ 
+     try:
+         entries: list[str] = []
+@@ -326,9 +324,9 @@ def list_directory(path: str, pattern: str | None = None, recursive: bool = Fals
+         msg = f'Error: Permission denied: {dir_path}'
+         if not is_elevated():
+             msg += "\n\nHINT: This operation may require an elevated (Administrator) terminal."
+-        return msg
++        raise RuntimeError(msg)
+     except Exception as e:
+-        return f'Error listing directory: {e}'
++        raise RuntimeError(f'Error listing directory: {e}')
+ 
+ 
+ def search_files(path: str, pattern: str, recursive: bool = True) -> str:
+@@ -336,9 +334,9 @@ def search_files(path: str, pattern: str, recursive: bool = True) -> str:
+     search_root = Path(path).resolve()
+ 
+     if not search_root.exists():
+-        return f'Error: Search path not found: {search_root}'
++        raise ValueError(f'Error: Search path not found: {search_root}')
+     if not search_root.is_dir():
+-        return f'Error: Search path is not a directory: {search_root}'
++        raise ValueError(f'Error: Search path is not a directory: {search_root}')
+ 
+     try:
+         results: list[str] = []
+@@ -372,9 +370,9 @@ def search_files(path: str, pattern: str, recursive: bool = True) -> str:
+         msg = f'Error: Permission denied: {search_root}'
+         if not is_elevated():
+             msg += "\n\nHINT: This operation may require an elevated (Administrator) terminal."
+-        return msg
++        raise RuntimeError(msg)
+     except Exception as e:
+-        return f'Error searching: {e}'
++        raise RuntimeError(f'Error searching: {e}')
+ 
+ 
+ def _strip_nt_prefix(path: str) -> str:
+@@ -394,7 +392,7 @@ def get_file_info(path: str) -> str:
+         target = target.resolve()
+ 
+     if not is_link and not target.exists():
+-        return f'Error: Path not found: {target}'
++        raise ValueError(f'Error: Path not found: {target}')
+ 
+     try:
+         stat = target.lstat() if is_link else target.stat()
+@@ -434,6 +432,6 @@ def get_file_info(path: str) -> str:
+         msg = f'Error: Permission denied: {target}'
+         if not is_elevated():
+             msg += "\n\nHINT: This operation may require an elevated (Administrator) terminal."
+-        return msg
++        raise RuntimeError(msg)
+     except Exception as e:
+-        return f'Error getting file info: {e}'
++        raise RuntimeError(f'Error getting file info: {e}')
+diff --git a/src/windows_mcp/notifications/service.py b/src/windows_mcp/notifications/service.py
+index cbad0e7..ea32215 100644
+--- a/src/windows_mcp/notifications/service.py
++++ b/src/windows_mcp/notifications/service.py
+@@ -54,4 +54,4 @@ def send_notification(title: str, message: str, app_id: str) -> str:
+     if status == 0:
+         return f'Notification sent: "{title}" - {message}'
+     else:
+-        return f"Notification may have been sent. PowerShell output: {response[:200]}"
++        raise RuntimeError(f"Notification may have been sent. PowerShell output: {response[:200]}")
+diff --git a/src/windows_mcp/process/service.py b/src/windows_mcp/process/service.py
+index 92cae19..ee91331 100644
+--- a/src/windows_mcp/process/service.py
++++ b/src/windows_mcp/process/service.py
+@@ -77,8 +77,9 @@ def kill_process(
+     import psutil
+ 
+     if pid is None and name is None:
+-        return "Error: Provide either pid or name parameter for kill mode."
++        raise ValueError("Error: Provide either pid or name parameter for kill mode.")
+     killed = []
++    denied = []
+     if pid is not None:
+         try:
+             p = psutil.Process(pid)
+@@ -87,11 +88,12 @@ def kill_process(
+                 p.kill()
+             else:
+                 p.terminate()
++            p.wait(timeout=3)
+             killed.append(f"{pname} (PID {pid})")
+         except psutil.NoSuchProcess:
+-            return f"No process with PID {pid} found."
++            raise ValueError(f"No process with PID {pid} found.")
+         except psutil.AccessDenied:
+-            return f"Access denied to kill PID {pid}. Try running as administrator."
++            raise RuntimeError(f"Access denied to kill PID {pid}.")
+     else:
+         for p in psutil.process_iter(["pid", "name"]):
+             try:
+@@ -100,9 +102,14 @@ def kill_process(
+                         p.kill()
+                     else:
+                         p.terminate()
++                    p.wait(timeout=3)
+                     killed.append(f"{p.info['name']} (PID {p.info['pid']})")
+-            except (psutil.NoSuchProcess, psutil.AccessDenied):
++            except psutil.NoSuchProcess:
+                 continue
++            except (psutil.AccessDenied, psutil.TimeoutExpired):
++                denied.append(p.pid)
++    if denied:
++        raise RuntimeError(f"Process termination incomplete; stopped={killed}, unsettled={denied}")
+     if not killed:
+-        return f'No process matching "{name}" found or access denied.'
++        raise ValueError(f'No process matching "{name}" found.')
+     return f"{'Force killed' if force else 'Terminated'}: {', '.join(killed)}"
+diff --git a/src/windows_mcp/registry/service.py b/src/windows_mcp/registry/service.py
+index 238451a..ff0fc7c 100644
+--- a/src/windows_mcp/registry/service.py
++++ b/src/windows_mcp/registry/service.py
+@@ -30,17 +30,15 @@ def get_value(path: str, name: str) -> str:
+     )
+     response, status = PowerShellExecutor.execute_command(command)
+     if status != 0:
+-        return f'Error reading registry: {response.strip()}'
++        raise RuntimeError(f'Error reading registry: {response.strip()}')
+     return f'Registry value [{path}] "{name}" = {response.strip()}'
+ 
+ 
+ def set_value(path: str, name: str, value: str, reg_type: RegistryType = 'String') -> str:
+     """Create or update a registry value, creating the key if it does not exist."""
+     if reg_type not in ALLOWED_REGISTRY_TYPES:
+-        return (
+-            f"Error: invalid registry type '{reg_type}'. "
+-            f"Allowed: {', '.join(sorted(ALLOWED_REGISTRY_TYPES))}"
+-        )
++        raise ValueError(f"Error: invalid registry type '{reg_type}'. "
++            f"Allowed: {', '.join(sorted(ALLOWED_REGISTRY_TYPES))}")
+     q_path = ps_quote(path)
+     q_name = ps_quote(name)
+     q_value = ps_quote(value)
+@@ -50,7 +48,7 @@ def set_value(path: str, name: str, value: str, reg_type: RegistryType = 'String
+     )
+     response, status = PowerShellExecutor.execute_command(command)
+     if status != 0:
+-        return f'Error writing registry: {response.strip()}'
++        raise RuntimeError(f'Error writing registry: {response.strip()}')
+     return f'Registry value [{path}] "{name}" set to "{value}" (type: {reg_type}).'
+ 
+ 
+@@ -62,12 +60,12 @@ def delete_entry(path: str, name: str | None = None) -> str:
+         command = f"Remove-ItemProperty -LiteralPath {q_path} -Name {q_name} -Force"
+         response, status = PowerShellExecutor.execute_command(command)
+         if status != 0:
+-            return f'Error deleting registry value: {response.strip()}'
++            raise RuntimeError(f'Error deleting registry value: {response.strip()}')
+         return f'Registry value [{path}] "{name}" deleted.'
+     command = f"Remove-Item -LiteralPath {q_path} -Recurse -Force"
+     response, status = PowerShellExecutor.execute_command(command)
+     if status != 0:
+-        return f'Error deleting registry key: {response.strip()}'
++        raise RuntimeError(f'Error deleting registry key: {response.strip()}')
+     return f'Registry key [{path}] deleted.'
+ 
+ 
+@@ -96,5 +94,5 @@ def list_key(path: str) -> str:
+     )
+     response, status = PowerShellExecutor.execute_command(command)
+     if status != 0:
+-        return f'Error listing registry: {response.strip()}'
++        raise RuntimeError(f'Error listing registry: {response.strip()}')
+     return f'Registry key [{path}]:\n{response.strip()}'
+diff --git a/src/windows_mcp/tools/_snapshot_helpers.py b/src/windows_mcp/tools/_snapshot_helpers.py
+index cbf2200..6b049a5 100644
+--- a/src/windows_mcp/tools/_snapshot_helpers.py
++++ b/src/windows_mcp/tools/_snapshot_helpers.py
+@@ -239,6 +239,21 @@ def build_snapshot_response(
+     UI Tree:
+     {semantic_tree or "No elements found."}''')
+ 
++    # Reach patch: labels must follow the exact arrays used by input.py,
++    # including scrollable nodes; semantic-tree order is not a label index.
++    if include_ui_details and capture_result["use_ui_tree"]:
++        tree = desktop_state.tree_state
++        if tree.word_geometry_incomplete:
++            response_text += "\nWord coordinates incomplete: the accessibility provider did not advance its text range. Control values and available labels are retained.\n"
++        nodes = [*tree.interactive_nodes, *tree.scrollable_nodes]
++        labels = [{"label": index, "name": repair_surrogates(node.name),
++                   "controlType": node.control_type,
++                   "window": repair_surrogates(node.window_name),
++                   "loc": [node.center.x, node.center.y],
++                   "kind": "interactive" if index < len(tree.interactive_nodes) else "scrollable"}
++                  for index, node in enumerate(nodes)]
++        response_text += "\nReach UI Labels: " + json.dumps(labels, ensure_ascii=True) + "\n"
++
+     response = [response_text]
+     if screenshot_bytes:
+         response.append(Image(data=screenshot_bytes, format="png"))
+diff --git a/src/windows_mcp/tools/clipboard.py b/src/windows_mcp/tools/clipboard.py
+index 11260aa..056f963 100644
+--- a/src/windows_mcp/tools/clipboard.py
++++ b/src/windows_mcp/tools/clipboard.py
+@@ -40,7 +40,7 @@ def register(mcp, *, get_desktop, get_analytics):
+                     win32clipboard.CloseClipboard()
+             elif mode == "set":
+                 if text is None:
+-                    return "Error: text parameter required for set mode."
++                    raise ValueError("Error: text parameter required for set mode.")
+                 win32clipboard.OpenClipboard()
+                 try:
+                     win32clipboard.EmptyClipboard()
+@@ -49,6 +49,6 @@ def register(mcp, *, get_desktop, get_analytics):
+                 finally:
+                     win32clipboard.CloseClipboard()
+             else:
+-                return 'Error: mode must be either "get" or "set".'
++                raise ValueError('Error: mode must be either "get" or "set".')
+         except Exception as e:
+             raise
+diff --git a/src/windows_mcp/tools/filesystem.py b/src/windows_mcp/tools/filesystem.py
+index 03204d3..b93c565 100644
+--- a/src/windows_mcp/tools/filesystem.py
++++ b/src/windows_mcp/tools/filesystem.py
+@@ -67,15 +67,15 @@ def register(mcp, *, get_desktop, get_analytics):
+                     return filesystem.read_file(path, offset=offset, limit=limit, encoding=encoding)
+                 case 'write':
+                     if content is None:
+-                        return 'Error: content parameter is required for write mode.'
++                        raise ValueError('Error: content parameter is required for write mode.')
+                     return filesystem.write_file(path, content, append=append, encoding=encoding)
+                 case 'copy':
+                     if destination is None:
+-                        return 'Error: destination parameter is required for copy mode.'
++                        raise ValueError('Error: destination parameter is required for copy mode.')
+                     return filesystem.copy_path(path, destination, overwrite=overwrite)
+                 case 'move':
+                     if destination is None:
+-                        return 'Error: destination parameter is required for move mode.'
++                        raise ValueError('Error: destination parameter is required for move mode.')
+                     return filesystem.move_path(path, destination, overwrite=overwrite)
+                 case 'delete':
+                     return filesystem.delete_path(path, recursive=recursive)
+@@ -83,11 +83,11 @@ def register(mcp, *, get_desktop, get_analytics):
+                     return filesystem.list_directory(path, pattern=pattern, recursive=recursive, show_hidden=show_hidden)
+                 case 'search':
+                     if pattern is None:
+-                        return 'Error: pattern parameter is required for search mode.'
++                        raise ValueError('Error: pattern parameter is required for search mode.')
+                     return filesystem.search_files(path, pattern, recursive=recursive)
+                 case 'info':
+                     return filesystem.get_file_info(path)
+                 case _:
+-                    return f'Error: Unknown mode "{mode}". Use: read, write, copy, move, delete, list, search, info.'
++                    raise ValueError(f'Error: Unknown mode "{mode}". Use: read, write, copy, move, delete, list, search, info.')
+         except Exception as e:
+             raise
+diff --git a/src/windows_mcp/tools/input.py b/src/windows_mcp/tools/input.py
+index d771d70..22072d6 100644
+--- a/src/windows_mcp/tools/input.py
++++ b/src/windows_mcp/tools/input.py
+@@ -322,9 +322,11 @@ def register(
+             loc = _resolve_label(desktop, label)
+         if loc and len(loc) != 2:
+             raise ValueError("Location must be a list of exactly 2 integers [x, y]")
++        if direction not in ({"up", "down"} if type == "vertical" else {"left", "right"}):
++            raise ValueError("Scroll direction does not match its axis")
+         response = desktop.scroll(loc, type, direction, wheel_times)
+         if response:
+-            return response
++            raise RuntimeError(response)
+         return (
+             f"Scrolled {type} {direction} by {wheel_times} wheel times"
+             + f" at ({loc[0]},{loc[1]})."
+diff --git a/src/windows_mcp/tools/process.py b/src/windows_mcp/tools/process.py
+index aae1898..ba88b04 100644
+--- a/src/windows_mcp/tools/process.py
++++ b/src/windows_mcp/tools/process.py
+@@ -37,6 +37,6 @@ def register(mcp, *, get_desktop, get_analytics):
+                 force = force is True or (isinstance(force, str) and force.lower() == "true")
+                 return process.kill_process(name=name, pid=pid, force=force)
+             else:
+-                return 'Error: mode must be either "list" or "kill".'
++                raise ValueError('Error: mode must be either "list" or "kill".')
+         except Exception as e:
+             raise
+diff --git a/src/windows_mcp/tools/registry.py b/src/windows_mcp/tools/registry.py
+index 36d99e1..adf7819 100644
+--- a/src/windows_mcp/tools/registry.py
++++ b/src/windows_mcp/tools/registry.py
+@@ -33,19 +33,19 @@ def register(mcp, *, get_desktop, get_analytics):
+         try:
+             if mode == 'get':
+                 if name is None:
+-                    return 'Error: name parameter is required for get mode.'
++                    raise ValueError('Error: name parameter is required for get mode.')
+                 return registry.get_value(path=path, name=name)
+             elif mode == 'set':
+                 if name is None:
+-                    return 'Error: name parameter is required for set mode.'
++                    raise ValueError('Error: name parameter is required for set mode.')
+                 if value is None:
+-                    return 'Error: value parameter is required for set mode.'
++                    raise ValueError('Error: value parameter is required for set mode.')
+                 return registry.set_value(path=path, name=name, value=value, reg_type=type)
+             elif mode == 'delete':
+                 return registry.delete_entry(path=path, name=name)
+             elif mode == 'list':
+                 return registry.list_key(path=path)
+             else:
+-                return 'Error: mode must be "get", "set", "delete", or "list".'
++                raise ValueError('Error: mode must be "get", "set", "delete", or "list".')
+         except Exception as e:
+             raise
+diff --git a/src/windows_mcp/tools/scrape.py b/src/windows_mcp/tools/scrape.py
+index 50d0fea..2a90e85 100644
+--- a/src/windows_mcp/tools/scrape.py
++++ b/src/windows_mcp/tools/scrape.py
+@@ -47,7 +47,7 @@ def register(mcp, *, get_desktop, get_analytics):
+             )
+             tree_state = desktop_state.tree_state
+             if not tree_state.dom_node:
+-                return f"No DOM information found. Please open {url} in browser first."
++                raise RuntimeError(f"No DOM information found. Please open {url} in browser first.")
+             dom_node = tree_state.dom_node
+             vertical_scroll_percent = dom_node.metadata.get("vertical_scroll_percent", 0)
+             content = "\n".join([node.text for node in tree_state.dom_informative_nodes])
+diff --git a/src/windows_mcp/tools/shell.py b/src/windows_mcp/tools/shell.py
+index 2535990..e5c8015 100644
+--- a/src/windows_mcp/tools/shell.py
++++ b/src/windows_mcp/tools/shell.py
+@@ -22,6 +22,8 @@ def register(mcp, *, get_desktop, get_analytics):
+     def powershell_tool(command: str, timeout: int = 30, ctx: Context = None) -> str:
+         try:
+             response, status_code = PowerShellExecutor.execute_command(command, timeout)
++            if status_code != 0:
++                raise RuntimeError(f"PowerShell failed with status {status_code}: {response}")
+             return f"Response: {response}\nStatus Code: {status_code}"
+         except Exception as e:
+             raise
+diff --git a/src/windows_mcp/tree/service.py b/src/windows_mcp/tree/service.py
+index 25b72a9..a8c14cc 100644
+--- a/src/windows_mcp/tree/service.py
++++ b/src/windows_mcp/tree/service.py
+@@ -1,6 +1,7 @@
+ from __future__ import annotations
+ from windows_mcp.uia import Control, ComboBoxControl, DocumentControl, CheckBoxControl, EditControl, ButtonControl, SliderControl, ScrollPattern, WindowControl, ImageControl, Rect, ExpandCollapseState, ToggleState, PatternId, PropertyId, AccessibleRoleNames, TreeScope, ControlFromHandle, UIADeadElementError, from_com_error, is_timeout_exception, TextPatternRangeEndpoint
+ from windows_mcp.tree.config import INTERACTIVE_CONTROL_TYPE_NAMES, DOCUMENT_CONTROL_TYPE_NAMES, INFORMATIVE_CONTROL_TYPE_NAMES, DEFAULT_ACTIONS, INTERACTIVE_ROLES, THREAD_MAX_RETRIES, STRUCTURAL_CONTROL_TYPE_NAMES
++from windows_mcp.uia.controls import WordRangeTraversalError
+ from windows_mcp.tree.views import TreeElementNode, ScrollElementNode, TextElementNode, Center, BoundingBox, TreeState, SemanticNode, _prune_structural, _reverse_children_order
+ from windows_mcp.tree.cache_utils import (
+     CacheRequestFactory,
+@@ -108,6 +109,7 @@ class Tree:
+         self.screen_box=desktop.get_screen_box()
+         self.tree_state=None
+         self.element_budget=TreeElementBudget(resolve_max_tree_elements())
++        self.word_geometry_incomplete=False
+ 
+ 
+     def get_state(self,active_window_handle:int|None,other_windows_handles:list[int],use_dom:bool=False)->TreeState:
+@@ -118,6 +120,7 @@ class Tree:
+         # Fresh budget per capture — huge lists/grids (e.g. thousands of rows) must not
+         # stall UI Automation or blow up the serialized response.
+         self.element_budget = TreeElementBudget(resolve_max_tree_elements())
++        self.word_geometry_incomplete = False
+         start_time = perf_counter()
+         profile_enabled = _snapshot_profile_enabled()
+ 
+@@ -221,6 +224,7 @@ class Tree:
+             semantic_tree_root=desktop_root,
+             truncated=self.element_budget.truncated,
+             element_limit=self.element_budget.limit,
++            word_geometry_incomplete=self.word_geometry_incomplete,
+         )
+ 
+     def get_window_wise_nodes(self,windows_handles:list[int],active_window_flag:bool,use_dom:bool=False) -> tuple[list[TreeElementNode],list[ScrollElementNode],list[TextElementNode],list[int],list[SemanticNode]]:
+@@ -671,9 +675,14 @@ class Tree:
+                                     metadata['value']=value.strip() if value else '(empty)'
+                                     if not is_password and not is_dom:
+                                         words=node.GetAllWordBoundingBoxes()
+-                                        for word,boxes in words:
++                                        for word,boxes in words or []:
+                                             for box in boxes:
+                                                 word_elements.append((word,box))
++                                except WordRangeTraversalError:
++                                    # Keep the real control/value; its optional word
++                                    # coordinates are incomplete and must be disclosed.
++                                    metadata['word_geometry_incomplete']=True
++                                    self.word_geometry_incomplete=True
+                                 except Exception:
+                                     pass
+ 
+diff --git a/src/windows_mcp/tree/views.py b/src/windows_mcp/tree/views.py
+index 8a49958..ea9a2d8 100755
+--- a/src/windows_mcp/tree/views.py
++++ b/src/windows_mcp/tree/views.py
+@@ -26,6 +26,8 @@ def _node_meta_str(metadata: dict[str, Any]) -> str:
+         parts.append("focused")
+     if metadata.get("is_password"):
+         parts.append("password")
++    if metadata.get("word_geometry_incomplete"):
++        parts.append("word coordinates incomplete: provider range did not advance")
+     value = metadata.get("value")
+     # Compare against None rather than testing truthiness: a slider sitting at its
+     # minimum reports value 0.0, which is falsy, so a plain `if value` silently hides
+@@ -181,6 +183,7 @@ class TreeState:
+     semantic_tree_root: "SemanticNode | None" = None
+     truncated: bool = False
+     element_limit: int = 0
++    word_geometry_incomplete: bool = False
+ 
+     def semantic_tree_to_string(self) -> str:
+         if not self.semantic_tree_root:
+diff --git a/src/windows_mcp/uia/controls.py b/src/windows_mcp/uia/controls.py
+index a0bc4fe..3b0c024 100755
+--- a/src/windows_mcp/uia/controls.py
++++ b/src/windows_mcp/uia/controls.py
+@@ -49,6 +49,10 @@ ProcessTime()  # need to call it once if python version <= 3.6
+ TreeNode = Any
+ 
+ 
++class WordRangeTraversalError(RuntimeError):
++    """A provider reported forward navigation without advancing its text range."""
++
++
+ class _ViewWalkerState:
+     """Tracks whether this process's UIA tree walker actually returns children.
+ 
+@@ -1260,9 +1264,16 @@ class Control:
+                 text = wordRange.GetText(-1).strip()
+                 if text:
+                     yield text, wordRange
++                previous_range = wordRange.Clone()
+                 moved = wordRange.Move(TextUnit.Word, 1, waitTime=0)
+                 if moved == 0:
+                     break
++                if moved < 0 or wordRange.CompareEndpoints(
++                    TextPatternRangeEndpoint.Start, previous_range, TextPatternRangeEndpoint.Start
++                ) <= 0:
++                    # Some providers wrap back to the first word while returning 1.
++                    # Never turn that cycle into an unbounded read or repeated labels.
++                    raise WordRangeTraversalError("provider text range did not advance")
+ 
+     def GetAllWordBoundingBoxes(self) -> List[Tuple[str, List[Rect]]] | None:
+         """

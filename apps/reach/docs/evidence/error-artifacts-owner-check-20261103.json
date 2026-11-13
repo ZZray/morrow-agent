@@ -1,0 +1,48 @@
+{
+  "author": "Ray Zhang",
+  "sources": 75,
+  "binaries": 2,
+  "evidence": 22,
+  "checks": [
+    {
+      "operationId": "319e221e-e66a-43cc-91a1-9a6f45bbb59c",
+      "status": "failed",
+      "bytes": 114243,
+      "sha256": "b22200c3e24f9a4e208706454bff0994f8b3823b7de920e6ef97c79b9db17640",
+      "events": 7,
+      "originalEventsExact": true,
+      "allAcknowledged": true,
+      "backend": "Windows-MCP schema rejection"
+    },
+    {
+      "operationId": "4dca0655-3ada-4206-a7c8-dca7854e9307",
+      "status": "unknown",
+      "bytes": 114242,
+      "sha256": "991f0e486c7ff80865ab64f2a71a152d8067b9207fa3129fc961d12599d066ec",
+      "events": 7,
+      "originalEventsExact": true,
+      "allAcknowledged": true,
+      "backend": "Windows-MCP schema rejection"
+    },
+    {
+      "operationId": "08ac9c2c-52b1-4dfc-8a76-d1c77540dc3c",
+      "status": "failed",
+      "bytes": 1260033,
+      "sha256": "b43a19b4bfbdd2208d86b2870e40e04c4f3ed0391317f8ab38dba8fae0d60b34",
+      "events": 25,
+      "originalEventsExact": true,
+      "allAcknowledged": true,
+      "backend": "controlled stdio fault server"
+    },
+    {
+      "operationId": "86b5ada9-d41d-4c56-b297-c775a5f2beba",
+      "status": "failed",
+      "bytes": 1100037,
+      "sha256": "7962837bf963ee11aa1f64aadee77e1032b6348c8725701370421837ff205567",
+      "events": 22,
+      "originalEventsExact": true,
+      "allAcknowledged": true,
+      "backend": "controlled stdio fault server"
+    }
+  ]
+}

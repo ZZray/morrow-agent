@@ -1,0 +1,215 @@
+{
+  "version": 1,
+  "date": "2026-11-13",
+  "status": "WIP source migration; scoped local integration verified; complete Reach acceptance open",
+  "repository": "https://github.com/ZZray/morrow-agent.git",
+  "branch": "codex/reach-subproject",
+  "base": "a3e4f2ae29b444cf29db3b1f8a8e8cdb1b51517a",
+  "sourceFiles": 818,
+  "historicalFixtureFiles": 15,
+  "sharedAdapterPortFiles": 4,
+  "sourceSnapshotsVerified": true,
+  "stagedFilesBeforeSummary": 848,
+  "checks": [
+    {
+      "name": "Reach Node tests",
+      "passed": 23,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "name": "Reach desktop Host tests",
+      "passed": 7,
+      "failed": 0,
+      "skipped": 0,
+      "note": "existing unused Job helper warning retained"
+    },
+    {
+      "name": "service regression (8 explicit files)",
+      "passed": 59,
+      "failed": 0,
+      "skipped": 2
+    },
+    {
+      "name": "resume service including actual schema8 fixture",
+      "passed": 10,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "name": "Morrow MCP all targets",
+      "passed": 26,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "name": "actual Node + Morrow sidecar file task",
+      "passed": 1,
+      "failed": 0,
+      "skipped": 0,
+      "controlledModel": true,
+      "realOrganizationModel": false
+    },
+    {
+      "name": "fixed-source and actual workspace-lock audit",
+      "passed": 8,
+      "failed": 0
+    },
+    {
+      "name": "complete dependency audit",
+      "workspaces": 4,
+      "passed": true,
+      "offline": true
+    },
+    {
+      "name": "Node and MCP Clippy -D warnings",
+      "passed": true
+    },
+    {
+      "name": "service/admin/Desk host/Desk web typechecks and admin build",
+      "passed": true
+    },
+    {
+      "name": "Cargo formatting (root, Node, desktop)",
+      "passed": true
+    },
+    {
+      "name": "authored entry and handoff document links",
+      "documents": 8,
+      "localLinks": 59,
+      "brokenLinks": 0
+    },
+    {
+      "name": "task checklist",
+      "uniqueIds": 57,
+      "checked": 0,
+      "baseAccepted": 0,
+      "baseTotal": 52,
+      "deskAccepted": 0,
+      "deskTotal": 5
+    },
+    {
+      "name": "staged whitespace",
+      "passed": true,
+      "preservedImportedSources": "Historical patches, notices, evidence and vendored sources use explicit -whitespace attributes; owned source whitespace corrected."
+    }
+  ],
+  "actualNode": {
+    "localOnlyEvidence": "apps/reach/work/agent-node-e0fe6647-905c-44a3-94d5-d61dae8170db/asserted.json",
+    "evidenceSha256": "260a2f4ee3faffa09ab89972cd62a26f557a1ab5bea2cfe4ea9b70c03d67ff6b",
+    "childOperations": 2,
+    "modelRequests": 3,
+    "status": "awaiting_review",
+    "taskAccepted": false
+  },
+  "runtime": {
+    "reach.exe": {
+      "localOnly": true,
+      "sha256": "81b497a92fac270599e8f90fd1e39b24f6cc4b9f694a53282720c5c384200995"
+    },
+    "morrow-agent-jsonl.exe": {
+      "localOnly": true,
+      "sha256": "fbcc0b653464c1ed9d9061021c4d80e94c8dddf172d22082fd8d8722bb05a1f5"
+    }
+  },
+  "independentReview": {
+    "reviewer": "/root/reach_migration_review",
+    "scope": "MCP evidence, legacy Session basis, active migration paths, packaging and handoff; not full product",
+    "finding": "Agent audit expected a member-local lock; corrected to actual root workspace Cargo.lock and verified by metadata plus regression",
+    "remainingConfirmedFindings": 0
+  },
+  "retainedFailures": [
+    "Initial offline sidecar build missed syn 3.0.10; locked dependency downloaded without lock downgrade.",
+    "Initial desktop build missed required MCP evidence APIs; bounded adapter port tested.",
+    "First Node integration rejected native session_id versus legacy receipt; explicit Session binding and strict remaining-basis checks fixed it; fresh actual run passed.",
+    "Old R06 screenshot crash recovery remains failed/unaccepted."
+  ],
+  "open": [
+    "inspection/close/seal/typed image protocol port",
+    "full multi-Run, stop and crash matrix",
+    "old runtime identities/fences/install state migration",
+    "real organization models and visual tasks",
+    "SCM/UAC, clean-machine install, update and uninstall",
+    "server access, deployment and complete Reach acceptance"
+  ],
+  "logs": [
+    {
+      "path": "tmp/reach-migration-20261113/node-tests-final.log",
+      "localOnly": true,
+      "sha256": "d8656cf40f39605ca35d68ed72b7bceecc1ca2dd55a0c083142e8c652a63f2cc",
+      "bytes": 2747
+    },
+    {
+      "path": "tmp/reach-migration-20261113/node-build-final.log",
+      "localOnly": true,
+      "sha256": "4e73e5c45ce8d1a0022ad2d8057f5099cafaa6f4f2dedbeef0eb943b5cc2fd70",
+      "bytes": 143
+    },
+    {
+      "path": "tmp/reach-migration-20261113/desktop-tests-final.log",
+      "localOnly": true,
+      "sha256": "2deed4c7e6dcb1d0dae77d97dc9938b1531ee01ef98c5217d39d7983dba2bed1",
+      "bytes": 1773
+    },
+    {
+      "path": "tmp/reach-migration-20261113/reach-service-tests.log",
+      "localOnly": true,
+      "sha256": "bd5fd03807c2210fcff58e0bfec4b62a3782f1c406091d8bac652fc9886a4aab",
+      "bytes": 14824
+    },
+    {
+      "path": "tmp/reach-migration-20261113/resume-service-tests.log",
+      "localOnly": true,
+      "sha256": "8f1204672323caf70624343ffbd859c7afd6355e239b0228c912a06ebf86da6f",
+      "bytes": 2495
+    },
+    {
+      "path": "tmp/reach-migration-20261113/mcp-tests.log",
+      "localOnly": true,
+      "sha256": "7f71fc267e55527e6e7ddd026472c582b61ac55a9e16e0a3d87c458af4c00e81",
+      "bytes": 3942
+    },
+    {
+      "path": "tmp/reach-migration-20261113/mcp-clippy.log",
+      "localOnly": true,
+      "sha256": "c01a5d7aed9a537f1545df07b3fc6c1962f62021d3665c23f1324466aef59a10",
+      "bytes": 4599
+    },
+    {
+      "path": "tmp/reach-migration-20261113/node-clippy.log",
+      "localOnly": true,
+      "sha256": "c8aae3d3eadb496a653fbc63d64f57253fe930f7c8323018f209add8a24346d2",
+      "bytes": 209
+    },
+    {
+      "path": "tmp/reach-migration-20261113/sidecar-build-final.log",
+      "localOnly": true,
+      "sha256": "1b6d029d200cb9a50723f6f9ae1c1a5662a1b8870d08d02435d98ce48f8a1637",
+      "bytes": 163
+    },
+    {
+      "path": "tmp/reach-migration-20261113/node-morrow-integration.log",
+      "localOnly": true,
+      "sha256": "4003d7bb5c61dde86b9c1b2c781d341485526c4c6c070ca19a8530a10f2980af",
+      "bytes": 2256
+    },
+    {
+      "path": "tmp/reach-migration-20261113/node-morrow-integration-final.log",
+      "localOnly": true,
+      "sha256": "919ed96accbe836c9d1cd36516d97db2e895d2be80bba663ea8f1be5247a4d91",
+      "bytes": 358
+    },
+    {
+      "path": "tmp/reach-migration-20261113/dependency-audit.log",
+      "localOnly": true,
+      "sha256": "2033733f80b22862d72de57b2b587c391387b5b89719ba560c8a93a800de8645",
+      "bytes": 48
+    },
+    {
+      "path": "tmp/reach-migration-20261113/diff-check-final.log",
+      "localOnly": true,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    }
+  ]
+}

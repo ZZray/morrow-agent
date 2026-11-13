@@ -1,0 +1,113 @@
+{
+  "author": "Ray Zhang",
+  "scope": "Actual EXE inspect plus EXE/ZIP/three payload entry/sourceInputs identities only; no install or full verify-payload repeat",
+  "installer": "E:\\repos\\ara\\apps\\reach\\outputs\\windows-complete-1fab0ba3b8239354-93fe5dccdd7f\\Reach-Setup-0.1.0-preview-60a6bfdfd7879528.exe",
+  "installerSha256": "60a6bfdfd7879528231a2300533f6c99ebdd21168dd584b11992a164e85d2b80",
+  "zip": "E:\\repos\\ara\\apps\\reach\\work\\full-package-d1a90076925149beb8547f6654ce80c1\\payload.zip",
+  "zipSha256": "1fab0ba3b823935428aca08b0bafe0ad2b7531f5451894a607792d3bdf24580f",
+  "zipEntries": 6328,
+  "entries": [
+    {
+      "path": "reach.exe",
+      "bytes": 11924480,
+      "sha256": "69b14cfebbff4dd63fe755bd870afe5d83e469fb25f5eb260a432c5dc4231727"
+    },
+    {
+      "path": "desktop/reach-desktop.exe",
+      "bytes": 10978304,
+      "sha256": "a679c452c8741fe3a83d3006bea1627aad6a520786d89142d190db4a05e657d1"
+    },
+    {
+      "path": "payload-manifest.json",
+      "bytes": 1047647,
+      "sha256": "dd77efb19113d9be7f08fb0bc3d91ba0032186993b0f74d2e89d3754a5a89c16"
+    }
+  ],
+  "sourceIdentity": "93fe5dccdd7fdee344180610faaae42a12154ef0d5f07f9279394df00e34b9bf",
+  "sourceChecks": [
+    {
+      "path": "install.ps1",
+      "sha256": "66bdc4d93a3821ce5c4b4aec80d841cf4a5ff1feb2163829fb0e8d7014dbe63f",
+      "match": true
+    },
+    {
+      "path": "payload.ps1",
+      "sha256": "e157371a0ca649dd260a2cdaa3bb426db6eb35a35413a17941b79c7bcb51b57e",
+      "match": true
+    },
+    {
+      "path": "ownership.ps1",
+      "sha256": "f61f53e7d93a81ca788c0f42f50fbb07e60c4ccc99e254f5e69817710ac6a08c",
+      "match": true
+    },
+    {
+      "path": "maintenance-writes.ps1",
+      "sha256": "391a6ba705cb99cae16d1e5f5984488059041e97f9435b705a17c1ddc0259f16",
+      "match": true
+    },
+    {
+      "path": "maintenance-entry.ps1",
+      "sha256": "0a6b8569ba60bda4a1a361b624952ad77340672066dc2a34552919da8bd281ac",
+      "match": true
+    },
+    {
+      "path": "uninstall-files.ps1",
+      "sha256": "ac9eb912229683bc7e068eb0fc9f4cda0b26933051f39d6df0398b255e1a84fc",
+      "match": true
+    },
+    {
+      "path": "uninstall-transaction.ps1",
+      "sha256": "51419f58763747488c84ab200ea010b3102fac6a2a6350ec8979aef69b9bc60e",
+      "match": true
+    },
+    {
+      "path": "uninstall-host.ps1",
+      "sha256": "8fd2b657aea3a5da653d9691e13750308efbde8e77fe167d1f0382c21ac38a45",
+      "match": true
+    },
+    {
+      "path": "setup/src/main.rs",
+      "sha256": "e132bb8ebbd9c40cd89cf927c890436bfb2e672684b9802d343c0d4562724c7e",
+      "match": true
+    },
+    {
+      "path": "setup/build.rs",
+      "sha256": "f7d951e0e833e111dc6a04fa3c02da6bce142a9293441af66acab2e9acc0f714",
+      "match": true
+    },
+    {
+      "path": "setup/Cargo.toml",
+      "sha256": "40909026c0d327e926f93b3ff1133b0760561b78786d8b7c53cc5bd6694e4596",
+      "match": true
+    },
+    {
+      "path": "setup/Cargo.lock",
+      "sha256": "361a0d7be5a273b3b0f9b88015384af0178426abff9d3d40f6d0fe5721ff245e",
+      "match": true
+    },
+    {
+      "path": "resources.rs",
+      "sha256": "2ab606fbe5d250bd19c57cf3087caebd54edd9bd6abdcc053d173684747aca96",
+      "match": true
+    },
+    {
+      "path": "build-complete.ps1",
+      "sha256": "cdda8434ef8cb999541f9b1f39c80d163467d9c6a954861ca1a5454e49f62a0e",
+      "match": true
+    },
+    {
+      "path": "../../src/windows_identity.rs",
+      "sha256": "22e2786eff5b3ff406c2b2f404ff4fa80b3aa865f1293d5615c76a4ebec1bd5c",
+      "match": true
+    },
+    {
+      "path": "../../assets/brand/reach.ico",
+      "sha256": "fe2ee6dfef2435aa8cc3a660c9c4abe263f30bf35522a1f27f4b902356cb5fda",
+      "match": true
+    }
+  ],
+  "inspectExitCode": 0,
+  "stderrBytes": 0,
+  "installationTested": false,
+  "codeSigned": false
+}

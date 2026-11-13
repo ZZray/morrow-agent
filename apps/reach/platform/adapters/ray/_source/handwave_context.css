@@ -1,0 +1,99 @@
+/* Reserve a genuine context column; retain the existing chat, composer and drawers. */
+.hw-context-rail{flex:0 0 auto; min-width:0; margin:0 16px 10px; color:var(--text); font:12px/1.5 var(--sans)}
+.hw-context-summary{padding:9px 12px; cursor:pointer; color:var(--text-2); border:1px solid var(--hair); border-radius:var(--r-card); background:var(--sel-hover)}
+.hw-context-summary::marker{color:var(--muted)}
+.hw-context-rail[open]>.hw-context-summary{margin-bottom:8px}
+.hw-context-body{display:flex; flex-direction:column; gap:10px; overflow:auto; overscroll-behavior:contain; max-height:35vh; padding:1px}
+.hw-context-card{position:relative; min-width:0; border:1px solid var(--hair); border-radius:var(--r-card); background:var(--mat-card); padding:14px; overflow-wrap:anywhere}
+.hw-context-heading{margin:0 0 10px; font:600 12px/1.5 var(--sans); color:var(--text-2)}
+.hw-context-hint{margin:6px 0 0; font:12px/1.6 var(--sans); color:var(--muted)}
+.hw-context-badge{display:inline-block; color:var(--muted); border:1px solid var(--hair); border-radius:6px; padding:2px 6px; font-size:11px}
+.hw-context-refresh{position:absolute; top:11px; right:10px; padding:3px 6px; border:0; border-radius:6px; background:transparent; color:var(--muted); font:11px/1.5 var(--sans); cursor:pointer}
+.hw-context-refresh:hover{background:var(--sel-hover); color:var(--text)}
+.hw-context-refresh:disabled{opacity:.5; cursor:wait}
+.hw-context-source{display:flex; align-items:center; gap:9px; padding:7px 0; min-width:0}
+.hw-context-file-icon{flex:none; color:var(--muted); font-size:16px}
+.hw-context-source-copy{display:flex; flex-direction:column; min-width:0; gap:1px}
+.hw-context-source-copy b{font-weight:400; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.hw-context-source-copy small{font-size:10px; color:var(--muted)}
+.hw-context-load-state{margin:5px 0; color:var(--muted); font-size:11px}
+.hw-context-source-note{padding-top:8px; border-top:1px solid var(--hair); font-size:10px}
+.hw-context-unowned{display:none!important}
+body #contextRail #agentDock{position:static; inset:auto; width:auto; max-height:none; overflow:visible; border:0; border-radius:0; background:transparent; box-shadow:none; backdrop-filter:none; -webkit-backdrop-filter:none; animation:none}
+body #contextRail #agentDockHead{padding:0 0 10px; gap:7px}
+body #contextRail .agent-dock-orbit{width:18px; height:18px}
+body #contextRail .agent-dock-orbit i{animation:none}
+body #contextRail .agent-roster{max-height:200px; overflow:auto; padding:8px 0}
+body #contextRail .agent-person{padding:8px 2px}
+body #contextRail .agent-tasks,body #contextRail .agent-ctl,body #contextRail .agent-ask{padding-inline:0}
+body #contextRail .agent-ctl-row{flex-wrap:wrap}
+body #contextRail .agent-timeline{max-height:240px; overflow:auto}
+.hw-public-process{flex:none; min-width:0; align-self:stretch; font:12px/1.6 var(--sans); color:var(--muted)}
+.hw-public-process-summary{cursor:pointer; width:fit-content; max-width:100%; overflow-wrap:anywhere; padding:6px 2px; color:var(--text-2)}
+.hw-public-process-list{margin:8px 0; padding-left:20px; border-left:1px solid var(--hair); max-height:280px; overflow:auto; overflow-wrap:anywhere}
+.hw-public-process-list li{padding:3px 0}
+html[data-hw-context-ready="1"] #thinkingPanel{display:none!important}
+.hw-context-summary:focus-visible,.hw-public-process-summary:focus-visible{outline:2px solid var(--primary); outline-offset:3px; border-radius:6px}
+@media(min-width:1180px){
+  body .ws-app .chat-main.hw-context-host{position:relative; padding-inline-end:300px}
+  body .ws-app .chat-main.hw-context-host>.topbar{margin-inline-end:-300px}
+  .hw-context-rail{position:absolute; top:68px; right:12px; bottom:12px; width:276px; margin:0}
+  .hw-context-rail>.hw-context-summary{display:none}
+  .hw-context-body{max-height:100%; padding:0 1px 8px}
+}
+@media(max-width:780px){
+  .hw-context-rail{margin:0 12px 8px}
+  .hw-context-body{max-height:32vh}
+  .hw-context-refresh{top:6px; min-height:44px; min-width:44px; padding:8px}
+  .hw-context-card:has(>.hw-context-refresh)>.hw-context-heading{min-height:30px; padding-right:76px}
+}
+@media(hover:hover) and (pointer:fine){
+  html[data-hw-motion="pointer"] .hw-context-refresh{transition:background-color 100ms var(--ease),color 100ms var(--ease)}
+}
+@media(prefers-reduced-motion:reduce){.hw-context-rail *,.hw-public-process *{animation:none!important;transition:none!important}}
+@media(prefers-reduced-transparency:reduce){.hw-context-card{background:var(--ink)}}
+@media(prefers-contrast:more){.hw-context-card,.hw-context-summary{border-color:var(--text-2)}.hw-context-hint,.hw-context-load-state,.hw-context-source-copy small{color:var(--text-2)}}
+
+/* Compact native disclosures: headers remain readable when their body is folded. */
+details.hw-context-card{padding:10px 12px;flex-shrink:0}
+.hw-card-summary{list-style:none;cursor:pointer;min-width:0;overflow-wrap:anywhere;color:var(--text-2);font:600 12px/1.5 var(--sans)}
+.hw-card-summary::-webkit-details-marker{display:none}
+.hw-card-summary::before{content:'›';display:inline-block;width:14px;color:var(--muted);font-size:15px;line-height:1;transform-origin:5px 50%}
+[open]>.hw-card-summary::before{transform:rotate(90deg)}
+details.hw-context-card:not([open])>.hw-card-summary{margin-bottom:0;padding-right:0}
+details.hw-context-card[open]:has(>.hw-context-refresh)>.hw-card-summary{padding-right:70px}
+.hw-card-summary:focus-visible{outline:2px solid var(--primary);outline-offset:3px;border-radius:4px}
+body #contextRail #agentTimeline{position:relative;padding:0;max-height:300px}
+body #contextRail #agentTimeline>.agent-timeline-head{position:absolute;top:0;right:0;margin:0;padding:0;z-index:1;background:transparent}
+.hw-trace-disclosure>.hw-card-summary{padding:8px 28px 8px 2px}
+.hw-output-disclosure{margin-top:5px;min-width:0}
+.hw-output-disclosure>.hw-card-summary{font-weight:400;color:var(--muted);padding:3px 0}
+body #contextRail .hw-output-disclosure pre{max-height:180px;overflow:auto;margin:5px 0;white-space:pre-wrap;overflow-wrap:anywhere}
+@media(max-width:780px){.hw-card-summary{min-height:44px;padding-block:8px}.hw-context-card[open]:has(>.hw-context-refresh)>.hw-card-summary{min-height:30px}.hw-trace-disclosure>.hw-card-summary{padding-block:12px}.hw-output-disclosure>.hw-card-summary{padding-block:10px}}
+@media(hover:hover) and (pointer:fine){.hw-card-summary:hover{color:var(--text)}html[data-hw-motion="pointer"] .hw-card-summary::before{transition:transform 120ms var(--ease)}}
+@media(prefers-reduced-motion:reduce){.hw-card-summary::before{transition:none!important}}
+
+@media(min-width:1180px){.hw-context-rail[open]>.hw-context-body{position:absolute;inset:0;max-height:none}}
+
+body #contextRail .hw-output-disclosure small{display:block;max-height:180px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere}
+
+@media(max-width:780px){.hw-context-card:has(>.hw-context-refresh)>.hw-card-summary,.hw-context-card[open]:has(>.hw-context-refresh)>.hw-card-summary{min-height:44px}}
+
+.hw-context-capacity-state{font-size:12px;color:var(--text-2);margin:8px 0 4px}
+.hw-context-capacity-size{font-size:12px;font-variant-numeric:tabular-nums;color:var(--text);margin:4px 0;overflow-wrap:anywhere}
+
+/* Planning stays in the rail; public tool receipts stay beside the answer. */
+.hw-plan-card[hidden]{display:none}
+.hw-plan-list{list-style:none;margin:4px 0 0;padding:0}
+.hw-plan-step{display:flex;align-items:baseline;gap:7px;padding:5px 0;color:var(--text-2);font:12px/1.5 var(--sans);min-width:0}
+.hw-plan-mark{flex:none;width:13px;color:var(--muted);text-align:center}
+.hw-plan-title{flex:1;min-width:0;overflow-wrap:anywhere}
+.hw-plan-state{flex:none;font-size:10px;color:var(--muted)}
+.hw-plan-running .hw-plan-title{color:var(--text);font-weight:600}
+.hw-plan-running .hw-plan-mark{color:var(--primary)}
+.hw-plan-done .hw-plan-mark{color:var(--text-2)}
+.hw-plan-blocked .hw-plan-mark,.hw-plan-unverified .hw-plan-state{color:var(--text-2)}
+.hw-plan-note{font-size:10px;padding-top:7px;border-top:1px solid var(--hair)}
+body #contextRail .hw-has-plan #agentTasks,body #contextRail .hw-chat-trace #agentTimeline{display:none!important}
+.hw-public-process .hw-output-disclosure pre{max-height:240px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;margin:5px 0;font:11px/1.6 var(--mono,var(--sans));color:var(--text-2)}
+@media(max-width:780px){.hw-plan-step{padding:7px 0}.hw-plan-state{font-size:10px}.hw-public-process-list{max-height:40vh}}

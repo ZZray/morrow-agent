@@ -1,0 +1,109 @@
+{
+  "artifacts": [
+    {
+      "path": "dist/admin/admin.js",
+      "sha256": "2d687c59a0cf4380e5f8eb329efb8a01d5950c5060f7d3d4cc0ba4ad332f9a0a"
+    },
+    {
+      "path": "E:\\workspace\\ray-front-reach\\bin\\ray-front-linux-amd64",
+      "sha256": "3b21deba87a5df87b19942a7b9557ab842ff92147e5103125d1d4a2b45fe7bd9"
+    },
+    {
+      "path": "work/reach-ray-sso-20261102.tar.gz",
+      "sha256": "fdb8c2099cda79050d3933ef1f18cec750840dcac18bbda8b6a4868ad4d83258"
+    }
+  ],
+  "basePoint": "ray-path-20261102/snapshot.json",
+  "raySources": [
+    {
+      "path": "apps/provider/cmd/ray_front/main.go",
+      "sha256": "e779d84425ee449a573dcf10633e8da95af9562d1e611863c0b86d02876c11dd"
+    },
+    {
+      "path": "apps/provider/cmd/ray_front/reach_ingress.go",
+      "sha256": "61e4dc909b024b6c0f514195b9f527a7d69e1fb3a6ce1720cd314b7d057b14ad"
+    },
+    {
+      "path": "apps/provider/cmd/ray_front/reach_ingress_test.go",
+      "sha256": "723a575940b7a52b73c91252d3f64af09ce6e78d9ca2c139f6e76027ac55f8f2"
+    },
+    {
+      "path": "apps/provider/cmd/ray_front/reach_sso.go",
+      "sha256": "b2a4257df945678e0b802b45f4d3c8d444811d48717f9a420c8a93647295f7be"
+    },
+    {
+      "path": "apps/provider/cmd/ray_front/reach_sso_test.go",
+      "sha256": "f8172cb38e75396ff66c0404d419f93f5c4a93158de584309da01e9b7e8a8386"
+    },
+    {
+      "path": "apps/provider/cmd/ray_front/web.go",
+      "sha256": "c280960f70ac331c356f948ae5bbf707d1bd87891f2cd861b43bd31908bb4cc2"
+    },
+    {
+      "path": "scripts/build.ps1",
+      "sha256": "6d97a93da2169a268fcf6bd453e0ce73512acc33010efb546636e4068e8a231b"
+    },
+    {
+      "path": "go.mod",
+      "sha256": "5e778f6fea2dbfbff3316eec1157b11805f57a66b379b6ac7ad226504e53f344"
+    },
+    {
+      "path": "go.sum",
+      "sha256": "849688ab871349d4b9be1e4d6a2bd6a330b53c25c7b146575345efb625c23024"
+    }
+  ],
+  "araSources": [
+    {
+      "path": "src/service/ray-login.ts",
+      "sha256": "364731e8a9e50dd94a25e775d05a5738f6fdab67b40ad61ddff23fdbb224107c"
+    },
+    {
+      "path": "src/service/store.ts",
+      "sha256": "830980a503473f045811f0f19c1777b8589dea8399c351fd40665b805610543d"
+    },
+    {
+      "path": "src/service/server.ts",
+      "sha256": "545e60d825b688f0188342aec6da511d539ab8e5936cb001206c40b3183deaaa"
+    },
+    {
+      "path": "src/service/main.ts",
+      "sha256": "39c42f95ea31702f6cc07937bdfcc034453a40ac902e359b3d792bc667cc6c24"
+    },
+    {
+      "path": "src/service/admin.ts",
+      "sha256": "4741aad3c2ba6f23eff2e6f2478de739cdc628c4f85f9659ab2fd7129fae5df3"
+    },
+    {
+      "path": "src/admin/admin.ts",
+      "sha256": "29d09a8ebcbdd1de70c4599d90c653fcfae5b3dab6f566212184f5dc08f8cf63"
+    },
+    {
+      "path": "src/admin/index.html",
+      "sha256": "667ea0f308385ade944319a4145bbf3672629c845a7962c31c51d8674e0dcf35"
+    },
+    {
+      "path": "tests/ray-login.test.ts",
+      "sha256": "557860ff006116d04caf8c7177cbc5cfd0a4dead90d8c13253734bc1a216d818"
+    },
+    {
+      "path": "deploy/enable-ray-sso.py",
+      "sha256": "5d12391e9de504d65e25631fd96dd44e565ce444f186674ae7b42a59f4ca54bd"
+    },
+    {
+      "path": "deploy/switch-ray-path.py",
+      "sha256": "8eebf71dc34df0cdd2279e5cf44b7cb4d79a7e2a49eeff5ffaa6afe159c7ce45"
+    },
+    {
+      "path": "deploy/install-first.py",
+      "sha256": "29eb803678bd2723960f9f24ebaf87fa1640ba6b5f8610143a0c756c84f2d24b"
+    },
+    {
+      "path": "package.json",
+      "sha256": "a1c9d5839a047db9b9fb8f6a8fd446281e65d78ebdc787bb375ff1f6ddcaf34a"
+    },
+    {
+      "path": "bun.lock",
+      "sha256": "76b67f1fa9f08c03e82d5215abd45f100a42088cca1169848b40617f3e203b9c"
+    }
+  ]
+}

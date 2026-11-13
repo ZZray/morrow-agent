@@ -1,0 +1,15 @@
+{
+  "author": "Ray Zhang",
+  "pages": 34,
+  "links": 200,
+  "errors": [],
+  "unique_task_ids": 57,
+  "source_files_verified": 41,
+  "binary_verified": true,
+  "root_bootstrap": {
+    "passed": false,
+    "existing_failures": 38,
+    "reach_failures": 0
+  },
+  "git_diff_check": "passed"
+}

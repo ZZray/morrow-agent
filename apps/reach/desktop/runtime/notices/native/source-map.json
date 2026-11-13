@@ -1,0 +1,90 @@
+[
+  {
+    "file": "CPython-3.14.7-licenses-and-acknowledgements.rst",
+    "bytes": 60039,
+    "sha256": "cd6f471c0bfdb099efefc25ddff9b3df8bf62e10428987f1f05e6f2f9e35d563",
+    "archive": "cpython-dccefbc.tar.gz",
+    "archiveSha256": "4fa7baa7777062f0508da83c4e5e8d206254990972640d005d5d9ea7f20e4403",
+    "sourcePath": "cpython-dccefbc14adf6cd13693f3b6b2802945c4e23e01/Doc/license.rst"
+  },
+  {
+    "file": "expat-2.8.2-COPYING",
+    "bytes": 1144,
+    "sha256": "31b15de82aa19a845156169a17a5488bf597e561b2c318d159ed583139b25e87",
+    "archive": "cpython-dccefbc.tar.gz",
+    "archiveSha256": "4fa7baa7777062f0508da83c4e5e8d206254990972640d005d5d9ea7f20e4403",
+    "sourcePath": "cpython-dccefbc14adf6cd13693f3b6b2802945c4e23e01/Modules/expat/COPYING"
+  },
+  {
+    "file": "xz-5.2.5-COPYING",
+    "bytes": 2775,
+    "sha256": "bcb02973ef6e87ea73d331b3a80df7748407f17efdb784b61b47e0e610d3bb5c",
+    "archive": "cpython-source-deps-c6bc0c612605622aaef101a33a751f9de2ecc193.tar.gz",
+    "archiveSha256": "115433c946ee069e857fd04cf41b38a4a74ed45d868a3b2e08ccd4a1f04f39d0",
+    "sourcePath": "cpython-source-deps-c6bc0c612605622aaef101a33a751f9de2ecc193/COPYING"
+  },
+  {
+    "file": "mpdecimal-4.0.0-COPYRIGHT.txt",
+    "bytes": 1285,
+    "sha256": "2713324211652ce4a60e6e21e54f9dc3004299e591b0933a352f1a89c5fb53c2",
+    "archive": "cpython-source-deps-48316ec025c1ebe500854c332be0a12c640c7301.tar.gz",
+    "archiveSha256": "2db089d12f3467f7ec6cc964e821faa18fb662c467b2fa713e32a39c374441e3",
+    "sourcePath": "cpython-source-deps-48316ec025c1ebe500854c332be0a12c640c7301/COPYRIGHT.txt"
+  },
+  {
+    "file": "zlib-ng-2.2.4-LICENSE.md",
+    "bytes": 867,
+    "sha256": "6c9f0d975b41afaa34d22f55bb8986ce69e5cb7ad327cb2b28820cd425edf5ee",
+    "archive": "cpython-source-deps-a502e047655c31db29601def76ad6539acacf43d.tar.gz",
+    "archiveSha256": "bdd663f25d83d29814bd903746392108b7bd5b880d101fc8a07aa3c12dd521f5",
+    "sourcePath": "cpython-source-deps-a502e047655c31db29601def76ad6539acacf43d/LICENSE.md"
+  },
+  {
+    "file": "libtommath-from-tcl-9.0.4.0-LICENSE",
+    "bytes": 1257,
+    "sha256": "2fa64b163659f41965c9815882a8296d3d03ff546b76153e11445f9bdecf955a",
+    "archive": "cpython-source-deps-53c758cbf2cc178b359abc03fdd912c5e66ed74f.tar.gz",
+    "archiveSha256": "2ec3a0db72d1eb15096940ce67e226bc16a0719e12e554c7feb920eb40bd6f36",
+    "sourcePath": "cpython-source-deps-53c758cbf2cc178b359abc03fdd912c5e66ed74f/libtommath/LICENSE"
+  },
+  {
+    "file": "mimalloc-2.1.2-LICENSE",
+    "bytes": 1096,
+    "sha256": "19c99805e7a44a34b297a75d1edea9985e300066dfc024d5c99d4236d4573b5d",
+    "archive": "mimalloc-43ce4bd7fd34bcc730c1c7471c99995597415488.tar.gz",
+    "archiveSha256": "36b20d9bafd4d22260d5c14b8acd858d0ac9a090bf419e4aa7bc507043792d06",
+    "sourcePath": "mimalloc-43ce4bd7fd34bcc730c1c7471c99995597415488/LICENSE"
+  },
+  {
+    "file": "HACL-star-source-LICENSE-APACHE",
+    "bytes": 11356,
+    "sha256": "c5accbbd8546e94c34aed24afe689a617627d18eed5a6c48277e48db57c23851",
+    "archive": "hacl-star-8ba599b2f6c9701b3dc961db895b0856a2210f76.tar.gz",
+    "archiveSha256": "0427f00ff20b6484e59725e2a7d098f075c6b51b671046cff0174bde7df8ecb5",
+    "sourcePath": "hacl-star-8ba599b2f6c9701b3dc961db895b0856a2210f76/LICENSE"
+  },
+  {
+    "file": "HACL-star-distribution-LICENSE-MIT",
+    "bytes": 1207,
+    "sha256": "998ce04fb8ad9dedb0bc1b44938f8c3dcf1089780fa105ce1c8c30fb5554d78c",
+    "archive": "hacl-star-8ba599b2f6c9701b3dc961db895b0856a2210f76.tar.gz",
+    "archiveSha256": "0427f00ff20b6484e59725e2a7d098f075c6b51b671046cff0174bde7df8ecb5",
+    "sourcePath": "hacl-star-8ba599b2f6c9701b3dc961db895b0856a2210f76/dist/LICENSE.txt"
+  },
+  {
+    "file": "OpenSSL-3.5.7-LICENSE.txt",
+    "bytes": 10175,
+    "sha256": "7d5450cb2d142651b8afa315b5f238efc805dad827d91ba367d8516bc9d49e7a",
+    "archive": "openssl-3.5.7.tar.gz",
+    "archiveSha256": "d71a811bfbd9153d7b30cbe476263302ee4b04a9a47ffea6e6a782326805c93f",
+    "sourcePath": "openssl-openssl-3.5.7/LICENSE.txt"
+  },
+  {
+    "file": "OpenSSL-4.0.3-LICENSE.txt",
+    "bytes": 10175,
+    "sha256": "7d5450cb2d142651b8afa315b5f238efc805dad827d91ba367d8516bc9d49e7a",
+    "archive": "openssl-4.0.3.tar.gz",
+    "archiveSha256": "29cbaaabad1f3b0e8f28274eb8445a1cb0c54af21a6f845882ee018763df7159",
+    "sourcePath": "openssl-openssl-4.0.3/LICENSE.txt"
+  }
+]

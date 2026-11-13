@@ -1,0 +1,73 @@
+{
+  "snapshot": "E:\\repos\\ara\\apps\\reach\\work\\maintenance-source-0241d8e3d7234d54b995f21595ce2c66",
+  "entries": [
+    {
+      "path": "packaging/windows/install.ps1",
+      "sha256": "66bdc4d93a3821ce5c4b4aec80d841cf4a5ff1feb2163829fb0e8d7014dbe63f"
+    },
+    {
+      "path": "packaging/windows/ownership.ps1",
+      "sha256": "f61f53e7d93a81ca788c0f42f50fbb07e60c4ccc99e254f5e69817710ac6a08c"
+    },
+    {
+      "path": "packaging/windows/payload.ps1",
+      "sha256": "e157371a0ca649dd260a2cdaa3bb426db6eb35a35413a17941b79c7bcb51b57e"
+    },
+    {
+      "path": "packaging/windows/maintenance-writes.ps1",
+      "sha256": "391a6ba705cb99cae16d1e5f5984488059041e97f9435b705a17c1ddc0259f16"
+    },
+    {
+      "path": "packaging/windows/maintenance-entry.ps1",
+      "sha256": "0a6b8569ba60bda4a1a361b624952ad77340672066dc2a34552919da8bd281ac"
+    },
+    {
+      "path": "packaging/windows/uninstall-files.ps1",
+      "sha256": "ac9eb912229683bc7e068eb0fc9f4cda0b26933051f39d6df0398b255e1a84fc"
+    },
+    {
+      "path": "packaging/windows/uninstall-transaction.ps1",
+      "sha256": "51419f58763747488c84ab200ea010b3102fac6a2a6350ec8979aef69b9bc60e"
+    },
+    {
+      "path": "packaging/windows/uninstall-host.ps1",
+      "sha256": "8fd2b657aea3a5da653d9691e13750308efbde8e77fe167d1f0382c21ac38a45"
+    },
+    {
+      "path": "packaging/windows/setup/src/main.rs",
+      "sha256": "e132bb8ebbd9c40cd89cf927c890436bfb2e672684b9802d343c0d4562724c7e"
+    },
+    {
+      "path": "packaging/windows/setup/build.rs",
+      "sha256": "f7d951e0e833e111dc6a04fa3c02da6bce142a9293441af66acab2e9acc0f714"
+    },
+    {
+      "path": "packaging/windows/setup/Cargo.toml",
+      "sha256": "40909026c0d327e926f93b3ff1133b0760561b78786d8b7c53cc5bd6694e4596"
+    },
+    {
+      "path": "packaging/windows/setup/Cargo.lock",
+      "sha256": "361a0d7be5a273b3b0f9b88015384af0178426abff9d3d40f6d0fe5721ff245e"
+    },
+    {
+      "path": "packaging/windows/build-complete.ps1",
+      "sha256": "cdda8434ef8cb999541f9b1f39c80d163467d9c6a954861ca1a5454e49f62a0e"
+    },
+    {
+      "path": "tests/windows-install-catalog.test.ps1",
+      "sha256": "d241595e480e8414fb532f31ba0e6a4ce2f3ecdae6b3678d70479b696bab80e3"
+    },
+    {
+      "path": "tests/windows-installer.test.ps1",
+      "sha256": "f8bd6f6d64f06ec1e411b0e64a7a7f865260d1d736e06d495e66a4310c714b7b"
+    },
+    {
+      "path": "tests/windows-uninstall-files.test.ps1",
+      "sha256": "0739c80e04aef8ee5ad196f8275a62312e85c766abf61108697ab88b6ca6aecc"
+    },
+    {
+      "path": "tests/windows-uninstall-transaction.test.ps1",
+      "sha256": "2db4104ed50b82907b007030df4afa004f110eb0f7bfeba9ab7f341002b50bd9"
+    }
+  ]
+}

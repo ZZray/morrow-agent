@@ -1,0 +1,24 @@
+# Copyright (c) Ray Zhang. Independent listener lifecycle; reuse Ray TLS renewal.
+[Unit]
+Description=Reach independent HTTPS ingress
+After=network-online.target reach.service
+Wants=network-online.target reach.service
+
+[Service]
+Type=simple
+User=ray-front
+Group=ray-front
+ExecStart=/opt/reach/current/bin/ray-front --reach-only --config /etc/reach/ingress.json
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=15
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+# This process reads the shared certificate, not Ray's authentication database.
+InaccessiblePaths=-/var/lib/ray-front/auth.json -/etc/ray-front/bridge.json
+
+[Install]
+WantedBy=multi-user.target

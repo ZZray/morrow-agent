@@ -1,0 +1,60 @@
+{
+  "company": "Ray Zhang",
+  "sha256": "007487edce0403cba77d474d2184f650b47cb93a655f2930d9d0fec43a5be2be",
+  "iconSha256": "fe2ee6dfef2435aa8cc3a660c9c4abe263f30bf35522a1f27f4b902356cb5fda",
+  "frames": [
+    {
+      "bytes": 745,
+      "sha256": "e66f0790039f9a13a28e726033a62cc985368d7d895563b09e084dec3ecfbbd4",
+      "size": 16
+    },
+    {
+      "bytes": 1032,
+      "sha256": "c4bcdb99d219103498c1ae47dfc3c12ff09cf59233e172a80559e14d2ae5a997",
+      "size": 20
+    },
+    {
+      "bytes": 1351,
+      "sha256": "6b4db0330156b2da8ac3212b8ab009e7f95b55fcb9a1ec7ebd127300faee7a36",
+      "size": 24
+    },
+    {
+      "bytes": 1827,
+      "sha256": "eef18c3a7a6aba0f76fc615010c0b4b00ccb3e93c2c5a2991b9ccb68a1e1c429",
+      "size": 32
+    },
+    {
+      "bytes": 2470,
+      "sha256": "d5162e51cd02b849d006b20b38ea39729ea08808f867794c640787932bee078f",
+      "size": 40
+    },
+    {
+      "bytes": 3278,
+      "sha256": "3c8c78ffd264c96b74ab2af879637fa6e3cfd3b236fc2dd24e253902ff7683ba",
+      "size": 48
+    },
+    {
+      "bytes": 4991,
+      "sha256": "d0c0feec0e33d667834e8c07347044fb47482bfc3383d5da354b05fefa0909f4",
+      "size": 64
+    },
+    {
+      "bytes": 8894,
+      "sha256": "9036f8c61f8aaad43510d5ba7b6dedb818da3e0e9c6137658a35af09fca48fcb",
+      "size": 96
+    },
+    {
+      "bytes": 14192,
+      "sha256": "6ee32ee696e8494fc12d17ad96387e207ff596eaa01012747911434f6fedf627",
+      "size": 128
+    },
+    {
+      "bytes": 38532,
+      "sha256": "915d299281e9098048da32627e837cca481b39aa9df27802d35da860fb42850e",
+      "size": 256
+    }
+  ],
+  "description": "Reach Setup",
+  "executable": "E:\\repos\\ara\\apps\\reach\\outputs\\windows-node-9b721f7cb798ab25\\Reach-Node-Setup-0.1.0-preview-007487edce0403cb.exe",
+  "product": "Reach"
+}

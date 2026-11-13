@@ -1,0 +1,39 @@
+/* Composer surfaces stay readable; only this task entry path uses these tokens. */
+:root{--hw-composer-surface:#202329;--hw-composer-hover:rgba(255,255,255,.06)}
+[data-theme="light"],[data-theme="mist"]{--hw-composer-surface:#fff;--hw-composer-hover:rgba(0,0,0,.045)}
+body .ws-app .composer{display:flex;flex-direction:column;align-items:stretch;gap:0;min-width:0}
+body .ws-app .composer>.composer-bar.composer-box,
+body .ws-app .composer>.composer-bar.composer-box:focus-within{box-sizing:border-box;width:100%;background:var(--hw-composer-surface);border-color:var(--hair);box-shadow:var(--card-shadow);outline:none;backdrop-filter:none;-webkit-backdrop-filter:none}
+body .ws-app .composer-box textarea#input:focus-visible{box-shadow:inset 2px 0 var(--primary)}
+.ws-app .composer-toolbar{gap:8px;padding-top:4px}
+.ws-app .composer-toolbar .ct-left{gap:4px;flex-wrap:wrap;align-items:center}
+.ws-app .composer-toolbar .ct-right{align-self:flex-end}
+.ws-app .composer-toolbar :is(#btnAttach,#btnLocalMode,#modelTrigger,.hw-links>button){box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;min-width:28px;width:auto;min-height:28px;height:28px;margin:0;padding:0 8px;border:0;border-radius:6px;background:transparent;color:var(--muted);box-shadow:none;font:500 12px/20px var(--sans);transition:background-color 100ms var(--hw-motion-out),color 100ms var(--hw-motion-out)}
+.ws-app .composer-toolbar :is(#btnAttach,#btnLocalMode,#modelTrigger,.hw-links>button)[hidden]{display:none}
+.ws-app .composer-toolbar #btnAttach{width:28px;padding:0}
+.ws-app .composer-toolbar .hw-links{gap:4px}
+.ws-app .composer-toolbar .hw-links>button:not(.hw-links-mode){width:28px;padding:0}
+.ws-app .composer-toolbar :is(#btnAttach,#btnLocalMode,#modelTrigger,.hw-links>button):hover:not(:disabled),
+.ws-app .composer-toolbar #modelTrigger[aria-expanded="true"]{background:var(--hw-composer-hover);color:var(--text)}
+.ws-app .composer-toolbar #btnLocalMode[aria-pressed="true"]{color:var(--ok);background:transparent}
+.ws-app .composer-toolbar :is(#btnAttach,#btnLocalMode,#modelTrigger,.hw-links>button):disabled{opacity:.45;cursor:default}
+.ws-app .composer-toolbar #btnSend{box-sizing:border-box;width:32px;height:32px;min-width:32px;min-height:32px;padding:0;border:0;border-radius:50%;background:var(--accent-btn);color:var(--on-accent);box-shadow:none;transform:none}
+.ws-app .composer-toolbar #btnSend:hover:not(:disabled){background-color:var(--accent-btn);transform:none;filter:brightness(1.05)}
+.ws-app .composer-toolbar #btnSend.stop{background-color:var(--dan);color:#fff}
+.ws-app .composer-toolbar #btnSend svg{width:16px;height:16px;flex:none}
+.ws-app .composer-toolbar :is(button,select):focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+/* Body-mounted menus share an opaque surface, without altering global material. */
+:is(#modelMenu,#attachMenu,#skillMenu){--menu-bg:var(--hw-composer-surface);--mat-blur:none}
+:is(#modelMenu,#attachMenu,#skillMenu,.hw-links-menu,.hw-links-status,.hw-goal-editor,.hw-queue-menu,.hw-queue-toast,.hw-queue-editor,.hw-recovery-dialog){background:var(--hw-composer-surface);backdrop-filter:none;-webkit-backdrop-filter:none}
+.hw-goal-strip,.hw-queue{background:var(--hw-composer-surface)}
+@media(pointer:coarse){
+  .ws-app .composer-toolbar :is(#btnAttach,#btnLocalMode,#modelTrigger,.hw-links>button){min-width:44px;min-height:44px;height:44px}
+  .ws-app .composer-toolbar #btnAttach,.ws-app .composer-toolbar .hw-links>button:not(.hw-links-mode){width:44px}
+  .ws-app .composer-toolbar #btnSend{width:44px;height:44px;min-width:44px;min-height:44px;padding:6px;background-clip:content-box}
+}
+@media(prefers-reduced-motion:reduce){.ws-app .composer-toolbar :is(#btnAttach,#btnLocalMode,#modelTrigger,.hw-links>button){transition:none}}
+@media(prefers-reduced-transparency:reduce){body .ws-app .composer>.composer-bar.composer-box,:is(#modelMenu,#attachMenu,#skillMenu,.hw-links-menu,.hw-links-status,.hw-goal-editor,.hw-queue-menu,.hw-queue-toast,.hw-queue-editor,.hw-recovery-dialog){backdrop-filter:none;-webkit-backdrop-filter:none}}
+@media(forced-colors:active){
+  body .ws-app .composer-box textarea#input:focus-visible{outline:2px solid Highlight;outline-offset:2px;box-shadow:none}
+  .ws-app .composer-toolbar #btnSend{border:1px solid ButtonText}
+}

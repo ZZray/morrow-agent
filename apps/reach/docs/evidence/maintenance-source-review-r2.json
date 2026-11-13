@@ -1,0 +1,134 @@
+{
+  "manifest": "docs/evidence/maintenance-integration-inputs-20261103-r2.json",
+  "manifestSha256": "b374152a9048109cd33d4dc620950ed6a8df99fa899d81eff45bc9c6f2a26be9",
+  "checked": 18,
+  "allMatched": true,
+  "entries": [
+    {
+      "path": "packaging/windows/install.ps1",
+      "expected": "66bdc4d93a3821ce5c4b4aec80d841cf4a5ff1feb2163829fb0e8d7014dbe63f",
+      "current": "66bdc4d93a3821ce5c4b4aec80d841cf4a5ff1feb2163829fb0e8d7014dbe63f",
+      "snapshot": "66bdc4d93a3821ce5c4b4aec80d841cf4a5ff1feb2163829fb0e8d7014dbe63f",
+      "match": true
+    },
+    {
+      "path": "packaging/windows/ownership.ps1",
+      "expected": "f61f53e7d93a81ca788c0f42f50fbb07e60c4ccc99e254f5e69817710ac6a08c",
+      "current": "f61f53e7d93a81ca788c0f42f50fbb07e60c4ccc99e254f5e69817710ac6a08c",
+      "snapshot": "f61f53e7d93a81ca788c0f42f50fbb07e60c4ccc99e254f5e69817710ac6a08c",
+      "match": true
+    },
+    {
+      "path": "packaging/windows/payload.ps1",
+      "expected": "e157371a0ca649dd260a2cdaa3bb426db6eb35a35413a17941b79c7bcb51b57e",
+      "current": "e157371a0ca649dd260a2cdaa3bb426db6eb35a35413a17941b79c7bcb51b57e",
+      "snapshot": "e157371a0ca649dd260a2cdaa3bb426db6eb35a35413a17941b79c7bcb51b57e",
+      "match": true
+    },
+    {
+      "path": "packaging/windows/maintenance-writes.ps1",
+      "expected": "391a6ba705cb99cae16d1e5f5984488059041e97f9435b705a17c1ddc0259f16",
+      "current": "391a6ba705cb99cae16d1e5f5984488059041e97f9435b705a17c1ddc0259f16",
+      "snapshot": "391a6ba705cb99cae16d1e5f5984488059041e97f9435b705a17c1ddc0259f16",
+      "match": true
+    },
+    {
+      "path": "packaging/windows/maintenance-entry.ps1",
+      "expected": "0a6b8569ba60bda4a1a361b624952ad77340672066dc2a34552919da8bd281ac",
+      "current": "0a6b8569ba60bda4a1a361b624952ad77340672066dc2a34552919da8bd281ac",
+      "snapshot": "0a6b8569ba60bda4a1a361b624952ad77340672066dc2a34552919da8bd281ac",
+      "match": true
+    },
+    {
+      "path": "packaging/windows/uninstall-files.ps1",
+      "expected": "ac9eb912229683bc7e068eb0fc9f4cda0b26933051f39d6df0398b255e1a84fc",
+      "current": "ac9eb912229683bc7e068eb0fc9f4cda0b26933051f39d6df0398b255e1a84fc",
+      "snapshot": "ac9eb912229683bc7e068eb0fc9f4cda0b26933051f39d6df0398b255e1a84fc",
+      "match": true
+    },
+    {
+      "path": "packaging/windows/uninstall-transaction.ps1",
+      "expected": "51419f58763747488c84ab200ea010b3102fac6a2a6350ec8979aef69b9bc60e",
+      "current": "51419f58763747488c84ab200ea010b3102fac6a2a6350ec8979aef69b9bc60e",
+      "snapshot": "51419f58763747488c84ab200ea010b3102fac6a2a6350ec8979aef69b9bc60e",
+      "match": true
+    },
+    {
+      "path": "packaging/windows/uninstall-host.ps1",
+      "expected": "8fd2b657aea3a5da653d9691e13750308efbde8e77fe167d1f0382c21ac38a45",
+      "current": "8fd2b657aea3a5da653d9691e13750308efbde8e77fe167d1f0382c21ac38a45",
+      "snapshot": "8fd2b657aea3a5da653d9691e13750308efbde8e77fe167d1f0382c21ac38a45",
+      "match": true
+    },
+    {
+      "path": "packaging/windows/setup/src/main.rs",
+      "expected": "e132bb8ebbd9c40cd89cf927c890436bfb2e672684b9802d343c0d4562724c7e",
+      "current": "e132bb8ebbd9c40cd89cf927c890436bfb2e672684b9802d343c0d4562724c7e",
+      "snapshot": "e132bb8ebbd9c40cd89cf927c890436bfb2e672684b9802d343c0d4562724c7e",
+      "match": true
+    },
+    {
+      "path": "packaging/windows/setup/build.rs",
+      "expected": "f7d951e0e833e111dc6a04fa3c02da6bce142a9293441af66acab2e9acc0f714",
+      "current": "f7d951e0e833e111dc6a04fa3c02da6bce142a9293441af66acab2e9acc0f714",
+      "snapshot": "f7d951e0e833e111dc6a04fa3c02da6bce142a9293441af66acab2e9acc0f714",
+      "match": true
+    },
+    {
+      "path": "packaging/windows/setup/Cargo.toml",
+      "expected": "40909026c0d327e926f93b3ff1133b0760561b78786d8b7c53cc5bd6694e4596",
+      "current": "40909026c0d327e926f93b3ff1133b0760561b78786d8b7c53cc5bd6694e4596",
+      "snapshot": "40909026c0d327e926f93b3ff1133b0760561b78786d8b7c53cc5bd6694e4596",
+      "match": true
+    },
+    {
+      "path": "packaging/windows/setup/Cargo.lock",
+      "expected": "361a0d7be5a273b3b0f9b88015384af0178426abff9d3d40f6d0fe5721ff245e",
+      "current": "361a0d7be5a273b3b0f9b88015384af0178426abff9d3d40f6d0fe5721ff245e",
+      "snapshot": "361a0d7be5a273b3b0f9b88015384af0178426abff9d3d40f6d0fe5721ff245e",
+      "match": true
+    },
+    {
+      "path": "packaging/windows/build-complete.ps1",
+      "expected": "cdda8434ef8cb999541f9b1f39c80d163467d9c6a954861ca1a5454e49f62a0e",
+      "current": "cdda8434ef8cb999541f9b1f39c80d163467d9c6a954861ca1a5454e49f62a0e",
+      "snapshot": "cdda8434ef8cb999541f9b1f39c80d163467d9c6a954861ca1a5454e49f62a0e",
+      "match": true
+    },
+    {
+      "path": "tests/windows-install-catalog.test.ps1",
+      "expected": "d241595e480e8414fb532f31ba0e6a4ce2f3ecdae6b3678d70479b696bab80e3",
+      "current": "d241595e480e8414fb532f31ba0e6a4ce2f3ecdae6b3678d70479b696bab80e3",
+      "snapshot": "d241595e480e8414fb532f31ba0e6a4ce2f3ecdae6b3678d70479b696bab80e3",
+      "match": true
+    },
+    {
+      "path": "tests/windows-installer.test.ps1",
+      "expected": "f8bd6f6d64f06ec1e411b0e64a7a7f865260d1d736e06d495e66a4310c714b7b",
+      "current": "f8bd6f6d64f06ec1e411b0e64a7a7f865260d1d736e06d495e66a4310c714b7b",
+      "snapshot": "f8bd6f6d64f06ec1e411b0e64a7a7f865260d1d736e06d495e66a4310c714b7b",
+      "match": true
+    },
+    {
+      "path": "tests/windows-uninstall-files.test.ps1",
+      "expected": "0739c80e04aef8ee5ad196f8275a62312e85c766abf61108697ab88b6ca6aecc",
+      "current": "0739c80e04aef8ee5ad196f8275a62312e85c766abf61108697ab88b6ca6aecc",
+      "snapshot": "0739c80e04aef8ee5ad196f8275a62312e85c766abf61108697ab88b6ca6aecc",
+      "match": true
+    },
+    {
+      "path": "tests/windows-uninstall-transaction.test.ps1",
+      "expected": "8248844187eb70ea3b3e32a1d123bed6045ae08a8d2cef19b489c343ac6f2ec6",
+      "current": "8248844187eb70ea3b3e32a1d123bed6045ae08a8d2cef19b489c343ac6f2ec6",
+      "snapshot": "8248844187eb70ea3b3e32a1d123bed6045ae08a8d2cef19b489c343ac6f2ec6",
+      "match": true
+    },
+    {
+      "path": "tests/fixtures/windows-legacy-install-recovery.ps1",
+      "expected": "3f71e03e16d2f7872d505bb61351dd2741b1f851734af4f6134bb331b1fceeac",
+      "current": "3f71e03e16d2f7872d505bb61351dd2741b1f851734af4f6134bb331b1fceeac",
+      "snapshot": "3f71e03e16d2f7872d505bb61351dd2741b1f851734af4f6134bb331b1fceeac",
+      "match": true
+    }
+  ]
+}

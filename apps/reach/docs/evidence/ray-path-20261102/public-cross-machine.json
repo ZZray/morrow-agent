@@ -1,0 +1,74 @@
+{
+  "origin": "https://118.25.103.226/reach",
+  "controllerHost": "ray-dev Linux",
+  "target": "Windows ordinary Reach Node",
+  "operationId": "1d9483fc-e350-40f2-9440-0cddb1d03d48",
+  "requestId": "81475b54-9a44-4fa3-94b1-72adfe4810ea",
+  "nodeId": "a45aa867-0eac-42e7-a112-d40cf744d932",
+  "execution": "succeeded",
+  "observedRunning": true,
+  "cli": true,
+  "mcp": true,
+  "reconnected": true,
+  "duplicateSameOperation": true,
+  "pages": 5,
+  "events": [
+    {
+      "sequence": 1,
+      "event_id": "af63a9e8-2dd5-459c-9e1c-e02774c68a50",
+      "kind": "received",
+      "received_at": 1793607460967,
+      "data": {
+        "durable": true
+      }
+    },
+    {
+      "sequence": 2,
+      "event_id": "435e7f71-48b5-45fd-b665-301897ad943a",
+      "kind": "running",
+      "received_at": 1793607461067,
+      "data": {
+        "executionIntentSaved": true
+      }
+    },
+    {
+      "sequence": 3,
+      "event_id": "7463eeaf-7079-4f97-b342-d5947821fc8d",
+      "kind": "output",
+      "received_at": 1793607461134,
+      "data": {
+        "pid": 27768,
+        "processStarted": true
+      }
+    },
+    {
+      "sequence": 4,
+      "event_id": "3eb730ea-e44c-4719-a209-6c3a845ed670",
+      "kind": "output",
+      "received_at": 1793607461224,
+      "data": {
+        "base64": "Y3Jvc3MtbWFjaGluZS1zdHJlYW0NCg==",
+        "stream": "stdout"
+      }
+    },
+    {
+      "sequence": 5,
+      "event_id": "805b1ece-1c1b-4316-a4a6-ddca2cb858e8",
+      "kind": "succeeded",
+      "received_at": 1793607464234,
+      "data": {
+        "exitCode": 0,
+        "pid": 27768,
+        "processTreeStopped": true
+      }
+    }
+  ],
+  "result": "{\"exitCode\":0,\"pid\":27768,\"processTreeStopped\":true}",
+  "file": {
+    "path": "E:\\repos\\ara\\apps\\reach\\work\\ray-path-node\\public-cross-machine-effect.txt",
+    "sha256": "f0e211cc2b0a96b9263355a28927d35fcb0cead8f0dbfa6c0009eec91a935ced",
+    "exactOnce": true
+  },
+  "tls": "normal certificate validation, public TCP 443, no proxy/tunnel",
+  "nodeBinarySha256": "b472ef53e5e515a6c4aed3ad5123315e2d2d9f612a85f6b5356d5f9bd6aed7b6"
+}

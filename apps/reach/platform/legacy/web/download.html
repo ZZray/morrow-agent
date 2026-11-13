@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reach Desk · 被控端下载</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2307090f'/%3E%3Crect x='4' y='4' width='24' height='24' rx='6' fill='%23f4f6fb'/%3E%3Ctext x='16' y='21' font-family='system-ui,sans-serif' font-size='11' font-weight='700' fill='%230a0c12' text-anchor='middle'%3ERD%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="/style.css">
+<script>
+(function () {
+  try {
+    var map = { glass: 'dark', obsidian: 'dark', default: 'dark', mist: 'light' };
+    var t = localStorage.getItem('handwave.console.theme');
+    t = map[t] || t;
+    document.documentElement.setAttribute('data-theme', (t === 'light' || t === 'dark') ? t : 'dark');
+  } catch (e) {
+    document.documentElement.setAttribute('data-theme', 'dark');
+  }
+})();
+</script>
+<style>
+body.dl-page{
+  min-height:100vh; margin:0;
+  color:var(--text); font:14px/1.55 var(--sans);
+  -webkit-font-smoothing:antialiased;
+}
+.dl-wrap{
+  position:relative; z-index:1;
+  width:min(760px, 94vw);
+  margin:0 auto;
+  padding:36px 0 48px;
+}
+.dl-hero{
+  display:flex; align-items:flex-start; justify-content:space-between; gap:16px;
+  margin-bottom:22px;
+}
+.dl-brand{
+  display:flex; align-items:center; gap:12px; margin-bottom:10px;
+}
+.dl-brand .mark{
+  width:36px; height:36px; border-radius:11px;
+  display:grid; place-items:center;
+  font:700 12px/1 var(--sans); color:var(--ink); letter-spacing:.02em;
+  background:var(--text);
+}
+.dl-brand b{font-size:15px; font-weight:650}
+.dl-brand span{display:block; font-size:12px; color:var(--muted); font-weight:450; margin-top:2px}
+.dl-hero h1{
+  margin:0 0 8px; font-size:28px; font-weight:700; letter-spacing:-.03em; line-height:1.2;
+}
+.dl-hero h1 em{font-style:normal; color:var(--accent-text); font-weight:600}
+.dl-hero p{
+  margin:0; max-width:46ch; color:var(--muted); font-size:13.5px; line-height:1.65;
+}
+.dl-actions{display:flex; flex-direction:column; gap:8px; flex:0 0 auto}
+.dl-actions a{
+  display:inline-flex; align-items:center; justify-content:center; gap:6px;
+  height:36px; padding:0 16px; border-radius:999px; text-decoration:none;
+  font-size:13px; font-weight:560; white-space:nowrap;
+  transition:background .15s ease, border-color .15s ease, color .15s ease;
+}
+.dl-actions .primary{
+  background:var(--send); color:var(--send-fg); border:1px solid transparent;
+  box-shadow:0 8px 22px color-mix(in srgb, var(--send) 35%, transparent);
+}
+.dl-actions .primary:hover{filter:brightness(1.06)}
+.dl-actions .ghost{
+  background:var(--sel-hover); color:var(--text-2);
+  border:1px solid var(--border);
+}
+.dl-actions .ghost:hover{background:var(--sel); color:var(--text)}
+
+.dl-card{
+  border-radius:20px;
+  background:var(--panel-fill);
+  border:var(--glass-edge);
+  box-shadow:var(--glass-shadow);
+  backdrop-filter:var(--mat-blur);
+  -webkit-backdrop-filter:var(--mat-blur);
+  padding:18px 18px 16px;
+  margin-bottom:14px;
+}
+.dl-card .hd{
+  display:flex; align-items:center; gap:8px;
+  margin:0 0 10px; font-size:13px; font-weight:650;
+}
+.dl-card .hd .pill{
+  font-size:10.5px; font-weight:650; letter-spacing:.04em;
+  text-transform:uppercase; padding:3px 8px; border-radius:999px;
+  background:color-mix(in srgb, var(--accent-text) 10%, var(--panel));
+  color:var(--accent-text); border:1px solid color-mix(in srgb, var(--accent-text) 22%, transparent);
+}
+.dl-card ol{
+  margin:0; padding-left:1.25em; color:var(--text-2);
+  font-size:13px; line-height:1.75;
+}
+.dl-card code,
+.note code{
+  font:12px/1.4 var(--mono);
+  padding:1px 6px; border-radius:6px;
+  background:var(--mat-well); border:1px solid var(--hair);
+  color:var(--text);
+}
+
+.modes{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px}
+.mode{
+  border-radius:18px;
+  background:var(--panel-fill);
+  border:var(--glass-edge);
+  box-shadow:var(--glass-shadow);
+  backdrop-filter:var(--mat-blur);
+  -webkit-backdrop-filter:var(--mat-blur);
+  padding:16px;
+}
+.mode .tag{
+  display:inline-flex; align-items:center; gap:5px;
+  font-size:11px; font-weight:600; color:var(--muted);
+  margin-bottom:8px;
+}
+.mode b{display:block; font-size:14px; font-weight:650; margin-bottom:6px}
+.mode p{margin:0; font-size:12.5px; color:var(--muted); line-height:1.6}
+
+.sec-label{
+  display:flex; align-items:baseline; justify-content:space-between; gap:10px;
+  margin:6px 2px 10px;
+}
+.sec-label b{font-size:13px; font-weight:650}
+.sec-label span{font-size:12px; color:var(--muted)}
+
+.pkg-list{display:flex; flex-direction:column; gap:10px; margin-bottom:14px}
+.pkg{
+  display:flex; align-items:center; gap:14px;
+  border-radius:16px;
+  background:var(--panel-fill);
+  border:var(--glass-edge);
+  box-shadow:var(--glass-shadow);
+  backdrop-filter:var(--mat-blur);
+  -webkit-backdrop-filter:var(--mat-blur);
+  padding:14px 16px;
+  transition:border-color .15s ease, background .15s ease;
+}
+.pkg:hover{border-color:var(--border-2); background:var(--mat-glass)}
+.pkg-ico{
+  width:40px; height:40px; border-radius:12px; flex:0 0 auto;
+  display:grid; place-items:center;
+  background:var(--sel); border:1px solid var(--border); color:var(--accent-text);
+}
+.pkg-body{min-width:0; flex:1}
+.pkg .os{font-weight:650; font-size:14px; color:var(--text)}
+.pkg .meta{
+  margin-top:3px; font-size:12px; color:var(--muted);
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.pkg a,
+.pkg .pkg-dl{
+  flex:0 0 auto;
+  text-decoration:none;
+  height:34px; padding:0 16px; border-radius:999px;
+  display:inline-flex; align-items:center; justify-content:center;
+  font-size:13px; font-weight:600;
+  background:var(--send); color:var(--send-fg); border:0;
+  box-shadow:0 6px 18px color-mix(in srgb, var(--send) 32%, transparent);
+  transition:filter .15s ease, transform .15s ease;
+}
+.pkg a:hover,
+.pkg .pkg-dl:hover{filter:brightness(1.07); transform:translateY(-1px)}
+
+.note{
+  margin:8px 2px 0; color:var(--muted); font-size:12px; line-height:1.7;
+}
+.dl-foot{
+  margin-top:22px; padding-top:14px; border-top:1px solid var(--hair);
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  color:var(--muted); font-size:12px;
+}
+.dl-foot a{color:var(--accent-text); text-decoration:none}
+.dl-foot a:hover{opacity:.85}
+
+@media (max-width:720px){
+  .dl-wrap{width:100%; padding:20px 14px calc(28px + env(safe-area-inset-bottom, 0px))}
+  .dl-hero{flex-direction:column}
+  .dl-actions{flex-direction:row; width:100%}
+  .dl-actions a{flex:1}
+  .dl-hero h1{font-size:24px}
+  .modes{grid-template-columns:1fr}
+  .pkg{flex-wrap:wrap}
+  .pkg .meta{white-space:normal}
+  .pkg a, .pkg .pkg-dl{width:100%}
+  .dl-foot{flex-direction:column; align-items:flex-start}
+}
+@media (prefers-reduced-transparency: reduce){
+  .dl-card, .mode, .pkg{backdrop-filter:none; -webkit-backdrop-filter:none}
+}
+</style>
+</head>
+<body class="dl-page">
+<div class="aurora" aria-hidden="true"></div>
+
+<div class="dl-wrap">
+  <header class="dl-hero">
+    <div>
+      <div class="dl-brand">
+        <span class="mark">hw</span>
+        <div>
+          <b>Reach Desk</b>
+          <span>被控端安装包</span>
+        </div>
+      </div>
+      <h1>在协助机上跑起来<em>，立刻接入工作台</em></h1>
+      <p>下载一个程序直接运行。它自己就是被控端进程，默认在前台。关掉窗口即退出。</p>
+    </div>
+    <div class="dl-actions">
+      <a class="primary" href="<!--HREF-->">打开工作台</a>
+      <a class="ghost" href="#pkgs">查看安装包</a>
+    </div>
+  </header>
+
+  <section class="dl-card">
+    <div class="hd">一次性协助 <span class="pill">推荐</span></div>
+    <ol>
+      <li>下载对应系统的程序。ARM 设备（Ubuntu 等）选 <b>ARM Linux（Ubuntu）</b>，文件名 <code>handwave-linux-arm64.zip</code></li>
+      <li>直接运行这一个程序：Windows 双击，或 <code>handwave node</code>；Ubuntu 上 <code>chmod +x handwave && ./handwave</code></li>
+      <li>安装为服务：<code>handwave node install --hub &lt;地址&gt; --token &lt;入网令牌&gt;</code>（Windows 管理员 / Linux root）。卸载：<code>handwave node uninstall</code></li>
+      <li>不装服务、只要开机启动：<code>handwave node autostart</code>，关闭用 <code>handwave node autostart --off</code></li>
+      <li>内置守护（脱离终端，退出后自己拉起）：<code>handwave node --daemon</code></li>
+      <li>回到工作台右侧「远程主机」→「允许」再「接入」</li>
+    </ol>
+  </section>
+
+  <div class="modes">
+    <div class="mode">
+      <div class="tag">默认</div>
+      <b>前台程序</b>
+      <p>直接运行。需要开机拉起同一个程序时用 <code>node autostart</code>，不必先装服务。</p>
+    </div>
+    <div class="mode">
+      <div class="tag">可选</div>
+      <b>系统服务 / 内置守护</b>
+      <p><code>node install --hub --token</code> 交给系统服务并开机启动。<code>node --daemon</code> 则由程序自己守护。两者不要同时开。</p>
+    </div>
+  </div>
+
+  <div class="sec-label" id="pkgs">
+    <b>安装包</b>
+    <span>按系统选择 · 校验可加 ?sha=1</span>
+  </div>
+  <div class="pkg-list">
+<!--LIST-->
+  </div>
+
+  <p class="note">包名形如 <code>handwave-windows-amd64.zip</code>；ARM Linux（Ubuntu）是 <code>handwave-linux-arm64.zip</code>。服务、开机启动和内置守护都是这一个程序，用 <code>--hub</code> / <code>--token</code> 指定云端。</p>
+
+  <footer class="dl-foot">
+    <span>Reach Desk · 旧版下载资料</span>
+    <a href="<!--HREF-->">已有令牌？登录工作台</a>
+  </footer>
+</div>
+</body>
+</html>

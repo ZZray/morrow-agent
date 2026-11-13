@@ -1,0 +1,427 @@
+[
+  {
+    "path": "cryptography-rust/asn1-0.24.1/LICENSE",
+    "bytes": 1540,
+    "sha256": "c6deb2d156619439e147f8b62e1b3928598c8e3652ec8b56cc039490696b3985"
+  },
+  {
+    "path": "cryptography-rust/asn1_derive-0.24.1/LICENSE",
+    "bytes": 1540,
+    "sha256": "c6deb2d156619439e147f8b62e1b3928598c8e3652ec8b56cc039490696b3985"
+  },
+  {
+    "path": "cryptography-rust/base64-0.23.0/LICENSE-APACHE",
+    "bytes": 10847,
+    "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+  },
+  {
+    "path": "cryptography-rust/base64-0.23.0/LICENSE-MIT",
+    "bytes": 1093,
+    "sha256": "ab499c75a0f0da8e0fe83bf9ba3a27e5c39705310f07107c6c66b69958d2401c"
+  },
+  {
+    "path": "cryptography-rust/bitflags-2.13.1/LICENSE-APACHE",
+    "bytes": 10847,
+    "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+  },
+  {
+    "path": "cryptography-rust/bitflags-2.13.1/LICENSE-MIT",
+    "bytes": 1071,
+    "sha256": "6485b8ed310d3f0340bf1ad1f47645069ce4069dcc6bb46c7d5c6faf41de1fdb"
+  },
+  {
+    "path": "cryptography-rust/Cargo.lock",
+    "bytes": 8528,
+    "sha256": "98778208027ce05bfff0db88c290f28355eb20e685f0c728775359fb91a1a4c4"
+  },
+  {
+    "path": "cryptography-rust/cc-1.4.0/LICENSE-APACHE",
+    "bytes": 10847,
+    "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+  },
+  {
+    "path": "cryptography-rust/cc-1.4.0/LICENSE-MIT",
+    "bytes": 1057,
+    "sha256": "378f5840b258e2779c39418f3f2d7b2ba96f1c7917dd6be0713f88305dbda397"
+  },
+  {
+    "path": "cryptography-rust/cfg-if-1.0.4/LICENSE-APACHE",
+    "bytes": 10847,
+    "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+  },
+  {
+    "path": "cryptography-rust/cfg-if-1.0.4/LICENSE-MIT",
+    "bytes": 1057,
+    "sha256": "378f5840b258e2779c39418f3f2d7b2ba96f1c7917dd6be0713f88305dbda397"
+  },
+  {
+    "path": "cryptography-rust/find-msvc-tools-0.1.9/LICENSE-APACHE",
+    "bytes": 10847,
+    "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+  },
+  {
+    "path": "cryptography-rust/find-msvc-tools-0.1.9/LICENSE-MIT",
+    "bytes": 1057,
+    "sha256": "378f5840b258e2779c39418f3f2d7b2ba96f1c7917dd6be0713f88305dbda397"
+  },
+  {
+    "path": "cryptography-rust/foreign-types-0.3.2/LICENSE-APACHE",
+    "bytes": 11358,
+    "sha256": "c6596eb7be8581c18be736c846fb9173b69eccf6ef94c5135893ec56bd92ba08"
+  },
+  {
+    "path": "cryptography-rust/foreign-types-0.3.2/LICENSE-MIT",
+    "bytes": 1072,
+    "sha256": "333ea3aaa3cadb819f4acd9f9153f9feee060a995ca8710f32bc5bd9a4b91734"
+  },
+  {
+    "path": "cryptography-rust/foreign-types-shared-0.1.1/LICENSE-APACHE",
+    "bytes": 11358,
+    "sha256": "c6596eb7be8581c18be736c846fb9173b69eccf6ef94c5135893ec56bd92ba08"
+  },
+  {
+    "path": "cryptography-rust/foreign-types-shared-0.1.1/LICENSE-MIT",
+    "bytes": 1072,
+    "sha256": "333ea3aaa3cadb819f4acd9f9153f9feee060a995ca8710f32bc5bd9a4b91734"
+  },
+  {
+    "path": "cryptography-rust/heck-0.5.0/LICENSE-APACHE",
+    "bytes": 10847,
+    "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+  },
+  {
+    "path": "cryptography-rust/heck-0.5.0/LICENSE-MIT",
+    "bytes": 1071,
+    "sha256": "7b63ecd5f1902af1b63729947373683c32745c16a10e8e6292e2e2dcd7e90ae0"
+  },
+  {
+    "path": "cryptography-rust/itoa-1.0.18/LICENSE-APACHE",
+    "bytes": 9723,
+    "sha256": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a"
+  },
+  {
+    "path": "cryptography-rust/itoa-1.0.18/LICENSE-MIT",
+    "bytes": 1023,
+    "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+  },
+  {
+    "path": "cryptography-rust/libc-0.2.189/LICENSE-APACHE",
+    "bytes": 9723,
+    "sha256": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a"
+  },
+  {
+    "path": "cryptography-rust/libc-0.2.189/LICENSE-MIT",
+    "bytes": 1066,
+    "sha256": "123a331b5dbf04c30097fa43b8f858bc85df671fe776de498d01f3d6b7c1f69e"
+  },
+  {
+    "path": "cryptography-rust/once_cell-1.21.4/LICENSE-APACHE",
+    "bytes": 10847,
+    "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+  },
+  {
+    "path": "cryptography-rust/once_cell-1.21.4/LICENSE-MIT",
+    "bytes": 1023,
+    "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+  },
+  {
+    "path": "cryptography-rust/openssl-0.10.81/LICENSE",
+    "bytes": 618,
+    "sha256": "f3d4287b4a21c5176fea2f9bd4ae800696004e2fb8e05cbc818be513f188a941"
+  },
+  {
+    "path": "cryptography-rust/openssl-0.10.81/LICENSE-APACHE",
+    "bytes": 11358,
+    "sha256": "c6596eb7be8581c18be736c846fb9173b69eccf6ef94c5135893ec56bd92ba08"
+  },
+  {
+    "path": "cryptography-rust/openssl-macros-0.1.1/LICENSE-APACHE",
+    "bytes": 11358,
+    "sha256": "c6596eb7be8581c18be736c846fb9173b69eccf6ef94c5135893ec56bd92ba08"
+  },
+  {
+    "path": "cryptography-rust/openssl-macros-0.1.1/LICENSE-MIT",
+    "bytes": 1058,
+    "sha256": "ea5ab440900ab271811d5c2dc02a9de6e03a6956ac5727e85c11d76df5883d30"
+  },
+  {
+    "path": "cryptography-rust/openssl-sys-0.9.117/LICENSE-MIT",
+    "bytes": 1057,
+    "sha256": "378f5840b258e2779c39418f3f2d7b2ba96f1c7917dd6be0713f88305dbda397"
+  },
+  {
+    "path": "cryptography-rust/pem-4.0.0/LICENSE.md",
+    "bytes": 1085,
+    "sha256": "b7c76ff4466a3aeb6a7d903e81b651335e97d64ecb857e2ee9812a36c6fd1acf"
+  },
+  {
+    "path": "cryptography-rust/pkg-config-0.3.33/LICENSE-APACHE",
+    "bytes": 10847,
+    "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+  },
+  {
+    "path": "cryptography-rust/pkg-config-0.3.33/LICENSE-MIT",
+    "bytes": 1057,
+    "sha256": "378f5840b258e2779c39418f3f2d7b2ba96f1c7917dd6be0713f88305dbda397"
+  },
+  {
+    "path": "cryptography-rust/portable-atomic-1.14.0/LICENSE-APACHE",
+    "bytes": 10174,
+    "sha256": "0d542e0c8804e39aa7f37eb00da5a762149dc682d7829451287e11b938e94594"
+  },
+  {
+    "path": "cryptography-rust/portable-atomic-1.14.0/LICENSE-MIT",
+    "bytes": 1023,
+    "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+  },
+  {
+    "path": "cryptography-rust/proc-macro2-1.0.107/LICENSE-APACHE",
+    "bytes": 9723,
+    "sha256": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a"
+  },
+  {
+    "path": "cryptography-rust/proc-macro2-1.0.107/LICENSE-MIT",
+    "bytes": 1023,
+    "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+  },
+  {
+    "path": "cryptography-rust/pyo3-0.29.2/LICENSE-APACHE",
+    "bytes": 9807,
+    "sha256": "32c76dbe0e73d79100d5ece77c158399f2e2541bc5c78548a4ba45c1cb53c5c9"
+  },
+  {
+    "path": "cryptography-rust/pyo3-0.29.2/LICENSE-MIT",
+    "bytes": 1107,
+    "sha256": "afcbe3b2e6b37172b5a9ca869ee4c0b8cdc09316e5d4384864154482c33e5af6"
+  },
+  {
+    "path": "cryptography-rust/pyo3-0.29.2/pyo3-runtime/LICENSE-APACHE",
+    "bytes": 9807,
+    "sha256": "32c76dbe0e73d79100d5ece77c158399f2e2541bc5c78548a4ba45c1cb53c5c9"
+  },
+  {
+    "path": "cryptography-rust/pyo3-0.29.2/pyo3-runtime/LICENSE-MIT",
+    "bytes": 1107,
+    "sha256": "afcbe3b2e6b37172b5a9ca869ee4c0b8cdc09316e5d4384864154482c33e5af6"
+  },
+  {
+    "path": "cryptography-rust/pyo3-build-config-0.29.2/LICENSE-APACHE",
+    "bytes": 9807,
+    "sha256": "32c76dbe0e73d79100d5ece77c158399f2e2541bc5c78548a4ba45c1cb53c5c9"
+  },
+  {
+    "path": "cryptography-rust/pyo3-build-config-0.29.2/LICENSE-MIT",
+    "bytes": 1107,
+    "sha256": "afcbe3b2e6b37172b5a9ca869ee4c0b8cdc09316e5d4384864154482c33e5af6"
+  },
+  {
+    "path": "cryptography-rust/pyo3-ffi-0.29.2/LICENSE-APACHE",
+    "bytes": 9807,
+    "sha256": "32c76dbe0e73d79100d5ece77c158399f2e2541bc5c78548a4ba45c1cb53c5c9"
+  },
+  {
+    "path": "cryptography-rust/pyo3-ffi-0.29.2/LICENSE-MIT",
+    "bytes": 1107,
+    "sha256": "afcbe3b2e6b37172b5a9ca869ee4c0b8cdc09316e5d4384864154482c33e5af6"
+  },
+  {
+    "path": "cryptography-rust/pyo3-macros-0.29.2/LICENSE-APACHE",
+    "bytes": 9807,
+    "sha256": "32c76dbe0e73d79100d5ece77c158399f2e2541bc5c78548a4ba45c1cb53c5c9"
+  },
+  {
+    "path": "cryptography-rust/pyo3-macros-0.29.2/LICENSE-MIT",
+    "bytes": 1107,
+    "sha256": "afcbe3b2e6b37172b5a9ca869ee4c0b8cdc09316e5d4384864154482c33e5af6"
+  },
+  {
+    "path": "cryptography-rust/pyo3-macros-backend-0.29.2/LICENSE-APACHE",
+    "bytes": 9807,
+    "sha256": "32c76dbe0e73d79100d5ece77c158399f2e2541bc5c78548a4ba45c1cb53c5c9"
+  },
+  {
+    "path": "cryptography-rust/pyo3-macros-backend-0.29.2/LICENSE-MIT",
+    "bytes": 1107,
+    "sha256": "afcbe3b2e6b37172b5a9ca869ee4c0b8cdc09316e5d4384864154482c33e5af6"
+  },
+  {
+    "path": "cryptography-rust/quote-1.0.47/LICENSE-APACHE",
+    "bytes": 9723,
+    "sha256": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a"
+  },
+  {
+    "path": "cryptography-rust/quote-1.0.47/LICENSE-MIT",
+    "bytes": 1023,
+    "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+  },
+  {
+    "path": "cryptography-rust/self_cell-1.3.0/LICENSE-APACHE",
+    "bytes": 11357,
+    "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+  },
+  {
+    "path": "cryptography-rust/self_cell-1.3.0/LICENSE-GPLv2",
+    "bytes": 18091,
+    "sha256": "f9c375a1be4a41f7b70301dd83c91cb89e41567478859b77eef375a52d782505"
+  },
+  {
+    "path": "cryptography-rust/shlex-2.0.1/LICENSE-APACHE",
+    "bytes": 566,
+    "sha256": "553fffcd9b1cb158bc3e9edc35da85ca5c3b3d7d2e61c883ebcfa8a65814b583"
+  },
+  {
+    "path": "cryptography-rust/shlex-2.0.1/LICENSE-MIT",
+    "bytes": 1092,
+    "sha256": "4455bf75a91154108304cb283e0fea9948c14f13e20d60887cf2552449dea3b1"
+  },
+  {
+    "path": "cryptography-rust/sources.json",
+    "bytes": 26161,
+    "sha256": "d638f937656e5f019dd34b904cc646bf4c53c3488234d74d16e26532fba7926e"
+  },
+  {
+    "path": "cryptography-rust/syn-2.0.119/LICENSE-APACHE",
+    "bytes": 9723,
+    "sha256": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a"
+  },
+  {
+    "path": "cryptography-rust/syn-2.0.119/LICENSE-MIT",
+    "bytes": 1023,
+    "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+  },
+  {
+    "path": "cryptography-rust/target-lexicon-0.13.5/LICENSE",
+    "bytes": 12243,
+    "sha256": "268872b9816f90fd8e85db5a28d33f8150ebb8dd016653fb39ef1f94f2686bc5"
+  },
+  {
+    "path": "cryptography-rust/unicode-ident-1.0.24/LICENSE-APACHE",
+    "bytes": 9723,
+    "sha256": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a"
+  },
+  {
+    "path": "cryptography-rust/unicode-ident-1.0.24/LICENSE-MIT",
+    "bytes": 1023,
+    "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+  },
+  {
+    "path": "cryptography-rust/unicode-ident-1.0.24/LICENSE-UNICODE",
+    "bytes": 1995,
+    "sha256": "f7db81051789b729fea528a63ec4c938fdcb93d9d61d97dc8cc2e9df6d47f2a1"
+  },
+  {
+    "path": "cryptography-rust/vcpkg-0.2.15/LICENSE-APACHE",
+    "bytes": 11050,
+    "sha256": "60c93a31f490375aadf64098b75f10715010379541021e00261045d7800611d3"
+  },
+  {
+    "path": "cryptography-rust/vcpkg-0.2.15/LICENSE-MIT",
+    "bytes": 1082,
+    "sha256": "016d20f335060a70e79d9fcf8dfaa6201114d65d592211f4bdfb8ae9ca2bc1dc"
+  },
+  {
+    "path": "dnspython-2.9.0-LICENSE",
+    "bytes": 1526,
+    "sha256": "c3ea3ff5654b329c19d3bc5f7481af623c3dded4a6145585499f843ad3d741cd"
+  },
+  {
+    "path": "fastmcp-slim-4.1.3-LICENSE",
+    "bytes": 11356,
+    "sha256": "43070e2d4e532684de521b885f385d0841030efa2b1a20bafb76133a5e1379c1"
+  },
+  {
+    "path": "microsoft/sources.json",
+    "bytes": 1075,
+    "sha256": "0689419e9a43552b4cc6d4254e9c8e5a37c1dc09387185648cfd0e4898bb7012"
+  },
+  {
+    "path": "microsoft/Visual-C-V14-License-Redistributable_and_Runtime_ENU.docx",
+    "bytes": 39553,
+    "sha256": "08651651a7602fc7c0e2763de0fde1ff9f868df2780597cd1775ee9d6441c783"
+  },
+  {
+    "path": "microsoft/Visual-C-V14-License-Redistributable_and_Runtime_ENU.docx.txt",
+    "bytes": 11943,
+    "sha256": "fcd3649a1ea1ed04d849521aca4950ca3db98b3a69f542b51d94cf71f4f17b64"
+  },
+  {
+    "path": "microsoft/Visual_Studio_2026-License-Community_ENU.docx",
+    "bytes": 69066,
+    "sha256": "02ac07637f4a513a807cd3721c7620433fc483bc049d25784b0c10c54b05e1fb"
+  },
+  {
+    "path": "microsoft/Visual_Studio_2026-License-Community_ENU.docx.txt",
+    "bytes": 27312,
+    "sha256": "ef616cae10d627cdc97238749de23ba1fcae68c329879c7b63ec65bfadc89c0b"
+  },
+  {
+    "path": "microsoft/vs2026-redistribution.html",
+    "bytes": 48844,
+    "sha256": "32532f7b81918db91db11967176ca165c92f49195d282d54d387f0fa7a248cfa"
+  },
+  {
+    "path": "native/CPython-3.14.7-licenses-and-acknowledgements.rst",
+    "bytes": 60039,
+    "sha256": "cd6f471c0bfdb099efefc25ddff9b3df8bf62e10428987f1f05e6f2f9e35d563"
+  },
+  {
+    "path": "native/expat-2.8.2-COPYING",
+    "bytes": 1144,
+    "sha256": "31b15de82aa19a845156169a17a5488bf597e561b2c318d159ed583139b25e87"
+  },
+  {
+    "path": "native/HACL-star-distribution-LICENSE-MIT",
+    "bytes": 1207,
+    "sha256": "998ce04fb8ad9dedb0bc1b44938f8c3dcf1089780fa105ce1c8c30fb5554d78c"
+  },
+  {
+    "path": "native/HACL-star-source-LICENSE-APACHE",
+    "bytes": 11356,
+    "sha256": "c5accbbd8546e94c34aed24afe689a617627d18eed5a6c48277e48db57c23851"
+  },
+  {
+    "path": "native/libtommath-from-tcl-9.0.4.0-LICENSE",
+    "bytes": 1257,
+    "sha256": "2fa64b163659f41965c9815882a8296d3d03ff546b76153e11445f9bdecf955a"
+  },
+  {
+    "path": "native/mimalloc-2.1.2-LICENSE",
+    "bytes": 1096,
+    "sha256": "19c99805e7a44a34b297a75d1edea9985e300066dfc024d5c99d4236d4573b5d"
+  },
+  {
+    "path": "native/mpdecimal-4.0.0-COPYRIGHT.txt",
+    "bytes": 1285,
+    "sha256": "2713324211652ce4a60e6e21e54f9dc3004299e591b0933a352f1a89c5fb53c2"
+  },
+  {
+    "path": "native/OpenSSL-3.5.7-LICENSE.txt",
+    "bytes": 10175,
+    "sha256": "7d5450cb2d142651b8afa315b5f238efc805dad827d91ba367d8516bc9d49e7a"
+  },
+  {
+    "path": "native/OpenSSL-4.0.3-LICENSE.txt",
+    "bytes": 10175,
+    "sha256": "7d5450cb2d142651b8afa315b5f238efc805dad827d91ba367d8516bc9d49e7a"
+  },
+  {
+    "path": "native/source-map.json",
+    "bytes": 4314,
+    "sha256": "f2ff17c3c6c0bea855e784d65515b885cb7585a59b07a0d5225eaaff8d84af02"
+  },
+  {
+    "path": "native/xz-5.2.5-COPYING",
+    "bytes": 2775,
+    "sha256": "bcb02973ef6e87ea73d331b3a80df7748407f17efdb784b61b47e0e610d3bb5c"
+  },
+  {
+    "path": "native/zlib-ng-2.2.4-LICENSE.md",
+    "bytes": 867,
+    "sha256": "6c9f0d975b41afaa34d22f55bb8986ce69e5cb7ad327cb2b28820cd425edf5ee"
+  },
+  {
+    "path": "sources.json",
+    "bytes": 820,
+    "sha256": "5d55f8bfe7063166412df322268cfa45f0fc5397d58ff75cf513b3294cd14f21"
+  }
+]

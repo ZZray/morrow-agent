@@ -1,0 +1,240 @@
+{
+  "scope": "Reach icon resources only; Node native regression 26/27 and focused repeat 0/1; no installation or deployment",
+  "reviewer": "/root/reach_plan_review",
+  "resourceFramesVerified": 30,
+  "files": [
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\assets\\brand\\reach.svg",
+      "bytes": 1280,
+      "sha256": "bbc0b9133d5aec31c26d280c80206d6f745d1ded9efdc09a1b20ae9736e49ae5"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\assets\\brand\\reach.ico",
+      "bytes": 77478,
+      "sha256": "fe2ee6dfef2435aa8cc3a660c9c4abe263f30bf35522a1f27f4b902356cb5fda"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\assets\\brand\\reach-256.png",
+      "bytes": 38532,
+      "sha256": "915d299281e9098048da32627e837cca481b39aa9df27802d35da860fb42850e"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\assets\\brand\\reach-512.png",
+      "bytes": 99552,
+      "sha256": "a6a94d7d9906f31c6264db4e482469fb39e25f4b88c64e827b59d0994c3bcaab"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\assets\\brand\\README.md",
+      "bytes": 903,
+      "sha256": "1a4a97814616ea653d888cb7412dc0301d3c9dfb4b87a008e32de57e25e356e3"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\scripts\\build-icons.ts",
+      "bytes": 1328,
+      "sha256": "ff53eaac9e7b9b78dad62e074275e873cbabdacd67c030d024bbb1e249f37ef9"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\build.rs",
+      "bytes": 199,
+      "sha256": "6f161f616229b14f572b5b736779d9cbc3fef87d3574e165d72555cc2fd92af7"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\Cargo.toml",
+      "bytes": 1383,
+      "sha256": "5b8c0c6b4a87a6955ab2a056367004d20623ae4e76ff2714d5c168718be2724f"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\Cargo.lock",
+      "bytes": 43766,
+      "sha256": "b5e45d7a8c3408c2de531b67c397044a56727f272674529e0714302e82f72d1c"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\desktop\\build.rs",
+      "bytes": 261,
+      "sha256": "5a45efefab2cc1272e2797443f1f8e63eaa17d075c546d16a9af7727f28cc426"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\desktop\\Cargo.toml",
+      "bytes": 1453,
+      "sha256": "4114c1c6f9bf5c777a7ddd99e4df6b9f4f488c18ae4bb000cdd7246a889c4986"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\desktop\\Cargo.lock",
+      "bytes": 62930,
+      "sha256": "f34733805b3fe2240a5d6f778d27b5dd24d652b011d8083fc05b5027f8fbfc29"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\packaging\\windows\\resources.rs",
+      "bytes": 995,
+      "sha256": "2ab606fbe5d250bd19c57cf3087caebd54edd9bd6abdcc053d173684747aca96"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\packaging\\windows\\setup\\Cargo.toml",
+      "bytes": 568,
+      "sha256": "40909026c0d327e926f93b3ff1133b0760561b78786d8b7c53cc5bd6694e4596"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\packaging\\windows\\setup\\Cargo.lock",
+      "bytes": 5351,
+      "sha256": "361a0d7be5a273b3b0f9b88015384af0178426abff9d3d40f6d0fe5721ff245e"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\packaging\\windows\\setup\\build.rs",
+      "bytes": 1430,
+      "sha256": "d013e147ef40c5e140cbfcacd93e559071270e8b9d2ed7df90710d31f2414cfe"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\packaging\\windows\\setup\\src\\main.rs",
+      "bytes": 7827,
+      "sha256": "b9392e5d362697542394f63a053cbebf92fef1d1dfa2a29ed1db8041af0e160e"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\packaging\\windows\\build.ps1",
+      "bytes": 7448,
+      "sha256": "dbe198a9dcff7dc55b3b62cda5580c39f3ed6c0ff4c9a993ff534f681e04e0d4"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\packaging\\windows\\install.ps1",
+      "bytes": 24785,
+      "sha256": "9759670a9d9130ed524ced7bb2c6ce9a6b6ead3df71cb1b0ef8c4de21aedfe7a"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\src\\admin\\admin.ts",
+      "bytes": 24817,
+      "sha256": "fb34f9a9c7ebe96ba95227acb7134f16895386ebfdf76c82cd873dc2bdd5c361"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\src\\admin\\admin.css",
+      "bytes": 7346,
+      "sha256": "1acb56472033a318d1da35b89c3287bcc6561cc484932547b52fc7f208ad8442"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\src\\admin\\index.html",
+      "bytes": 673,
+      "sha256": "0dcf674b3b7e036c5566290e2ab5ae495a834ff85c3240358ec4adb63321a6cb"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\src\\service\\admin.ts",
+      "bytes": 1873,
+      "sha256": "084deb05532346c70c91232228b2ff00ebb80f939f921e89d2614c62780e6fe2"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\tests\\admin-http.test.ts",
+      "bytes": 7875,
+      "sha256": "4f49a177191d5c92af2fb06228236410b085227ff0f552f48c363618249d74c6"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\package.json",
+      "bytes": 951,
+      "sha256": "3d3152b0b84e123e733ea9790080b01c8a2f764ecf1a8917a3ed9a699dc47938"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\bun.lock",
+      "bytes": 4748,
+      "sha256": "da563d6cb9f6557c8c0a039d7a4820b2b32179f642ad91e15099921fd35cc4b3"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\docs\\evidence\\brand-icon-20261102.md",
+      "bytes": 3808,
+      "sha256": "f3ca842812fabbbf815a65ed19f7af45beb70d2544d308f258a5608e958b5f4c"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\docs\\handoffs\\2026-11-02-brand-icon.md",
+      "bytes": 3324,
+      "sha256": "31a685cddccd88b01ed2acb09df12e1db96ced21e94624ac77e69b1f03c8ef0c"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\docs\\evidence\\brand-icon-admin-tests-final.log",
+      "bytes": 555,
+      "sha256": "795e13bf415c2a08d547262bf607cccd329e05b4cd36a4a267de8575c2d84bfc"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\docs\\evidence\\brand-icon-admin-tests.log",
+      "bytes": 558,
+      "sha256": "c948d0359b9744a0a231562a8a939c057d4813c3486d95fc57586b5a782dd52e"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\docs\\evidence\\brand-icon-helper-build.log",
+      "bytes": 185,
+      "sha256": "8d086daeeac81d8fbd04f1b1b827778a9b63f9e12bcaff9b0a97ec06cb9642fc"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\docs\\evidence\\brand-icon-node-build.log",
+      "bytes": 193,
+      "sha256": "980be7fdeca5b0cbd5265cc464f9206522bee8ff231aac1360a31e6e2f52512a"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\docs\\evidence\\brand-icon-node-large-output-recheck.log",
+      "bytes": 1324,
+      "sha256": "29b2852014591cbecddf69dc61dfbe8917a6e643c579ee1aa8d59fd42473301e"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\docs\\evidence\\brand-icon-node-native.log",
+      "bytes": 4047,
+      "sha256": "e1bf13932555415136854f15590f78390513b9d04c715cf6a2a799ce90b92b1b"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\docs\\evidence\\brand-icon-setup-build.log",
+      "bytes": 620,
+      "sha256": "b25a4ea171412cc509d5a9555d668600644ced4b65ec7252ae219ee054093feb"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\docs\\evidence\\brand-icon-helper-resources.json",
+      "bytes": 1778,
+      "sha256": "a38aa25286ef711450a476e7dda984040d3be452f687bb15347c8f20b753062e"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\docs\\evidence\\brand-icon-node-resources.json",
+      "bytes": 1787,
+      "sha256": "3540f171945c21777505898dd5c5ea894d9846ccbcd17a6bf9ffe96fe6195ce8"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\docs\\evidence\\brand-icon-setup-resources.json",
+      "bytes": 1818,
+      "sha256": "c9c6e718ea4e524ad64f6dfe2fb2012d298c1371950208e29803eec39d053629"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\outputs\\windows-node-9b721f7cb798ab25\\dependency-inventory.json",
+      "bytes": 65879,
+      "sha256": "3fc305b9e679e91d2658d116c472e43d86c646c1db5cdf8ac54550fe0a846be6"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\outputs\\windows-node-9b721f7cb798ab25\\inspect.txt",
+      "bytes": 320,
+      "sha256": "055538fded154cbaf7b68d6e9d6115e15d20e795fe5edb832c550a260ef21641"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\outputs\\windows-node-9b721f7cb798ab25\\package.json",
+      "bytes": 1124,
+      "sha256": "a81f5a8c561ec1df431ede7e879bd25e31a91b319a9fafdf3bd906594ee44c24"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\outputs\\windows-node-9b721f7cb798ab25\\Reach-Node-Setup-0.1.0-preview-007487edce0403cb.exe",
+      "bytes": 9443840,
+      "sha256": "007487edce0403cba77d474d2184f650b47cb93a655f2930d9d0fec43a5be2be"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\outputs\\windows-node-9b721f7cb798ab25\\THIRD_PARTY_NOTICES.txt",
+      "bytes": 2830228,
+      "sha256": "6ce36106005694e79c4aa90fb779863c0dbd223f5d20e93f3efd63c2b5273257"
+    },
+    {
+      "path": "E:\\usr\\var\\cache\\rust-target\\reach-static\\x86_64-pc-windows-msvc\\release\\reach.exe",
+      "bytes": 6113792,
+      "sha256": "9b721f7cb798ab25dfe12181985f0fd94a6beb8f596789547b3fab64360549e6"
+    },
+    {
+      "path": "E:\\usr\\var\\cache\\rust-target\\reach-desktop\\debug\\reach-desktop.exe",
+      "bytes": 10714624,
+      "sha256": "7d15891cbb38db621a5c8f9df03783d814455da119fa7856a382b50a235dafc6"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\work\\brand-icon\\verify-icon.ps1",
+      "bytes": 3341,
+      "sha256": "ec59082b06a4293d409ca097b0d112b03c01a6b40b81992b4071787fe20ea6bc"
+    }
+  ],
+  "markdownFiles": 43,
+  "localLinks": 298,
+  "missingLinks": []
+}

@@ -1,0 +1,175 @@
+{
+  "author": "Ray Zhang",
+  "scope": "Independent read-only original SQLite/files and isolated runtime-copy checks; no scenario reenactment",
+  "checks": [
+    {
+      "folder": "error-text",
+      "operationId": "319e221e-e66a-43cc-91a1-9a6f45bbb59c",
+      "artifactId": "f4ee52dd-1784-4d63-838c-e079845ac447",
+      "events": 7,
+      "nodeServiceExact": true,
+      "allAcknowledged": true,
+      "chunks": 2,
+      "bytes": 114243,
+      "sha256": "b22200c3e24f9a4e208706454bff0994f8b3823b7de920e6ef97c79b9db17640",
+      "terminal": "failed",
+      "terminalBytes": 28208
+    },
+    {
+      "folder": "error-text",
+      "operationId": "4dca0655-3ada-4206-a7c8-dca7854e9307",
+      "artifactId": "7b219ace-437e-4644-a4c9-ec92a3464c97",
+      "events": 7,
+      "nodeServiceExact": true,
+      "allAcknowledged": true,
+      "chunks": 2,
+      "bytes": 114242,
+      "sha256": "991f0e486c7ff80865ab64f2a71a152d8067b9207fa3129fc961d12599d066ec",
+      "terminal": "unknown",
+      "terminalBytes": 28208
+    },
+    {
+      "folder": "structured-error",
+      "operationId": "08ac9c2c-52b1-4dfc-8a76-d1c77540dc3c",
+      "artifactId": "ac44d5f0-088c-444f-8cc2-55d35d302c60",
+      "events": 25,
+      "nodeServiceExact": true,
+      "allAcknowledged": true,
+      "chunks": 20,
+      "bytes": 1260033,
+      "sha256": "b43a19b4bfbdd2208d86b2870e40e04c4f3ed0391317f8ab38dba8fae0d60b34",
+      "terminal": "failed",
+      "terminalBytes": 24306
+    },
+    {
+      "folder": "structured-error",
+      "operationId": "86b5ada9-d41d-4c56-b297-c775a5f2beba",
+      "artifactId": "8d6a5271-91b5-4e86-96d6-5c408d983ac4",
+      "events": 22,
+      "nodeServiceExact": true,
+      "allAcknowledged": true,
+      "chunks": 17,
+      "bytes": 1100037,
+      "sha256": "7962837bf963ee11aa1f64aadee77e1032b6348c8725701370421837ff205567",
+      "terminal": "failed",
+      "terminalBytes": 11497
+    },
+    {
+      "folder": "error-save-failure",
+      "operationId": "717b3001-d34a-4825-9339-8cd52b57cad3",
+      "events": 3,
+      "nodeServiceExact": true,
+      "allAcknowledged": true,
+      "terminal": "failed",
+      "truncated": true,
+      "artifactEvents": 0
+    },
+    {
+      "folder": "full-text",
+      "operationId": "0da8e4ca-152a-45f6-baf5-0266fbd312ed",
+      "artifactId": "b0aa48bf-621c-492d-b94c-f2c309b44902",
+      "events": 11,
+      "nodeServiceExact": true,
+      "allAcknowledged": true,
+      "chunks": 6,
+      "bytes": 378025,
+      "sha256": "eecaa1587bc8321a9edb45592a45f3bd790ba57e1330ff5aadc6b2c0d4b977af",
+      "terminal": "succeeded",
+      "terminalBytes": 415465
+    },
+    {
+      "folder": "interaction",
+      "operationId": "b4f235fc-997f-4eaf-aeac-11a490797487",
+      "artifactId": "d5f4429f-9207-4d1a-a280-08d1295ba5ee",
+      "events": 6,
+      "nodeServiceExact": true,
+      "allAcknowledged": true,
+      "chunks": 1,
+      "bytes": 7430,
+      "sha256": "338dd392323e61048ca174c0e7ab7003b158a0073974b6032e754965e8807cf5",
+      "terminal": "succeeded",
+      "terminalBytes": 9358
+    },
+    {
+      "folder": "interaction",
+      "operationId": "35bda0a5-a356-4035-ad60-76e10af105b6",
+      "artifactId": "724f54a1-91b2-4711-9b08-3d861cc290c0",
+      "events": 6,
+      "nodeServiceExact": true,
+      "allAcknowledged": true,
+      "chunks": 1,
+      "bytes": 10770,
+      "sha256": "e5ede5cc127d9ce654ea21d1a7a1b2f7322893f10f9bf5646b7a4e2eaeec51e1",
+      "terminal": "succeeded",
+      "terminalBytes": 1804
+    },
+    {
+      "folder": "interaction",
+      "operationId": "21abf28c-1ee8-4151-b696-60e8f478cd9a",
+      "artifactId": "9af4fa45-0cfa-4156-a2a2-674439878b8c",
+      "events": 6,
+      "nodeServiceExact": true,
+      "allAcknowledged": true,
+      "chunks": 1,
+      "bytes": 13140,
+      "sha256": "778af3b20da129f926c4fc3d846af1b0bbfea40bfa2e689e1d77eebc8e221588",
+      "terminal": "succeeded",
+      "terminalBytes": 1804
+    },
+    {
+      "folder": "failures",
+      "operationId": "bac8ef19-12e4-4ef0-97f3-3467d572172f",
+      "events": 3,
+      "nodeServiceExact": true,
+      "allAcknowledged": true,
+      "terminal": "unknown",
+      "effect": "once",
+      "ended": false
+    },
+    {
+      "folder": "failures",
+      "operationId": "308387cb-978d-40f9-b324-697b08c4f1e8",
+      "events": 3,
+      "nodeServiceExact": true,
+      "allAcknowledged": true,
+      "terminal": "unknown",
+      "effect": "once",
+      "ended": false
+    }
+  ],
+  "controlledBackendCalls": 2,
+  "runtimeCopies": [
+    {
+      "file": "python.exe",
+      "bytes": 106208,
+      "sha256": "4942b86a6597e5aee0128daa00050ed79bc21f6e709a78eb19cbfeb0c2f39ac9",
+      "match": true
+    },
+    {
+      "file": "python314.dll",
+      "bytes": 6785760,
+      "sha256": "0f9857ffdfe010fe6b99328d58c2e3c7472ce75f336bf9c2ad9bd5bca3bce700",
+      "match": true
+    },
+    {
+      "file": "python314.zip",
+      "bytes": 4138882,
+      "sha256": "5a7a66daf1a2c2e3c8d7a4a0d095685ec301efc3ef28cc2419e3041bf5729b65",
+      "match": true
+    },
+    {
+      "file": "vcruntime140.dll",
+      "bytes": 178616,
+      "sha256": "d1f4225df2cd877dbf130d5668a021dce3f94118455ff5ec952061c30afc9ce7",
+      "match": true
+    },
+    {
+      "file": "vcruntime140_1.dll",
+      "bytes": 50112,
+      "sha256": "a7146c08f89fe5b04541ab507cdb59ff7b44534d4ba3c668a426c6450a03434e",
+      "match": true
+    }
+  ],
+  "fixtureCopyExact": true,
+  "oldClickCount": 1
+}

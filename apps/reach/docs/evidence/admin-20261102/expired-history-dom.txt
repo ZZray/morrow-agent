@@ -1,0 +1,13 @@
+- link "跳到内容":
+  - /url: "#main"
+- main:
+  - generic: ↗
+  - generic: Reach
+  - heading "连接你的工作现场" [level=1]
+  - paragraph: 登录 Reach，查看设备连接与操作记录。
+  - generic: 账户
+  - textbox "账户"
+  - generic: 密码
+  - textbox "密码"
+  - button "登录 Reach"
+  - generic: 独立 Reach 账户 · Ray 工作台应用

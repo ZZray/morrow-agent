@@ -1,0 +1,42 @@
+[
+  {
+    "path": "bun.lock",
+    "sha256": "76b67f1fa9f08c03e82d5215abd45f100a42088cca1169848b40617f3e203b9c"
+  },
+  {
+    "path": "package.json",
+    "sha256": "b1ff0085a3ce6353eed08535cb9c0c9eea1dd282b332aafd6afb9b83dbd9b3ba"
+  },
+  {
+    "path": "src/contracts/protocol.ts",
+    "sha256": "92fb5aac7990a52cc03d249fafd6e310d7ad48899e17edb0084e25907db3c49c"
+  },
+  {
+    "path": "src/service/errors.ts",
+    "sha256": "b64a01df31c6183213c7c0675c94e6c93d2a99d9aa669185ecc8988d467ca4b1"
+  },
+  {
+    "path": "src/service/main.ts",
+    "sha256": "a3facbb6759d7d2714fcd9f9364cb9f105291814104ef362a0e83d12a5d7f214"
+  },
+  {
+    "path": "src/service/server.ts",
+    "sha256": "1d8a041a69e6bb866aac886e5db96d1b7450cd82fc2068eac8d39d62c0535f14"
+  },
+  {
+    "path": "src/service/store.ts",
+    "sha256": "bd34fe8a14ce8ad66c63d27a2c9aab9c0318ee293a881365ca08ed164e749a70"
+  },
+  {
+    "path": "tests/service-process.test.ts",
+    "sha256": "10b3e11d80f5816b479c38c25a137783f5a564dba29d2bad870bdc41f69b87d3"
+  },
+  {
+    "path": "tests/service.test.ts",
+    "sha256": "1c82f7a64b8b4649668989658fdff3ff83cdfbb50110bcd6c47403e25803250e"
+  },
+  {
+    "path": "tsconfig.json",
+    "sha256": "2e03038fe6bfbf5829334fdb02c1f7fd4f705e2bb15323e6df92bcd3f99dd86b"
+  }
+]

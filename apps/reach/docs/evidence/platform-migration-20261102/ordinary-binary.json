@@ -1,0 +1,85 @@
+{
+  "author": "Ray Zhang",
+  "binary": "reach-desk.exe",
+  "binary_sha256": "dd19e95d40407a90a07c178e265d03c35dc798b972290f33665a6ad4135d0b9d",
+  "checks": [
+    {
+      "name": "no arguments show help",
+      "passed": true,
+      "exit_code": 0
+    },
+    {
+      "name": "version has confirmed product name",
+      "passed": true,
+      "exit_code": 0
+    },
+    {
+      "name": "reject legacy node",
+      "passed": true,
+      "exit_code": 2
+    },
+    {
+      "name": "reject legacy pair",
+      "passed": true,
+      "exit_code": 2
+    },
+    {
+      "name": "reject legacy approve",
+      "passed": true,
+      "exit_code": 2
+    },
+    {
+      "name": "reject legacy deny",
+      "passed": true,
+      "exit_code": 2
+    },
+    {
+      "name": "missing state rejects inherited HW_CONF",
+      "passed": true,
+      "exit_code": 2
+    },
+    {
+      "name": "relative state rejected",
+      "passed": true,
+      "exit_code": 2
+    },
+    {
+      "name": "file state rejected",
+      "passed": true,
+      "exit_code": 2
+    },
+    {
+      "name": "uncreatable child state rejected",
+      "passed": true,
+      "exit_code": 2
+    },
+    {
+      "name": "legacy sentinel remains untouched",
+      "passed": true
+    },
+    {
+      "name": "ordinary binary health response",
+      "passed": true,
+      "status": 200,
+      "body": "handwave hub ok\n"
+    },
+    {
+      "name": "embedded login has Reach Desk brand",
+      "passed": true
+    },
+    {
+      "name": "anonymous API access denied",
+      "passed": true,
+      "status": 401
+    },
+    {
+      "name": "live server uses isolated state",
+      "passed": true
+    },
+    {
+      "name": "temporary server stopped",
+      "passed": true
+    }
+  ],
+  "scope": "local compatibility binary; no model, Reach identity, device integration or deployment"
+}

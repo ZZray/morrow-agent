@@ -1,0 +1,17 @@
+[
+  {
+    "old": "function escHtml(s) {\n  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');\n}",
+    "new": "function escHtml(s) {\n  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;').replace(/'/g,'&#39;');\n}",
+    "count": 1
+  },
+  {
+    "old": "function showToast(message, type = 'info', duration = 4000) {\n  // type: info | success | warn | error\n  const colors = { info: 'var(--primary)', success: '#22c55e', warn: '#f59e0b', error: '#ef4444' };\n  const toast = document.createElement('div');\n  toast.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:9000;padding:12px 20px;border-radius:8px;' +\n    'background:var(--panel-fill);border:1px solid var(--border);color:var(--text);font-size:13px;' +\n    'box-shadow:0 8px 32px rgba(0,0,0,.35);max-width:320px;animation:toastIn .2s ease';\n  toast.innerHTML = '<span style=\"display:inline-block;width:8px;height:8px;border-radius:50%;' +\n    'background:' + colors[type] + ';margin-right:10px;vertical-align:middle;flex-shrink:0\"></span>' +\n    '<span style=\"vertical-align:middle\">' + message + '</span>';\n  document.body.appendChild(toast);\n  setTimeout(() => {\n    toast.style.animation = 'toastOut .2s ease forwards';\n    setTimeout(() => toast.remove(), 200);\n  }, duration);\n}",
+    "new": "function showToast(message, type = 'info', duration = 4000) {\n  // Device names and other notification text are untrusted text, never markup.\n  const colors = { info: 'var(--primary)', success: '#22c55e', warn: '#f59e0b', error: '#ef4444' };\n  const toast = document.createElement('div');\n  toast.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:9000;padding:12px 20px;border-radius:8px;' +\n    'background:var(--panel-fill);border:1px solid var(--border);color:var(--text);font-size:13px;' +\n    'box-shadow:0 8px 32px rgba(0,0,0,.35);max-width:320px;animation:toastIn .2s ease';\n  const dot = document.createElement('span');\n  dot.style.cssText = 'display:inline-block;width:8px;height:8px;border-radius:50%;' +\n    'background:' + colors[type] + ';margin-right:10px;vertical-align:middle;flex-shrink:0';\n  const text = document.createElement('span');\n  text.style.verticalAlign = 'middle';\n  text.textContent = message;\n  toast.appendChild(dot);\n  toast.appendChild(text);\n  document.body.appendChild(toast);\n  setTimeout(() => {\n    toast.style.animation = 'toastOut .2s ease forwards';\n    setTimeout(() => toast.remove(), 200);\n  }, duration);\n}",
+    "count": 1
+  },
+  {
+    "old": "function onSig(s) {\n  switch (s.k) {",
+    "new": "function onSig(s) {\n  switch (s.k) {\n    case 'controller-identity': {\n      // This display label is issued by the authenticated Hub socket. It does\n      // not grant authority; Hub derives and checks its own controller identity.\n      if (typeof s.fp !== 'string' || !/^[A-Z2-7]{16,64}$/.test(s.fp)) break;\n      myFP = s.fp;\n      for (const id of ['myfp', 'accountMenuFp']) { const node = $(id); if (node) node.textContent = myFP; }\n      for (const id of ['accountAva', 'accountMenuAva']) { const node = $(id); if (node) node.textContent = myFP.slice(0, 2); }\n      break;\n    }",
+    "count": 1
+  }
+]

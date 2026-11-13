@@ -1,0 +1,58 @@
+"""Build a maintained Hub and Ray from a pinned Git tree and stable public UI.
+
+No working-tree overlay, runtime state, credentials or production access.
+"""
+import argparse
+import hashlib
+import json
+import os
+from pathlib import Path
+import subprocess
+import tarfile
+import time
+
+p = argparse.ArgumentParser(description=__doc__)
+p.add_argument('--ref', required=True, help='Exact commit or prospective index tree')
+p.add_argument('--output', required=True, type=Path, help='Fresh local artifact directory')
+a = p.parse_args()
+root = Path(__file__).resolve().parents[3]
+out = a.output.resolve()
+out.mkdir(parents=True, exist_ok=False)
+revision = subprocess.check_output(['git','rev-parse',a.ref+'^{tree}'],cwd=root).decode().strip()
+archive = out/'source.tar'
+subprocess.run(['git','archive','--format=tar','-o',str(archive),revision],cwd=root,check=True)
+src = out/'source'
+src.mkdir()
+with tarfile.open(archive) as t:
+    t.extractall(src,filter='data')
+inputs = src/'apps/handwave/release-web'
+manifest = json.loads((inputs/'manifest.json').read_text())
+bundle = inputs/manifest['archive']
+assert hashlib.sha256(bundle.read_bytes()).hexdigest() == manifest['sha256']
+with tarfile.open(bundle) as t:
+    members = t.getmembers()
+    assert {m.name for m in members} == set(manifest['files'])
+    for m in members:
+        assert m.isfile() and Path(m.name).name == m.name
+        data = t.extractfile(m).read()
+        assert hashlib.sha256(data).hexdigest() == manifest['files'][m.name]
+        (src/'apps/handwave/web'/m.name).write_bytes(data)
+receipt = {'source_tree':revision,'stable_web_sha256':manifest['sha256'],'checks':[]}
+for label,cmd in [
+    ('test',['go','test','./apps/handwave','./apps/handwave/memorystore','./apps/provider/cmd/ray_front','-count=1','-timeout=90s']),
+    ('vet',['go','vet','./apps/handwave','./apps/handwave/memorystore','./apps/provider/cmd/ray_front']),
+    ('hub-build',['go','build','-trimpath','-buildvcs=false','-ldflags=-s -w','-o',str(out/'handwave-linux-amd64'),'./apps/handwave']),
+    ('ray-build',['go','build','-trimpath','-buildvcs=false','-ldflags=-s -w','-o',str(out/'ray-front-linux-amd64'),'./apps/provider/cmd/ray_front']),
+]:
+    env = os.environ.copy()
+    if label.endswith('build'):
+        env.update(GOOS='linux',GOARCH='amd64',CGO_ENABLED='0')
+    start = time.monotonic()
+    r = subprocess.run(cmd,cwd=src,env=env,capture_output=True,timeout=180)
+    (out/(label+'.log')).write_bytes(r.stdout+r.stderr)
+    receipt['checks'].append({'name':label,'exit':r.returncode,'seconds':round(time.monotonic()-start,3)})
+    (out/'build-result.json').write_text(json.dumps(receipt,indent=2))
+    assert r.returncode == 0, label+' failed; inspect local log'
+receipt['artifacts'] = {n:{'sha256':hashlib.sha256((out/n).read_bytes()).hexdigest(),'bytes':(out/n).stat().st_size} for n in ['handwave-linux-amd64','ray-front-linux-amd64']}
+(out/'build-result.json').write_text(json.dumps(receipt,indent=2))
+print(json.dumps(receipt))

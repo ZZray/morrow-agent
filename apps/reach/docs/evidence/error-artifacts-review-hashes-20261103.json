@@ -1,0 +1,31 @@
+{
+  "author": "Ray Zhang",
+  "linksChecked": 6,
+  "files": [
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\docs\\evidence\\error-artifacts-review-20261103.md",
+      "bytes": 7810,
+      "sha256": "ec7db23875a8b89c7f4b1a795eca41cfe1b83f4711ed90c15825bffbcba22b3a"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\docs\\evidence\\error-artifacts-review-inputs-20261103.json",
+      "bytes": 22469,
+      "sha256": "174a635c0096d0d2a6b82f5dda6bd75f1e5686e0be4a6452ad97ddd00f420054"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\docs\\evidence\\error-artifacts-originals-review-20261103.json",
+      "bytes": 5378,
+      "sha256": "33099b39467096fe38911937f77d823ea12ea85d04aa7366944b88add7fa3c42"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\docs\\evidence\\error-artifacts-candidate-review-20261103.json",
+      "bytes": 3879,
+      "sha256": "aaa04fd35d1c0fe5795b883dfd24cb3798c8f86f53ce366da82dfe4079a76e1c"
+    },
+    {
+      "path": "E:\\repos\\ara\\apps\\reach\\docs\\evidence\\error-artifacts-candidate-inspect-review-20261103.log",
+      "bytes": 1174,
+      "sha256": "3864215053e99f8bacaf3ec6fa8e459086415b87ee5cdefa78ccdf545932915f"
+    }
+  ]
+}

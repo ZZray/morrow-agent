@@ -1,0 +1,40 @@
+{
+  "status": "sso-enabled-native-and-anonymous-verified-browser-pending",
+  "old_binary_sha256": "8f780bc73af968a184f99ed4314ba07053a66fb739aa3029b4ff9084ae8cbcc3",
+  "binary_sha256": "3b21deba87a5df87b19942a7b9557ab842ff92147e5103125d1d4a2b45fe7bd9",
+  "archive_sha256": "fdb8c2099cda79050d3933ef1f18cec750840dcac18bbda8b6a4868ad4d83258",
+  "old_release": "/opt/reach/releases/20261102-path-227051b674a0",
+  "release": "/opt/reach/releases/20261102-sso-fdb8c2099cda",
+  "original_routes_before": {
+    "/": 303,
+    "/ray/login": 200,
+    "/healthz": 200,
+    "/handwave/healthz": 200,
+    "/arena/health": 200,
+    ":8000/api/health": 200
+  },
+  "database_restored": false,
+  "state_before": {
+    "nodes": 1,
+    "operations": 1,
+    "operation_events": 5
+  },
+  "health": {
+    "service": "Reach",
+    "version": "0.1.0-dev.1",
+    "protocol": 1
+  },
+  "original_routes_after": {
+    "/": 303,
+    "/ray/login": 200,
+    "/healthz": 200,
+    "/handwave/healthz": 200,
+    "/arena/health": 200,
+    ":8000/api/health": 200
+  },
+  "state_after": {
+    "nodes": 1,
+    "operations": 1,
+    "operation_events": 5
+  }
+}

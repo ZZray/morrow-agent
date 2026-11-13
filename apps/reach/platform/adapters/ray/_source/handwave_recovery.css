@@ -1,0 +1,14 @@
+/* Recovery belongs above the draft, never over it. Hidden notices take no space. */
+.hw-recovery-toast{position:static;display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;box-sizing:border-box;width:100%;max-width:760px;min-width:0;margin:0 auto 8px;padding:8px 12px;border:1px solid var(--hair);border-radius:10px;background:var(--hw-composer-surface,#202329);color:var(--text);font:12px/1.5 var(--sans);box-shadow:none}
+.hw-recovery-toast[hidden],.hw-recovery-toast [hidden]{display:none}
+.hw-recovery-toast>span{flex:1 1 320px;min-width:0;overflow-wrap:anywhere}
+.hw-recovery-actions{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:4px;margin-inline-start:auto}
+.hw-recovery-toast .hw-memory-button{box-sizing:border-box;min-width:28px;min-height:28px;margin:0;padding:4px 8px;border:0;border-radius:6px;background:transparent;color:var(--text-2);font:500 12px/20px var(--sans);white-space:nowrap;cursor:pointer}
+.hw-recovery-toast .hw-memory-button:hover:not(:disabled){background:var(--hw-composer-hover,rgba(127,127,127,.08));color:var(--text)}
+.hw-recovery-toast .hw-memory-button:disabled{opacity:.45;cursor:default}
+.hw-recovery-toast .hw-recovery-dismiss{width:28px;padding:0;color:var(--muted);font-size:16px}
+.hw-recovery-dialog{box-sizing:border-box;width:min(640px,calc(100vw - 32px));max-height:calc(100dvh - 48px);overflow:auto;padding:20px;border:1px solid var(--hair);border-radius:12px;background:var(--hw-composer-surface,#202329);color:var(--text);font:13px/1.5 var(--sans)}
+.hw-recovery-dialog::backdrop{background:rgba(0,0,0,.32)}.hw-recovery-dialog h2{font-size:16px;margin:0 0 12px}.hw-recovery-dialog section{padding:12px 0;border-top:1px solid var(--hair)}.hw-recovery-dialog pre{max-height:160px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font:12px/1.6 var(--sans)}
+.hw-recovery-dialog :focus-visible,.hw-recovery-toast :focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+@media(max-width:780px){.hw-recovery-toast{gap:4px 8px}.hw-recovery-dialog{padding:16px}}
+@media(pointer:coarse){.hw-recovery-toast .hw-memory-button,.hw-recovery-dialog button{min-height:44px}.hw-recovery-toast .hw-recovery-dismiss{width:44px}}

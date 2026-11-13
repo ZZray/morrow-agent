@@ -1,0 +1,18 @@
+{
+  "id": "e7797a74-42a2-4de5-92ca-cca5a136ab87",
+  "user_id": "12da4d1d-6336-4766-8069-4b3cdef5a510",
+  "node_id": "9c576d38-c764-4a83-a55f-b09854e20b08",
+  "epoch": 4,
+  "request_id": "1a031b5c-7bc0-4abc-b7dc-c7f3d072a251",
+  "command_json": "{\"kind\":\"command.run\",\"command\":\"Write-Output 'browser-cancel-started'; Start-Sleep -Seconds 90\",\"timeoutMs\":120000}",
+  "payload_hash": "56581060588d20e0f5c1fd5807e7468153c352a704cc8c3f2307082c79028c87",
+  "delivery": "acknowledged",
+  "execution": "unknown",
+  "dispatch_id": "edf1617d-a820-4705-8ad9-72eca53364c0",
+  "claimed_at": 1793603971234,
+  "cancel_requested": 1,
+  "last_sequence": 6,
+  "result_json": "{\"effectsMayHaveOccurred\":true,\"processTreeStopped\":true,\"reason\":\"cancel_requested_or_control_lost\"}",
+  "created_at": 1793603970848,
+  "updated_at": 1793603992685
+}

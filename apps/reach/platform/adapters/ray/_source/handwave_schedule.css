@@ -1,0 +1,13 @@
+.hw-schedule-actions{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+.hw-schedule-row{padding:9px 0;border-top:1px solid var(--hair);overflow-wrap:anywhere}
+.hw-schedule-row b{font-size:11px;color:var(--text-2);font-weight:500}
+.hw-schedule-row p{font-size:11px;line-height:1.5;margin:5px 0}
+.hw-schedule-row small{font-size:10px;color:var(--muted)}
+.hw-schedule-dialog{width:min(460px,calc(100vw - 32px));max-height:calc(100dvh - 48px);overflow:auto;box-sizing:border-box;padding:22px;border:1px solid var(--hair);border-radius:var(--r-card);background:var(--ink);color:var(--text);font:13px/1.5 var(--sans);box-shadow:var(--card-shadow)}
+.hw-schedule-dialog::backdrop{background:rgba(0,0,0,.35)}
+.hw-schedule-dialog h2{font-size:16px;margin:0 0 14px}
+.hw-schedule-objective{max-height:120px;overflow:auto;overflow-wrap:anywhere;white-space:pre-wrap;color:var(--text-2)}
+.hw-schedule-time{display:flex;flex-direction:column;gap:6px}
+.hw-schedule-time input{min-height:36px;box-sizing:border-box;width:100%;max-width:100%;padding:8px;border:1px solid var(--hair);border-radius:6px;color:var(--text);background:var(--mat-card);font:inherit;color-scheme:dark light}
+.hw-schedule-card :focus-visible,.hw-schedule-dialog :focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+@media(max-width:780px){.hw-schedule-time input{font-size:16px;min-height:44px}.hw-schedule-dialog{padding:16px}.hw-schedule-actions>.hw-memory-button{min-height:44px}}

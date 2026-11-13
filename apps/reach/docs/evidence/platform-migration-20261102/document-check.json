@@ -1,0 +1,19 @@
+{
+  "author": "Ray Zhang",
+  "pages": 31,
+  "local_links": 180,
+  "broken_links": [],
+  "base_tasks": 52,
+  "optional_tasks": 5,
+  "maintained_platform_files": 227,
+  "changed_since_initial_import": 7,
+  "legacy_embedded_credential_scan": "absent",
+  "scope": "active Reach documents; provenance, dependency cache and imported historical documentation excluded",
+  "root_bootstrap": {
+    "passed": false,
+    "failure_count": 38,
+    "reach_failures": 0,
+    "log": "bootstrap-final.log"
+  },
+  "git_diff_check": "passed"
+}

@@ -1,0 +1,1429 @@
+{
+  "author": "Ray Zhang",
+  "commit": "0b9cb7c3eabf1e4d82bfc1d6147786c2d883721c",
+  "files": [
+    {
+      "source": "apps/handwave/.gitignore",
+      "destination": "legacy/.gitignore",
+      "source_sha256": "a0ef7077a5c8c5fc9b3776ab5fd97bb575c2d092d91eb4c2584f196ed729f385",
+      "import_sha256": "ead0c3ee125ddc0aa0bb6cdbd53373cf8a38435aec5ef846939ecdb5a6d023ab",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "ead0c3ee125ddc0aa0bb6cdbd53373cf8a38435aec5ef846939ecdb5a6d023ab"
+    },
+    {
+      "source": "apps/handwave/AGENTS.md",
+      "destination": "provenance/AGENTS.upstream.txt",
+      "source_sha256": "4f66bf309ab978377abc4b767afc38d3fe34414ae0365f801180249f3da93eae",
+      "import_sha256": "351b69ca96e9fea0aa435c2a475e633ab0c981461ae749b445b2273e39bedc4c",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "351b69ca96e9fea0aa435c2a475e633ab0c981461ae749b445b2273e39bedc4c"
+    },
+    {
+      "source": "apps/handwave/LICENSE",
+      "destination": "legacy/LICENSE",
+      "source_sha256": "8f576e329beb1bf8c708f8ae56328d7f8ce516bdbbdf62b5e172a33986b11145",
+      "import_sha256": "df13fdcf9844f6c49ff9b59f0710b8218686f778f447001158123b5368f187bd",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "df13fdcf9844f6c49ff9b59f0710b8218686f778f447001158123b5368f187bd"
+    },
+    {
+      "source": "apps/handwave/README.md",
+      "destination": "provenance/README.upstream.txt",
+      "source_sha256": "5d8d0cbc7fe70bf5627414ebfee53dc87787381f4fbaebd707a13dd0d056fa26",
+      "import_sha256": "25d636066a9635a40083b6bbcb8afa89e136ba784942fa8f861defcf0c0ba8c1",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "25d636066a9635a40083b6bbcb8afa89e136ba784942fa8f861defcf0c0ba8c1"
+    },
+    {
+      "source": "apps/handwave/agents.go",
+      "destination": "legacy/agents.go",
+      "source_sha256": "c249b37d0040f17f20a727cd50746ac590b79fc8d44e63886e1fd1169c2fccd7",
+      "import_sha256": "5e4782ca495f328be8b92b82daa39e716a1543ce0636adb2c9d16cd01b26aea7",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "5e4782ca495f328be8b92b82daa39e716a1543ce0636adb2c9d16cd01b26aea7"
+    },
+    {
+      "source": "apps/handwave/agents_test.go",
+      "destination": "legacy/agents_test.go",
+      "source_sha256": "7c77f7b5467d46722ae69919fc7b9d697b730613bae8766c9bbe3a588ac39db2",
+      "import_sha256": "93b2c59121f6a5be6981f1cda19cbbbb16fd12e09a669759a0bb524d29e883d5",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "93b2c59121f6a5be6981f1cda19cbbbb16fd12e09a669759a0bb524d29e883d5"
+    },
+    {
+      "source": "apps/handwave/api.go",
+      "destination": "legacy/api.go",
+      "source_sha256": "8845792384c0702b52cbde45ca82f22f0a67d1853bacfa869894827f15743c2b",
+      "import_sha256": "55c046ab33985fbbee917949ed92455b571d88319f0c29b9e4b3bb6a8cde44f1",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "55c046ab33985fbbee917949ed92455b571d88319f0c29b9e4b3bb6a8cde44f1"
+    },
+    {
+      "source": "apps/handwave/auth.go",
+      "destination": "legacy/auth.go",
+      "source_sha256": "a38a897731272c1f51f46cb8b153f5a41c5f18018c94a002634273d432f2a069",
+      "import_sha256": "fe95cfdb9d62ae0f6e5c93ca7a6a2bcc770b69c725259d9e4f9e098df8b595f4",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "fe95cfdb9d62ae0f6e5c93ca7a6a2bcc770b69c725259d9e4f9e098df8b595f4"
+    },
+    {
+      "source": "apps/handwave/auth_totp.go",
+      "destination": "legacy/auth_totp.go",
+      "source_sha256": "db1b2c958f60c5ee0ffaedd8be3d738e823baa460b6bad5669b223d5ec07cbb2",
+      "import_sha256": "2fa80b9aa57d508d7d500289602fd5fc055d05fecb056311ca5de83b37107058",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "2fa80b9aa57d508d7d500289602fd5fc055d05fecb056311ca5de83b37107058"
+    },
+    {
+      "source": "apps/handwave/auth_totp_test.go",
+      "destination": "legacy/auth_totp_test.go",
+      "source_sha256": "68844504dfa6ad93798ef054e360c8c733818dcd5c50ab2523aee0aa5644ef13",
+      "import_sha256": "9684edd10c778c6a40e5c7de5ad782430c788165ea8aa0b618e3418d43d0066b",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "9684edd10c778c6a40e5c7de5ad782430c788165ea8aa0b618e3418d43d0066b"
+    },
+    {
+      "source": "apps/handwave/build_dist.py",
+      "destination": "provenance/build_dist.upstream.py.txt",
+      "source_sha256": "fd5e35e931e7574cf5cbaa8ee2d6fa191d59a0f551d4c393909532d3c3c5fecc",
+      "import_sha256": "6e3a520d747b9dfe460f817ad1c75daf72e66182f905bfaa12c9cb30793bc147",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "6e3a520d747b9dfe460f817ad1c75daf72e66182f905bfaa12c9cb30793bc147"
+    },
+    {
+      "source": "apps/handwave/chat.go",
+      "destination": "legacy/chat.go",
+      "source_sha256": "b2268c46a70b2a494542f9d4b703bfe0cf61b93b8b88d377524f945f6f8ab502",
+      "import_sha256": "933614c815dc3bce2bfc200cdc2d680cdeb8546444772de785d3a99d3b595fe5",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "933614c815dc3bce2bfc200cdc2d680cdeb8546444772de785d3a99d3b595fe5"
+    },
+    {
+      "source": "apps/handwave/chat_sse_test.go",
+      "destination": "legacy/chat_sse_test.go",
+      "source_sha256": "6ca58ee96cbe6871b665821d4a383331b390909fe11d9be0fb673b7b499b29dd",
+      "import_sha256": "ef81d205c3f40bbe18eb252c16355883d0385e8c0ef186015bb8653cdae5e3fe",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "ef81d205c3f40bbe18eb252c16355883d0385e8c0ef186015bb8653cdae5e3fe"
+    },
+    {
+      "source": "apps/handwave/chat_test.go",
+      "destination": "legacy/chat_test.go",
+      "source_sha256": "b97941f5f5958f27b2111bbc4a236f0602d2fcd0cfbd3573179d06214441fe42",
+      "import_sha256": "622b2e75c4e21a69f7302f99033eac731ff8224610e54b9aa7b2dbeb8011765b",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "622b2e75c4e21a69f7302f99033eac731ff8224610e54b9aa7b2dbeb8011765b"
+    },
+    {
+      "source": "apps/handwave/conn.go",
+      "destination": "legacy/conn.go",
+      "source_sha256": "ca04f5227967d6b3a03f1d6870fc26f496d24e530967810ea389561b802ea9d8",
+      "import_sha256": "53f271797a36708aca8bf83c6c0890eacf48fcf1e1e46e88f9fb0cecefa7371f",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "53f271797a36708aca8bf83c6c0890eacf48fcf1e1e46e88f9fb0cecefa7371f"
+    },
+    {
+      "source": "apps/handwave/connect_approved.go",
+      "destination": "legacy/connect_approved.go",
+      "source_sha256": "be0f7cfb0b083e888b8285c926d78e836e9bd2488dd5f279c4a678df2e4bf1da",
+      "import_sha256": "0e9ec9b0fb2c951866361e1355db81e770872aad952fef14a07c72abb2ea98f8",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "0e9ec9b0fb2c951866361e1355db81e770872aad952fef14a07c72abb2ea98f8"
+    },
+    {
+      "source": "apps/handwave/connect_approved_test.go",
+      "destination": "legacy/connect_approved_test.go",
+      "source_sha256": "0285de81d61ff5ef52ff405276dbac30a7b08dab6bb4c1ad2a7ad97b10cbfa85",
+      "import_sha256": "af31818a3e3b6317eef6c9328b5f83b7f6957efbab16173b12c8261a83983b41",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "af31818a3e3b6317eef6c9328b5f83b7f6957efbab16173b12c8261a83983b41"
+    },
+    {
+      "source": "apps/handwave/controller_identity.go",
+      "destination": "legacy/controller_identity.go",
+      "source_sha256": "574c215cfb5126a5d52ec74259de737cfbab1f6e43473b22815217f35e641afa",
+      "import_sha256": "0735b64439d4ea661b5f026c7dfcbbba3fdd573a5acfc202fa5a47c4ce25cf11",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "0735b64439d4ea661b5f026c7dfcbbba3fdd573a5acfc202fa5a47c4ce25cf11"
+    },
+    {
+      "source": "apps/handwave/controller_identity_test.go",
+      "destination": "legacy/controller_identity_test.go",
+      "source_sha256": "aff196e13cddfde32b72ad675f67ff8f052d4b3995834265e8d06834eabf834c",
+      "import_sha256": "ad351c4a9dcf881c564c57605a2ba1bd3ac742cb0acdc4c351b55a8536e5e6ba",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "ad351c4a9dcf881c564c57605a2ba1bd3ac742cb0acdc4c351b55a8536e5e6ba"
+    },
+    {
+      "source": "apps/handwave/coordinator_gateway_boundary_test.go",
+      "destination": "legacy/coordinator_gateway_boundary_test.go",
+      "source_sha256": "38fd3ba7c8df0144edb9c9ffd9af6e4a111155cf535ee7b22dfed9027dfecc74",
+      "import_sha256": "65cb4d99c39459d219678d81c49af7caa04e41a9f14ba3da7af8fa969de89b62",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "65cb4d99c39459d219678d81c49af7caa04e41a9f14ba3da7af8fa969de89b62"
+    },
+    {
+      "source": "apps/handwave/coordinator_legacy_probe_test.go",
+      "destination": "legacy/coordinator_legacy_probe_test.go",
+      "source_sha256": "4837a290b26fd2a607f487c2844b80187a0e419aa1b6777d8bdfb093eac4a888",
+      "import_sha256": "f325df1ab46e6657e70ac73b3285cbee962f0d324ace4842e88dae254ddd0eb8",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "f325df1ab46e6657e70ac73b3285cbee962f0d324ace4842e88dae254ddd0eb8"
+    },
+    {
+      "source": "apps/handwave/coordinator_migrate_probe_test.go",
+      "destination": "legacy/coordinator_migrate_probe_test.go",
+      "source_sha256": "85b25f9b55d4cdd67aabff0a8bee85af74ef9f6f1d8f6a5c414dcc298471a26f",
+      "import_sha256": "1cb0ec0eb45081cf11272f7c31cc1cadea0914b7d87b096e7b91b91dfd7691af",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "1cb0ec0eb45081cf11272f7c31cc1cadea0914b7d87b096e7b91b91dfd7691af"
+    },
+    {
+      "source": "apps/handwave/coordinator_queue_probe_test.go",
+      "destination": "legacy/coordinator_queue_probe_test.go",
+      "source_sha256": "a700ca7ef1feec3854ca133aa84ccc80db4b76b778140a63fe9472e647df286d",
+      "import_sha256": "c531c5e2ef3aca56510957bd617fb4ad7015594f2dfaa3d45fc85ed8d777a29b",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "c531c5e2ef3aca56510957bd617fb4ad7015594f2dfaa3d45fc85ed8d777a29b"
+    },
+    {
+      "source": "apps/handwave/coordinator_recovery_probe_test.go",
+      "destination": "legacy/coordinator_recovery_probe_test.go",
+      "source_sha256": "4d539bfe18781648c4d769254ff5140e4ba711a52207afe22762793038b5685a",
+      "import_sha256": "a17e2cad371709cf02567410da29074b306fa449e1b6ca42e3377d7c018eda8a",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "a17e2cad371709cf02567410da29074b306fa449e1b6ca42e3377d7c018eda8a"
+    },
+    {
+      "source": "apps/handwave/ctl.go",
+      "destination": "legacy/ctl.go",
+      "source_sha256": "f95d4764ad926fc1190c26f50adc635204f7fe9459d74d00579643169fa070cb",
+      "import_sha256": "a38d7463a2265bc72607ca3d6f98f7328a72aee408391053ed58574ccbbb5e3d",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "a38d7463a2265bc72607ca3d6f98f7328a72aee408391053ed58574ccbbb5e3d"
+    },
+    {
+      "source": "apps/handwave/ctl/连接.bat",
+      "destination": "legacy/ctl/连接.bat",
+      "source_sha256": "8b72113200407532932b9a74617e3345415690b0a4f465101c57c59b70ef0640",
+      "import_sha256": "efc7f423bc88045c1609b175784887a7d99f8714df3785edc8f9d00586947052",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "efc7f423bc88045c1609b175784887a7d99f8714df3785edc8f9d00586947052"
+    },
+    {
+      "source": "apps/handwave/dl.go",
+      "destination": "legacy/dl.go",
+      "source_sha256": "7fe8f5495a56ea67d7e1bd10d6109dd1880c45c8b171c6ebaf3f1d0b81191e93",
+      "import_sha256": "2316d5ed5c8f67f97d4dc314c2f394bdbcf83a6df34130c0b154fdafc0d325fa",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "2316d5ed5c8f67f97d4dc314c2f394bdbcf83a6df34130c0b154fdafc0d325fa"
+    },
+    {
+      "source": "apps/handwave/dl_test.go",
+      "destination": "legacy/dl_test.go",
+      "source_sha256": "e22b9cf5162d62485b6843a8e793e859c594bf1e0ae5cf23cde0b94dd703b49e",
+      "import_sha256": "9a5accc2e573543b58856a6a58d1e829d2f6bca9413a364666f23f1b9f193f5b",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "9a5accc2e573543b58856a6a58d1e829d2f6bca9413a364666f23f1b9f193f5b"
+    },
+    {
+      "source": "apps/handwave/docs/handovers/2026-09-16-工作台与薄node交接.md",
+      "destination": "legacy/docs/handovers/2026-09-16-工作台与薄node交接.md",
+      "source_sha256": "b67a1a21854ef54778070f4dfbe05eee2583cdf4b04140531e4d057d0c1363f4",
+      "import_sha256": "f273551010d8ddba1a9663832fad6e71429e3ca656bb33b4dee990d5f4c8807a",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "f273551010d8ddba1a9663832fad6e71429e3ca656bb33b4dee990d5f4c8807a"
+    },
+    {
+      "source": "apps/handwave/docs/knowledge/INDEX.md",
+      "destination": "legacy/docs/knowledge/INDEX.md",
+      "source_sha256": "d233c113c65d7eb3e0cd78e66dc58f60ae852dde0f58f6e8f869ac6566a95d4c",
+      "import_sha256": "8c0802779285b37792b2afc24fe48eadf7eb111464d4d86e5442127b14d99e21",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "8c0802779285b37792b2afc24fe48eadf7eb111464d4d86e5442127b14d99e21"
+    },
+    {
+      "source": "apps/handwave/docs/knowledge/chat-turn-context.md",
+      "destination": "legacy/docs/knowledge/chat-turn-context.md",
+      "source_sha256": "00a7d66d468c77c023a0160358bf2f34ba6c3201625e0cc45975bf3c4c22dc07",
+      "import_sha256": "4927a1fcb3ba8d44267e15410fd81c8a1d1e0adfcaf3bbe41a1ff2e9e4ccf588",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "4927a1fcb3ba8d44267e15410fd81c8a1d1e0adfcaf3bbe41a1ff2e9e4ccf588"
+    },
+    {
+      "source": "apps/handwave/docs/knowledge/cloud-model-omp.md",
+      "destination": "legacy/docs/knowledge/cloud-model-omp.md",
+      "source_sha256": "02fdf71cbde07d6bf8eec4e2c0edb49b0f58e7ebec4d32b71757250e05a90da6",
+      "import_sha256": "ba973f0c4a1fb0e8308c7254263a0002ac2c9c05c5189f2308a0e17617761d72",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "ba973f0c4a1fb0e8308c7254263a0002ac2c9c05c5189f2308a0e17617761d72"
+    },
+    {
+      "source": "apps/handwave/docs/knowledge/gateway-migration.md",
+      "destination": "legacy/docs/knowledge/gateway-migration.md",
+      "source_sha256": "037e511d765553e2489b240329fd73876001c1f73241e755c25e72b677148ced",
+      "import_sha256": "7a6301791fe5152e83a618da1661be59b62cc404a432f458d3f8bac702243d25",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "7a6301791fe5152e83a618da1661be59b62cc404a432f458d3f8bac702243d25"
+    },
+    {
+      "source": "apps/handwave/docs/knowledge/local-agentloop.md",
+      "destination": "legacy/docs/knowledge/local-agentloop.md",
+      "source_sha256": "6f55cf64a92f512772f880a8842697f36dbf54d45d3cc5c2c88d93684307907e",
+      "import_sha256": "7ea6efb0eaccee29a5de65b4ca5522a77f9641d60663167d05ae764fa7df50f5",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "7ea6efb0eaccee29a5de65b4ca5522a77f9641d60663167d05ae764fa7df50f5"
+    },
+    {
+      "source": "apps/handwave/docs/knowledge/multi-agent-delegation.md",
+      "destination": "legacy/docs/knowledge/multi-agent-delegation.md",
+      "source_sha256": "fe9b19a7af92100829d9742321ffa36529287ce0d3909b44b520e8ded98c6a92",
+      "import_sha256": "58ff537f54b76e2556718c9dacfe3701c7aec6e6c59c1a1e3c18379009f730c5",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "58ff537f54b76e2556718c9dacfe3701c7aec6e6c59c1a1e3c18379009f730c5"
+    },
+    {
+      "source": "apps/handwave/docs/knowledge/scheduled-goal-resume.md",
+      "destination": "legacy/docs/knowledge/scheduled-goal-resume.md",
+      "source_sha256": "8405b6ea97680a5ea0f695e761ad8defb38d5a50e1efbbf2cced06b3738febc9",
+      "import_sha256": "1bbc3efb20be5914a5220257b7ed681d4cdc3ec3bfea7326193057295e8351b2",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "1bbc3efb20be5914a5220257b7ed681d4cdc3ec3bfea7326193057295e8351b2"
+    },
+    {
+      "source": "apps/handwave/docs/knowledge/shared-native-agent.md",
+      "destination": "legacy/docs/knowledge/shared-native-agent.md",
+      "source_sha256": "01ffa778b52dd7170fae9929dab8cddd746000b4e53517ab801396e46aec5be6",
+      "import_sha256": "89e6087c43180915edfdaad5019f670b37302aaebb276811545d8dbd897dd711",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "89e6087c43180915edfdaad5019f670b37302aaebb276811545d8dbd897dd711"
+    },
+    {
+      "source": "apps/handwave/gateway.go",
+      "destination": "legacy/gateway.go",
+      "source_sha256": "5ac8f8cdc889a8545024daab178412d8f434cb0234dbaa59d392c784e81e2036",
+      "import_sha256": "27e5f96f5c5f69ebb1699dbc39d52afcfbb42add959bc49258a4a1514b1d82a1",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "27e5f96f5c5f69ebb1699dbc39d52afcfbb42add959bc49258a4a1514b1d82a1"
+    },
+    {
+      "source": "apps/handwave/gateway_fixtures_test.go",
+      "destination": "legacy/gateway_fixtures_test.go",
+      "source_sha256": "c3c51d6cc9231e2119d0f644e1c377bcc67e74648d746a8c26b7c2f60953e850",
+      "import_sha256": "a80fce1ff883c043da4ec0a97e4c3becc6b1ab45d20090f54e4442c7bc7f1445",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "a80fce1ff883c043da4ec0a97e4c3becc6b1ab45d20090f54e4442c7bc7f1445"
+    },
+    {
+      "source": "apps/handwave/gateway_migrate.go",
+      "destination": "legacy/gateway_migrate.go",
+      "source_sha256": "57d565ad5e7d00a283f5645513c1c8c95a9e05c2a4c96e8fdf1f94bd4d34faa0",
+      "import_sha256": "85da0ffb7dbd6e4787a9f43f77a44c97e1218b41b97a683179926c8ea3720233",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "85da0ffb7dbd6e4787a9f43f77a44c97e1218b41b97a683179926c8ea3720233"
+    },
+    {
+      "source": "apps/handwave/gateway_migrate_test.go",
+      "destination": "legacy/gateway_migrate_test.go",
+      "source_sha256": "9a5dfa1072553e84ad0b9e0f1a48cef960c22b197f1280a3882839512a11f3fb",
+      "import_sha256": "f83b14338c91d4f0f981d868fdb0421cee53111ac58403bd1d39f9a57a9cf6e2",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "f83b14338c91d4f0f981d868fdb0421cee53111ac58403bd1d39f9a57a9cf6e2"
+    },
+    {
+      "source": "apps/handwave/gateway_proxy.go",
+      "destination": "legacy/gateway_proxy.go",
+      "source_sha256": "d7ef67a4d4f9abf81eb047782b3f399d867d4a17dcc272f46fd58a6b52219854",
+      "import_sha256": "48183b6923e3dc46a613167fd415f74f2268fedefb334de935fc0100bcb98449",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "48183b6923e3dc46a613167fd415f74f2268fedefb334de935fc0100bcb98449"
+    },
+    {
+      "source": "apps/handwave/gateway_proxy_test.go",
+      "destination": "legacy/gateway_proxy_test.go",
+      "source_sha256": "93743e3f0f32844b39b9fcd4d6aaad4d176d08fd700e9cb88b3cb7ab67b93a85",
+      "import_sha256": "d0d074b01adf9beb606b0c8dcc47f67001634173d8086c3348394ed05e8c96ef",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "d0d074b01adf9beb606b0c8dcc47f67001634173d8086c3348394ed05e8c96ef"
+    },
+    {
+      "source": "apps/handwave/gateway_smart_route_test.go",
+      "destination": "legacy/gateway_smart_route_test.go",
+      "source_sha256": "3043247166d4c9f636b1b5de033f67b88841d501b1661770797abe20a0e78321",
+      "import_sha256": "4293d0bf3db206b363c8f6b6efb02c58946eb82bd0aef5956f84b86393898d1c",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "4293d0bf3db206b363c8f6b6efb02c58946eb82bd0aef5956f84b86393898d1c"
+    },
+    {
+      "source": "apps/handwave/gateway_test.go",
+      "destination": "legacy/gateway_test.go",
+      "source_sha256": "922253b96867850f84fa7c7023fe055d4dc1c29479a50d5401fd6300d3014ad7",
+      "import_sha256": "ccc645e043df98a80f2a0069566456082c7a51376510194d766be940dc3784b0",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "ccc645e043df98a80f2a0069566456082c7a51376510194d766be940dc3784b0"
+    },
+    {
+      "source": "apps/handwave/heartbeat_recovery_test.go",
+      "destination": "legacy/heartbeat_recovery_test.go",
+      "source_sha256": "48ced20189fba65f63efca49475080e774e0b671b5217321293ffd619b01b3e5",
+      "import_sha256": "9022ee5ff230cac62a854d3eeaa8895b8b36046982cbaeaaed19777d74301850",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "9022ee5ff230cac62a854d3eeaa8895b8b36046982cbaeaaed19777d74301850"
+    },
+    {
+      "source": "apps/handwave/hub.go",
+      "destination": "legacy/hub.go",
+      "source_sha256": "98169debd5fb150c3f7c8a7ffb78a3e3d76a06df04703757c3ff985378ecfe77",
+      "import_sha256": "f15571bae54d67233be7e6436fd2f919f55c221753bac27fe37153373b780a0e",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob",
+        "relocated platform package import"
+      ],
+      "initial_archive_sha256": "ec3becb95aff0c2fd04c5a56e2c274f36e81fb22e9ff066b467f5e8deb00dab7"
+    },
+    {
+      "source": "apps/handwave/hub/服务器.bat",
+      "destination": "legacy/hub/服务器.bat",
+      "source_sha256": "6b24c6a28c7c2f26d5e51e8f143c0db7b4fc6c687adc94b96599bce05ed66b67",
+      "import_sha256": "4b9372c77f359f809423630b405ffc2b78fcc149177cf3faf2d42b37f91851e9",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "4b9372c77f359f809423630b405ffc2b78fcc149177cf3faf2d42b37f91851e9"
+    },
+    {
+      "source": "apps/handwave/hub_tool_loop_test.go",
+      "destination": "legacy/hub_tool_loop_test.go",
+      "source_sha256": "be665f52fb7b0f2f9bffc010f39420adb23950589d61af2e7ce67ddaaceb6140",
+      "import_sha256": "68cbde383558cd243b42cc4a872978497fd02e420ceca5568d364d67ef6b6e36",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "68cbde383558cd243b42cc4a872978497fd02e420ceca5568d364d67ef6b6e36"
+    },
+    {
+      "source": "apps/handwave/job_console.go",
+      "destination": "legacy/job_console.go",
+      "source_sha256": "3fba8c8653861544aa43372c1af524fca1d945ded94c1b626c010e908ac884ca",
+      "import_sha256": "aefc3e22477fc460b3f691fc656b33f04bf7735f12265132e277474f69263773",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "aefc3e22477fc460b3f691fc656b33f04bf7735f12265132e277474f69263773"
+    },
+    {
+      "source": "apps/handwave/job_console_test.go",
+      "destination": "legacy/job_console_test.go",
+      "source_sha256": "504cbcb1c26ec90258caf82545650e44b1c47a4be4afb051473349358a59f4e5",
+      "import_sha256": "05c8c7c18d50416f03bad6433bd597496d6f1f652ea860bb32ac2a1237e6be60",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "05c8c7c18d50416f03bad6433bd597496d6f1f652ea860bb32ac2a1237e6be60"
+    },
+    {
+      "source": "apps/handwave/kb.go",
+      "destination": "legacy/kb.go",
+      "source_sha256": "2e7604ef55ba8c9e7b1a65b514c7d70790d56150a2676f8d9f3e8ad7311f7c6a",
+      "import_sha256": "407c7ffad2fccd8a53f12974af1060883495381e98aafe2105a37dd86bef6464",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "407c7ffad2fccd8a53f12974af1060883495381e98aafe2105a37dd86bef6464"
+    },
+    {
+      "source": "apps/handwave/killtree_unix.go",
+      "destination": "legacy/killtree_unix.go",
+      "source_sha256": "a73acf739ef08e5277aeaeb42edd720fc3f897868549d209e5ede8aa3bce2c9a",
+      "import_sha256": "fde16b65ca183d69a24db58233feef1faf486e698a6adf74b0f3f3afa8f09a36",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "fde16b65ca183d69a24db58233feef1faf486e698a6adf74b0f3f3afa8f09a36"
+    },
+    {
+      "source": "apps/handwave/killtree_windows.go",
+      "destination": "legacy/killtree_windows.go",
+      "source_sha256": "cc686de2fa07a60d025266302b53293f52baec498a12a6d5c4ed0335328c43a9",
+      "import_sha256": "92904af22640a246e88eaad9123e83c0a252dfb01bdbb0d9b52f8b7d577b0eca",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "92904af22640a246e88eaad9123e83c0a252dfb01bdbb0d9b52f8b7d577b0eca"
+    },
+    {
+      "source": "apps/handwave/long_tasks.go",
+      "destination": "legacy/long_tasks.go",
+      "source_sha256": "7bc42f10e6e810a700d9a828b754bbce61e770df14b14d75f113b808d159a5a2",
+      "import_sha256": "b45c183625724015a00967ef4f48b3fd99e7f4be599afa1401ae0ca26c96707c",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "b45c183625724015a00967ef4f48b3fd99e7f4be599afa1401ae0ca26c96707c"
+    },
+    {
+      "source": "apps/handwave/long_tasks_test.go",
+      "destination": "legacy/long_tasks_test.go",
+      "source_sha256": "6c4ce40a9e63832963219500fcd522da09d31980ff0cd768a6ef2f9713465260",
+      "import_sha256": "1c88f2dd4e0e198d754f3c45f2b7a09eac4b90a791a8733f09f7f06398ae8f73",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "1c88f2dd4e0e198d754f3c45f2b7a09eac4b90a791a8733f09f7f06398ae8f73"
+    },
+    {
+      "source": "apps/handwave/main.go",
+      "destination": "legacy/main.go",
+      "source_sha256": "8e3f6d7a295a3623e77446933c09f042bb8f6bdeaa48865e8787d244a90d5af7",
+      "import_sha256": "db649a151cf03a5635eb6cd40ed52e8b568feed0f7e9622a510e7cf11a9fb0af",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob",
+        "platform-only explicit entry and separate runtime state directory"
+      ],
+      "initial_archive_sha256": "e6682b450ead66be91faaee29f9decfc903562a5ddd70f8e1bd409123679ad16"
+    },
+    {
+      "source": "apps/handwave/memorystore/retrieval.go",
+      "destination": "legacy/memorystore/retrieval.go",
+      "source_sha256": "808462f5a9fa668b03dd94eff3662772511f2333911c6df283812da980f7c279",
+      "import_sha256": "bacdbb33d68ec3db6f5da049f6f1f44a319bc6e02c05168ac067af50d98ce930",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "bacdbb33d68ec3db6f5da049f6f1f44a319bc6e02c05168ac067af50d98ce930"
+    },
+    {
+      "source": "apps/handwave/memorystore/retrieval_test.go",
+      "destination": "legacy/memorystore/retrieval_test.go",
+      "source_sha256": "53ca5ae8aa99198c047bf2f981c5c41ae110264592d334de226984a489b2e791",
+      "import_sha256": "9b20a54d2d34441fc964486ff41c3d3b0a0bcd09c250a1c34833095a48831db5",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "9b20a54d2d34441fc964486ff41c3d3b0a0bcd09c250a1c34833095a48831db5"
+    },
+    {
+      "source": "apps/handwave/memorystore/store.go",
+      "destination": "legacy/memorystore/store.go",
+      "source_sha256": "1980bab673dedf8c211479ed97adf914a2cecc71fd639b4d44e461d54f3d2f87",
+      "import_sha256": "a2e39a418467b2954fa30cb8f29a153cb0c4d7812e0e8f226c76accee5ae9fc6",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "a2e39a418467b2954fa30cb8f29a153cb0c4d7812e0e8f226c76accee5ae9fc6"
+    },
+    {
+      "source": "apps/handwave/memorystore/store_test.go",
+      "destination": "legacy/memorystore/store_test.go",
+      "source_sha256": "aa6c582aec6d539614a416095ae3ae9b969a58c86b6b426418189e1e8abb5eda",
+      "import_sha256": "be72510de4884ba1e3ee481c15ea307c9299bcd7b0c96e94cdcc9a17154a9059",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "be72510de4884ba1e3ee481c15ea307c9299bcd7b0c96e94cdcc9a17154a9059"
+    },
+    {
+      "source": "apps/handwave/mock_upstream.js",
+      "destination": "legacy/mock_upstream.js",
+      "source_sha256": "5d5ad9c7fcf9a926a28f819a5f370037f57e3732eb7e5af74a2fbe4d7eb8c7d9",
+      "import_sha256": "1d15a9f34883244267e66315e1aa3b1ff887c8a92323f2cfa908874ede22be45",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "1d15a9f34883244267e66315e1aa3b1ff887c8a92323f2cfa908874ede22be45"
+    },
+    {
+      "source": "apps/handwave/model_binding.go",
+      "destination": "legacy/model_binding.go",
+      "source_sha256": "b469de437cd99436344ea656eb31c5244e63011ab0f083d5023a65d706812530",
+      "import_sha256": "9d61ebf7185601b75c8ce2aeb162feb487180b588b49048668d0a055f2c45652",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "9d61ebf7185601b75c8ce2aeb162feb487180b588b49048668d0a055f2c45652"
+    },
+    {
+      "source": "apps/handwave/model_binding_test.go",
+      "destination": "legacy/model_binding_test.go",
+      "source_sha256": "1e524ba4cfe1e9cb8dd9b81cb6eca54755a022767f7382412b7be0ef6f2f5c76",
+      "import_sha256": "f713ef563bf2b1803fd5b016ecc3d072e10d6964b6fa1d7cc647f24402d6bec1",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "f713ef563bf2b1803fd5b016ecc3d072e10d6964b6fa1d7cc647f24402d6bec1"
+    },
+    {
+      "source": "apps/handwave/model_grant.go",
+      "destination": "legacy/model_grant.go",
+      "source_sha256": "8c9cd9a7c571c4bd5c639a2142eafbbd0d0e7558bce3648614c867e15e5256c4",
+      "import_sha256": "cc4e1aecbdf23e6391b6f8974497ec98c06a6778eeea9cf41242b53bd236d409",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "cc4e1aecbdf23e6391b6f8974497ec98c06a6778eeea9cf41242b53bd236d409"
+    },
+    {
+      "source": "apps/handwave/model_grant_test.go",
+      "destination": "legacy/model_grant_test.go",
+      "source_sha256": "7bbe0056c966c5677c34c56e3b7a6fc7c63bd8448fc9f384a674b85af6a15f41",
+      "import_sha256": "551c6a87f48432c5b031628fa8bd60b0aeab512693fe60c9fcfa6ebb6390c0b6",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "551c6a87f48432c5b031628fa8bd60b0aeab512693fe60c9fcfa6ebb6390c0b6"
+    },
+    {
+      "source": "apps/handwave/node.go",
+      "destination": "legacy/node.go",
+      "source_sha256": "43396716dd13ba796237276b640f5626343645f32acf329aa34cc2f3d4c30739",
+      "import_sha256": "82199c4baeb48d8cec8c6ffd9046322cdf857b0d8e0e2a197638aa691cc01ef8",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob",
+        "removed legacy embedded enrollment credential"
+      ],
+      "initial_archive_sha256": "056c2a85a60196d1b75ad7fe950fb9b3268052a3f083a5ac5dd6d174775c39b7"
+    },
+    {
+      "source": "apps/handwave/node/卸载服务.bat",
+      "destination": "legacy/node/卸载服务.bat",
+      "source_sha256": "74c8a84f8a4cec0e8c77671c93f22a889b9976e25efdec33da020b85841e1c9f",
+      "import_sha256": "2551fa88f5dce9f5504dc9f834a7a8663f05a664fcbc4fda89e9bb073260b950",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "2551fa88f5dce9f5504dc9f834a7a8663f05a664fcbc4fda89e9bb073260b950"
+    },
+    {
+      "source": "apps/handwave/node/启动-被控端.bat",
+      "destination": "legacy/node/启动-被控端.bat",
+      "source_sha256": "eb30cea0c16a6b8458f7e200615761758e4084bc9decd07358609d0db995eb2d",
+      "import_sha256": "72f38fe9c9aabf16d463c70b1a20134c61dea49a1cc60f82c0e15ec10da3ee85",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "72f38fe9c9aabf16d463c70b1a20134c61dea49a1cc60f82c0e15ec10da3ee85"
+    },
+    {
+      "source": "apps/handwave/node/安装为服务.bat",
+      "destination": "legacy/node/安装为服务.bat",
+      "source_sha256": "7ba2916ff137f3057f629592374ba06bb49366080a4eb253fa018c3fc8df7e6c",
+      "import_sha256": "0a93f7a135c2df728aa527be74ea45381c5588b25cb7b7350db488d6f99c9b37",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "0a93f7a135c2df728aa527be74ea45381c5588b25cb7b7350db488d6f99c9b37"
+    },
+    {
+      "source": "apps/handwave/node_agent.go",
+      "destination": "legacy/node_agent.go",
+      "source_sha256": "03ffc9ba8f2c11ae4735662e79395cabbbe4b5f2925e4cc2481318e5a52b19ce",
+      "import_sha256": "eade945c03f09e49158231f3d09c0360142e34afd04aeae22058764f6143c21e",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "eade945c03f09e49158231f3d09c0360142e34afd04aeae22058764f6143c21e"
+    },
+    {
+      "source": "apps/handwave/node_daemon.go",
+      "destination": "legacy/node_daemon.go",
+      "source_sha256": "830818412459bb4c3f3f6f4f708d7844d4e6764b88fd6fa40ad55358a457b755",
+      "import_sha256": "e390cb177bcc9b91409bc2fcbc8daa8cc73b4aac546bd4fe89088c831889b471",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "e390cb177bcc9b91409bc2fcbc8daa8cc73b4aac546bd4fe89088c831889b471"
+    },
+    {
+      "source": "apps/handwave/node_daemon_linux.go",
+      "destination": "legacy/node_daemon_linux.go",
+      "source_sha256": "a68769d5d1545e019680c04294ccb94ceb729b651aa9d54cf34359bee79374a5",
+      "import_sha256": "96d25cc75fbccb0741440c73ec7db0cb67a7f53477b95c68ecdefbbb31a9e183",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "96d25cc75fbccb0741440c73ec7db0cb67a7f53477b95c68ecdefbbb31a9e183"
+    },
+    {
+      "source": "apps/handwave/node_daemon_other_unix.go",
+      "destination": "legacy/node_daemon_other_unix.go",
+      "source_sha256": "d118efd963ad0af2da509214cc4c0a2705b281de3288880a263e479b0c6329c6",
+      "import_sha256": "23a5c0b0184e7abce8892d58770f1c434b6a535579e7e77c8affcbe80b4b562b",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "23a5c0b0184e7abce8892d58770f1c434b6a535579e7e77c8affcbe80b4b562b"
+    },
+    {
+      "source": "apps/handwave/node_daemon_test.go",
+      "destination": "legacy/node_daemon_test.go",
+      "source_sha256": "1b8a494c3bee36ce449c5bba530c993f58572c9c368fae1975c9da4b8bfe2493",
+      "import_sha256": "f72c2a148a0b43612e5232d54e1651ca907f586e5f3a96b0f405a62b78b124d7",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "f72c2a148a0b43612e5232d54e1651ca907f586e5f3a96b0f405a62b78b124d7"
+    },
+    {
+      "source": "apps/handwave/node_daemon_unix.go",
+      "destination": "legacy/node_daemon_unix.go",
+      "source_sha256": "eeb69b838f58b6a7044299568e2d868a926f026595a32a221e0fa54f6e9c9b6d",
+      "import_sha256": "570199501f8dc92910233093c72d6f97e78715c187d38a3b353afefbf21a56a9",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "570199501f8dc92910233093c72d6f97e78715c187d38a3b353afefbf21a56a9"
+    },
+    {
+      "source": "apps/handwave/node_daemon_windows.go",
+      "destination": "legacy/node_daemon_windows.go",
+      "source_sha256": "3afe930c67f3956c3218ed8378e5a2c18fe330d8cce1135c2b2c05a7301472aa",
+      "import_sha256": "b61ab1bf8f7cd4908ffffab676eb0dd95f2692147249960105465c301a3b002d",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "b61ab1bf8f7cd4908ffffab676eb0dd95f2692147249960105465c301a3b002d"
+    },
+    {
+      "source": "apps/handwave/node_daemon_windows_test.go",
+      "destination": "legacy/node_daemon_windows_test.go",
+      "source_sha256": "0857e5a680e39e9bdcdd44399962963ed127c2b7bac6bdfceba80b40a7d343eb",
+      "import_sha256": "9e88ea851a52dc18b35496b01e9f6c3a26214295bdcf2c5f254108b39155e1a9",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "9e88ea851a52dc18b35496b01e9f6c3a26214295bdcf2c5f254108b39155e1a9"
+    },
+    {
+      "source": "apps/handwave/node_e2e_test.go",
+      "destination": "legacy/node_e2e_test.go",
+      "source_sha256": "265a6eaabc17f02f3aefc84897bcee28017f9882c0c4e55fffcc2d10ea949320",
+      "import_sha256": "fcd92f0e082f5df25af4f53c3556cbc36352f5bdfadb8fb1b4e8539bf3982b92",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "fcd92f0e082f5df25af4f53c3556cbc36352f5bdfadb8fb1b4e8539bf3982b92"
+    },
+    {
+      "source": "apps/handwave/node_gateway.go",
+      "destination": "legacy/node_gateway.go",
+      "source_sha256": "fa7dcd39414a72dac660d4f4b6fb9c0bfbc4d91eeb468742ec442c04b04ac983",
+      "import_sha256": "76baaf7b46b2ec18ad5d7db3218695c2b898444207b36bfe420694124a31b2f4",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "76baaf7b46b2ec18ad5d7db3218695c2b898444207b36bfe420694124a31b2f4"
+    },
+    {
+      "source": "apps/handwave/node_host_recovery_test.go",
+      "destination": "legacy/node_host_recovery_test.go",
+      "source_sha256": "eb4177765bbe1a4ec8c1e8d7b482b25e45bedc286ec4c4b3292b3458c7d08b3c",
+      "import_sha256": "50be50fce26c60d95f12ab3d7621611463c26ad8d4431907fc31aa39be032686",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "50be50fce26c60d95f12ab3d7621611463c26ad8d4431907fc31aa39be032686"
+    },
+    {
+      "source": "apps/handwave/node_host_transaction_test.go",
+      "destination": "legacy/node_host_transaction_test.go",
+      "source_sha256": "b697e92b08fab3a1f6b931aa8d0e871fbbc275db943cbcff9da3dcdf5e58d8e8",
+      "import_sha256": "330703fb0a9ea6facdec78ef51fa8435a7d23c640a0fa6995e3e5e582eca64db",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "330703fb0a9ea6facdec78ef51fa8435a7d23c640a0fa6995e3e5e582eca64db"
+    },
+    {
+      "source": "apps/handwave/node_identity.go",
+      "destination": "legacy/node_identity.go",
+      "source_sha256": "503194119441268e1328b89fad9b604710fb67a5124e3b819af5e58589f4afe0",
+      "import_sha256": "ccf2e84111426c6fdbcbc8a86037ff6481db95abd6222cc18c55c4f958a4709c",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "ccf2e84111426c6fdbcbc8a86037ff6481db95abd6222cc18c55c4f958a4709c"
+    },
+    {
+      "source": "apps/handwave/node_identity_test.go",
+      "destination": "legacy/node_identity_test.go",
+      "source_sha256": "80032bdd265ba7cb23cc0112487f460904042c434aff55059bc851edfe5709f5",
+      "import_sha256": "c202c573cddd6d60ab3d383d17945db0b93b7243b437f2d1b8c52e7687c3cab0",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "c202c573cddd6d60ab3d383d17945db0b93b7243b437f2d1b8c52e7687c3cab0"
+    },
+    {
+      "source": "apps/handwave/node_legacy.go",
+      "destination": "legacy/node_legacy.go",
+      "source_sha256": "7250cfe246ae435c814097cff189b0c43b47e7f2d74f80118a04a62b90cb5638",
+      "import_sha256": "0b9714d59a9da460c7ef467dc26bcd8ed29c8e635bde32c2e4aa08b01f8548f7",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "0b9714d59a9da460c7ef467dc26bcd8ed29c8e635bde32c2e4aa08b01f8548f7"
+    },
+    {
+      "source": "apps/handwave/node_legacy_test.go",
+      "destination": "legacy/node_legacy_test.go",
+      "source_sha256": "c69a70b26bffb49e03f4741a1fbb4be7f03cd04c0a96418cda35d0dca0efd6de",
+      "import_sha256": "c026cbf5b27e6cc32872afa0b645a967030db3526dc7cf3d912ccd95676bce83",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "c026cbf5b27e6cc32872afa0b645a967030db3526dc7cf3d912ccd95676bce83"
+    },
+    {
+      "source": "apps/handwave/node_lifecycle.go",
+      "destination": "legacy/node_lifecycle.go",
+      "source_sha256": "90bd93d1fb179d6055f04f461836a97d032689f51ce219d168ef744dc3cb5f5e",
+      "import_sha256": "406f211baa7edc7067c4211ad6fa5c296c57140ad5de6701f6f3ff94bebf0acc",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "406f211baa7edc7067c4211ad6fa5c296c57140ad5de6701f6f3ff94bebf0acc"
+    },
+    {
+      "source": "apps/handwave/node_lifecycle_test.go",
+      "destination": "legacy/node_lifecycle_test.go",
+      "source_sha256": "59a898cb88aa5d78e347251db5d0fd0030822f84feab005bb894897dd6f345cf",
+      "import_sha256": "06745c44d27348730035b1aed913fc1fe33aab9f66bc7e426ab999905515a5e0",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "06745c44d27348730035b1aed913fc1fe33aab9f66bc7e426ab999905515a5e0"
+    },
+    {
+      "source": "apps/handwave/node_local_tools.go",
+      "destination": "legacy/node_local_tools.go",
+      "source_sha256": "2a3d916b2f2f698e035a95bc7b8e3ce6f28033d409ba808bb164e1e3f7a58eb9",
+      "import_sha256": "bb9a913fe145573b6b0939c732a8d5f9796b025cf16cfb0f7fd217a3c0cdcc36",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "bb9a913fe145573b6b0939c732a8d5f9796b025cf16cfb0f7fd217a3c0cdcc36"
+    },
+    {
+      "source": "apps/handwave/node_loop.go",
+      "destination": "legacy/node_loop.go",
+      "source_sha256": "331a5f3783d6745d78aa0a20d559f54ad4acb845174b4730ade23b9298ad3e3d",
+      "import_sha256": "ac2193aad16c4bebf1c8360f3ec33bae0c455efd0c1e5e8c3daa1ed8ffe837de",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "ac2193aad16c4bebf1c8360f3ec33bae0c455efd0c1e5e8c3daa1ed8ffe837de"
+    },
+    {
+      "source": "apps/handwave/node_loop_test.go",
+      "destination": "legacy/node_loop_test.go",
+      "source_sha256": "149afecbc214301642b8302f8a3503db8f6aaec7d9d0b1d27ca116740decc696",
+      "import_sha256": "d7e93946971a90ed84c8328ff236b6897e1f1bc18cb592f397dd21d22ee952cd",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "d7e93946971a90ed84c8328ff236b6897e1f1bc18cb592f397dd21d22ee952cd"
+    },
+    {
+      "source": "apps/handwave/node_protocol_test.go",
+      "destination": "legacy/node_protocol_test.go",
+      "source_sha256": "00af429c3717aab6b36cc259db2d30f3ea71d034648eff3bee3c6db2f09df9d4",
+      "import_sha256": "97426832484700b0331c0c33bdfae08454d6679c45f4a73a67d76bb6c5984685",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "97426832484700b0331c0c33bdfae08454d6679c45f4a73a67d76bb6c5984685"
+    },
+    {
+      "source": "apps/handwave/node_queue_recovery.go",
+      "destination": "legacy/node_queue_recovery.go",
+      "source_sha256": "8e6c1b9c41022ed38be6863468c1c95eb493f33ac92dbaadcd2769acee74f611",
+      "import_sha256": "035ebf9e6b188cc0ad7ae3827e8f8cc1651a37b06ec4af19325921a51d2b158f",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "035ebf9e6b188cc0ad7ae3827e8f8cc1651a37b06ec4af19325921a51d2b158f"
+    },
+    {
+      "source": "apps/handwave/node_queue_recovery_test.go",
+      "destination": "legacy/node_queue_recovery_test.go",
+      "source_sha256": "cc69f4847628119713650aca60af02d04cf30ffd099110a24e0478dc2b64b943",
+      "import_sha256": "0a038fe182ac5f44d3be094403ae52c8c5a5e3630ba89b99e63b780725948577",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "0a038fe182ac5f44d3be094403ae52c8c5a5e3630ba89b99e63b780725948577"
+    },
+    {
+      "source": "apps/handwave/node_session.go",
+      "destination": "legacy/node_session.go",
+      "source_sha256": "5644e693139403aca5da14d768b3c2c4b900a7f36d556be1897bf28d717c1429",
+      "import_sha256": "08bafd9f694179f9b19627ae5b3ff5b8addfc123c5219675ef32a553f3ac977f",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "08bafd9f694179f9b19627ae5b3ff5b8addfc123c5219675ef32a553f3ac977f"
+    },
+    {
+      "source": "apps/handwave/node_smart_gate_test.go",
+      "destination": "legacy/node_smart_gate_test.go",
+      "source_sha256": "074fa8c9e088e7e22bd13bc3f6c24663e2934a7b0abec587e6874443c6af67b7",
+      "import_sha256": "fcc67d19a98ef06a23dbf1b372d86f789ce2c9697bd499d1f78e42130dc31df8",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "fcc67d19a98ef06a23dbf1b372d86f789ce2c9697bd499d1f78e42130dc31df8"
+    },
+    {
+      "source": "apps/handwave/node_smart_integration_test.go",
+      "destination": "legacy/node_smart_integration_test.go",
+      "source_sha256": "d7ed6d4a5f4a3ade61f039d896ab9d7b16884a2aee6870dee92ecac6886c83bc",
+      "import_sha256": "a4fbf6a9144ccf75edfaeeeb6390560d018844cc35a7877305272cc71a82ab3e",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "a4fbf6a9144ccf75edfaeeeb6390560d018844cc35a7877305272cc71a82ab3e"
+    },
+    {
+      "source": "apps/handwave/node_smart_publication_test.go",
+      "destination": "legacy/node_smart_publication_test.go",
+      "source_sha256": "9a0101ac3168ac2f6431d1192f626d2376124cb0548d9e85676ea46e7236bf5d",
+      "import_sha256": "e855d982e28a1a6ea87482bcacd4f7d0d9a494dba56e9209ea9e96aa2f3f5a7a",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "e855d982e28a1a6ea87482bcacd4f7d0d9a494dba56e9209ea9e96aa2f3f5a7a"
+    },
+    {
+      "source": "apps/handwave/node_smart_regression_test.go",
+      "destination": "legacy/node_smart_regression_test.go",
+      "source_sha256": "f1a758e2b5f84798bbb40b35bf06081a02efa673c716e0b753240c1d26d73535",
+      "import_sha256": "83db0f7da6c23054e159035454a5a75d09628bf4918be4b9aef8ba05f8b2859a",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "83db0f7da6c23054e159035454a5a75d09628bf4918be4b9aef8ba05f8b2859a"
+    },
+    {
+      "source": "apps/handwave/node_smart_resolve_test.go",
+      "destination": "legacy/node_smart_resolve_test.go",
+      "source_sha256": "aac502894d30b2b72022ab096d507a6e66f51847fe6ef691744a8509e3e64d39",
+      "import_sha256": "ab781fe123bfe1ac50f29142bb2da6374fa78ebf6775e67111a134f367f25c21",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "ab781fe123bfe1ac50f29142bb2da6374fa78ebf6775e67111a134f367f25c21"
+    },
+    {
+      "source": "apps/handwave/node_smart_state_test.go",
+      "destination": "legacy/node_smart_state_test.go",
+      "source_sha256": "b0401503bd4f2973c4b98cfc5d9565d64cabf5d3dfe49da9ee9848adff808e4c",
+      "import_sha256": "225d7401e711bb3c01869f93d2ff0f6b593f17053fece9678dc9e27a2e76eef5",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "225d7401e711bb3c01869f93d2ff0f6b593f17053fece9678dc9e27a2e76eef5"
+    },
+    {
+      "source": "apps/handwave/proto.go",
+      "destination": "legacy/proto.go",
+      "source_sha256": "f5e5da5cbb177935a82a2d888476acbb08900038ae684720da628c60d5fce16f",
+      "import_sha256": "03326f3db82de561dc7903293c05be881eeea065c49a3fd3262931135c82362c",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "03326f3db82de561dc7903293c05be881eeea065c49a3fd3262931135c82362c"
+    },
+    {
+      "source": "apps/handwave/reference_api.go",
+      "destination": "legacy/reference_api.go",
+      "source_sha256": "138ab641f3e20e7ec5e882530ac9772414c41baa3040faa1e908e3b42afdd750",
+      "import_sha256": "91706651b3579bae43bc73de6f77481eb2936519d9330f32debdd36462c0bbf1",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "91706651b3579bae43bc73de6f77481eb2936519d9330f32debdd36462c0bbf1"
+    },
+    {
+      "source": "apps/handwave/reference_api_test.go",
+      "destination": "legacy/reference_api_test.go",
+      "source_sha256": "a5ac7b8ebb551a749b4348b8be009d977395ae615e9d24044dabab0bdfee4cc9",
+      "import_sha256": "b0eb3300bb35579611ac00fb0b40a90fc9c197359803d0f3e90792f8513e93ed",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "b0eb3300bb35579611ac00fb0b40a90fc9c197359803d0f3e90792f8513e93ed"
+    },
+    {
+      "source": "apps/handwave/release-web/README.md",
+      "destination": "legacy/release-web/README.md",
+      "source_sha256": "b56420bbec4ffb6c02c342cdc7803ca3d7b2f2ef8cc6aadc641f6da74650ef7c",
+      "import_sha256": "4179b23a6963689868a122cf5cf98cace01fccdc57e6b26181dff831614d99c5",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "4179b23a6963689868a122cf5cf98cace01fccdc57e6b26181dff831614d99c5"
+    },
+    {
+      "source": "apps/handwave/release-web/manifest.json",
+      "destination": "legacy/release-web/manifest.json",
+      "source_sha256": "b332de6dcf37dc1f031f8a017d586b24a6158126d3788e950d8c96691bba6d6b",
+      "import_sha256": "4bf61340e17d1f2896a5992a9496985f60be7a07e56373dd3cc48716c81d4116",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "4bf61340e17d1f2896a5992a9496985f60be7a07e56373dd3cc48716c81d4116"
+    },
+    {
+      "source": "apps/handwave/release-web/stable-web-f2a01bedb53562b8.tar.gz",
+      "destination": "legacy/release-web/stable-web-f2a01bedb53562b8.tar.gz",
+      "source_sha256": "f2a01bedb53562b86b5e410950f7c7c2363079a5e348a91c83edd92591e05511",
+      "import_sha256": "f2a01bedb53562b86b5e410950f7c7c2363079a5e348a91c83edd92591e05511",
+      "changes": []
+    },
+    {
+      "source": "apps/handwave/schedule_book.go",
+      "destination": "legacy/schedule_book.go",
+      "source_sha256": "c36ed7c93ce8e032f6b2071b33964ffd07d4ff1514d30559031071c241cec1d6",
+      "import_sha256": "1edecd42b6dc7cb08f7eb541f7d96af2aa0b753a70070c268a4d1c6e969d11e4",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "1edecd42b6dc7cb08f7eb541f7d96af2aa0b753a70070c268a4d1c6e969d11e4"
+    },
+    {
+      "source": "apps/handwave/schedule_book_test.go",
+      "destination": "legacy/schedule_book_test.go",
+      "source_sha256": "26853a6e9634f92322c945a3130ecf80a26e832b134d7d63b4da5bcaa358c1fb",
+      "import_sha256": "8f45fbae1e42ddcf20deb9616e19259b721cfd40b6ea925cefa42e4040314676",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "8f45fbae1e42ddcf20deb9616e19259b721cfd40b6ea925cefa42e4040314676"
+    },
+    {
+      "source": "apps/handwave/scripts/build-maintained-release.py",
+      "destination": "provenance/build-maintained-release.upstream.py.txt",
+      "source_sha256": "e01c2cadb030bb10631c5a11647a384c6b7e9a6f09f65660e0857b01d03498be",
+      "import_sha256": "8e6ae498f6f0d85b2b1a86ac1ab6b4df7abbec10cdf4cb1acbae397febb6166e",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob",
+        "obsolete release script archived; not an active build entry"
+      ],
+      "initial_archive_sha256": "8e6ae498f6f0d85b2b1a86ac1ab6b4df7abbec10cdf4cb1acbae397febb6166e"
+    },
+    {
+      "source": "apps/handwave/secure_file_other.go",
+      "destination": "legacy/secure_file_other.go",
+      "source_sha256": "5f41ea393ada0b8ee6fba89b4ca168d3f0c92845965735f18e2296b5227398a0",
+      "import_sha256": "050d6751ac156917c93d012795349b86f9aa90b8197c1c5e4fff7859f3118f14",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "050d6751ac156917c93d012795349b86f9aa90b8197c1c5e4fff7859f3118f14"
+    },
+    {
+      "source": "apps/handwave/secure_file_windows.go",
+      "destination": "legacy/secure_file_windows.go",
+      "source_sha256": "8bc5c56eb7028064df1763bff53756cac2fff140ac2eab8ef55f9ea9ab8bdf32",
+      "import_sha256": "6181333e8babb6b966166bc860c9e207eb82590b543db51fa5137d4eeac44d79",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "6181333e8babb6b966166bc860c9e207eb82590b543db51fa5137d4eeac44d79"
+    },
+    {
+      "source": "apps/handwave/security_node_process_test.go",
+      "destination": "legacy/security_node_process_test.go",
+      "source_sha256": "9c8401d496cb925a09cf5b2e517e16526a4800393e52626745aed3cc30409bdb",
+      "import_sha256": "61db5dc92f59896d88f97902c10befd995bdd69a395707007c0e3060243cc8e0",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "61db5dc92f59896d88f97902c10befd995bdd69a395707007c0e3060243cc8e0"
+    },
+    {
+      "source": "apps/handwave/service_linux.go",
+      "destination": "legacy/service_linux.go",
+      "source_sha256": "387f9ed36729d87b7b1acc7bd7cab6d133019eb82913d848a032647b8d13c896",
+      "import_sha256": "9fb1395fbe8e93726243bf15b6642e2b9ff04aee6c304f84f8b9c2a66e3ad870",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "9fb1395fbe8e93726243bf15b6642e2b9ff04aee6c304f84f8b9c2a66e3ad870"
+    },
+    {
+      "source": "apps/handwave/service_other.go",
+      "destination": "legacy/service_other.go",
+      "source_sha256": "e23272841cd799f8101b57d3125d98a9c986ccfc223880f007e1ec31ac88b25c",
+      "import_sha256": "d0a99e16d12e13bfc4a7d7810ce6c637f231d6e128a4f4e2a7c602427eeb22bb",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "d0a99e16d12e13bfc4a7d7810ce6c637f231d6e128a4f4e2a7c602427eeb22bb"
+    },
+    {
+      "source": "apps/handwave/service_windows.go",
+      "destination": "legacy/service_windows.go",
+      "source_sha256": "abd547f2d78082831b968800a89318dba9b349885e704c1dd7687e9e7e4e3ef9",
+      "import_sha256": "0535e757d30a90406e6a64f2c99f19940ab7a170593561b5170897a1045a8b1f",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "0535e757d30a90406e6a64f2c99f19940ab7a170593561b5170897a1045a8b1f"
+    },
+    {
+      "source": "apps/handwave/skills.go",
+      "destination": "legacy/skills.go",
+      "source_sha256": "d61a63d93b6e5df46f7e49128a4be21aceda49ac84657e9596a67cbdbbccb4f9",
+      "import_sha256": "b3d1627e00437cb632ce479e7108729fb6442c6749a5f4e1626a59730fd2e088",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "b3d1627e00437cb632ce479e7108729fb6442c6749a5f4e1626a59730fd2e088"
+    },
+    {
+      "source": "apps/handwave/skills_assets_test.go",
+      "destination": "legacy/skills_assets_test.go",
+      "source_sha256": "f230d06272a4afa61ad6f0165a677b537750bcf8186d33f40b39317f68f07459",
+      "import_sha256": "5e0587bf101b5acd01f78cea0e535ad0138395b2f0650189b97cbb70bde197cf",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "5e0587bf101b5acd01f78cea0e535ad0138395b2f0650189b97cbb70bde197cf"
+    },
+    {
+      "source": "apps/handwave/skills_test.go",
+      "destination": "legacy/skills_test.go",
+      "source_sha256": "c4c596085f63eacff4ad7299733ec3e9400077b3ce1f1b5faa13b3c999e6e71a",
+      "import_sha256": "fea5bc68bb729389717fefa78366b819b1ec9a5dc3118cda97e3f16c9e65c8be",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "fea5bc68bb729389717fefa78366b819b1ec9a5dc3118cda97e3f16c9e65c8be"
+    },
+    {
+      "source": "apps/handwave/store.go",
+      "destination": "legacy/store.go",
+      "source_sha256": "0f755dad3df98bb83fb2ecad8e47e3f8d5c75f3eec6f011ef528782a60c5944c",
+      "import_sha256": "647ad985f42edd573ab98d863750cf90d7fc00fc78a83068d7efd2593a653e5e",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "647ad985f42edd573ab98d863750cf90d7fc00fc78a83068d7efd2593a653e5e"
+    },
+    {
+      "source": "apps/handwave/upstreams.example.conf",
+      "destination": "legacy/upstreams.example.conf",
+      "source_sha256": "4b8fc30e9a68c3f527ddb4e81289d1ec1fc93c9bf31314bcc33b4527a9c9ee54",
+      "import_sha256": "4a8fb98a0cadca25fb6224e00159eb3672a5ef0109c4fc5db2dda07bb262027d",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "4a8fb98a0cadca25fb6224e00159eb3672a5ef0109c4fc5db2dda07bb262027d"
+    },
+    {
+      "source": "apps/handwave/web/agent-loop-protocol.test.cjs",
+      "destination": "legacy/web/agent-loop-protocol.test.cjs",
+      "source_sha256": "c32e85c520d56d433da04c91cc414fc973c6104b4e6447f62837d2493a4bd7ef",
+      "import_sha256": "21b853027b9de351c2c974f8e78954e75029da537df3c4fc8afa9fdd429f37ba",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "21b853027b9de351c2c974f8e78954e75029da537df3c4fc8afa9fdd429f37ba"
+    },
+    {
+      "source": "apps/handwave/web/agents-ui.test.cjs",
+      "destination": "legacy/web/agents-ui.test.cjs",
+      "source_sha256": "cc60ae95a52c8ed2dd2c9dcf4ded9b84f47f2db1b98c512f199be896c7705018",
+      "import_sha256": "51c61c494541c3aea6c4bfeef232d0874758b7d05c2fba45ca133af5e30a7c59",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "51c61c494541c3aea6c4bfeef232d0874758b7d05c2fba45ca133af5e30a7c59"
+    },
+    {
+      "source": "apps/handwave/web/app.js",
+      "destination": "legacy/web/app.js",
+      "source_sha256": "56dde8a6e86ae55c919da5945d15fe706a37c705f7a4e4873f925ef85d8d1618",
+      "import_sha256": "36bdad968022e92d56c7d45a9fb7633f5172ae78e6319b10d0ee66edb8536ffb",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "36bdad968022e92d56c7d45a9fb7633f5172ae78e6319b10d0ee66edb8536ffb"
+    },
+    {
+      "source": "apps/handwave/web/download.html",
+      "destination": "legacy/web/download.html",
+      "source_sha256": "9ded7a764dae5f15897738a99e87d6d412ebade7090519aa6ed849a9efadf220",
+      "import_sha256": "3070da83f0354cd521f210429d91615fe47758825cfd73727f571bbe9fa2dd09",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "3070da83f0354cd521f210429d91615fe47758825cfd73727f571bbe9fa2dd09"
+    },
+    {
+      "source": "apps/handwave/web/home.html",
+      "destination": "legacy/web/home.html",
+      "source_sha256": "debe19a54f884568a9d5a0d89ba1b4d077a8378fd20bad9e08f8b4ca2db30874",
+      "import_sha256": "e21f34c75d92336d8b80695b22aa5472a76949f4fe8eea3df0451623c4185064",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "e21f34c75d92336d8b80695b22aa5472a76949f4fe8eea3df0451623c4185064"
+    },
+    {
+      "source": "apps/handwave/web/index.html",
+      "destination": "legacy/web/index.html",
+      "source_sha256": "160c62b3016014440e917827758e939369322bdefe9894bc7dd6aab66e1dcc98",
+      "import_sha256": "b6e086a6bded7e780df4bc3fcdf5b59efabbec33de9a4fd304c153cfb5d215df",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "b6e086a6bded7e780df4bc3fcdf5b59efabbec33de9a4fd304c153cfb5d215df"
+    },
+    {
+      "source": "apps/handwave/web/layout.test.cjs",
+      "destination": "legacy/web/layout.test.cjs",
+      "source_sha256": "6c7441ad6d54016b275b57710ae2b9e783b79fc377754247d5adc0de8f756c01",
+      "import_sha256": "c30ed18ec2439fbd45f0f1f65daba06eb4484a50a8fd4db2cb03a0afdb20a8a8",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "c30ed18ec2439fbd45f0f1f65daba06eb4484a50a8fd4db2cb03a0afdb20a8a8"
+    },
+    {
+      "source": "apps/handwave/web/local-agent.test.cjs",
+      "destination": "legacy/web/local-agent.test.cjs",
+      "source_sha256": "7961e51df2eb5cfb23698b83747872c924592adba9810a36afd52069e3a0711e",
+      "import_sha256": "45d16e1c5b97d32b36063a1f599a34282d876bf1bc6f18de2ab6ba8d43e8561f",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "45d16e1c5b97d32b36063a1f599a34282d876bf1bc6f18de2ab6ba8d43e8561f"
+    },
+    {
+      "source": "apps/handwave/web/login.html",
+      "destination": "legacy/web/login.html",
+      "source_sha256": "47c5020b1b77371d01c3d9bad5a64aa1a76c6fdf58a64f036062d948702a3ced",
+      "import_sha256": "aeba2f2666ddfc855fa77524fb7adc818977e01caa8a24e7759abf6884ebee86",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "aeba2f2666ddfc855fa77524fb7adc818977e01caa8a24e7759abf6884ebee86"
+    },
+    {
+      "source": "apps/handwave/web/model-picker.test.cjs",
+      "destination": "legacy/web/model-picker.test.cjs",
+      "source_sha256": "c0146eaf22eeb06ae6a65e5eb58b859960b5ed99b48f7ac442b5ed0cc586f292",
+      "import_sha256": "da70cbe71830aba7ae9364ea12d48db090398912f0dfe607714434edd9192381",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "da70cbe71830aba7ae9364ea12d48db090398912f0dfe607714434edd9192381"
+    },
+    {
+      "source": "apps/handwave/web/node-queue-recovery.js",
+      "destination": "legacy/web/node-queue-recovery.js",
+      "source_sha256": "b6674b786f5b4196ef0d9de9532c54eef5cf10aab62a1e716583d22846f241e6",
+      "import_sha256": "fd5a286f86c67be76cf516b1c52c7e5dad43a1e4ec55785dc32f2de11e7783cf",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "fd5a286f86c67be76cf516b1c52c7e5dad43a1e4ec55785dc32f2de11e7783cf"
+    },
+    {
+      "source": "apps/handwave/web/node-queue-recovery.test.cjs",
+      "destination": "legacy/web/node-queue-recovery.test.cjs",
+      "source_sha256": "9fd887e4caa2a77bd75362da9181c86987bca8dd738da83b59c4a513ca6b7c6e",
+      "import_sha256": "6736ef3783d8120e48e6f4e6c583a86370f595a935b8803d77d33afe3dec4147",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "6736ef3783d8120e48e6f4e6c583a86370f595a935b8803d77d33afe3dec4147"
+    },
+    {
+      "source": "apps/handwave/web/render.js",
+      "destination": "legacy/web/render.js",
+      "source_sha256": "b293ce219b63561455fb04bbb1f50bd2bbfc5f514bf8cc6d21431673f9d4757f",
+      "import_sha256": "5365420e5642562916b264fe98ad07fabc0c06cf63f0ca76796c0ba9e5d9a762",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "5365420e5642562916b264fe98ad07fabc0c06cf63f0ca76796c0ba9e5d9a762"
+    },
+    {
+      "source": "apps/handwave/web/skills-ui.css",
+      "destination": "legacy/web/skills-ui.css",
+      "source_sha256": "01d2a34d3d67fb6d55599f5c463885ecdfe05b9e33d44ac66fc7a2c83ea67731",
+      "import_sha256": "4e4f954a9c7607f024cc275c80fbd3630eab5774b351ec3c30744eb6eb900ddd",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "4e4f954a9c7607f024cc275c80fbd3630eab5774b351ec3c30744eb6eb900ddd"
+    },
+    {
+      "source": "apps/handwave/web/skills-ui.js",
+      "destination": "legacy/web/skills-ui.js",
+      "source_sha256": "ae4b5996ca064837e6339905f2c4ff0085a873c7c0cf636b141a34b4e921f25b",
+      "import_sha256": "69577bed52b5f1ebf87cedaefc33abf2270083c6182b92138d0acd9de3e80d34",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "69577bed52b5f1ebf87cedaefc33abf2270083c6182b92138d0acd9de3e80d34"
+    },
+    {
+      "source": "apps/handwave/web/skills-ui.test.cjs",
+      "destination": "legacy/web/skills-ui.test.cjs",
+      "source_sha256": "f7fec9423367463f276bee7bd0b5272c2aaa995c2f6188e5e3c32f30d67edb64",
+      "import_sha256": "ae37ca9ed5646cf7d86c6b78da671d44acede05eae8e03e497456a529ecadbd6",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "ae37ca9ed5646cf7d86c6b78da671d44acede05eae8e03e497456a529ecadbd6"
+    },
+    {
+      "source": "apps/handwave/web/style.css",
+      "destination": "legacy/web/style.css",
+      "source_sha256": "6a561e7ae191cbd74148c581914978692f24bdb2ffcbe4021556174cc0722c44",
+      "import_sha256": "33d2bac20219d19fb9b6b61ff788c596356292bc141b0557f6c875dfee532f1a",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "33d2bac20219d19fb9b6b61ff788c596356292bc141b0557f6c875dfee532f1a"
+    },
+    {
+      "source": "apps/handwave/web_security_test.go",
+      "destination": "legacy/web_security_test.go",
+      "source_sha256": "f515c1bfc09ef6112a44418f4953aa3cd2817be8737ce8f5863c7e4494cbfd7d",
+      "import_sha256": "88c67ce37fde6e30786a5484649f6d421c6ba19d3fc3516edf4aff0fecb77622",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob",
+        "relocated platform package import"
+      ],
+      "initial_archive_sha256": "7174b4d1b1c10bdcf0760d52e7e05af383a20d0e319ccddcd7e0ff07ba2a55d0"
+    },
+    {
+      "source": "apps/handwave/websafe/app.go",
+      "destination": "legacy/websafe/app.go",
+      "source_sha256": "95d170965fb5cc358766d47c5ec3cb3852d93eaf95f4def3a91e31a55dce5ab1",
+      "import_sha256": "eb115b76222e1854d72614c46cddcf078433aef2a8888c97f8524e4c4946a86b",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "eb115b76222e1854d72614c46cddcf078433aef2a8888c97f8524e4c4946a86b"
+    },
+    {
+      "source": "apps/handwave/websafe/app_test.go",
+      "destination": "legacy/websafe/app_test.go",
+      "source_sha256": "a7706b1d27d07604745c24779ab11549cb400b1341b7276abd1aeee6a41d3e2d",
+      "import_sha256": "b6fdc6c35aa30b1ce77cc6d802998b3f432d533bf7c144a123a79e28d063b29a",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "b6fdc6c35aa30b1ce77cc6d802998b3f432d533bf7c144a123a79e28d063b29a"
+    },
+    {
+      "source": "apps/handwave/websafe/patch.json",
+      "destination": "legacy/websafe/patch.json",
+      "source_sha256": "88fb88abacba0a3fd876bdf6a48b988bd00753c5d7c89e73e117b3d326eadef9",
+      "import_sha256": "e1c71003f9a3e52b3edafc78adfe2cf02ad159b1720453a6ca1047bcf4bec47a",
+      "changes": [
+        "initial archive used host CRLF conversion; source_sha256 now records original Git blob"
+      ],
+      "initial_archive_sha256": "e1c71003f9a3e52b3edafc78adfe2cf02ad159b1720453a6ca1047bcf4bec47a"
+    }
+  ],
+  "source_hash_semantics": "SHA256 of exact Git blob bytes at commit; import_sha256 is the one-time import snapshot, not the current edited source"
+}

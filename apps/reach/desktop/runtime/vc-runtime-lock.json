@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "version": "14.51.36247.0",
+  "sourceUrl": "https://aka.ms/vc14/vc_redist.x64.exe",
+  "downloadedAt": "2026-11-03",
+  "sourceSha256": "843068991daaa1f73ad9f6239bce4d0f6a07a51f18c37ea2a867e9beca71295c",
+  "payloadCabOffset": 630000,
+  "payloadCabBytes": 18091661,
+  "files": [
+    {"name":"mfc140u.dll","cab":"a5","member":"mfc140u.dll_amd64","sha256":"fc5848eb58982e193cdfe73f1f26cd04fce4e196f717f42b89ae27315cd52f6f"},
+    {"name":"msvcp140.dll","cab":"a4","member":"msvcp140.dll_amd64","sha256":"7c26614e1d733892c2deac7e245ce115504b1d80592dd0a01b08e3e5a55f89ca"},
+    {"name":"vcruntime140.dll","cab":"a4","member":"vcruntime140.dll_amd64","sha256":"d1f4225df2cd877dbf130d5668a021dce3f94118455ff5ec952061c30afc9ce7"},
+    {"name":"vcruntime140_1.dll","cab":"a4","member":"vcruntime140_1.dll_amd64","sha256":"a7146c08f89fe5b04541ab507cdb59ff7b44534d4ba3c668a426c6450a03434e"}
+  ]
+}

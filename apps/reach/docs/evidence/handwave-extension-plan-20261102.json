@@ -1,0 +1,21 @@
+{
+  "author": "Ray Zhang",
+  "scope": "HandWave extension planning documents only",
+  "pages": 27,
+  "local_links": 162,
+  "missing_links": [],
+  "base_tasks": 52,
+  "optional_tasks": 5,
+  "completed": [],
+  "dependency_errors": [],
+  "extension_implemented": false,
+  "production_changed": false,
+  "independent_review": {
+    "reviewer": "/root/reach_plan_review",
+    "result": "design consistency accepted; no confirmed blocking gap",
+    "runtime_acceptance": false
+  },
+  "global_bootstrap": "failed: existing links outside Reach",
+  "git_diff_check": "passed",
+  "humanizer": "not found; manual prose review"
+}

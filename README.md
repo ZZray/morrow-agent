@@ -28,6 +28,7 @@ candidate for review. It does not accept a business Task by itself.
 - [JSONL protocol](crates/morrow-agent-jsonl/docs/protocol-v1.md)
 - [MCP integration](crates/morrow-agent-mcp/README.md)
 - [Business integration guide](docs/integration.md)
+- [Reach remote-assistance application](apps/reach/README.md) — an in-repository business Host and integration use case; [migration handoff](apps/reach/docs/handoffs/2026-11-13-morrow-subproject.md)
 - [Source and migration record](docs/migration/source.md)
 - [Archived ARA-era evidence](docs/archive/ara-lite-evidence/README.md)
 

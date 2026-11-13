@@ -1,0 +1,28 @@
+✔ native pair, single owner, streamed command, duplicate request and file effects (17053.9123ms)
+✔ lost pairing response retries one persisted binding; rejected expired code can be replaced (4547.9795ms)
+✔ cancel stops actual Windows descendants and records uncertain effects (8150.9743ms)
+✔ killed Node retains receipts and never reexecutes a command on restart (7783.688ms)
+✔ server claim lost before local admission becomes unknown at the original cursor (6797.5193ms)
+✔ lost server ACK and unavailable uploads replay original events only, even after unpair (6556.4783ms)
+✔ pending service outage recovers on the same Node process (8779.7988ms)
+✔ lost accepted pair response followed by unpair recovers installation before new pairing (8290.8755ms)
+✔ CLI and MCP control the same real Node and preserve request identity (6839.2675ms)
+✔ ordinary service process retains pairing, sessions, claimed operation and original result across forced restart (2534.2045ms)
+✔ pairing retry survives a lost response; consumed code and changed attempt cannot create a second identity (1397.8912ms)
+✔ concurrent claims deliver once, duplicate submission returns original, changed input is rejected (1969.3308ms)
+✔ durable ordered event outbox accepts duplicate uploads and rejects mutated, skipped, or late events (1884.6932ms)
+✔ cancel is a request after claim; unpair rejects new work but lets original receipts settle (1780.4033ms)
+✔ ownership, auth kinds, CSRF, and schema reject untrusted requests (1563.9054ms)
+✔ explicit reconciliation preserves unknown history and permits re-pairing without re-execution (1944.6526ms)
+✔ trusted proxy client buckets are independent; untrusted source headers cannot bypass throttling (3481.2262ms)
+✔ accepted pairing receipt remains recoverable after unpair without reactivating old binding (1802.8097ms)
+✔ late original receipts remain readable after explicit reconciliation without changing its decision (2012.4327ms)
+✔ a newer persistent schema is rejected without silently downgrading its version (1577.5631ms)
+ℹ tests 20
+ℹ suites 0
+ℹ pass 20
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 97214.7345

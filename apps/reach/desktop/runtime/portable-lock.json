@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "revision": "python314-windows-mcp-reach4-r4",
+  "pythonVersion": "3.14.7",
+  "pythonUrl": "https://www.python.org/ftp/python/3.14.7/python-3.14.7-embed-amd64.zip",
+  "pythonSha256": "d297e5ff019966817ad8502465176139f2d3d840fa4ed84b13bed399a6ab1f15",
+  "upstreamRevision": "94de2b4a5e1f2c52aad6003d5e60af28f57b8c8b",
+  "backendVersion": "0.8.8+reach.4",
+  "patchSha256": "27efa907ee475a4e4afc10df3729d060ec86dce2fede6cc19851f8bfbc3e765e",
+  "uvLockSha256": "6b0688474bc48f5d5c58d4748dde0d0ccd0518fed83a0446af579042ccd5c314",
+  "comtypesClientSha256": "2a49a261afd7c0a2c9723c45a8503ac62b7be15766d36df58542400ef2fb80b2",
+  "distributions": 89,
+  "noticesManifestSha256": "f8e9c80ca0a6f50e03171a839a973a40350694e678c2b2292c0f306793c0ca71",
+  "vcRuntimeLockSha256": "95964cfd777f8d017576e4aa86b4a0f15199053872b0f481c81e1af6c8a1bdc5"
+}

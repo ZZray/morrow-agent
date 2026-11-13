@@ -1,0 +1,22 @@
+{
+  "author": "Ray Zhang",
+  "observedAt": "2026-11-02T16:54:00+08:00",
+  "release": "20261102-sso-stable-05d25e8c84eb",
+  "entry": "https://118.25.103.226/reach/",
+  "browser": "existing user-authenticated in-app browser",
+  "rayOtpEnteredByUser": true,
+  "portalVerifiedIndicator": true,
+  "clickedReachCard": true,
+  "reachUsername": "ray",
+  "reachPasswordEntered": false,
+  "secondTabReloaded": true,
+  "originalTabCreatedPairingCodeAfterSecondTabReload": true,
+  "pairingCodeRecorded": false,
+  "existingOperationCountDisplayed": 2,
+  "originalOperationRead": "2d50c6a2-ce42-4bba-9c8e-5f3cbe2ac214",
+  "originalEventCountDisplayed": 5,
+  "originalExitCode": 0,
+  "operationReplayed": false,
+  "productionLogoutClicked": false,
+  "screenshot": "reach-sso-devices.png"
+}

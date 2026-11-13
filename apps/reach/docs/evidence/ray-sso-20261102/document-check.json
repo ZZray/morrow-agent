@@ -1,0 +1,10 @@
+{
+  "author": "Ray Zhang",
+  "scope": "Reach Markdown local links and referenced image files",
+  "pages": 25,
+  "local_links": 147,
+  "missing": [],
+  "git_diff_check": "passed",
+  "global_bootstrap": "failed: reported links are outside apps/reach; not a whole-repository pass",
+  "independent_review": "/root/reach_plan_review reviewed final documentation and receipts; no remaining confirmed misstatement"
+}

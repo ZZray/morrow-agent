@@ -1,0 +1,39 @@
+# 构建产物
+/dist/
+/handwave
+/handwave.exe
+handwave-*
+*.exe
+*.exe~
+
+# 运行时数据（会话/上传/知识库，绝不入库）
+/data/
+
+# 运行时状态与本机配置（可能含 token，绝不入库）
+/hubstate.json
+/approvals.json
+/cloud-model.json
+/hub.conf
+/upstreams.conf
+upstreams.conf
+/node.conf
+/ctl.conf
+/.handwave/
+identity.json
+*.key
+*.pem
+big.bin
+*.back.bin
+rt.bin
+rt-copy.bin
+# 测试残留
+/twin/
+*.bin
+
+# 杂项
+.DS_Store
+*.log
+*.part
+
+# 中文文档草稿（过程稿）
+docs/**/working/

@@ -1,0 +1,61 @@
+// Copyright (c) Ray Zhang. The migrated platform no longer starts a device node.
+var deskStateDir string
+
+func configureDeskState(state string) error {
+    if state == "" || !filepath.IsAbs(state) {
+        return fmt.Errorf("REACH_DESK_STATE_DIR must be an explicit absolute directory")
+    }
+    state = filepath.Clean(state)
+    if err := os.MkdirAll(state, 0o700); err != nil {
+        return fmt.Errorf("create Reach Desk state directory: %w", err)
+    }
+    probe, err := os.CreateTemp(state, ".reach-desk-write-")
+    if err != nil {
+        return fmt.Errorf("write Reach Desk state directory: %w", err)
+    }
+    closeErr := probe.Close()
+    removeErr := os.Remove(probe.Name())
+    if closeErr != nil {
+        return closeErr
+    }
+    if removeErr != nil {
+        return removeErr
+    }
+    if err := os.Setenv("HW_CONF", state); err != nil {
+        return err
+    }
+    deskStateDir = state
+    return nil
+}
+
+func usage() {
+    fmt.Fprintln(os.Stderr, "Reach Desk\nUsage: reach-desk serve [hub options] | version\nSet REACH_DESK_STATE_DIR to an explicit absolute state directory.\nThis compatibility build is optional; Reach identity and device integration are pending.")
+}
+
+func main() {
+    if len(os.Args) < 2 {
+        usage()
+        return
+    }
+    switch os.Args[1] {
+    case "version", "--version", "-v":
+        fmt.Println("Reach Desk compatibility", versionStr)
+        return
+    case "help", "--help", "-h":
+        usage()
+        return
+    case "serve", "hub":
+        if err := configureDeskState(os.Getenv("REACH_DESK_STATE_DIR")); err != nil {
+            fmt.Fprintln(os.Stderr, err)
+            os.Exit(2)
+        }
+        if err := runHub(os.Args[2:]); err != nil {
+            fmt.Fprintln(os.Stderr, "Reach Desk failed:", err)
+            os.Exit(1)
+        }
+    default:
+        fmt.Fprintln(os.Stderr, "Unsupported Reach Desk command; device operations use Reach Node")
+        usage()
+        os.Exit(2)
+    }
+}

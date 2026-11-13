@@ -1,0 +1,35 @@
+✔ built management assets have restrictive headers; arbitrary paths and protected APIs stay private (57.3315ms)
+✔ overview keeps historical unknown counts without transferring large operation payloads or another account (107.6509ms)
+✔ cookie management session restores, enforces CSRF, logs out and expires on the actual HTTP boundary (104.7207ms)
+✔ controller accepts only canonical root or Reach mount addresses (0.5454ms)
+✔ native pair, single owner, streamed command, duplicate request and file effects (17132.0894ms)
+✔ lost pairing response retries one persisted binding; rejected expired code can be replaced (5119.5629ms)
+✔ cancel stops actual Windows descendants and records uncertain effects (10148.8768ms)
+✔ killed Node retains receipts and never reexecutes a command on restart (6791.2251ms)
+✔ server claim lost before local admission becomes unknown at the original cursor (5936.9749ms)
+✔ lost server ACK and unavailable uploads replay original events only, even after unpair (6422.7014ms)
+✔ pending service outage recovers on the same Node process (7830.8303ms)
+✔ lost accepted pair response followed by unpair recovers installation before new pairing (4593.1694ms)
+✔ CLI and MCP control the same real Node and preserve request identity at / (5189.003ms)
+✔ CLI and MCP control the same real Node and preserve request identity at /reach (5986.2129ms)
+✔ interrupted local running state must recover original receipts before re-pair after reconciliation (6493.3458ms)
+✔ MCP retrieves more than 2 MiB of real output in bounded consecutive pages (59543.7517ms)
+✔ ordinary service process retains pairing, sessions, claimed operation and original result across forced restart (2635.8897ms)
+✔ pairing retry survives a lost response; consumed code and changed attempt cannot create a second identity (1644.8445ms)
+✔ concurrent claims deliver once, duplicate submission returns original, changed input is rejected (2307.9235ms)
+✔ durable ordered event outbox accepts duplicate uploads and rejects mutated, skipped, or late events (2144.6908ms)
+✔ cancel is a request after claim; unpair rejects new work but lets original receipts settle (1992.7516ms)
+✔ ownership, auth kinds, CSRF, and schema reject untrusted requests (1738.4713ms)
+✔ explicit reconciliation preserves unknown history and permits re-pairing without re-execution (2058.6619ms)
+✔ trusted proxy client buckets are independent; untrusted source headers cannot bypass throttling (3691.7648ms)
+✔ accepted pairing receipt remains recoverable after unpair without reactivating old binding (1890.2396ms)
+✔ late original receipts remain readable after explicit reconciliation without changing its decision (1909.0356ms)
+✔ a newer persistent schema is rejected without silently downgrading its version (1452.4634ms)
+ℹ tests 27
+ℹ suites 0
+ℹ pass 27
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 165499.3447
