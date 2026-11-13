@@ -19,6 +19,7 @@ export interface JobReceipt {
   job_id: string; state: string; effects_unknown: boolean;
   finished_at: number | null; started_at: number | null; exit_code: number | null;
   reason: string; process_pid: number | null; worker_pid: number | null;
+  /** PTY mode, not a completion flag. Observe finished_at and interrupted/effects_unknown. */
   terminal: boolean; interactive: boolean; stdin_closed: boolean; rows: number; cols: number;
   stdout_bytes: number; stderr_bytes: number; stdout_sha256: string | null; stderr_sha256: string | null;
   lease_expires_at: number;

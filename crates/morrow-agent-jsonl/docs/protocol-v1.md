@@ -532,7 +532,9 @@ Host 先通过 `queue_enqueue` 保存 Trigger、Mandate 和 Assignment，再在�
 
 `goal_snapshot` 接受 `session/cwd`，返回当前 Goal 或 null。`goal_control` 接受 `session/cwd/goal_id/command/command_id/expected_revision/reviewed_run`，command 支持 `status/accept/pause/resume/stop`。`command_id` 是 Core 持久化幂等键，外层 `id` 用于传输关联。操作取得已释放 Session 的锁后调用 Core，审核接受会检查最新 settled Run 和 revision。未知副作用留下的 Session fence 需要先对账恢复。
 
-`job_snapshot` 接受 `session/cwd/device/session_id` 和可选 `job_id`。Host 从持久 Goal lease 核对 owner，返回该 Goal 的 `goal_id/device/session_id/jobs`。Job 状态来自原生 Manager，保留 `interrupted`、`effects_unknown` 和终态时间，响应省略私有 `worker_nonce`。此观察入口可在等待 Job 的 Task fence 存在时调用。
+`job_snapshot` 接受 `session/cwd/device/session_id` 和可选 `job_id`。Host 从持久 Goal lease 核对 owner，返回该 Goal 的 `goal_id/goal_status/device/session_id/jobs`。Job 状态来自原生 Manager，保留 `interrupted`、`effects_unknown` 和终态时间，响应省略私有 `worker_nonce`。此观察入口可在等待 Job 的 Task fence 存在时调用。
+
+Job 回执的 `terminal` 表示 PTY 终端模式。正常结束以 `finished_at` 非 null 为准；worker 丢失时可能为 `state=interrupted`、`effects_unknown=true` 且 `finished_at=null`。Host 应显示待对账状态并更新恢复入口，不能把中断当作成功，也不能仅依据 `terminal` 判断完成。
 
 启动后台 Job 后，Core 可返回 `GoalWaiting` 并保留 fence。Host 等待原生 Job 终态回执，保存观察证据，再通过原 Task 的 checked resume 继续。已闭合的 job_start 工具回合通常没有待结算 open tool calls，Host 仍须按实际 ResumeReview 返回对应回执。后续 Run 继承原 lease、worker、Task 预算和截止时间。
 
