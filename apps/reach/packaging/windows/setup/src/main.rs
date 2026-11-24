@@ -21,6 +21,7 @@ mod windows_identity;
 
 const PAYLOAD: &[u8] = include_bytes!(env!("REACH_SETUP_NODE"));
 const SCRIPT: &str = include_str!("../../install.ps1");
+const ADDRESS_DIALOG: &str = include_str!("../../configure-address.ps1");
 const PACKAGE_CHECKS: &str = include_str!("../../payload.ps1");
 const OWNERSHIP: &str = include_str!("../../ownership.ps1");
 const MAINTENANCE_WRITES: &str = include_str!("../../maintenance-writes.ps1");
@@ -63,10 +64,13 @@ fn system_directory() -> Result<std::path::PathBuf> {
     ensure!(size > 0 && size < buffer.len(), "cannot locate Windows system directory");
     Ok(String::from_utf16(&buffer[..size])?.into())
 }
-fn elevate(owner: &str, uninstall: bool, server_url: Option<&str>) -> Result<()> {
+fn elevate(owner: &str, uninstall: bool, silent: bool, server_url: Option<&str>) -> Result<()> {
     let path = wide(std::env::current_exe()?);
     let verb = wide("runas");
     let mut raw_args = format!("--elevated --owner {owner}{}", if uninstall { " --uninstall" } else { "" });
+    if silent {
+        raw_args.push_str(" --silent");
+    }
     if let Some(url) = server_url {
         raw_args.push_str(&format!(" --server-url-b64 {}", STANDARD.encode(url)));
     }
@@ -136,6 +140,7 @@ fn run() -> Result<()> {
             println!("{name}_sha256={:x}", Sha256::digest(source.as_bytes()));
         }
         println!("agent_bundled={complete}\nagent_sha256={}", env!("REACH_SETUP_AGENT_SHA"));
+        println!("address_dialog_sha256={:x}", Sha256::digest(ADDRESS_DIALOG));
         return Ok(());
     }
     if args == ["--verify-payload"] {
@@ -218,45 +223,77 @@ fn run() -> Result<()> {
     );
     if !administrator()? {
         ensure!(!elevated, "elevated maintenance requires an administrator token");
-        return elevate(&owner, uninstall, preconfigured_server_url.as_deref());
+        elevate(&owner, uninstall, silent, preconfigured_server_url.as_deref())?;
+    } else {
+        // The script is delivered over a private pipe, never loaded from a user-writable temporary file.
+        let mut script = format!(
+            "$MaintenanceOperation='{}'\n$RecoveryScriptBytes=[Convert]::FromBase64String('{}')\n$SetupExecutable=[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('{}'))\n",
+            if uninstall { "uninstall" } else { "install" }, STANDARD.encode(recovery_script()),
+            STANDARD.encode(std::env::current_exe()?.to_str().context("installer path is not Unicode")?)
+        );
+        if !uninstall {
+            script.push_str(&format!(
+                "$ReachInstallVersion='{}'\n$ReachAutoUpdate=${auto_update}\n",
+                env!("REACH_SETUP_VERSION")
+            ));
+            script.push_str(&format!("$OpenSshArchive=[Convert]::FromBase64String('{}')\n", STANDARD.encode(OPENSSH)));
+            script.push_str(&format!("$ExpectedAgentSha='{}'\n", env!("REACH_SETUP_AGENT_SHA")));
+            script.push_str(&format!("$BindingOwner='{owner}'\n$PayloadSha='{digest}'\n$ExpectedManifestSha='{}'\n$CompletePackage=${}\n$Payload=[Convert]::FromBase64String('{}')\n$Notices=[Convert]::FromBase64String('{}')\n",
+                env!("REACH_SETUP_MANIFEST_SHA"), complete, STANDARD.encode(PAYLOAD), STANDARD.encode(NOTICES)));
+        }
+        if let Some(url) = &preconfigured_server_url {
+            script.push_str(&format!(
+                "$PreconfiguredServerUrl=[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('{}'))\n",
+                STANDARD.encode(url)
+            ));
+        }
+        script.push_str(&maintenance_script());
+        run_powershell(&script)?;
     }
-    // The script is delivered over a private pipe, never loaded from a user-writable temporary file.
-    let mut script = format!(
-        "$MaintenanceOperation='{}'\n$RecoveryScriptBytes=[Convert]::FromBase64String('{}')\n$SetupExecutable=[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('{}'))\n",
-        if uninstall { "uninstall" } else { "install" }, STANDARD.encode(recovery_script()),
-        STANDARD.encode(std::env::current_exe()?.to_str().context("installer path is not Unicode")?)
-    );
-    if !uninstall {
-        script.push_str(&format!(
-            "$ReachInstallVersion='{}'\n$ReachAutoUpdate=${auto_update}\n",
-            env!("REACH_SETUP_VERSION")
-        ));
-        script.push_str(&format!("$OpenSshArchive=[Convert]::FromBase64String('{}')\n", STANDARD.encode(OPENSSH)));
-        script.push_str(&format!("$ExpectedAgentSha='{}'\n", env!("REACH_SETUP_AGENT_SHA")));
-        script.push_str(&format!("$BindingOwner='{owner}'\n$PayloadSha='{digest}'\n$ExpectedManifestSha='{}'\n$CompletePackage=${}\n$Payload=[Convert]::FromBase64String('{}')\n$Notices=[Convert]::FromBase64String('{}')\n",
-            env!("REACH_SETUP_MANIFEST_SHA"), complete, STANDARD.encode(PAYLOAD), STANDARD.encode(NOTICES)));
+    // Let the original caller configure its binding after the maintenance process commits and releases the locks.
+    if args.is_empty() {
+        if let Err(error) = show_address_dialog() {
+            show_message(
+                "Reach 已安装",
+                &format!("无法打开地址配置。可以在 PowerShell 运行 ryreach。\n\n{error}"),
+                MB_ICONWARNING,
+            );
+        }
     }
-    if let Some(url) = &preconfigured_server_url {
-        script.push_str(&format!(
-            "$PreconfiguredServerUrl=[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('{}'))\n",
-            STANDARD.encode(url)
-        ));
-    }
-    script.push_str(&maintenance_script());
-    run_powershell(&script)
+    Ok(())
 }
+fn show_address_dialog() -> Result<()> {
+    let output = powershell_output(ADDRESS_DIALOG)?;
+    ensure!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr).trim()
+    );
+    Ok(())
+}
+
 fn run_powershell(script: &str) -> Result<()> {
+    let output = powershell_output(script)?;
+    ensure!(output.status.success(), "installation failed: {}", String::from_utf8_lossy(&output.stderr));
+    std::io::stdout().write_all(&output.stdout)?;
+    Ok(())
+}
+fn powershell_output(script: &str) -> Result<std::process::Output> {
     let system = system_directory()?;
     let powershell = system.join("WindowsPowerShell/v1.0/powershell.exe");
-    // Read and parse the whole private stream. Interactive stdin command parsing
-    // would require blank lines after compound statements and can silently skip them.
+    // Read the whole script with an explicit decoder. Windows PowerShell 5.1
+    // also uses Console.OutputEncoding to decode UTF-8 output from reach.exe.
     let mut child = Command::new(powershell)
         .args([
             "-NoLogo",
             "-NoProfile",
             "-NonInteractive",
             "-Command",
-            "& ([ScriptBlock]::Create([Console]::In.ReadToEnd()))",
+            "$utf8=[Text.UTF8Encoding]::new($false,$true); \
+             [Console]::OutputEncoding=$utf8; $OutputEncoding=$utf8; \
+             $reader=[IO.StreamReader]::new([Console]::OpenStandardInput(),$utf8,$false); \
+             $source=$reader.ReadToEnd(); $reader.Dispose(); \
+             & ([ScriptBlock]::Create($source))",
         ])
         .current_dir(&system)
         .creation_flags(0x08000000)
@@ -265,10 +302,12 @@ fn run_powershell(script: &str) -> Result<()> {
         .stderr(Stdio::piped())
         .spawn()?;
     child.stdin.take().context("installer input pipe missing")?.write_all(script.as_bytes())?;
-    let output = child.wait_with_output()?;
-    ensure!(output.status.success(), "installation failed: {}", String::from_utf8_lossy(&output.stderr));
-    std::io::stdout().write_all(&output.stdout)?;
-    Ok(())
+    Ok(child.wait_with_output()?)
+}
+fn show_message(title: &str, message: &str, icon: u32) {
+    unsafe {
+        MessageBoxW(ptr::null_mut(), wide(message).as_ptr(), wide(title).as_ptr(), MB_OK | icon);
+    }
 }
 fn main() {
     if let Err(error) = run() {
@@ -276,14 +315,7 @@ fn main() {
         let interactive = !std::env::args().any(|arg| arg == "--silent")
             && (std::env::args().len() == 1 || std::env::args().any(|arg| arg == "--elevated" || arg == "--uninstall"));
         if interactive {
-            unsafe {
-                MessageBoxW(
-                    ptr::null_mut(),
-                    wide(error.to_string()).as_ptr(),
-                    wide("Reach installation failed").as_ptr(),
-                    MB_OK | MB_ICONERROR,
-                );
-            }
+            show_message("Reach 安装失败", &error.to_string(), MB_ICONERROR);
         }
         std::process::exit(if interactive { 2 } else { 1 });
     }
@@ -311,28 +343,41 @@ mod tests {
         ensure!(windows_identity::current_sid()?.starts_with("S-1-"), "missing native SID");
         let system = system_directory()?;
         ensure!(system.is_absolute(), "system directory is not absolute");
-        let powershell = system.join("WindowsPowerShell/v1.0/powershell.exe");
-        // Identical transport, including a multiline try/function block and a
-        // large embedded value. No installer instructions are executed here.
-        let mut child = Command::new(powershell)
-            .args([
-                "-NoLogo",
-                "-NoProfile",
-                "-NonInteractive",
-                "-Command",
-                "& ([ScriptBlock]::Create([Console]::In.ReadToEnd()))",
-            ])
-            .current_dir(&system)
-            .creation_flags(0x08000000)
-            .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .spawn()?;
+        // Use the installer entry point for a multiline script and large payload.
         let script = format!("$value='{}'\ntry {{\nfunction Count {{ return $value.Length }}\n[Console]::Out.WriteLine((Count)); exit 7\n}} catch {{ exit 9 }}\n", "x".repeat(3_000_000));
-        child.stdin.take().context("private pipe missing")?.write_all(script.as_bytes())?;
-        let output = child.wait_with_output()?;
+        let output = powershell_output(&script)?;
         ensure!(output.status.code() == Some(7), "compound script was not fully executed");
         ensure!(String::from_utf8(output.stdout)?.trim() == "3000000", "private input was truncated");
+        Ok(())
+    }
+
+    #[test]
+    fn windows_powershell_reads_utf8_node_status_and_diagnostics() -> Result<()> {
+        let output = powershell_output(r#"
+$ErrorActionPreference='Stop'
+$ProgressPreference='SilentlyContinue'
+$stateLabel='等待初始化'
+$recoveryHint='运行 ryreach 初始化服务器地址'
+$nativeScript='[Console]::OutputEncoding=[Text.UTF8Encoding]::new($false);[Console]::Out.WriteLine(''{"resident":{"stateLabel":"等待初始化","recoveryHint":"运行 ryreach 初始化服务器地址"}}'')'
+$nativeCommand=[Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($nativeScript))
+$native=Join-Path $PSHOME 'powershell.exe'
+$raw=& $native -NoLogo -NoProfile -NonInteractive -EncodedCommand $nativeCommand 2>&1
+if($LASTEXITCODE -ne 0){throw 'Native status fixture failed'}
+$status=$raw | ConvertFrom-Json
+if($status.resident.stateLabel -cne $stateLabel -or $status.resident.recoveryHint -cne $recoveryHint){
+    throw 'Native UTF-8 status did not decode correctly'
+}
+[Console]::Out.WriteLine($stateLabel)
+[Console]::Error.WriteLine($recoveryHint)
+exit 7
+"#)?;
+        ensure!(
+            output.status.code() == Some(7),
+            "UTF-8 probe failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        assert_eq!(String::from_utf8(output.stdout)?.trim(), "等待初始化");
+        assert_eq!(String::from_utf8(output.stderr)?.trim(), "运行 ryreach 初始化服务器地址");
         Ok(())
     }
 }

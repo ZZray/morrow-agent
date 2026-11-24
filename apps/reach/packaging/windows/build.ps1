@@ -75,6 +75,8 @@ try {
     $env:CARGO_TARGET_DIR=if($env:REACH_SETUP_TARGET_DIR){[IO.Path]::GetFullPath($env:REACH_SETUP_TARGET_DIR)}else{Join-Path $project 'work/setup-target'}
     $scriptPath=Join-Path $PSScriptRoot 'install.ps1'
     $scriptSha=(Get-FileHash -LiteralPath $scriptPath -Algorithm SHA256).Hash.ToLowerInvariant()
+    $dialogPath=Join-Path $PSScriptRoot 'configure-address.ps1'
+    $dialogSha=(Get-FileHash -LiteralPath $dialogPath -Algorithm SHA256).Hash.ToLowerInvariant()
     $noticesSha=(Get-FileHash -LiteralPath $noticesPath -Algorithm SHA256).Hash.ToLowerInvariant()
     # Setup itself must start before any installed application/runtime exists.
     $env:RUSTFLAGS='-C target-feature=+crt-static';$env:CARGO_ENCODED_RUSTFLAGS=$null
@@ -89,9 +91,12 @@ try {
     if($LASTEXITCODE-ne0 -or -not $inspect.Contains('node_sha256='+$sha) -or -not $inspect.Contains('script_sha256='+$scriptSha) -or -not $inspect.Contains('notices_sha256='+$noticesSha)){throw 'Embedded package inspection failed'}
     if(-not $inspect.Contains('openssh_sha256=23f50f3458c4c5d0b12217c6a5ddfde0137210a30fa870e98b29827f7b43aba5') -or
         -not $inspect.Contains('ssh_preparation_sha256='+(Get-FileHash -LiteralPath (Join-Path $PSScriptRoot 'ssh.ps1')).Hash.ToLowerInvariant())){throw 'Embedded OpenSSH inspection failed'}
+    if(-not $inspect.Contains('address_dialog_sha256='+$dialogSha)){throw 'Embedded address dialog inspection failed'}
+    if((Get-FileHash -LiteralPath $dialogPath -Algorithm SHA256).Hash.ToLowerInvariant()-cne$dialogSha){throw 'Address dialog source changed during build'}
     if((Get-FileHash -LiteralPath $scriptPath -Algorithm SHA256).Hash.ToLowerInvariant()-cne$scriptSha -or (Get-FileHash -LiteralPath $noticesPath -Algorithm SHA256).Hash.ToLowerInvariant()-cne$noticesSha){throw 'Embedded source changed during build'}
     [IO.File]::WriteAllText((Join-Path $output 'inspect.txt'),$inspect,[Text.UTF8Encoding]::new($false))
     $record=@{schema=1;version=$Version;kind='node-installer-preview';architecture='x86_64-pc-windows-msvc';desktopBundled=$false;installationTested=$false;codeSigned=$false;nodeSha256=$sha;nodeImports=$nodeImports;setupImports=$setupImports;installerName=[IO.Path]::GetFileName($installer);installerSha256=$setupSha;scriptSha256=$scriptSha;noticesSha256=$noticesSha;dependencyCount=$inventory.Count}
+    $record.addressDialogSha256=$dialogSha
     $record.openSshSha256=(Get-FileHash -LiteralPath $openSshPayload -Algorithm SHA256).Hash.ToLowerInvariant()
     $record|ConvertTo-Json -Depth 6|Set-Content -LiteralPath (Join-Path $output 'package.json') -Encoding utf8
     Write-Output $installer

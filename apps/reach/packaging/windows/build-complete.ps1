@@ -28,7 +28,7 @@ if($LASTEXITCODE-ne0){throw 'Complete payload assembly failed'}
 $receipt=Get-Content -LiteralPath (Join-Path $work 'payload.json') -Raw|ConvertFrom-Json
 if($receipt.schema-ne2 -or $receipt.agentBundled-ne$true -or $receipt.agentSha256-cne$AgentSha256){throw 'Complete candidate must include the reviewed Agent'}
 $sourceInputs=[ordered]@{}
-foreach($relative in @('install.ps1','ssh.ps1','prepare-openssh.ps1','payload.ps1','ownership.ps1','maintenance-writes.ps1','maintenance-entry.ps1','uninstall-files.ps1','uninstall-transaction.ps1','uninstall-host.ps1','setup/src/main.rs','setup/build.rs','setup/Cargo.toml','setup/Cargo.lock','resources.rs','build-complete.ps1','audit-dependencies.ps1','collect-notices.ps1','notices/sources.json','build-payload.py','../../src/windows_identity.rs','../../assets/brand/reach.ico')){
+foreach($relative in @('install.ps1','configure-address.ps1','ssh.ps1','prepare-openssh.ps1','payload.ps1','ownership.ps1','maintenance-writes.ps1','maintenance-entry.ps1','uninstall-files.ps1','uninstall-transaction.ps1','uninstall-host.ps1','setup/src/main.rs','setup/build.rs','setup/Cargo.toml','setup/Cargo.lock','resources.rs','build-complete.ps1','audit-dependencies.ps1','collect-notices.ps1','notices/sources.json','build-payload.py','../../src/windows_identity.rs','../../assets/brand/reach.ico')){
     $sourceInputs[$relative]=Hash (Join-Path $PSScriptRoot $relative)
 }
 $sourceBytes=[Text.UTF8Encoding]::new($false).GetBytes(($sourceInputs|ConvertTo-Json -Compress));$sourceHasher=[Security.Cryptography.SHA256]::Create()
@@ -54,6 +54,7 @@ try {
     $inspect=(& $installer --inspect | Out-String);if($LASTEXITCODE-ne0){throw 'Complete installer inspect failed'}
     if(-not $inspect.Contains('openssh_sha256=23f50f3458c4c5d0b12217c6a5ddfde0137210a30fa870e98b29827f7b43aba5') -or
         -not $inspect.Contains('ssh_preparation_sha256='+$sourceInputs['ssh.ps1'])){throw 'Embedded OpenSSH inspection failed'}
+    if(-not $inspect.Contains('address_dialog_sha256='+$sourceInputs['configure-address.ps1'])){throw 'Embedded address dialog inspection failed'}
     foreach($pair in @(@('payload_sha256',$receipt.packageSha256),@('node_sha256',$NodeSha256),@('payload_manifest_sha256',$receipt.payloadManifestSha256),@('script_sha256',$scriptSha),@('payload_checks_sha256',$checksSha),@('notices_sha256',$noticesSha),@('desktop_bundled','true'),@('agent_bundled','true'),@('agent_sha256',$AgentSha256),@('ownership_sha256',$sourceInputs['ownership.ps1']),@('maintenance_writes_sha256',$sourceInputs['maintenance-writes.ps1']))){if(-not $inspect.Contains(($pair[0]+'='+$pair[1]))){throw "Embedded identity differs: $($pair[0])"}}
     foreach($module in @('maintenance-entry','uninstall-files','uninstall-transaction','uninstall-host')){if(-not $inspect.Contains(($module.Replace('-','_')+'_sha256='+$sourceInputs[$module+'.ps1']))){throw "Embedded maintenance module differs: $module"}}
     $recoverySource="`$MaintenanceOperation='uninstall'`n"
