@@ -5,6 +5,10 @@ try {
     if(-not $MaintenanceOperation){$MaintenanceOperation='install'}
     if($MaintenanceOperation-cnotin@('install','uninstall')){throw 'Unsupported maintenance operation'}
     if ($MaintenanceOperation-ceq'install' -and ($BindingOwner -notmatch '^S-1-[0-9-]+$' -or $PayloadSha -notmatch '^[0-9a-f]{64}$')) { throw 'Invalid embedded installation inputs' }
+    if($MaintenanceOperation-ceq'install'){
+        if(-not $ReachInstallVersion){$ReachInstallVersion='0.1.0'}
+        if(-not(TestReachVersion $ReachInstallVersion)){throw 'Invalid embedded installation version'}
+    }
     function Hash([byte[]]$Bytes) { $algorithm=[Security.Cryptography.SHA256]::Create(); try { return ([BitConverter]::ToString($algorithm.ComputeHash($Bytes))).Replace('-','').ToLowerInvariant() } finally { $algorithm.Dispose() } }
     if ($MaintenanceOperation-ceq'install' -and (Hash $Payload) -ne $PayloadSha) { throw 'Embedded payload hash mismatch' }
     $package=$null;$payloadArchive=$null;$payloadStream=$null
@@ -13,6 +17,7 @@ try {
         $payloadStream=[IO.MemoryStream]::new($Payload,$false)
         $payloadArchive=[IO.Compression.ZipArchive]::new($payloadStream,[IO.Compression.ZipArchiveMode]::Read,$true)
         $package=ReadReachPayload $payloadArchive
+        if($package.manifest.version-cne$ReachInstallVersion){throw 'Embedded package version mismatch'}
         if((Get-Variable ExpectedAgentSha -ErrorAction SilentlyContinue) -and $ExpectedAgentSha){
             if($ExpectedAgentSha-cnotmatch'^[0-9a-f]{64}$' -or $package.manifest.schema-ne2 -or $package.manifest.agentBundled-ne$true -or $package.manifest.agentSha256-cne$ExpectedAgentSha){throw 'Embedded Agent package identity mismatch'}
         }
@@ -74,6 +79,7 @@ public static class ReachSetupNative {
  [DllImport("advapi32.dll",CharSet=CharSet.Unicode,SetLastError=true)] static extern IntPtr CreateService(IntPtr manager,string name,string display,uint access,uint type,uint start,uint error,string path,string group,IntPtr tag,string dependencies,string account,string password);
  [DllImport("advapi32.dll",CharSet=CharSet.Unicode,SetLastError=true)] static extern bool ChangeServiceConfig(IntPtr service,uint type,uint start,uint error,string path,string group,IntPtr tag,string dependencies,string account,string password,string display);
  [DllImport("advapi32.dll",CharSet=CharSet.Unicode,SetLastError=true)] static extern bool ChangeServiceConfig2(IntPtr service,uint level,ref int info);
+ [DllImport("advapi32.dll",EntryPoint="ChangeServiceConfig2W",ExactSpelling=true,SetLastError=true)] static extern bool ChangeFailureActions(IntPtr service,uint level,ref FailureActions info);
  [DllImport("advapi32.dll",SetLastError=true)] static extern bool QueryServiceConfigW(IntPtr service,IntPtr info,uint size,out uint needed);
  [DllImport("advapi32.dll",SetLastError=true)] static extern bool CloseServiceHandle(IntPtr handle);
  [DllImport("advapi32.dll",SetLastError=true)] static extern bool DeleteService(IntPtr handle);
@@ -81,11 +87,59 @@ public static class ReachSetupNative {
  [DllImport("user32.dll",CharSet=CharSet.Unicode)] public static extern IntPtr SendMessageTimeout(IntPtr window,uint message,IntPtr wparam,string lparam,uint flags,uint timeout,out IntPtr result);
  [StructLayout(LayoutKind.Sequential)] struct Config {public uint type,start,error; public IntPtr path,group;public uint tag;public IntPtr dependencies,account,display;}
  [StructLayout(LayoutKind.Sequential)] struct Status {public uint type,state,accepted,win32,code,checkpoint,hint,pid,flags;}
+ [StructLayout(LayoutKind.Sequential)] struct FailureAction {
+    public uint type,delay;
+    public FailureAction(uint type,uint delay) { this.type=type; this.delay=delay; }
+ }
+ [StructLayout(LayoutKind.Sequential)] struct FailureActions {
+    public uint resetSeconds;
+    public IntPtr rebootMessage,command;
+    public uint count;
+    public IntPtr actions;
+ }
+ const uint AutoStart=2, DemandStart=3, Disabled=4, NoChange=0xffffffff;
+ const uint ConfigFailureActions=2, ConfigDelayedStart=3, ConfigFailureActionsFlag=4;
+ const uint ActionNone=0, ActionRestart=1;
  static void Check(bool value){if(!value)throw new Win32Exception(Marshal.GetLastWin32Error());}
  public static string Path(){IntPtr m=OpenSCManager(null,null,1);Check(m!=IntPtr.Zero);try{IntPtr s=OpenService(m,"RYReach",1);if(s==IntPtr.Zero){if(Marshal.GetLastWin32Error()==1060)return null;throw new Win32Exception();}try{uint n;QueryServiceConfigW(s,IntPtr.Zero,0,out n);IntPtr p=Marshal.AllocHGlobal((int)n);try{Check(QueryServiceConfigW(s,p,n,out n));Config c=(Config)Marshal.PtrToStructure(p,typeof(Config));return Marshal.PtrToStringUni(c.path);}finally{Marshal.FreeHGlobal(p);}}finally{CloseServiceHandle(s);}}finally{CloseServiceHandle(m);}}
- public static void Set(string path){Configure(path,2);}
- public static void Stage(string path){Configure(path,4);}
- static void Configure(string path,uint start){IntPtr m=OpenSCManager(null,null,3);Check(m!=IntPtr.Zero);try{IntPtr s=OpenService(m,"RYReach",0xF01FF);if(s==IntPtr.Zero){if(Marshal.GetLastWin32Error()!=1060)throw new Win32Exception();s=CreateService(m,"RYReach","Reach Node",0xF01FF,0x10,start,1,path,null,IntPtr.Zero,null,"LocalSystem",null);Check(s!=IntPtr.Zero);}try{Check(ChangeServiceConfig(s,0x10,start,1,path,null,IntPtr.Zero,null,"LocalSystem",null,"Reach Node"));if(start==2){int delayed=1;Check(ChangeServiceConfig2(s,3,ref delayed));}}finally{CloseServiceHandle(s);}}finally{CloseServiceHandle(m);}}
+ public static void Set(string path){Configure(path,AutoStart);}
+ public static void Prepare(string path){Configure(path,DemandStart);}
+ public static void Stage(string path){Configure(path,Disabled);}
+ static void ConfigureFailureActions(IntPtr service,bool enabled) {
+    var actions=enabled ? new[] {
+        new FailureAction(ActionRestart,5000), new FailureAction(ActionRestart,15000),
+        new FailureAction(ActionRestart,60000), new FailureAction(ActionNone,0)
+    } : new[] { new FailureAction(ActionNone,0) };
+    var pinned=GCHandle.Alloc(actions,GCHandleType.Pinned);
+    try {
+        var policy=new FailureActions { resetSeconds=86400, count=(uint)actions.Length, actions=pinned.AddrOfPinnedObject() };
+        Check(ChangeFailureActions(service,ConfigFailureActions,ref policy));
+        int restartOnError=enabled ? 1 : 0;
+        Check(ChangeServiceConfig2(service,ConfigFailureActionsFlag,ref restartOnError));
+    } finally { pinned.Free(); }
+ }
+ static void Configure(string path,uint start) {
+    IntPtr manager=OpenSCManager(null,null,3);
+    Check(manager!=IntPtr.Zero);
+    try {
+        IntPtr service=OpenService(manager,"RYReach",0xF01FF);
+        if(service==IntPtr.Zero) {
+            if(Marshal.GetLastWin32Error()!=1060)throw new Win32Exception();
+            service=CreateService(manager,"RYReach","Reach Node",0xF01FF,0x10,Disabled,1,path,null,IntPtr.Zero,null,"LocalSystem",null);
+            Check(service!=IntPtr.Zero);
+        }
+        try {
+            Check(ChangeServiceConfig(service,0x10,Disabled,1,path,null,IntPtr.Zero,null,"LocalSystem",null,"Reach Node"));
+            ConfigureFailureActions(service,start==AutoStart);
+            if(start!=Disabled)
+                Check(ChangeServiceConfig(service,NoChange,start,NoChange,null,null,IntPtr.Zero,null,null,null,null));
+            if(start==AutoStart) {
+                int delayed=1;
+                Check(ChangeServiceConfig2(service,ConfigDelayedStart,ref delayed));
+            }
+        } finally { CloseServiceHandle(service); }
+    } finally { CloseServiceHandle(manager); }
+ }
  public static void Remove(){IntPtr m=OpenSCManager(null,null,1);Check(m!=IntPtr.Zero);try{IntPtr s=OpenService(m,"RYReach",0x10000);if(s==IntPtr.Zero){int error=Marshal.GetLastWin32Error();if(error==1060)return;throw new Win32Exception(error);}try{Check(DeleteService(s));}finally{CloseServiceHandle(s);}}finally{CloseServiceHandle(m);}}
  static void AssertOwned(IntPtr service,string expected){uint size;QueryServiceConfigW(service,IntPtr.Zero,0,out size);IntPtr buffer=Marshal.AllocHGlobal((int)size);try{Check(QueryServiceConfigW(service,buffer,size,out size));Config config=(Config)Marshal.PtrToStructure(buffer,typeof(Config));string path=Marshal.PtrToStringUni(config.path),account=Marshal.PtrToStringUni(config.account);if(config.type!=0x10||!String.Equals(path,expected,StringComparison.Ordinal)||(!String.Equals(account,"LocalSystem",StringComparison.OrdinalIgnoreCase)&&!String.Equals(account,@"NT AUTHORITY\SYSTEM",StringComparison.OrdinalIgnoreCase)))throw new InvalidOperationException("Service configuration differs from the owned Reach deployment");}finally{Marshal.FreeHGlobal(buffer);}}
  public static void DisableOwned(string expected){IntPtr manager=OpenSCManager(null,null,1);Check(manager!=IntPtr.Zero);try{IntPtr service=OpenService(manager,"RYReach",3);Check(service!=IntPtr.Zero);try{AssertOwned(service,expected);Check(ChangeServiceConfig(service,0xffffffff,4,0xffffffff,null,null,IntPtr.Zero,null,null,null,null));}finally{CloseServiceHandle(service);}}finally{CloseServiceHandle(manager);}}
@@ -215,7 +269,7 @@ public static class ReachSetupNative {
         return ($raw -join "`n"|ConvertFrom-Json)
     }
     function ValidateManifestIdentity($record) {
-        if($record.schema-notin@(1,2) -or $record.version-ne'0.1.0' -or $record.nodeStateSchema-ne1 -or $record.sha256-notmatch'^[0-9a-f]{64}$' -or $record.bindingOwner-notmatch'^S-1-[0-9-]+$'){throw 'Unsupported existing installation record'}
+        if($record.schema-notin@(1,2) -or -not(TestReachVersion $record.version) -or $record.nodeStateSchema-ne1 -or $record.sha256-notmatch'^[0-9a-f]{64}$' -or $record.bindingOwner-notmatch'^S-1-[0-9-]+$'){throw 'Unsupported existing installation record'}
         $versionKey=$record.sha256.Substring(0,16)
         if($record.schema-eq2){
             if($record.packageSha256-notmatch'^[0-9a-f]{64}$' -or $record.payloadManifestSha256-notmatch'^[0-9a-f]{64}$' -or $record.desktopBundled-isnot[bool] -or -not $record.desktopBundled){throw 'Unsupported complete installation record'}
@@ -236,11 +290,13 @@ public static class ReachSetupNative {
         if((Hash ([IO.File]::ReadAllBytes($expected)))-ne$record.sha256){throw 'Existing installed binary hash mismatch'}
         if($record.schema-eq2){
             $verified=ReadReachInstalledPayload (Split-Path $expected) $record.payloadManifestSha256
-            if($verified.nodeSha256-cne$record.sha256){throw 'Installed Node and package identities differ'}
+            if($verified.nodeSha256-cne$record.sha256 -or $verified.version-cne$record.version){throw 'Installed Node and package identities differ'}
         }
     }
     function StageCompletePayload($Package,[string]$PackageSha,[string]$ManifestSha) {
-        $final=Join-Path $versions ('0.1.0-'+$PackageSha)
+        $versionDirectory=$Package.manifest.version+'-'+$PackageSha
+        $ownedDirectory='versions/'+$versionDirectory
+        $final=Join-Path $versions $versionDirectory
         foreach($name in $Package.entries.Keys){
             $target=Join-Path $final $name
             # Payload files are written directly inside a shorter reserved stage;
@@ -250,12 +306,12 @@ public static class ReachSetupNative {
         $files=@($Package.manifest.files|ForEach-Object{$_.path})+@('payload-manifest.json')
         if(Test-Path -LiteralPath $final){
             $null=ReadReachInstalledPayload $final $ManifestSha
-            AddReachOwnershipGroup $deployment ('versions/0.1.0-'+$PackageSha) 'complete' $PackageSha $files
+            AddReachOwnershipGroup $deployment $ownedDirectory 'complete' $PackageSha $files
             SaveReachDeployment $deployment
             return $final
         }
         $stage=Join-Path $versions ('s-'+[Guid]::NewGuid().ToString('N'))
-        AddReachOwnershipGroup $deployment ('versions/0.1.0-'+$PackageSha) 'complete' $PackageSha $files
+        AddReachOwnershipGroup $deployment $ownedDirectory 'complete' $PackageSha $files
         AddReachOwnershipGroup $deployment ('versions/'+[IO.Path]::GetFileName($stage)) 'stage' $PackageSha $files
         SaveReachDeployment $deployment
         Directory $stage $true
@@ -273,18 +329,20 @@ public static class ReachSetupNative {
         return $final
     }
     function StageNodePayload {
-        $versionRoot=Join-Path $versions ('0.1.0-'+$NodeSha.Substring(0,16))
+        $versionDirectory=$ReachInstallVersion+'-'+$NodeSha.Substring(0,16)
+        $ownedDirectory='versions/'+$versionDirectory
+        $versionRoot=Join-Path $versions $versionDirectory
         if($null-eq$Notices -or $Notices.Length-eq0){throw 'Third-party notices are missing from this package'}
         $items=@(@('reach.exe',$NodePayload),@('THIRD_PARTY_NOTICES.txt',$Notices))
         if(Test-Path -LiteralPath $versionRoot){
             CheckPath $versionRoot
             foreach($item in $items){$path=Join-Path $versionRoot $item[0];CheckPath $path;if((Hash ([IO.File]::ReadAllBytes($path)))-cne(Hash $item[1])){throw 'Existing Node version contains different bytes'}}
-            AddReachOwnershipGroup $deployment ('versions/0.1.0-'+$NodeSha.Substring(0,16)) 'node' $NodeSha @('reach.exe','THIRD_PARTY_NOTICES.txt')
+            AddReachOwnershipGroup $deployment $ownedDirectory 'node' $NodeSha @('reach.exe','THIRD_PARTY_NOTICES.txt')
             SaveReachDeployment $deployment
             return $versionRoot
         }
         $stageRelative='versions/s-'+[Guid]::NewGuid().ToString('N');$stage=Join-Path $root $stageRelative
-        AddReachOwnershipGroup $deployment ('versions/0.1.0-'+$NodeSha.Substring(0,16)) 'node' $NodeSha @('reach.exe','THIRD_PARTY_NOTICES.txt')
+        AddReachOwnershipGroup $deployment $ownedDirectory 'node' $NodeSha @('reach.exe','THIRD_PARTY_NOTICES.txt')
         AddReachOwnershipGroup $deployment $stageRelative 'stage' $NodeSha @('reach.exe','THIRD_PARTY_NOTICES.txt')
         SaveReachDeployment $deployment
         Directory $stage $true
@@ -335,6 +393,8 @@ public static class ReachSetupNative {
             MarkRestored $transaction;return
         }
         if($null-ne$actual){
+            # An SCM restart queued before rollback can run after a normal stop.
+            [ReachSetupNative]::DisableOwned($actual)
             $process=CaptureProcess $allowedImages
             try {StopService $process}finally{if($process){$process.Dispose()}}
         }
@@ -346,11 +406,15 @@ public static class ReachSetupNative {
             # Keep auto-start disabled until the restored checkpoint is durable;
             # a reboot between restoring files and that checkpoint cannot run it.
             [ReachSetupNative]::Stage($transaction.previous.servicePath)
-            WriteFile $cli ([IO.File]::ReadAllBytes($transaction.previous.nodePath)) $true
+            $previousBytes=[IO.File]::ReadAllBytes($transaction.previous.nodePath)
+            WriteFile $cli $previousBytes $true
+            if($transaction.schema-ge4){WriteFile (Join-Path $bin 'ryreach.exe') $previousBytes $true}
             WriteJson $manifestPath $transaction.previous
         }else{
+            $targets=@($manifestPath,$cli)
+            if($transaction.schema-ge4){$targets+=@(Join-Path $bin 'ryreach.exe')}
             if($null-ne$actual){[ReachSetupNative]::Remove();WaitReachServiceAbsent}
-            foreach($path in @($manifestPath,$cli)){
+            foreach($path in $targets){
                 if([IO.File]::Exists($path)){
                     CheckPath $path
                     if($path-eq$manifestPath){
@@ -403,6 +467,9 @@ public static class ReachSetupNative {
     $existingService=[ReachSetupNative]::Path()
     if($null-ne$previous){ValidateManifest $previous;if($existingService-cne$previous.servicePath){throw 'Actual service differs from the trusted installation record'};$BindingOwner=$previous.bindingOwner}
     elseif($null-ne$existingService){throw 'Existing service has no trusted installation record'}
+    if($ReachAutoUpdate -and ($null-eq$previous -or $previous.schema-ne1 -or [version]$ReachInstallVersion -le [version]$previous.version)){
+        throw 'Automatic update requires a supported existing installation and a newer version'
+    }
     $ownerPath=Join-Path $dataParent 'Reach.installation.json'
     $ownerRecord=if([IO.File]::Exists($ownerPath)){ReadJson $ownerPath}else{$null}
     if($null-ne$ownerRecord){
@@ -416,7 +483,7 @@ public static class ReachSetupNative {
     if($null-eq$deployment){
         $deployment=NewReachDeployment $root $state $BindingOwner
         if($null-ne$previous){ImportReachInstalledOwnership $deployment $previous;$deployment.record=$previous;$deployment.recordSha256=Hash ([IO.File]::ReadAllBytes($manifestPath));$deployment.cliOwned=$true}
-        elseif(Test-Path -LiteralPath $cli){throw 'Existing CLI has no trusted installation record'}
+        elseif((Test-Path -LiteralPath $cli) -or (Test-Path -LiteralPath (Join-Path $bin 'ryreach.exe'))){throw 'Existing CLI has no trusted installation record'}
         if([IO.File]::Exists($journalPath)){
             $history=ReadJson $journalPath
             foreach($record in @($history.previous,$history.target)){if($null-ne$record){ImportReachInstalledOwnership $deployment $record}}
@@ -428,10 +495,26 @@ public static class ReachSetupNative {
         if($null-ne$previous -and ((Hash ([IO.File]::ReadAllBytes($manifestPath)))-cne$deployment.recordSha256)){throw 'Installation record changed outside tracked deployment'}
     }
     $previousDeployment=$deployment|ConvertTo-Json -Depth 12 -Compress|ConvertFrom-Json
+    # OpenSSH is a shared prerequisite. Keep it and its host keys on Reach rollback/uninstall.
+    $null=ResolveReachSshAccount $BindingOwner
+    $sshReceipt=@{schema=1;bindingOwner=$BindingOwner;status='preparing';sharedPrerequisite=$true;retainedOnUninstall=$true;time=[DateTime]::UtcNow.ToString('o')}
+    $sshReceiptPath=Join-Path $root 'last-ssh-preparation.json'
+    WriteJson $sshReceiptPath $sshReceipt
+    try {
+        $sshCommand=EnsureReachSshd $OpenSshArchive
+        $sshTarget=ResolveReachSshTarget $BindingOwner $sshCommand
+        InitializeReachSshKeys $sshTarget
+        $sshReceipt.status='ready';$sshReceipt.user=$sshTarget.user;$sshReceipt.servicePath=$sshCommand.exe
+        WriteJson $sshReceiptPath $sshReceipt
+    } catch {
+        $sshReceipt.status='failed';$sshReceipt.error=$_.Exception.Message
+        WriteJson $sshReceiptPath $sshReceipt
+        throw
+    }
     if($CompletePackage){$versionRoot=StageCompletePayload $package $PayloadSha $PayloadManifestSha}
     else{$versionRoot=StageNodePayload}
     $nodePath=Join-Path $versionRoot 'reach.exe'
-    $next=@{schema=1;version='0.1.0';nodeStateSchema=1;sha256=$NodeSha;nodePath=$nodePath;bindingOwner=$BindingOwner;servicePath=('"'+$nodePath+'" --state-dir "'+$state+'" service --binding-owner '+$BindingOwner);pathOwnership=$null}
+    $next=@{schema=1;version=$ReachInstallVersion;nodeStateSchema=1;sha256=$NodeSha;nodePath=$nodePath;bindingOwner=$BindingOwner;servicePath=('"'+$nodePath+'" --state-dir "'+$state+'" service --binding-owner '+$BindingOwner);pathOwnership=$null}
     if($null-ne$previous -and $previous.pathOwnership){$next.pathOwnership=$previous.pathOwnership}
     if($CompletePackage){$next.schema=2;$next.packageSha256=$PayloadSha;$next.payloadManifestSha256=$PayloadManifestSha;$next.desktopBundled=$true}
     $next.deploymentGeneration=[Guid]::NewGuid().ToString()
@@ -455,8 +538,10 @@ public static class ReachSetupNative {
             } finally {if($process){$process.Dispose()}}
         }
         $transaction.phase='switching';WriteJson $journalPath $transaction
-        [ReachSetupNative]::Set($next.servicePath)
+        # Allow the installer to start the candidate, but leave recovery inactive until validated.
+        [ReachSetupNative]::Prepare($next.servicePath)
         WriteFile $cli $NodePayload $true
+        WriteFile (Join-Path $bin 'ryreach.exe') $NodePayload $true
         StartService
         $process=CaptureProcess @($nodePath)
         try {$transaction.targetProcess=ProcessRecord $process;WriteJson $journalPath $transaction}finally{if($process){$process.Dispose()}}
@@ -467,6 +552,11 @@ public static class ReachSetupNative {
         if([ReachSetupNative]::Path()-cne$next.servicePath){throw 'Service program verification failed'}
         $process=CaptureProcess @($nodePath)
         try {if($null-eq$process -or $process.Id-ne$status.host.pid){throw 'Running service PID differs from authenticated status'}}finally{if($process){$process.Dispose()}}
+        if((Get-Variable PreconfiguredServerUrl -ErrorAction SilentlyContinue) -and $PreconfiguredServerUrl){
+            $preconfigArgs=@('--state-dir',$state,'preconfigure','--server',$PreconfiguredServerUrl)
+            $preOut=& $nodePath @preconfigArgs 2>&1
+            if($LASTEXITCODE-ne0){throw "Preconfigured server URL failed: $($preOut -join ' ')"}
+        }
         # Record PATH intent before writing so interrupted updates can remove only this added entry.
         $transaction.pathChange=PlanPath
         WriteJson $journalPath $transaction
@@ -479,7 +569,9 @@ public static class ReachSetupNative {
         $deployment.recordSha256=Hash ([IO.File]::ReadAllBytes($manifestPath));$deployment.installationId=$status.installationId
         SetReachProperty $deployment 'recovery' $transaction.entryChange.target
         SaveReachDeployment $deployment
-        WriteJson (Join-Path $root 'last-install-result.json') @{validationPassed=$true;requiresCommittedJournal=$true;sha256=$NodeSha;packageSha256=$(if($CompletePackage){$PayloadSha}else{$null});installationId=$status.installationId;epoch=$status.epoch;servicePid=$status.host.pid;time=[DateTime]::UtcNow.ToString('o');desktopBundled=[bool]$CompletePackage}
+        [ReachSetupNative]::Set($next.servicePath)
+        if([ReachSetupNative]::Pid()-ne$status.host.pid){throw 'Service PID changed before installation commit'}
+        WriteJson (Join-Path $root 'last-install-result.json') @{validationPassed=$true;requiresCommittedJournal=$true;version=$ReachInstallVersion;automatic=[bool]$ReachAutoUpdate;sha256=$NodeSha;packageSha256=$(if($CompletePackage){$PayloadSha}else{$null});installationId=$status.installationId;epoch=$status.epoch;servicePid=$status.host.pid;time=[DateTime]::UtcNow.ToString('o');desktopBundled=[bool]$CompletePackage}
         $transaction.phase='committed';$transaction.installationId=$status.installationId;$transaction.epoch=$status.epoch;WriteJson $journalPath $transaction
     }catch{
         $original=$_.Exception.Message

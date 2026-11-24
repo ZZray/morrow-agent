@@ -18,7 +18,14 @@ pub fn contract() -> Result<Value> {
     Ok(serde_json::from_str(CONTRACT)?)
 }
 pub fn capabilities(mut base: Vec<&'static str>, inspection_lease: bool) -> Vec<&'static str> {
-    base.extend_from_slice(&["agent.delegate", "agent.resume", "agent.inspect", CAPABILITY]);
+    base.extend_from_slice(&[
+        "agent.delegate",
+        "agent.resume",
+        "agent.continue",
+        "agent.inspect",
+        "agent.provenance",
+        CAPABILITY,
+    ]);
     if cfg!(windows) && inspection_lease {
         base.push("agent.finalize");
     }

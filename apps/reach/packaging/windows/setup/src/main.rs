@@ -29,8 +29,10 @@ const UNINSTALL_FILES: &str = include_str!("../../uninstall-files.ps1");
 const UNINSTALL_TRANSACTION: &str = include_str!("../../uninstall-transaction.ps1");
 const UNINSTALL_HOST: &str = include_str!("../../uninstall-host.ps1");
 const NOTICES: &[u8] = include_bytes!(env!("REACH_SETUP_NOTICES"));
+const OPENSSH: &[u8] = include_bytes!(env!("REACH_SETUP_OPENSSH"));
+const SSH_PREPARATION: &str = include_str!("../../ssh.ps1");
 fn maintenance_script() -> String {
-    format!("{PACKAGE_CHECKS}\n{OWNERSHIP}\n{MAINTENANCE_WRITES}\n{MAINTENANCE_ENTRY}\n{UNINSTALL_FILES}\n{UNINSTALL_TRANSACTION}\n{UNINSTALL_HOST}\n{SCRIPT}\n")
+    format!("{PACKAGE_CHECKS}\n{OWNERSHIP}\n{MAINTENANCE_WRITES}\n{MAINTENANCE_ENTRY}\n{UNINSTALL_FILES}\n{UNINSTALL_TRANSACTION}\n{UNINSTALL_HOST}\n{SSH_PREPARATION}\n{SCRIPT}\n")
 }
 fn recovery_script() -> String {
     format!("$MaintenanceOperation='uninstall'\n{}", maintenance_script())
@@ -61,10 +63,14 @@ fn system_directory() -> Result<std::path::PathBuf> {
     ensure!(size > 0 && size < buffer.len(), "cannot locate Windows system directory");
     Ok(String::from_utf16(&buffer[..size])?.into())
 }
-fn elevate(owner: &str, uninstall: bool) -> Result<()> {
+fn elevate(owner: &str, uninstall: bool, server_url: Option<&str>) -> Result<()> {
     let path = wide(std::env::current_exe()?);
     let verb = wide("runas");
-    let args = wide(format!("--elevated --owner {owner}{}", if uninstall { " --uninstall" } else { "" }));
+    let mut raw_args = format!("--elevated --owner {owner}{}", if uninstall { " --uninstall" } else { "" });
+    if let Some(url) = server_url {
+        raw_args.push_str(&format!(" --server-url-b64 {}", STANDARD.encode(url)));
+    }
+    let args = wide(raw_args);
     unsafe {
         let mut info: SHELLEXECUTEINFOW = std::mem::zeroed();
         info.cbSize = std::mem::size_of_val(&info) as u32;
@@ -91,6 +97,11 @@ fn elevate(owner: &str, uninstall: bool) -> Result<()> {
     Ok(())
 }
 fn run() -> Result<()> {
+    let openssh_sha = format!("{:x}", Sha256::digest(OPENSSH));
+    ensure!(
+        openssh_sha == "23f50f3458c4c5d0b12217c6a5ddfde0137210a30fa870e98b29827f7b43aba5",
+        "embedded OpenSSH integrity mismatch"
+    );
     let complete = env!("REACH_SETUP_KIND") == "complete";
     let digest = format!("{:x}", Sha256::digest(PAYLOAD));
     ensure!(digest == env!("REACH_SETUP_SHA"), "embedded payload integrity mismatch");
@@ -100,9 +111,10 @@ fn run() -> Result<()> {
     );
     let args: Vec<String> = std::env::args().skip(1).collect();
     if args == ["--inspect"] {
+        println!("openssh_sha256={openssh_sha}\nssh_preparation_sha256={:x}", Sha256::digest(SSH_PREPARATION));
         println!(
             "Reach setup {}\nnode_sha256={}\nscript_sha256={}\npayload_bytes={}\nnotices_sha256={}\npayload_sha256={}\npayload_manifest_sha256={}\npayload_checks_sha256={}\ndesktop_bundled={}\nownership_sha256={}\nmaintenance_writes_sha256={}",
-            env!("CARGO_PKG_VERSION"),
+            env!("REACH_SETUP_VERSION"),
             env!("REACH_SETUP_COMPONENT_NODE_SHA"),
             format_args!("{:x}", Sha256::digest(SCRIPT.as_bytes())),
             PAYLOAD.len(),
@@ -134,16 +146,69 @@ fn run() -> Result<()> {
         );
         return run_powershell(&script);
     }
-    let uninstall = args == ["--uninstall"] || (args.len() == 4 && args[3] == "--uninstall");
-    let elevated = args.first().is_some_and(|arg| arg == "--elevated");
-    let owner = if args.is_empty() || args == ["--uninstall"] {
-        windows_identity::current_sid()?
-    } else {
-        ensure!(
-            (args.len() == 3 || (args.len() == 4 && uninstall)) && elevated && args[1] == "--owner",
-            "unsupported installer arguments"
-        );
-        args[2].clone()
+    let mut uninstall = false;
+    let mut elevated = false;
+    let mut silent = false;
+    let mut auto_update = false;
+    let mut expected_version: Option<&str> = None;
+    let mut explicit_owner: Option<String> = None;
+    let mut preconfigured_server_url: Option<String> = None;
+    let mut idx = 0;
+    while idx < args.len() {
+        match args[idx].as_str() {
+            "--uninstall" => uninstall = true,
+            "--elevated" => elevated = true,
+            "--silent" => silent = true,
+            "--auto-update" => auto_update = true,
+            "--expected-version" => {
+                ensure!(expected_version.is_none(), "duplicate expected update version");
+                idx += 1;
+                expected_version = Some(args.get(idx).context("missing expected update version")?);
+            }
+            "--owner" => {
+                idx += 1;
+                explicit_owner = Some(args.get(idx).context("missing --owner value")?.clone());
+            }
+            "--server-url" => {
+                idx += 1;
+                let raw = args.get(idx).context("missing --server-url value")?.trim().to_owned();
+                ensure!(!raw.is_empty() && raw.len() <= 512, "invalid --server-url value");
+                preconfigured_server_url = Some(raw);
+            }
+            "--server-url-b64" => {
+                idx += 1;
+                let encoded = args.get(idx).context("missing --server-url-b64 value")?;
+                let decoded = String::from_utf8(STANDARD.decode(encoded).context("invalid --server-url-b64")?)?;
+                ensure!(!decoded.is_empty() && decoded.len() <= 512, "invalid --server-url-b64 value");
+                preconfigured_server_url = Some(decoded);
+            }
+            _ => anyhow::bail!("unsupported installer arguments"),
+        }
+        idx += 1;
+    }
+    ensure!(
+        if auto_update {
+            expected_version == Some(env!("REACH_SETUP_VERSION"))
+        } else {
+            expected_version.is_none()
+        },
+        "Setup version differs from the verified update manifest"
+    );
+    ensure!(
+        !auto_update || (!complete && silent && elevated && !uninstall && preconfigured_server_url.is_none()
+            && windows_identity::current_sid()? == "S-1-5-18"),
+        "automatic update requires the LocalSystem installation service"
+    );
+    ensure!(!(uninstall && preconfigured_server_url.is_some()), "--server-url cannot be combined with --uninstall");
+    let owner = match explicit_owner {
+        Some(explicit) => {
+            ensure!(elevated, "unsupported installer arguments");
+            explicit
+        }
+        None => {
+            ensure!(!elevated, "unsupported installer arguments");
+            windows_identity::current_sid()?
+        }
     };
     ensure!(
         owner.starts_with("S-1-")
@@ -153,7 +218,7 @@ fn run() -> Result<()> {
     );
     if !administrator()? {
         ensure!(!elevated, "elevated maintenance requires an administrator token");
-        return elevate(&owner, uninstall);
+        return elevate(&owner, uninstall, preconfigured_server_url.as_deref());
     }
     // The script is delivered over a private pipe, never loaded from a user-writable temporary file.
     let mut script = format!(
@@ -162,9 +227,20 @@ fn run() -> Result<()> {
         STANDARD.encode(std::env::current_exe()?.to_str().context("installer path is not Unicode")?)
     );
     if !uninstall {
+        script.push_str(&format!(
+            "$ReachInstallVersion='{}'\n$ReachAutoUpdate=${auto_update}\n",
+            env!("REACH_SETUP_VERSION")
+        ));
+        script.push_str(&format!("$OpenSshArchive=[Convert]::FromBase64String('{}')\n", STANDARD.encode(OPENSSH)));
         script.push_str(&format!("$ExpectedAgentSha='{}'\n", env!("REACH_SETUP_AGENT_SHA")));
         script.push_str(&format!("$BindingOwner='{owner}'\n$PayloadSha='{digest}'\n$ExpectedManifestSha='{}'\n$CompletePackage=${}\n$Payload=[Convert]::FromBase64String('{}')\n$Notices=[Convert]::FromBase64String('{}')\n",
             env!("REACH_SETUP_MANIFEST_SHA"), complete, STANDARD.encode(PAYLOAD), STANDARD.encode(NOTICES)));
+    }
+    if let Some(url) = &preconfigured_server_url {
+        script.push_str(&format!(
+            "$PreconfiguredServerUrl=[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('{}'))\n",
+            STANDARD.encode(url)
+        ));
     }
     script.push_str(&maintenance_script());
     run_powershell(&script)
@@ -197,8 +273,8 @@ fn run_powershell(script: &str) -> Result<()> {
 fn main() {
     if let Err(error) = run() {
         eprintln!("{error}");
-        let interactive =
-            std::env::args().len() == 1 || std::env::args().any(|arg| arg == "--elevated" || arg == "--uninstall");
+        let interactive = !std::env::args().any(|arg| arg == "--silent")
+            && (std::env::args().len() == 1 || std::env::args().any(|arg| arg == "--elevated" || arg == "--uninstall"));
         if interactive {
             unsafe {
                 MessageBoxW(

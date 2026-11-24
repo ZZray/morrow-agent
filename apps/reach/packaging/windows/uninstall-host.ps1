@@ -153,3 +153,59 @@ function CompleteReachReinstallPreparation($Transaction) {
         AssertReachUninstallEntryAbsent $Transaction.previousUninstall
     }else{throw 'Prepared reinstall belongs to a different deployment'}
 }
+function RevokeReachManagedSshKeys {
+    $intentsPath=Join-Path $state 'ssh-key-intents.json'
+    if(-not [IO.File]::Exists($intentsPath)){return}
+    CheckPath $intentsPath
+    if((Get-Item -LiteralPath $intentsPath -Force).Length-gt1048576){return}
+    $store=[IO.File]::ReadAllText($intentsPath,[Text.Encoding]::UTF8)|ConvertFrom-Json
+    if($null-eq$store -or $null-eq$store.grants){return}
+    $updated=$false
+    foreach($grant in @($store.grants)){
+        if($grant.state-notin@('authorized','authorizing')){continue}
+        try{
+            $keyFile=[IO.Path]::GetFullPath([string]$grant.path)
+            if([IO.File]::Exists($keyFile)){
+                $cursor=$keyFile
+                while($cursor){
+                    if(Test-Path -LiteralPath $cursor){if(((Get-Item -LiteralPath $cursor -Force).Attributes -band [IO.FileAttributes]::ReparsePoint)-ne0){throw "Reparse path on SSH cleanup: $cursor"}}
+                    $next=[IO.Path]::GetDirectoryName($cursor);if([string]::IsNullOrEmpty($next) -or $next-ceq$cursor){break};$cursor=$next
+                }
+                $stream=[IO.File]::Open($keyFile,[IO.FileMode]::Open,[IO.FileAccess]::ReadWrite,[IO.FileShare]::None)
+                try{
+                    if($stream.Length-gt1048576){throw 'authorized_keys exceeds 1 MiB cleanup bound'}
+                    $bytes=[byte[]]::new([int]$stream.Length);[void]$stream.Read($bytes,0,$bytes.Length)
+                    $addition=[Text.Encoding]::ASCII.GetBytes(([string]$grant.addedSeparator)+([string]$grant.line)+"`r`n")
+                    $offset=[int]$grant.prefixLength;$cutLen=$addition.Length
+                    $prefix=[byte[]]::new([Math]::Min($offset,$bytes.Length));[Array]::Copy($bytes,$prefix,$prefix.Length)
+                    $exact=($offset-ge0) -and ($offset+$cutLen-le$bytes.Length) -and ((Hash $prefix)-ceq([string]$grant.prefixSha256))
+                    if($exact){for($i=0;$i-lt$cutLen;$i++){if($bytes[$offset+$i]-ne$addition[$i]){$exact=$false;break}}}
+                    if(-not $exact){
+                        $bomLen=if($bytes.Length-ge3 -and $bytes[0]-eq0xEF -and $bytes[1]-eq0xBB -and $bytes[2]-eq0xBF){3}else{0}
+                        $text=[Text.UTF8Encoding]::new($false,$true).GetString($bytes,$bomLen,$bytes.Length-$bomLen)
+                        $m=[regex]::Match($text,'(?m)^'+[regex]::Escape([string]$grant.line)+'(?:\r?\n|$)')
+                        if(-not $m.Success){
+                            if($text.Contains([string]$grant.marker)){throw "Managed SSH key $($grant.marker) was edited; automatic removal refused"}
+                            $grant.state='cleaned';$updated=$true;continue
+                        }
+                        $offset=$bomLen+[Text.Encoding]::UTF8.GetByteCount($text.Substring(0,$m.Index))
+                        $cutLen=[Text.Encoding]::UTF8.GetByteCount($m.Value)
+                    }
+                    $rem=[byte[]]::new($bytes.Length-$cutLen)
+                    [Array]::Copy($bytes,0,$rem,0,$offset)
+                    [Array]::Copy($bytes,$offset+$cutLen,$rem,$offset,$bytes.Length-$offset-$cutLen)
+                    $stream.Position=0;$stream.Write($rem,0,$rem.Length);$stream.SetLength($rem.Length);$stream.Flush($true)
+                }finally{$stream.Dispose()}
+            }
+            $grant.state='cleaned';$updated=$true
+        }catch{
+            SetReachProperty $grant 'error' $_.Exception.Message
+            $updated=$true
+        }
+    }
+    if($updated){
+        $tmp=$intentsPath+'.'+[Guid]::NewGuid().ToString('N')+'.tmp'
+        [IO.File]::WriteAllText($tmp,($store|ConvertTo-Json -Depth 10),[Text.UTF8Encoding]::new($false))
+        [IO.File]::Replace($tmp,$intentsPath,[NullString]::Value)
+    }
+}

@@ -56,12 +56,17 @@ pub(super) fn consumption_at(original: &Original, evidence: &Path) -> Result<Val
             "native evidence chain is not original"
         );
         chain.push(evidence.clone());
-        let prior = evidence.join("resume.json");
-        if !prior.try_exists()? {
+        let prior_resume = evidence.join("resume.json");
+        let prior_cont = evidence.join("continuation.json");
+        if prior_resume.try_exists()? {
+            let record = object(&prior_resume)?;
+            evidence = value_path(&record["fenced_evidence_dir"])?.canonicalize()?;
+        } else if prior_cont.try_exists()? {
+            let record = object(&prior_cont)?;
+            evidence = value_path(&record["previous_evidence_dir"])?.canonicalize()?;
+        } else {
             break;
         }
-        let record = object(&prior)?;
-        evidence = value_path(&record["fenced_evidence_dir"])?.canonicalize()?;
     }
     ensure!(
         chain.last() == Some(&original.root.join("evidence").canonicalize()?),
@@ -72,11 +77,18 @@ pub(super) fn consumption_at(original: &Original, evidence: &Path) -> Result<Val
     let mut calls = 0u64;
     for evidence in &chain {
         let inherited = evidence.join("resume.json");
+        let cont_inherited = evidence.join("continuation.json");
         if inherited.try_exists()? {
             let record = object(&inherited)?;
             ensure!(
                 record["consumed_runs"] == runs.len() && record["consumed_calls"] == calls,
                 "native inherited consumption changed"
+            );
+        } else if cont_inherited.try_exists()? {
+            let record = object(&cont_inherited)?;
+            ensure!(
+                record["consumed_runs"] == runs.len() && record["consumed_calls"] == calls,
+                "native inherited continuation consumption changed"
             );
         }
         loop {
@@ -280,6 +292,152 @@ pub async fn execute_original(
     timer.abort();
     let _ = timer.await;
     if !matches!(&result,Ok((state,_))if state=="succeeded") {
+        desktop.shutdown().await?;
+    }
+    closed?;
+    result
+}
+
+#[allow(clippy::too_many_arguments)]
+pub async fn execute_continued(
+    ledger: &mut Ledger,
+    api: &Api,
+    original: &Original,
+    execution: &Dispatch,
+    control: &mut Option<&mut Control>,
+    desktop: &mut Desktop,
+    runtime: &agent::Runtime,
+    records: &Path,
+    stop: (&watch::Sender<bool>, &watch::Receiver<bool>),
+) -> Result<(String, Value)> {
+    ensure!(!original.fence.try_exists()?, "Session has an active reconciliation fence; use agent.resume");
+    let plan = api
+        .call(
+            reqwest::Method::POST,
+            &format!("/api/v1/node/agents/{}/continue/plan", execution.operation_id),
+            Some(&binding(execution)),
+        )
+        .await?;
+    ensure!(
+        plan["taskId"] == original.dispatch.operation_id && plan["executionId"] == execution.operation_id,
+        "continuation plan identity mismatch"
+    );
+    let prev_id = plan["previousExecutionId"].as_str().context("previous execution ID missing")?;
+    uuid::Uuid::parse_str(prev_id).context("previous execution ID must be a canonical UUID")?;
+    let prev_records = if prev_id == original.dispatch.operation_id {
+        original.root.clone()
+    } else {
+        original.root.join("attempts").join(prev_id)
+    };
+    ensure!(
+        prev_records.canonicalize().context("previous execution directory missing")?.starts_with(&original.root),
+        "previous execution escaped Task root"
+    );
+    let prev_evidence = prev_records.join("evidence");
+    let released_path = prev_evidence.join("released.json");
+    ensure!(released_path.try_exists()?, "previous execution released.json missing");
+    let released_bytes = bounded_read(&released_path, 4 * 1024 * 1024)?;
+    let actual_released_sha = protocol::hash(&released_bytes);
+    let expected_sha = plan["expectedReleasedSha256"].as_str().context("expected released SHA missing")?;
+    ensure!(actual_released_sha == expected_sha, "expected released.json digest mismatch; refusing continuation");
+    let prev_outcome: Value = serde_json::from_slice(&released_bytes)?;
+    ensure!(
+        prev_outcome["task_id"] == original.dispatch.operation_id
+            && prev_outcome["fence_presence"] == "Released"
+            && prev_outcome["runs"] == plan["consumedRuns"]
+            && prev_outcome["observed_calls"] == plan["consumedCalls"],
+        "previous released outcome identity or consumption mismatch"
+    );
+    let prev_basis = &prev_outcome["last_candidate"]["basis"];
+    ensure!(prev_basis.is_object(), "previous released candidate basis missing");
+    let feedback = plan["feedback"].as_str().context("continuation feedback missing")?;
+    let review_path = records.join("continuation-review.json");
+    save_new(
+        &review_path,
+        &json!({
+            "taskId": original.dispatch.operation_id,
+            "previousExecutionId": prev_id,
+            "expectedReleasedSha256": expected_sha,
+            "basis": prev_basis,
+            "feedback": feedback,
+            "taskAccepted": false,
+        }),
+    )?;
+    let review = json!({
+        "basis": prev_basis,
+        "committed": true,
+        "settlement": "Settled",
+        "verdict": { "NeedsChanges": { "feedback": feedback } },
+        "evidence": [review_path],
+    });
+    let deadline = number(&original.record, "deadlineLocalUnixMs")?;
+    let now = SystemTime::now().duration_since(UNIX_EPOCH)?.as_millis() as u64;
+    ensure!(deadline > now + 1000, "original local deadline elapsed");
+    let run = plan["runId"].as_str().context("planned continuation Run missing")?;
+    let route = &original.record["route"];
+    let descriptor = &route["descriptor"];
+    let relay = Relay::rebind(
+        api.clone(),
+        execution.clone(),
+        run.into(),
+        descriptor["routeHash"].as_str().context("route missing")?.into(),
+        records.to_owned(),
+        original.record["start"]["run"]["endpoint"].as_str().context("relay endpoint missing")?,
+        original.record["relayToken"].as_str().context("relay token missing")?,
+        stop.1.clone(),
+        stop.0.clone(),
+    )
+    .await?;
+    let mut start = original.record["start"].clone();
+    start["artifact_review"] = json!(true);
+    start["guidance"] = json!(true);
+    start["task"]["evidence_dir"] = json!(records.join("evidence"));
+    start["run"]["run_id"] = json!(run);
+    start["run"]["objective"] =
+        json!(original.dispatch.command["objective"].as_str().context("original objective missing")?);
+    start["run"]["max_seconds"] = json!(number(&start["run"], "max_seconds")?.min((deadline - now) / 1000).max(1));
+    if let Some(obj) = start.as_object_mut() {
+        obj.remove("resume");
+    }
+    start["continue_reviewed"] = json!({
+        "previous_evidence_dir": prev_evidence,
+        "expected_released_sha256": expected_sha,
+        "review": review,
+    });
+    let options = json!({
+        "mode": "continue",
+        "start": start,
+        "guidance": original.record["guidance"],
+        "plan": plan,
+        "childOperationIds": plan["childOperationIds"],
+    });
+    let signal = stop.0.clone();
+    let timer = tokio::spawn(async move {
+        tokio::time::sleep(Duration::from_millis(deadline - now)).await;
+        let _ = signal.send(true);
+    });
+    let result = agent::run_task(
+        ledger,
+        api,
+        &original.dispatch,
+        execution,
+        control,
+        desktop,
+        runtime,
+        records,
+        route,
+        run,
+        deadline,
+        &relay,
+        stop,
+        Some(&options),
+    )
+    .await;
+    let _ = stop.0.send(true);
+    let closed = relay.close().await;
+    timer.abort();
+    let _ = timer.await;
+    if !matches!(&result, Ok((state, _)) if state == "succeeded") {
         desktop.shutdown().await?;
     }
     closed?;
@@ -845,6 +1003,151 @@ pub fn inspect(ledger: &Ledger, execution: &Dispatch, sidecar: &Path, sidecar_sh
         json!(std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)?.as_millis() as u64);
     result["inspectionOperationId"] = json!(execution.operation_id);
     Ok(("succeeded".into(), result))
+}
+
+pub fn provenance(ledger: &Ledger, execution: &Dispatch, sidecar: &Path, sidecar_sha: &str) -> Result<(String, Value)> {
+    use std::io::Write;
+    use std::process::{Command, Stdio};
+    ensure!(crate::agent::file_hash(sidecar)? == sidecar_sha, "provenance runtime image changed");
+    let root_ids = execution.command["rootOperationIds"].as_array().context("rootOperationIds missing")?;
+    ensure!(!root_ids.is_empty() && root_ids.len() <= 16, "rootOperationIds out of bounds");
+    let mut query = json!({"kind": "artifact"});
+    if let Some(status) = execution.command.get("status").and_then(Value::as_str) {
+        query["status"] = json!(status);
+    }
+    if let Some(artifact_id) = execution.command.get("artifactId").and_then(Value::as_str) {
+        query["artifact_id"] = json!(artifact_id);
+    }
+    if let Some(run_id) = execution.command.get("runId").and_then(Value::as_str) {
+        query["run_id"] = json!(run_id);
+    }
+    let mut entries = Vec::new();
+    let mut scope_errors = Vec::new();
+    let mut total_scopes = 0usize;
+    for raw_id in root_ids {
+        let root_id = raw_id.as_str().context("rootOperationId must be string")?;
+        uuid::Uuid::parse_str(root_id).context("rootOperationId must be UUID")?;
+        let original = Original::load_saved(ledger, root_id)?;
+        let session_id = original.dispatch.command["sessionId"].as_str().context("original sessionId missing")?;
+        let mut evidence_dirs = Vec::new();
+        let first_ev = original.root.join("evidence");
+        if first_ev.try_exists()? {
+            evidence_dirs.push(first_ev);
+        }
+        let attempts = original.root.join("attempts");
+        if attempts.try_exists()? {
+            let mut sorted = Vec::new();
+            for entry in fs::read_dir(attempts)? {
+                let entry = entry?;
+                if entry.file_type()?.is_dir() {
+                    let ev = entry.path().join("evidence");
+                    if ev.try_exists()? {
+                        sorted.push((entry.file_name().to_string_lossy().into_owned(), ev));
+                    }
+                }
+            }
+            sorted.sort_by(|a, b| a.0.cmp(&b.0));
+            for (_, ev) in sorted {
+                evidence_dirs.push(ev);
+            }
+        }
+        for ev_dir in evidence_dirs {
+            total_scopes += 1;
+            ensure!(total_scopes <= 64, "provenance scope fan-out exceeds 64 directories");
+            let req_id = protocol::id();
+            let frame = json!({
+                "kind": "manage",
+                "version": 1,
+                "id": req_id,
+                "request": {
+                    "operation": "provenance_query",
+                    "scopes": [{
+                        "task_id": root_id,
+                        "session_id": session_id,
+                        "evidence_dir": ev_dir,
+                    }],
+                    "query": query,
+                },
+            });
+            let mut cmd = Command::new(sidecar);
+            cmd.stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::piped());
+            #[cfg(windows)]
+            {
+                use std::os::windows::process::CommandExt;
+                cmd.creation_flags(0x0800_0000);
+            }
+            let mut child = cmd.spawn().context("spawn provenance sidecar")?;
+            {
+                let mut stdin = child.stdin.take().context("provenance stdin missing")?;
+                let mut payload = serde_json::to_vec(&frame)?;
+                payload.push(b'\n');
+                stdin.write_all(&payload)?;
+            }
+            let stdout_pipe = child.stdout.take().context("provenance stdout missing")?;
+            let stderr_pipe = child.stderr.take().context("provenance stderr missing")?;
+            let out_reader = std::thread::spawn(move || {
+                let mut buf = Vec::new();
+                let _ = stdout_pipe.take(262_145).read_to_end(&mut buf);
+                buf
+            });
+            let err_reader = std::thread::spawn(move || {
+                let mut buf = Vec::new();
+                let _ = stderr_pipe.take(65_537).read_to_end(&mut buf);
+                buf
+            });
+            let wait_deadline = SystemTime::now() + Duration::from_secs(15);
+            let status = loop {
+                if let Some(st) = child.try_wait().context("poll provenance sidecar")? {
+                    break st;
+                }
+                if SystemTime::now() >= wait_deadline {
+                    let _ = child.kill();
+                    let _ = child.wait();
+                    anyhow::bail!("provenance sidecar timed out");
+                }
+                std::thread::sleep(Duration::from_millis(20));
+            };
+            let stdout_bytes = out_reader.join().map_err(|_| anyhow::anyhow!("provenance stdout thread panicked"))?;
+            let _ = err_reader.join();
+            ensure!(
+                status.success() && stdout_bytes.len() <= 262_144,
+                "provenance sidecar failed or exceeded frame bound"
+            );
+            let envelope: Value = serde_json::from_slice(&stdout_bytes)?;
+            ensure!(
+                envelope["kind"] == "management_result"
+                    && envelope["version"] == 1
+                    && envelope["id"] == req_id
+                    && envelope["ok"] == true,
+                "provenance management result invalid"
+            );
+            let report = if let Some(val) = envelope.get("value") {
+                val.clone()
+            } else {
+                let results_dir = ev_dir.join("management-results");
+                serde_json::from_slice(&checked_reference(&envelope["value_ref"], &results_dir, 16 * 1024 * 1024)?)?
+            };
+            if let Some(arr) = report["entries"].as_array() {
+                ensure!(entries.len() + arr.len() <= 4096, "provenance entry count exceeds bound");
+                entries.extend(arr.iter().cloned());
+            }
+            if let Some(errs) = report["scope_errors"].as_array() {
+                scope_errors.extend(errs.iter().cloned());
+            }
+        }
+    }
+    Ok((
+        "succeeded".into(),
+        json!({
+            "version": 1,
+            "nodeId": execution.node_id,
+            "epoch": execution.epoch,
+            "operationId": execution.operation_id,
+            "taskAccepted": false,
+            "entries": entries,
+            "scopeErrors": scope_errors,
+        }),
+    ))
 }
 
 #[cfg(test)]

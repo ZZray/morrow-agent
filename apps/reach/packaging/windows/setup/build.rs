@@ -20,6 +20,18 @@ fn main() {
     println!("cargo:rerun-if-changed={}", path.display());
     let kind = std::env::var("REACH_SETUP_KIND").unwrap_or_else(|_| "node".into());
     assert!(kind == "node" || kind == "complete", "unsupported payload kind");
+    let version = if kind == "complete" {
+        env!("CARGO_PKG_VERSION").into()
+    } else {
+        std::env::var("REACH_RELEASE_VERSION").unwrap_or_else(|_| env!("CARGO_PKG_VERSION").into())
+    };
+    let parts: Vec<_> = version.split('.').collect();
+    assert!(
+        parts.len() == 3 && parts.iter().all(|part| part.parse::<u16>().is_ok_and(|n| n.to_string() == *part)),
+        "REACH_RELEASE_VERSION must be a canonical major.minor.patch version"
+    );
+    println!("cargo:rerun-if-env-changed=REACH_RELEASE_VERSION");
+    println!("cargo:rustc-env=REACH_SETUP_VERSION={version}");
     println!("cargo:rustc-env=REACH_SETUP_KIND={kind}");
     println!("cargo:rerun-if-env-changed=REACH_SETUP_KIND");
     for name in ["REACH_SETUP_MANIFEST_SHA", "REACH_SETUP_COMPONENT_NODE_SHA", "REACH_SETUP_AGENT_SHA"] {
@@ -36,6 +48,15 @@ fn main() {
         println!("cargo:rerun-if-env-changed={name}");
     }
     println!("cargo:rerun-if-changed=../install.ps1");
+    println!("cargo:rerun-if-changed=../ssh.ps1");
+    let openssh = std::path::PathBuf::from(
+        std::env::var_os("REACH_SETUP_OPENSSH").expect("set REACH_SETUP_OPENSSH to the pinned vendor OpenSSH archive"),
+    )
+    .canonicalize()
+    .expect("OpenSSH archive missing");
+    println!("cargo:rustc-env=REACH_SETUP_OPENSSH={}", openssh.display());
+    println!("cargo:rerun-if-env-changed=REACH_SETUP_OPENSSH");
+    println!("cargo:rerun-if-changed={}", openssh.display());
     println!("cargo:rerun-if-changed=../payload.ps1");
     println!("cargo:rerun-if-changed=../ownership.ps1");
     println!("cargo:rerun-if-changed=../maintenance-writes.ps1");

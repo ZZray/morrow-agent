@@ -213,7 +213,7 @@ pub(super) async fn ack(
 }
 
 pub fn preflight(ledger: &Ledger, execution: &Dispatch, desktop: &Desktop, runtime: &Runtime) -> Result<Option<Value>> {
-    let original = if execution.command["kind"] == "agent.resume" {
+    let original = if matches!(execution.command["kind"].as_str(), Some("agent.resume" | "agent.continue")) {
         Some(crate::agent_resume::Original::load(
             ledger,
             execution.command["rootOperationId"].as_str().context("root Task missing")?,
@@ -238,7 +238,8 @@ pub async fn execute(
     desktop: &mut Desktop,
     runtime: &Runtime,
 ) -> Result<(String, Value)> {
-    let resume = if execution.command["kind"] == "agent.resume" {
+    let is_continue = execution.command["kind"] == "agent.continue";
+    let resume = if execution.command["kind"] == "agent.resume" || is_continue {
         Some(crate::agent_resume::Original::load(
             ledger,
             execution.command["rootOperationId"].as_str().context("root Task missing")?,
@@ -285,6 +286,20 @@ pub async fn execute(
     let result = async {
         ack(ledger, execution, &stop, control).await?;
         if let Some(original) = &resume {
+            if is_continue {
+                return crate::agent_resume::execute_continued(
+                    ledger,
+                    api,
+                    original,
+                    execution,
+                    control,
+                    desktop,
+                    runtime,
+                    &records,
+                    (&stop_tx, &stop),
+                )
+                .await;
+            }
             return crate::agent_resume::execute_original(
                 ledger,
                 api,
@@ -399,14 +414,15 @@ pub(super) async fn run_task(
     let descriptor = &route["descriptor"];
     let max_output = route["maxOutput"].as_u64().context("output cap missing")?;
     // Host byte allocation for previews, not a token/usage estimate. Full results remain readable.
+    let context_window = descriptor["contextWindow"].as_u64().context("context capability missing")?;
     let result_window_bytes =
-        (descriptor["contextWindow"].as_u64().context("context capability missing")? / 32).clamp(256, 4096) as usize;
+        if context_window <= 32768 { 384 } else { (context_window / 32).clamp(256, 4096) as usize };
     let tools = if let Some(r) = resume {
         r["start"]["run"]["tools"].clone()
     } else {
         crate::agent_guidance::contract()?["tools"].clone()
     };
-    let mut start = json!({"kind":"start_task","version":1,"task":{"task_id":parent.operation_id,"criteria_revision":"reach-receipt-integrity-v1","authorization_revision":parent.payload_hash,"kind":"Reasoning","evidence_dir":evidence,"max_runs":parent.command["maxRuns"],"max_calls":parent.command["maxCalls"],"deadline_unix_ms":deadline},"run":{"run_id":run,"objective":objective,"cwd":parent.command["cwd"],"session_path":session.join("session.json"),"environment_state":session.join("environment"),"device_fp":format!("{}:{}",parent.node_id,parent.epoch),"session_key":parent.command["sessionId"],"mode":"execute","endpoint":relay.endpoint,"model":descriptor["model"],"max_calls":parent.command["maxCalls"],"max_seconds":((deadline.saturating_sub(now_ms()?))/1000).max(1),"max_output":max_output,"host_output_ceiling":max_output,"model_resolution":{"kind":"host_declared_loopback","capabilities":{"context_window":descriptor["contextWindow"],"max_tokens":descriptor["maxOutput"],"input":descriptor["input"]}},"tools":tools},"cancel_grace_ms":1000,"emit_events":true});
+    let mut start = json!({"kind":"start_task","version":1,"artifact_review":true,"guidance":true,"task":{"task_id":parent.operation_id,"criteria_revision":"reach-receipt-integrity-v1","authorization_revision":parent.payload_hash,"kind":"Reasoning","evidence_dir":evidence,"max_runs":parent.command["maxRuns"],"max_calls":parent.command["maxCalls"],"deadline_unix_ms":deadline},"run":{"run_id":run,"objective":objective,"cwd":parent.command["cwd"],"session_path":session.join("session.json"),"environment_state":session.join("environment"),"device_fp":format!("{}:{}",parent.node_id,parent.epoch),"session_key":parent.command["sessionId"],"mode":"execute","endpoint":relay.endpoint,"model":descriptor["model"],"max_calls":parent.command["maxCalls"],"max_seconds":((deadline.saturating_sub(now_ms()?))/1000).max(1),"max_output":max_output,"host_output_ceiling":max_output,"model_resolution":{"kind":"host_declared_loopback","capabilities":{"context_window":descriptor["contextWindow"],"max_tokens":descriptor["maxOutput"],"input":descriptor["input"]}},"tools":tools},"cancel_grace_ms":1000,"emit_events":true});
     if let Some(cap) = parent.command["runCallLimit"].as_u64() {
         ensure!(cap > 0 && Some(cap) <= parent.command["maxCalls"].as_u64(), "invalid original Run call limit");
         start["run"]["max_calls"] = json!(cap);
@@ -539,24 +555,115 @@ pub(super) async fn run_task(
     let mut seen = HashSet::new();
     let mut children: Vec<String> =
         resume.map(|r| serde_json::from_value(r["childOperationIds"].clone())).transpose()?.unwrap_or_default();
-    let mut returned = Vec::new();
+    let mut returned: Vec<(Value, Value)> = Vec::new();
     let mut verified_basis = None;
     let mut verified_budget = false;
     let mut current_run = run.to_owned();
     let mut run_number = resume.map_or(1, |r| r["plan"]["runNumber"].as_u64().unwrap_or(0));
     let mut last_review: Option<(Value, Value, Value, bool)> = None;
+    let mut next_guidance_poll = Instant::now();
+    let mut sent_guidance: HashSet<String> = HashSet::new();
     let outcome=async {
         send(&mut stdin,&start).await?;
         loop {
             control::executing(ledger,control)?;
             ensure!(!*stop.1.borrow()&&!runtime.upload_lost.load(Ordering::SeqCst)&&!control::stopping(control)&&!relay.finished(),"Agent stopped; original effects retained");
+            if Instant::now() >= next_guidance_poll {
+                next_guidance_poll = Instant::now() + Duration::from_millis(250);
+                if let Ok(Ok(polled)) = tokio::time::timeout(
+                    Duration::from_millis(800),
+                    api.call(
+                        reqwest::Method::POST,
+                        &format!("/api/v1/node/agents/{}/guidance/poll", execution.operation_id),
+                        Some(&json!({"dispatchId":execution.dispatch_id,"payloadHash":execution.payload_hash})),
+                    ),
+                ).await {
+                    if let Some(msgs) = polled["messages"].as_array() {
+                        for msg in msgs {
+                            if let (Some(mid), Some(txt)) = (msg["messageId"].as_str(), msg["text"].as_str()) {
+                                if sent_guidance.insert(mid.to_owned()) {
+                                    send(&mut stdin, &json!({"kind":"guide","version":1,"task_id":parent.operation_id,"message_id":mid,"text":txt})).await?;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
             tokio::select! {biased;
                 _=tokio::time::sleep(Duration::from_millis(100))=>{},
                 frame=frames.recv()=>{
                     let (frame,arguments)=frame.context("Agent control stream closed")?;
                     match frame["kind"].as_str() {
                         Some("event")=>{ledger.event(execution,"output",json!({"type":"agent.progress","runId":frame["run_id"],"nativeSequence":frame["seq"],"eventType":frame["event_type"],"delivery":"best_effort_not_complete_evidence"}))?;},
+                        Some("guidance_ack")=>{
+                            let mid = frame["message_id"].as_str().context("guidance message_id missing")?;
+                            ensure!(sent_guidance.contains(mid), "unsolicited guidance acknowledgement");
+                            let _ = api.call(
+                                reqwest::Method::POST,
+                                &format!("/api/v1/node/agents/{}/guidance/report", execution.operation_id),
+                                Some(&json!({"dispatchId":execution.dispatch_id,"payloadHash":execution.payload_hash,"acks":[{"messageId":mid,"status":frame["status"]}]})),
+                            ).await;
+                        },
+                        Some("review_artifacts_request")=>{
+                            crate::agent_resume::admit(api,execution,root,&current_run).await?;
+                            ensure!(frame["run_id"]==current_run&&seen.insert(frame["rpc_id"].as_str().context("RPC id missing")?.to_owned()),"artifact review correlation invalid");
+                            let review=if let Some(v)=frame.get("review"){v.clone()}else{serde_json::from_slice(&checked_reference(&frame["review_ref"],&evidence,16*1024*1024)?)?};
+                            let basis=&review["basis"];
+                            ensure!(basis["task_id"]==parent.operation_id&&basis["run_id"]==current_run&&basis["run_number"]==run_number&&basis["session_id"]==parent.command["sessionId"]&&basis["authorization_revision"]==parent.payload_hash&&basis["criteria_revision"]=="reach-receipt-integrity-v1","artifact review basis mismatch");
+                            let raw_artifacts=review["artifacts"].as_array().context("artifact review list missing")?;
+                            let verified_at=now_ms()?.to_string();
+                            let mut reviewed=Vec::with_capacity(raw_artifacts.len());
+                            let mut seen_calls=HashSet::new();
+                            for artifact in raw_artifacts {
+                                let mut item=artifact.clone();
+                                ensure!(
+                                    item["task_id"]==parent.operation_id
+                                        && item["session_id"]==parent.command["sessionId"]
+                                        && item["run_id"]==current_run,
+                                    "artifact review item identity mismatch"
+                                );
+                                let call_key=item["native_call_id"].as_str().context("artifact native_call_id missing")?.to_owned();
+                                ensure!(seen_calls.insert(call_key), "duplicate artifact call in review");
+                                let matched=returned.iter().find(|(cf,_)|cf["native_call_id"]==item["native_call_id"]&&cf["tool_name"]==item["tool"]);
+                                if let Some((_,res))=matched {
+                                    if res["settlement"]=="Settled" && res["is_error"]==false {
+                                        let receipt_id=res["value"]["operationId"].as_str().context("settled child operationId missing")?;
+                                        item["status"]=json!("verified");
+                                        item["host_receipt"]=json!({
+                                            "receipt_id":receipt_id,
+                                            "artifact_id":item["artifact_id"],
+                                            "task_id":item["task_id"],
+                                            "session_id":item["session_id"],
+                                            "run_id":item["run_id"],
+                                            "native_call_id":item["native_call_id"],
+                                            "input_sha256":item["input_sha256"],
+                                            "output_sha256":item["output_sha256"],
+                                            "verifier":"reach-node-host",
+                                            "verifier_version":"1",
+                                            "verified_at":verified_at,
+                                            "committed":true,
+                                            "settled":true
+                                        });
+                                        reviewed.push(item);
+                                    } else if res["settlement"]=="Unknown" {
+                                        item["status"]=json!("unknown");
+                                        reviewed.push(item);
+                                    }
+                                }
+                            }
+                            let art_file=evidence.join(format!("reach-artifacts-{run_number}.json"));
+                            let art_payload=json!({"basis":basis,"artifacts":reviewed,"taskAccepted":false});
+                            if !art_file.try_exists()? {
+                                save_new(&art_file,&art_payload)?;
+                            } else {
+                                save_new(&evidence.join(format!("reach-artifacts-{run_number}-{}.json", protocol::hash(frame["rpc_id"].as_str().unwrap_or_default().as_bytes()))),&art_payload)?;
+                            }
+                            let reply=json!({"kind":"review_artifacts_reply","version":1,"rpc_id":frame["rpc_id"],"task_id":parent.operation_id,"run_id":current_run,"artifacts":reviewed});
+                            ensure!(!*stop.1.borrow(),"Agent stopped before artifact review reply");
+                            send(&mut stdin,&reply).await?;
+                        },
                         Some("reconcile_request")=>{
+                            ensure!(execution.command["kind"]=="agent.resume", "reconcile_request is only valid for agent.resume");
                             crate::agent_resume::reconcile(ledger,api,parent,execution,root,&evidence,&frame,resume.context("unexpected resume callback")?,&mut stdin).await?;
                         },
                         Some("tool_call")=>{
@@ -582,7 +689,8 @@ pub(super) async fn run_task(
                             verified_budget=is_budget;
                             let proof=evidence.join(if is_budget{format!("reach-budget-review-{run_number}.json")}else if run_number==1{"reach-review.json".into()}else{format!("reach-review-{run_number}.json")});
                             save_new(&proof,&json!({"subjectKind":if is_budget{"closed_budget"}else{"candidate"},"subject":candidate,"candidate":if is_budget{Value::Null}else{candidate.clone()},"childOperationIds":children,"validation":"receipt integrity only; objective awaits caller review","taskAccepted":false}))?;
-                            let decision=if parent.command["maxRuns"].as_u64().unwrap_or(1)>1 {
+                            let single_run_mode=parent.command["reviewMode"].as_str()==Some("cross_process")||execution.command["kind"]=="agent.continue";
+                            let decision=if parent.command["maxRuns"].as_u64().unwrap_or(1)>1 && !single_run_mode {
                                 Some(caller_review(ledger,api,execution,control,runtime,&candidate,&children,stop.1).await?)
                             }else{None};
                             // Caller review can remain pending for minutes. Re-read original evidence after the wait.
@@ -608,7 +716,8 @@ pub(super) async fn run_task(
                             let stored:Value=serde_json::from_slice(&read(&root.join(format!("review-decision-{run_number}.json")),2*1024*1024)?)?;
                             let decision=&stored["decision"];ensure!(stored["subject"]==*previous&&stored["reply"]["receipt"]==*receipt&&decision["decision"]=="continue"&&decision["feedback"]==receipt["verdict"]["NeedsChanges"]["feedback"],"continuation feedback changed");
                             let next=decision["nextRunId"].as_str().context("next Run missing")?.to_owned();
-                            let next_objective=format!("{}\n\nCaller correction feedback for the same Task (original limits still apply):\n{}",objective,decision["feedback"].as_str().context("feedback missing")?);
+                            let base_objective=parent.command["objective"].as_str().context("objective missing")?;
+                            let next_objective=format!("{}\n\nCaller correction feedback for the same Task (original limits still apply):\n{}",base_objective,decision["feedback"].as_str().context("feedback missing")?);
                             let reply=json!({"kind":if is_budget{"prepare_budget_reply"}else{"prepare_reply"},"version":1,"rpc_id":frame["rpc_id"],"task_id":parent.operation_id,"run_id":current_run,"run_id_next":next,"objective":next_objective});
                             save_new(&root.join(format!("run-{}.json",run_number+1)),&json!({"runId":next,"runNumber":run_number+1,"previousRunId":current_run,"remainingCalls":remaining,"decision":decision,"reply":reply}))?;
                             let registered=register_run(api,execution,&next).await?;ensure!(registered["runNumber"]==run_number+1&&registered["remainingCalls"]==remaining,"continuation service budget changed");
@@ -635,6 +744,20 @@ pub(super) async fn run_task(
                                     ensure!(*budget&&index["kind"]=="closed_budget_snapshot_review"&&index["version"]==1&&index["receipt"]==*receipt&&native["last_receipt"]==*receipt,"budget review index changed");
                                     let original:Value=serde_json::from_slice(&checked_reference(&index["snapshot"],&evidence,2*1024*1024)?)?;ensure!(original==*subject,"budget terminal snapshot changed");check_budget_snapshot(&original,&evidence)?;
                                 }else{check_ordinary_basis(&native["last_candidate"]["basis"],&native["last_receipt"]["basis"],parent.command["sessionId"].as_str().context("original Session ID missing")?)?;}
+                            }
+                            let guidance_file=evidence.join("jsonl-guidance.json");
+                            if guidance_file.try_exists()? {
+                                if let Ok(gbytes)=read(&guidance_file,2*1024*1024) {
+                                    if let Ok(gdoc)=serde_json::from_slice::<Value>(&gbytes) {
+                                        if gdoc["messages"].is_array() {
+                                            let _ = api.call(
+                                                reqwest::Method::POST,
+                                                &format!("/api/v1/node/agents/{}/guidance/report", execution.operation_id),
+                                                Some(&json!({"dispatchId":execution.dispatch_id,"payloadHash":execution.payload_hash,"finalMessages":gdoc["messages"]})),
+                                            ).await;
+                                        }
+                                    }
+                                }
                             }
                             save_new(&root.join("terminal.json"),&json!({"frame":frame,"outcome":native,"childOperationIds":children}))?;
                             let status=if success{"awaiting_review"}else if incomplete{"budget_or_feedback_incomplete"}else{"reconciliation_required"};
@@ -920,10 +1043,15 @@ pub(super) fn images(ledger: &Ledger, dispatch: &Dispatch, evidence: &Path, exis
 // Morrow's legacy JSONL review omits session_id from the callback receipt,
 // while the native outcome retains it. Bind that exact ID before comparing
 // every remaining field; this does not discard unknown basis fields.
-fn check_ordinary_basis(candidate: &Value, receipt: &Value, session_id: &str) -> Result<()> {
+pub(super) fn check_ordinary_basis(candidate: &Value, receipt: &Value, session_id: &str) -> Result<()> {
+    ensure!(candidate["session_id"] == json!(session_id), "native candidate Session changed");
+    if receipt.get("session_id").is_some() {
+        ensure!(candidate == receipt, "native candidate basis differs from Host receipt");
+        return Ok(());
+    }
     let mut basis = candidate.as_object().context("native candidate basis missing")?.clone();
-    ensure!(basis.remove("session_id") == Some(json!(session_id)), "native candidate Session changed");
-    ensure!(Value::Object(basis) == *receipt, "ordinary candidate basis changed");
+    let _ = basis.remove("session_id");
+    ensure!(Value::Object(basis) == *receipt, "native candidate basis differs from Host receipt");
     Ok(())
 }
 

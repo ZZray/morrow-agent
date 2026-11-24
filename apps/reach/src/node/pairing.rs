@@ -9,16 +9,29 @@ use serde_json::{json, Value};
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct PairInput {
-    pub server: String,
+    #[serde(default)]
+    pub server: Option<String>,
     pub code: String,
     pub name: Option<String>,
     pub development: bool,
 }
 
-pub async fn pair(ledger: &mut Ledger, input: PairInput) -> Result<Value> {
-    let request_hash = protocol::hash(&serde_json::to_vec(&input)?);
-    let PairInput { server, code, name, development } = input;
+pub async fn pair(ledger: &mut Ledger, mut input: PairInput) -> Result<Value> {
     let mut identity = ledger.identity()?;
+    let resolved_server = match input.server.as_deref().map(str::trim).filter(|s| !s.is_empty()) {
+        Some(explicit) => explicit.to_owned(),
+        None => identity
+            .server
+            .clone()
+            .context("server URL is not configured; run ryreach or ryreach config set server-url first")?,
+    };
+    let development =
+        input.development || (identity.server.as_deref() == Some(resolved_server.as_str()) && identity.development);
+    let server = api::canonical_server_url(&resolved_server, development)?;
+    input.server = Some(server.clone());
+    input.development = development;
+    let request_hash = protocol::hash(&serde_json::to_vec(&input)?);
+    let PairInput { code, name, .. } = input;
     if identity.pending_pair.is_none() {
         if let Some(receipt) = ledger.pair_receipt(&request_hash)? {
             let mut summary = ledger.summary()?;
@@ -51,7 +64,7 @@ pub async fn pair(ledger: &mut Ledger, input: PairInput) -> Result<Value> {
         let mut secret = [0u8; 32];
         getrandom::fill(&mut secret).map_err(|_| anyhow::anyhow!("random source failed"))?;
         let platform = if cfg!(target_os = "macos") { "darwin" } else { std::env::consts::OS };
-        let input = json!({"attemptId":protocol::id(),"code":code,"installationId":identity.installation_id,"installationSecret":URL_SAFE_NO_PAD.encode(secret),"name":name,"platform":platform,"version":env!("CARGO_PKG_VERSION")});
+        let input = json!({"attemptId":protocol::id(),"code":code,"installationId":identity.installation_id,"installationSecret":URL_SAFE_NO_PAD.encode(secret),"name":name,"platform":platform,"version":env!("REACH_COMPILED_VERSION")});
         // Validate the network destination before saving a pending attempt.
         api::Api::new(&server, &identity.secret, development)?;
         identity.pending_pair =
@@ -86,6 +99,9 @@ pub async fn pair(ledger: &mut Ledger, input: PairInput) -> Result<Value> {
     identity.pending_pair = None;
     identity.last_pair = Some(json!({"requestHash":request_hash,"nodeId":identity.node_id,"epoch":identity.epoch}));
     let receipt = ledger.complete_pair(&identity, &request_hash)?;
+    if let Some(nid) = identity.node_id.as_deref() {
+        let _ = crate::ssh::revoke_superseded_epochs(&ledger.root, nid, identity.epoch);
+    }
     let mut summary = ledger.summary()?;
     summary["pairingReceipt"] = receipt;
     summary["pairingReplay"] = Value::Bool(false);
