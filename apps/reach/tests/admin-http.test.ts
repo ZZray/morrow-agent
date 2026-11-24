@@ -14,7 +14,7 @@ test('built management assets have restrictive headers; arbitrary paths and prot
   const address = server.address(); assert.ok(address && typeof address !== 'string');
   const base = `http://127.0.0.1:${address.port}`;
   try {
-    for (const [path, type, marker] of [['/', 'text/html', 'lang="zh-CN"'], ['/assets/admin.js', 'text/javascript', 'createElement'], ['/assets/artifacts.js', 'text/javascript', 'ArtifactReader'], ['/assets/admin.css', 'text/css', 'focus-visible'], ['/assets/reach.svg', 'image/svg+xml', 'viewBox="0 0 512 512"']]) {
+    for (const [path, type, marker] of [['/', 'text/html', 'lang="zh-CN"'], ['/assets/admin.js', 'text/javascript', 'createElement'], ['/assets/artifacts.js', 'text/javascript', 'ArtifactReader'], ['/assets/admin.css', 'text/css', 'focus-visible'], ['/assets/reach.svg', 'image/svg+xml', 'viewBox="0 0 256 256"'], ['/assets/outfit.ttf', 'font/ttf', '']]) {
       const response = await fetch(base + path);
       assert.equal(response.status, 200); assert.ok(response.headers.get('content-type')?.startsWith(type));
       assert.match(response.headers.get('content-security-policy')!, /frame-ancestors 'none'/);

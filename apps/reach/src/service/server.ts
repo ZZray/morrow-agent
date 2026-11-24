@@ -13,8 +13,11 @@ import type { DeskExtension } from './desk-extension.ts';
 import { deskDevices } from './desk-devices.ts';
 import type {AgentModelBroker} from './agent-model.ts';
 import {modelBindingSchema} from './agent-model-store.ts';
+import { readReleases } from './releases.ts';
+import { computeStats } from './stats.ts';
+import { PinLogin, DEFAULT_PIN } from './pin-login.ts';
 
-interface Options { store: ReachStore; publicOrigin: string; cookiePath?: string; rayLogin?: RayLoginBridge; desk?: DeskExtension; agentModel?:AgentModelBroker; allowInsecureLoopback?: boolean; trustedProxyAddresses?: string[] }
+interface Options { store: ReachStore; publicOrigin: string; releaseManifest?: string; pin?: { initial?: string; reset?: boolean }; pinOnly?: boolean; cookiePath?: string; rayLogin?: RayLoginBridge; desk?: DeskExtension; agentModel?:AgentModelBroker; allowInsecureLoopback?: boolean; trustedProxyAddresses?: string[] }
 const loginSchema = z.strictObject({ username: z.string().min(1).max(128), password: z.string().min(1).max(1024) });
 const jsonHeaders = { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff', 'referrer-policy': 'no-referrer', 'content-security-policy': "default-src 'none'; frame-ancestors 'none'" };
 function send(response: ServerResponse, status: number, data: unknown, headers: Record<string, string | string[]> = {}) {
@@ -60,6 +63,7 @@ export function reachServer(options: Options) {
   const { store } = options;
   options.desk?.bindDevices?.(userId=>deskDevices(store,userId));
   const rate = new RateLimit();
+  const pin = new PinLogin(store, options.pin?.initial ?? DEFAULT_PIN, options.pin?.reset ?? false, options.pinOnly);
   const secure = origin.protocol === 'https:';
   const cookiePath = options.cookiePath ?? '/';
   requireCondition(['/', '/reach/'].includes(cookiePath), 500, 'invalid_cookie_path', 'Cookie path must be / or /reach/');
@@ -100,6 +104,7 @@ export function reachServer(options: Options) {
       if (await serveAdmin(route, method, response, !!options.rayLogin, !!options.desk)) return;
       if (method === 'GET' && route === '/healthz') return send(response, 200, { service: 'Reach', version: '0.1.0-dev.1', protocol: 1 });
       if (method === 'POST' && route === '/api/v1/auth/ray') {
+        requireCondition(!options.pinOnly, 404, 'not_found', '接口不存在');
         requireCondition(options.rayLogin && request.socket.remoteAddress === '127.0.0.1' && !request.headers.origin, 401, 'ray_bridge_required', '需要可信 Ray 登录入口');
         const signed = z.strictObject({ assertion: z.string().max(4096) }).parse(await body(request));
         const identity = options.rayLogin.consume(signed.assertion);
@@ -119,13 +124,22 @@ export function reachServer(options: Options) {
       }
       if (method === 'GET' && route === '/api/v1/protocol') { actor(request); return send(response, 200, protocolDocument()); }
       if (method === 'POST' && route === '/api/v1/auth/login') {
+        requireCondition(!options.pinOnly, 404, 'not_found', '接口不存在');
         requireCondition(!request.headers.origin || request.headers.origin === origin.origin, 403, 'origin_rejected', '登录来源不匹配');
         rate.take(`login:${clientAddress(request)}`);
         const input = loginSchema.parse(await body(request));
         const result = store.login(input.username, input.password);
         return send(response, 200, result, { 'set-cookie': sessionCookies(result.token, 43200) });
       }
-      if (method === 'GET' && route === '/api/v1/auth/me') { const user = actor(request); return send(response, 200, { id: user.id, username: user.username, csrf: user.csrf }); }
+      if (method === 'POST' && route === '/api/v1/auth/pin') {
+        requireCondition(!request.headers.origin || request.headers.origin === origin.origin, 403, 'origin_rejected', '登录来源不匹配');
+        rate.take(`pin:${clientAddress(request)}`);
+        const input = z.strictObject({ pin: z.string().max(64) }).parse(await body(request));
+        const result = pin.login(input.pin);
+        return send(response, 200, { ...result, pinIsDefault: pin.isDefault(result.user.id) }, { 'set-cookie': sessionCookies(result.token, 43200) });
+      }
+      if (method === 'POST' && route === '/api/v1/auth/pin/change') { const user = actor(request, true); return send(response, 200, pin.change(user.id, await body(request))); }
+      if (method === 'GET' && route === '/api/v1/auth/me') { const user = actor(request); return send(response, 200, { id: user.id, username: user.username, csrf: user.csrf, pinIsDefault: pin.isDefault(user.id) }); }
       if(route==='/api/v1/library'&&method==='POST'){const user=actor(request,true);return send(response,200,store.library.propose(user.id,await body(request)));}
       if(route==='/api/v1/library'&&method==='GET'){const user=actor(request);return send(response,200,store.library.list(user.id,{nodeId:url.searchParams.get('nodeId'),epoch:Number(url.searchParams.get('epoch')),state:url.searchParams.get('state')??'adopted'}));}
       const library=route.match(/^\/api\/v1\/library\/([^/]+)(?:\/(source|validate|review))?$/);
@@ -170,12 +184,15 @@ export function reachServer(options: Options) {
         if(closure&&method==='POST')return send(response,200,store.closures.snapshot(node,identifier.parse(closure[1]),await body(request)));
         const agent=route.match(/^\/api\/v1\/node\/agents\/([^/]+)\/calls$/);
         if(agent&&method==='POST')return send(response,200,store.agents.create(node,identifier.parse(agent[1]),await body(request)));
+        if (method === 'POST' && route === '/api/v1/node/heartbeat') {
+          return send(response, 200, store.nodeRuntime.recordHeartbeat(node, await body(request)));
+        }
         if (method === 'POST' && route === '/api/v1/node/poll') {
           const input = nodeHelloSchema.parse(await body(request));
           store.hello(node, input.version, input.capabilities);
           store.observeStaleClaims();
-          // The initial protocol uses bounded short polls. Never repeat a claim.
-          return send(response, 200, { operation: store.claim(node), pollAfterMs: 1000 });
+          // Immediate control polling is decoupled from minute-level status heartbeats.
+          return send(response, 200, { operation: store.claim(node), pollAfterMs: 1000, desiredConfig: store.nodeRuntime.desiredForNode(node) });
         }
         if (method === 'GET' && route === '/api/v1/node/pending') return send(response, 200, { revoked: !!node.revoked, operations: store.pending(node) });
         if (method === 'GET' && route.startsWith('/api/v1/node/control/')) return send(response, 200, { revoked: !!node.revoked, operation: store.control(node, identifier.parse(route.slice('/api/v1/node/control/'.length))) });
@@ -184,8 +201,18 @@ export function reachServer(options: Options) {
       }
       if (method === 'GET' && route === '/api/v1/nodes') return send(response, 200, { nodes: store.nodes(actor(request).id) });
       if (method === 'GET' && route === '/api/v1/overview') return send(response, 200, store.overview(actor(request).id));
+      if (method === 'GET' && route === '/api/v1/device-events') return send(response, 200, store.deviceEvents.list(actor(request).id, Object.fromEntries(url.searchParams)));
+      if (method === 'POST' && route === '/api/v1/device-events/read') { const user = actor(request, true); return send(response, 200, store.deviceEvents.markRead(user.id, await body(request))); }
+      if (method === 'GET' && route === '/api/v1/stats') return send(response, 200, computeStats(store, actor(request).id, Object.fromEntries(url.searchParams)));
+      if (method === 'GET' && route === '/api/v1/releases') { actor(request); return send(response, 200, await readReleases(options.releaseManifest)); }
       const revoke = route.match(/^\/api\/v1\/nodes\/([^/]+)\/unpair$/);
       if (method === 'POST' && revoke) { store.revoke(actor(request, true).id, identifier.parse(revoke[1])); return send(response, 200, { unpaired: true }); }
+      const nodeRuntimeRoute = route.match(/^\/api\/v1\/nodes\/([^/]+)\/(runtime|config)$/);
+      if (nodeRuntimeRoute) {
+        const user = actor(request, method !== 'GET'), nodeId = identifier.parse(nodeRuntimeRoute[1]);
+        if (method === 'GET' && nodeRuntimeRoute[2] === 'runtime') return send(response, 200, store.nodeRuntime.readRuntime(user.id, nodeId));
+        if (method === 'POST' && nodeRuntimeRoute[2] === 'config') return send(response, 200, store.nodeRuntime.updateConfig(user.id, nodeId, await body(request)));
+      }
       if (method === 'POST' && route === '/api/v1/operations') {
         const user = actor(request, true);
         const input = submitSchema.parse(await body(request));

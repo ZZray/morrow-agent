@@ -11,13 +11,14 @@ import {agentModelFromEnvironment} from './agent-model.ts';
 export function startReach(desk?: DeskExtension) {
   const host=process.env.REACH_LISTEN_HOST??'127.0.0.1',port=Number(process.env.REACH_PORT??'18910');
   if(!Number.isInteger(port)||port<(process.env.REACH_DEVELOPMENT==='1'?0:1)||port>65535)throw Error('Invalid REACH_PORT');
+  const pinOnly=process.env.REACH_PIN_ONLY==='1';
   const publicOrigin=process.env.REACH_PUBLIC_ORIGIN??`http://127.0.0.1:${port}`,agentModel=agentModelFromEnvironment(process.env);
   let store:ReachStore|undefined,rayLogin:RayLoginBridge|undefined,server:ReturnType<typeof reachServer>|undefined,detachSignals:(()=>void)|undefined;
   try{
     store=new ReachStore(resolve(process.env.REACH_DATA_DIR??'work/service','reach.sqlite'));
-    if(process.env.REACH_BOOTSTRAP_USERNAME&&process.env.REACH_BOOTSTRAP_PASSWORD){try{store.bootstrap(process.env.REACH_BOOTSTRAP_USERNAME,process.env.REACH_BOOTSTRAP_PASSWORD);}finally{delete process.env.REACH_BOOTSTRAP_PASSWORD;}}
-    rayLogin=process.env.REACH_RAY_SSO_KEY_FILE?new RayLoginBridge(readFileSync(process.env.REACH_RAY_SSO_KEY_FILE),process.env.REACH_RAY_USERNAME??'ray',resolve(process.env.REACH_DATA_DIR??'work/service','ray-auth.sqlite')):undefined;
-    server=reachServer({store,publicOrigin,cookiePath:process.env.REACH_COOKIE_PATH,rayLogin,desk,agentModel,allowInsecureLoopback:process.env.REACH_DEVELOPMENT==='1',trustedProxyAddresses:process.env.REACH_TRUSTED_PROXY_ADDRESSES?.split(',').map(v=>v.trim()).filter(Boolean)});
+    if(!pinOnly&&process.env.REACH_BOOTSTRAP_USERNAME&&process.env.REACH_BOOTSTRAP_PASSWORD){try{store.bootstrap(process.env.REACH_BOOTSTRAP_USERNAME,process.env.REACH_BOOTSTRAP_PASSWORD);}finally{delete process.env.REACH_BOOTSTRAP_PASSWORD;}}
+    rayLogin=!pinOnly&&process.env.REACH_RAY_SSO_KEY_FILE?new RayLoginBridge(readFileSync(process.env.REACH_RAY_SSO_KEY_FILE),process.env.REACH_RAY_USERNAME??'ray',resolve(process.env.REACH_DATA_DIR??'work/service','ray-auth.sqlite')):undefined;
+    server=reachServer({store,publicOrigin,pinOnly,releaseManifest:process.env.REACH_RELEASE_MANIFEST,pin:{initial:process.env.REACH_PIN||undefined,reset:process.env.REACH_PIN_RESET==='1'},cookiePath:process.env.REACH_COOKIE_PATH,rayLogin,desk,agentModel,allowInsecureLoopback:process.env.REACH_DEVELOPMENT==='1',trustedProxyAddresses:process.env.REACH_TRUSTED_PROXY_ADDRESSES?.split(',').map(v=>v.trim()).filter(Boolean)});
     const runtime=server;
     const signalStop=()=>{void runtime.shutdown().then(()=>process.exit(0),()=>process.exit(1));};
     for(const signal of ['SIGINT','SIGTERM']as const)process.once(signal,signalStop);

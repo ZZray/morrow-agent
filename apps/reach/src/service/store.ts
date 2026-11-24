@@ -15,6 +15,8 @@ import {AgentResumes} from './agent-resumes.ts';
 import {AgentFinalizations} from './agent-finalizations.ts';
 import {AgentClosures} from './agent-closures.ts';
 import {SourceLibrary} from './source-library.ts';
+import {NodeRuntimeStore} from './node-runtime-store.ts';
+import {DeviceEvents} from './device-events.ts';
 
 export const sha256 = (value: string) => createHash('sha256').update(value).digest('hex');
 function canonical(value: unknown): string {
@@ -48,6 +50,8 @@ export class ReachStore {
   readonly finalizations:AgentFinalizations;
   readonly closures:AgentClosures;
   readonly library:SourceLibrary;
+  readonly nodeRuntime:NodeRuntimeStore;
+  readonly deviceEvents:DeviceEvents;
   readonly owner:ServiceOwner;
   private closed=false;
   private broker?:{identity:object;closed:()=>boolean};
@@ -103,6 +107,8 @@ export class ReachStore {
       CREATE TABLE IF NOT EXISTS source_library_reviews(id TEXT PRIMARY KEY,user_id TEXT NOT NULL REFERENCES users(id),request_id TEXT NOT NULL,request_sha256 TEXT NOT NULL,entry_id TEXT NOT NULL REFERENCES source_library(id),version_sha256 TEXT NOT NULL,decision TEXT NOT NULL CHECK(decision IN ('adopt','revoke')),validation_id TEXT REFERENCES source_library_validations(id),reason TEXT NOT NULL,created_at INTEGER NOT NULL,UNIQUE(user_id,request_id));
       CREATE TABLE IF NOT EXISTS source_library_uses(task_id TEXT NOT NULL REFERENCES agent_tasks(root_id),entry_id TEXT NOT NULL REFERENCES source_library(id),version_sha256 TEXT NOT NULL,stage TEXT NOT NULL CHECK(stage IN ('candidate','adopted')),source_id TEXT NOT NULL,PRIMARY KEY(task_id,source_id));
       CREATE TABLE IF NOT EXISTS agent_native_closures(operation_id TEXT PRIMARY KEY REFERENCES operations(id),event_id TEXT NOT NULL,proof_sha256 TEXT NOT NULL,at INTEGER NOT NULL,FOREIGN KEY(operation_id,event_id) REFERENCES operation_events(operation_id,event_id) DEFERRABLE INITIALLY DEFERRED);
+      CREATE TABLE IF NOT EXISTS node_runtime(node_id TEXT PRIMARY KEY REFERENCES nodes(id),epoch INTEGER NOT NULL,last_heartbeat_at INTEGER,effective_heartbeat_seconds INTEGER NOT NULL DEFAULT 60,effective_config_version INTEGER NOT NULL DEFAULT 0,resident_state TEXT NOT NULL DEFAULT 'connected',ssh_status_json TEXT,updated_at INTEGER NOT NULL);
+      CREATE TABLE IF NOT EXISTS node_config_requests(node_id TEXT NOT NULL REFERENCES nodes(id),epoch INTEGER NOT NULL,target_version INTEGER NOT NULL,request_id TEXT NOT NULL,user_id TEXT NOT NULL REFERENCES users(id),heartbeat_seconds INTEGER NOT NULL,status TEXT NOT NULL CHECK(status IN ('pending','applied','rejected')),receipt_json TEXT,created_at INTEGER NOT NULL,settled_at INTEGER,PRIMARY KEY(node_id,epoch,target_version),UNIQUE(user_id,request_id));
       `);
     this.agents=new AgentCalls(this);
     this.models=new AgentModels(this);
@@ -113,6 +119,8 @@ export class ReachStore {
     this.finalizations=new AgentFinalizations(this);
     this.closures=new AgentClosures(this);
     this.library=new SourceLibrary(this);
+    this.nodeRuntime=new NodeRuntimeStore(this);
+    this.deviceEvents=new DeviceEvents(this);
     if(version.user_version<8)this.db.exec('INSERT OR IGNORE INTO agent_runs SELECT DISTINCT parent_id,run_id FROM agent_calls');
     this.budgets.migrate(version.user_version);
     this.executions.migrate(version.user_version);
@@ -173,6 +181,12 @@ export class ReachStore {
       this.audit(user.id, 'session.ray', sessionHash);
       return session;
     });
+  }
+  // PIN 登录等已在边界完成认证的入口，用账户 ID 签发普通 12 小时会话。
+  issueSession(userId: string) {
+    const user = this.db.prepare('SELECT id, username FROM users WHERE id=?').get(userId) as unknown as User | undefined;
+    requireCondition(user, 401, 'authentication_required', '账户不存在');
+    return this.createSession(user, this.now() + 12 * 60 * 60 * 1000);
   }
   private createSession(user: User, expiresAt: number, token = secret()) {
     const csrf = secret();
@@ -241,7 +255,7 @@ export class ReachStore {
     return row;
   }
   nodes(userId: string) {
-    return (this.db.prepare('SELECT id,name,platform,version,epoch,last_seen,revoked,capabilities FROM nodes WHERE user_id=? ORDER BY name').all(userId)).map(row => ({ ...row, capabilities: JSON.parse(row.capabilities as string), online: !row.revoked && row.last_seen !== null && this.now() - Number(row.last_seen) < 30000 }));
+    return (this.db.prepare('SELECT id,name,platform,version,epoch,last_seen,revoked,capabilities FROM nodes WHERE user_id=? ORDER BY name').all(userId)).map(row => this.nodeRuntime.enrichNodeSummary(row as unknown as Record<string, unknown>));
   }
   revoke(userId: string, id: string) {
     return this.transaction(() => {
@@ -254,7 +268,10 @@ export class ReachStore {
     });
   }
   hello(node: NodeRow, version: string, capabilities: string[]) {
-    this.db.prepare('UPDATE nodes SET last_seen=?,version=?,capabilities=? WHERE id=? AND epoch=? AND revoked=0').run(this.now(), version, JSON.stringify([...new Set(capabilities)]), node.id, node.epoch);
+    this.transaction(() => {
+      this.deviceEvents.observeContact(node, capabilities);
+      this.db.prepare('UPDATE nodes SET last_seen=?,version=?,capabilities=? WHERE id=? AND epoch=? AND revoked=0').run(this.now(), version, JSON.stringify([...new Set(capabilities)]), node.id, node.epoch);
+    });
   }
   submit(userId: string, requestId: string, nodeId: string, command: Command, expectedEpoch?:number) {
     return this.transaction(() => {

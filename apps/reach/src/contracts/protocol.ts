@@ -48,12 +48,42 @@ export const delegateSchema=z.strictObject({kind:z.literal('agent.delegate'),ses
 export const resumeSchema=z.strictObject({kind:z.literal('agent.resume'),rootOperationId:identifier,previousExecutionId:identifier,fenceSha256:z.string().regex(/^[a-f0-9]{64}$/),instruction:z.string().min(1).max(16000).refine(v=>v.trim().length>0&&!/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/u.test(v),'Expected original well-formed recovery instruction')});
 export const agentInspectSchema=z.strictObject({kind:z.literal('agent.inspect'),rootOperationId:identifier});
 export const agentFinalizeSchema=z.strictObject({kind:z.literal('agent.finalize'),rootOperationId:identifier,previousExecutionId:identifier,sourceExecutionId:identifier,releasedSha256:z.string().regex(/^[a-f0-9]{64}$/)});
-export const commandSchema=z.discriminatedUnion('kind',[...basicCommandSchema.options,delegateSchema,resumeSchema,agentInspectSchema,agentFinalizeSchema]);
+export const sshStatusCommandSchema = z.strictObject({ kind: z.literal('ssh.status') });
+export const commandSchema=z.discriminatedUnion('kind',[...basicCommandSchema.options,delegateSchema,resumeSchema,agentInspectSchema,agentFinalizeSchema,sshStatusCommandSchema]);
 export const delegatedCallSchema=z.strictObject({dispatchId:identifier,payloadHash:z.string().regex(/^[a-f0-9]{64}$/),runId:identifier,callId:z.string().min(1).max(256),tool:z.literal('reach_execute'),argsSha256:z.string().regex(/^[a-f0-9]{64}$/),argumentsJson:z.string().max(1048576).refine(validDesktopArguments,'Expected original finite tool arguments')});
 export type Command = z.infer<typeof commandSchema>;
 export const submitSchema = z.strictObject({ requestId: identifier, nodeId: identifier, command: commandSchema });
 export const pairingSchema = z.strictObject({ attemptId: identifier, code: z.string().min(8).max(32), installationId: identifier, installationSecret: z.string().regex(/^[A-Za-z0-9_-]{43}$/), name: z.string().min(1).max(128), platform: z.enum(['windows', 'linux', 'darwin']), version: z.string().min(1).max(64) });
 export const nodeHelloSchema = z.strictObject({ version: z.string().min(1).max(64), capabilities: z.array(z.string().min(1).max(128)).max(128) });
+export const nodeSshStatusSchema = z.strictObject({
+  ready: z.boolean(),
+  port: z.number().int().min(1).max(65535).optional(),
+  user: z.string().min(1).max(128).optional(),
+  hostKey: z.string().min(1).max(512).optional(),
+  sharedAdminKeys: z.boolean().optional(),
+  error: z.string().max(2048).nullable().optional(),
+});
+export const nodeConfigReceiptSchema = z.strictObject({
+  requestId: identifier,
+  targetVersion: z.number().int().min(1).max(Number.MAX_SAFE_INTEGER),
+  status: z.enum(['applied', 'rejected']),
+  effectiveHeartbeatSeconds: z.number().int().min(30).max(3600),
+  appliedAt: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
+  error: z.string().max(2048).nullable(),
+});
+export const nodeHeartbeatSchema = z.strictObject({
+  version: z.string().min(1).max(64),
+  residentState: z.enum(['connecting', 'connected', 'offline_backoff', 'auth_or_config_error']),
+  capabilities: z.array(z.string().min(1).max(128)).max(128),
+  effectiveHeartbeatSeconds: z.number().int().min(30).max(3600),
+  effectiveConfigVersion: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
+  sshStatus: nodeSshStatusSchema.nullable().optional(),
+  configReceipt: nodeConfigReceiptSchema.nullable().optional(),
+});
+export const nodeConfigUpdateSchema = z.strictObject({
+  requestId: identifier,
+  heartbeatIntervalSeconds: z.number().int().min(30).max(3600),
+});
 export const operationEventSchema = z.strictObject({
   eventId: identifier,
   operationId: identifier,

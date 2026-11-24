@@ -11,7 +11,10 @@ import {libraryListSchema,libraryProposalSchema,librarySourceSchema,libraryValid
 const empty = z.strictObject({});
 const operation = z.strictObject({ operationId: identifier });
 const libraryEntry=z.strictObject({entryId:identifier});
+import { nodeConfigMcpInputSchema } from '../service/node-runtime-store.ts';
 const definitions = [
+  { name: 'reach_node_runtime', description: 'Read a paired Reach Node runtime state, last minute-level heartbeat timestamp, effective heartbeat interval, config version, and pending/settled remote config history.', schema: z.strictObject({ nodeId: identifier }), readOnly: true },
+  { name: 'reach_node_config', description: 'Remotely adjust a paired Reach Node minute-level heartbeat interval (30..3600s) with idempotent requestId tracking. Remains pending until the Node applies and acknowledges it.', schema: nodeConfigMcpInputSchema, readOnly: false },
   { name: 'reach_nodes', description: 'List paired Reach machines and their actual connectivity and implemented capabilities.', schema: empty, readOnly: true },
   { name: 'reach_protocol', description: 'Read versioned command and receipt schemas for this Reach service.', schema: empty, readOnly: true },
   {name:'reach_library_list',description:'List metadata of adopted device-scoped sources by default. No automatic Task injection. Explicit state selects unadopted candidates or revoked history.',schema:libraryListSchema,readOnly:true},
@@ -40,6 +43,8 @@ export async function invoke(client: ReachClient, name: string, args: unknown) {
   if (!definition) throw new Error('Unknown Reach tool');
   const input: any = definition.schema.parse(args ?? {});
   switch (name) {
+    case 'reach_node_runtime': return client.request(`/api/v1/nodes/${input.nodeId}/runtime`);
+    case 'reach_node_config': { const { nodeId, ...cfgBody } = input; return client.request(`/api/v1/nodes/${nodeId}/config`, 'POST', cfgBody); }
     case 'reach_nodes': return client.request('/api/v1/nodes');
     case 'reach_protocol': return client.request('/api/v1/protocol');
     case 'reach_library_list':return client.request(`/api/v1/library?${new URLSearchParams({nodeId:input.nodeId,epoch:String(input.epoch),state:input.state})}`);

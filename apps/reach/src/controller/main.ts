@@ -9,10 +9,17 @@ import { serveMcp } from './mcp.ts';
 import { downloadArtifact, readArtifactRange } from './artifacts.ts';
 
 async function main() {
-  const { values, positionals } = parseArgs({ allowPositionals: true, options: { server: { type: 'string' }, username: { type: 'string' }, development: { type: 'boolean', default: false }, after: { type: 'string', default: '0' }, limit: { type: 'string', default: '64' }, output: { type: 'string' }, offset: { type: 'string', default: '0' }, length: { type: 'string', default: '65536' } } });
+  const { values, positionals } = parseArgs({ allowPositionals: true, options: { server: { type: 'string' }, username: { type: 'string' }, pin: { type: 'boolean', default: false }, development: { type: 'boolean', default: false }, after: { type: 'string', default: '0' }, limit: { type: 'string', default: '64' }, output: { type: 'string' }, offset: { type: 'string', default: '0' }, length: { type: 'string', default: '65536' } } });
   const [command, argument] = positionals;
   const print = (value: unknown) => process.stdout.write(JSON.stringify(value, null, 2) + '\n');
   if (command === 'request-id') { print({ requestId: randomUUID() }); return; }
+  if (command === 'login' && values.pin) {
+    // 与网页控制台同一个 PIN、同一账户；PIN 只从环境变量读取，不出现在命令行历史里。
+    if (!values.server || !process.env.REACH_PIN) throw new Error('login --pin requires --server and REACH_PIN in the process environment');
+    const config = { server: validateOrigin(values.server, values.development), token: '', development: values.development };
+    const response = await new ReachClient(config).request('/api/v1/auth/pin', 'POST', { pin: process.env.REACH_PIN });
+    saveConfig({ ...config, token: response.token }); print({ loggedIn: true, server: config.server }); return;
+  }
   if (command === 'login') {
     if (!values.server || !values.username || !process.env.REACH_PASSWORD) throw new Error('login requires --server, --username and REACH_PASSWORD in the process environment');
     const config = { server: validateOrigin(values.server, values.development), token: '', development: values.development };
@@ -20,7 +27,7 @@ async function main() {
     saveConfig({ ...config, token: response.token }); print({ loggedIn: true, server: config.server }); return;
   }
   if (!command || command === 'help') {
-    process.stdout.write('Reach controller: login --server ORIGIN --username NAME [--development] (REACH_PASSWORD env), logout, nodes, pair-code, protocol, request-id, call INPUT.json, operation ID, agent-task ID, agent-reviews ID, agent-review INPUT.json, agent-models ID, agent-model-stop INPUT.json, events ID [--after N], artifacts OPERATION_ID, artifact OPERATION_ID ARTIFACT_ID --output NEW_FILE, artifact-range OPERATION_ID ARTIFACT_ID [--offset N --length N], cancel ID, unpair NODE_ID, reconcile INPUT.json, library-list/read/source/propose/validate/review INPUT.json, mcp\n'); return;
+    process.stdout.write('Reach controller: login --server ORIGIN --pin [--development] (REACH_PIN env), login --server ORIGIN --username NAME (REACH_PASSWORD env), logout, nodes, pair-code, protocol, request-id, call INPUT.json, operation ID, agent-task ID, agent-reviews ID, agent-review INPUT.json, agent-models ID, agent-model-stop INPUT.json, events ID [--after N], artifacts OPERATION_ID, artifact OPERATION_ID ARTIFACT_ID --output NEW_FILE, artifact-range OPERATION_ID ARTIFACT_ID [--offset N --length N], cancel ID, unpair NODE_ID, reconcile INPUT.json, library-list/read/source/propose/validate/review INPUT.json, mcp\n'); return;
   }
   const directory = controllerDirectory(); const client = new ReachClient(loadConfig(directory), directory);
   switch (command) {

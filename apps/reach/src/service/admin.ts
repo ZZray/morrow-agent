@@ -5,7 +5,11 @@ const assets = new Map([
   ['/', { path: new URL('../admin/index.html', import.meta.url), type: 'text/html; charset=utf-8' }],
   ['/assets/admin.css', { path: new URL('../admin/admin.css', import.meta.url), type: 'text/css; charset=utf-8' }],
   ['/assets/admin.js', { path: new URL('../../dist/admin/admin.js', import.meta.url), type: 'text/javascript; charset=utf-8' }],
+  ['/assets/model.js', { path: new URL('../../dist/admin/model.js', import.meta.url), type: 'text/javascript; charset=utf-8' }],
+  ['/assets/charts.js', { path: new URL('../../dist/admin/charts.js', import.meta.url), type: 'text/javascript; charset=utf-8' }],
+  ['/assets/theme.js', { path: new URL('../../dist/admin/theme.js', import.meta.url), type: 'text/javascript; charset=utf-8' }],
   ['/assets/artifacts.js', { path: new URL('../../dist/admin/artifacts.js', import.meta.url), type: 'text/javascript; charset=utf-8' }],
+  ['/assets/outfit.ttf', { path: new URL('../../assets/fonts/Outfit-wght.ttf', import.meta.url), type: 'font/ttf' }],
   ['/assets/reach.svg', { path: new URL('../../assets/brand/reach.svg', import.meta.url), type: 'image/svg+xml' }],
 ]);
 export async function serveAdmin(route: string, method: string, response: ServerResponse, rayLogin = false, desk = false) {
@@ -19,7 +23,7 @@ export async function serveAdmin(route: string, method: string, response: Server
   response.writeHead(200, {
     'content-type': asset.type, 'content-length': content.length, 'cache-control': 'no-store',
     'x-content-type-options': 'nosniff', 'referrer-policy': 'no-referrer',
-    'content-security-policy': "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
+    'content-security-policy': "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' blob:; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
   });
   response.end(method === 'HEAD' ? undefined : content);
   return true;
