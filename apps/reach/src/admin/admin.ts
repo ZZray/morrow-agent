@@ -171,7 +171,7 @@ function showLogin(reason = '') {
       await enterConsole();
     } catch (error) { input.value = ''; input.focus(); throw error; }
   }); });
-  card.append(brand(), el('h1', '', '输入 PIN'), el('p', 'hint', '连续输错 3 次会锁定 1 小时。'), notice, form, el('footer', '', '忘记 PIN：在服务器上设置 REACH_PIN_RESET=1 重启服务即可重置'));
+  card.append(brand(), el('h1', '', '输入 PIN'), el('p', 'hint', '连续输错 3 次会锁定 1 小时。'), notice, form, el('footer', '', '忘记 PIN？请联系 Reach 管理员。'));
   if (reason) message(reason, 'warn');
   input.focus();
 }
