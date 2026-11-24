@@ -57,3 +57,9 @@
 Reach 由独立的 systemd 服务绑定 `127.0.0.1:18910`。Nginx 的 Reach 路由去掉一次 `/reach/` 前缀，只向上游发送 Reach 会话 Cookie。本实例使用独立 SQLite 数据目录。`/reach/` 的实际上线结果和证据按发布记录核对。
 
 冻结发布快照的 TypeScript 检查、Web 26 项和服务 11 项测试通过。接入文件包括心跳和配置 API、设备通知、统计、发行清单、PIN 及 MCP 的运行时与心跳配置工具。下载页按服务端发行清单显示状态。
+
+## Worker 下载与安装
+
+下载页读取 `/opt/reach/current/deploy/nmrkit-releases.json`，展示 0.1.3 Windows x64 预览包。Reach 同域镜像是网页主下载源，GitHub 提供同一文件。镜像目录公开提供安装包、Ed25519 更新清单和分离签名。Gitee 发行附件待发布。Windows 自动更新仍使用 GitHub 和 Gitee 两个来源。
+
+新装完成后，在 Worker 的服务端地址弹窗中填写 `https://nmrkit.ciqtek.com/reach`，结尾不带斜杠。下载页提供地址和复制按钮。安装完成后从设备页生成配对码，在 Windows 运行页面给出的命令。已有安装可用 `ryreach config set server-url` 更新地址。

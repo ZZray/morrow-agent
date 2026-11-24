@@ -1,0 +1,30 @@
+{
+  "releases": [
+    {
+      "version": "0.1.3",
+      "tag": "reach-v0.1.3",
+      "publishedAt": 1795498823000,
+      "notes": "0.1.3 预览版。Ed25519 更新清单绑定安装包 SHA-256。Windows 代码签名待发布。",
+      "assets": [
+        {
+          "name": "Reach-Node-Setup-x64.exe",
+          "kind": "node",
+          "arch": "x64",
+          "bytes": 16691200,
+          "sha256": "14dfc49356f78e1e7421818a88b988f264e769b13cadbb9347fcc6a2fbbcb8cc",
+          "signed": true,
+          "sources": [
+            {
+              "kind": "reach",
+              "url": "https://nmrkit.ciqtek.com/reach/downloads/reach-v0.1.3/Reach-Node-Setup-x64.exe"
+            },
+            {
+              "kind": "github",
+              "url": "https://github.com/ZZray/morrow-agent/releases/download/reach-v0.1.3/Reach-Node-Setup-x64.exe"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -4,6 +4,14 @@ location = /reach {
     return 308 /reach/$is_args$args;
 }
 
+location ^~ /reach/downloads/ {
+    if ($host != nmrkit.ciqtek.com) { return 404; }
+    alias /srv/reach-downloads/;
+    autoindex off;
+    disable_symlinks on from=/srv/reach-downloads/;
+    default_type application/octet-stream;
+}
+
 location ^~ /reach/ {
     if ($host != nmrkit.ciqtek.com) { return 404; }
     proxy_pass http://127.0.0.1:18910/;

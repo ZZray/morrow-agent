@@ -371,8 +371,7 @@ function firstDeviceEmpty() {
   const grid = el('div', 'grid');
   const card = el('section', 'card s8'); card.append(cardHead('让第一台设备连过来'));
   card.append(el('p', 'dl-lead', '在目标 Windows 上装好 Reach 后，生成一次性配对码并在那台设备上运行配对命令。首次上报能力后，它会在这里显示为在线，并生成上线通知。'));
-  const steps = el('ol', 'steps');
-  for (const step of ['下载并运行 Windows 安装包，服务会自动注册并启动。', '首次运行 ryreach 时填写本服务地址（安装器已预配置则跳过）。', '在这里生成配对码，到那台设备上运行配对命令。']) steps.append(el('li', '', step));
+  const steps = workerInstallSteps();
   const actions = el('div', 'page-actions'); actions.append(button('生成配对码', () => openPairing(null), 'btn primary', 'plus'), arrowLinkText({ page: 'downloads' }, '去下载安装包'));
   card.append(steps, actions);
   const accent = el('section', 'card accent s4'); accent.append(cardHead('还没有设备'));
@@ -979,10 +978,30 @@ function toggleAccountMenu(anchor: HTMLElement) {
 
 // ---------- 下载 ----------
 const packageInfo: Record<ReleaseAsset['kind'], { title: string; who: string; lead: string; contents: string[]; tone: string }> = {
-  node: { title: 'Reach Node', who: '装在被控 Windows 上', lead: '让这台 Windows 常驻接受 Reach 控制：命令、文件、心跳与受管 SSH。', tone: '', contents: ['Reach Node Windows 服务，开机自启并按退避重连', 'ryreach 配置命令（加入 PATH）', '离线 OpenSSH 载荷与准备脚本，默认启用受管 SSH'] },
+  node: { title: 'Reach Node（Worker）', who: '装在被控 Windows 上', lead: '在这台 Windows 上提供命令、文件、心跳和受管 SSH。', tone: '', contents: ['Reach Node Windows 服务，开机自启并按退避重连', 'ryreach 配置命令（加入 PATH）', '离线 OpenSSH 载荷与准备脚本，默认启用受管 SSH'] },
   complete: { title: 'Reach 完整包', who: '需要桌面与现场 Agent 时', lead: '在 Node 之外，带上桌面能力与现场 Agent 侧车，可远程查看与操作桌面。', tone: '', contents: ['Reach Node 与 ryreach 配置命令', '桌面能力 helper 与现场 Agent 侧车', '固定版本的便携 Python 运行时', '离线 OpenSSH 载荷'] },
 };
-const installSteps = ['运行安装程序。它会自动安装、注册 Windows 服务、加入 PATH 并启动服务。', '首次运行 ryreach 时填写本服务地址（安装器已预配置则跳过）。', '回到「设备」生成配对码，在这台设备上运行配对命令。首次上报能力后会收到上线通知。'];
+function workerInstallSteps() {
+  const steps = el('ol', 'steps');
+  const server = M.serverBase(location.href);
+  const address = el('li', '');
+  const copied = el('span', 'hint');
+  copied.setAttribute('role', 'status');
+  const copyAddress = button('复制地址', () => copy(server, ok => {
+    copied.textContent = ok ? ' 已复制' : ' 请手动复制地址';
+  }), 'btn sm', 'copy');
+  address.append('新装完成后，在「设置服务端地址」弹窗中填入下面的地址，点击「保存」。', el('br'), el('code', 'mono', server), ' ', copyAddress, copied);
+  const change = el('li', '');
+  change.append('如果已有地址，或以后需要改地址，在这台 Windows 上运行：', el('br'), el('code', 'mono', `ryreach config set server-url ${server}`));
+  change.append(el('br'), '换到另一服务端后，在新服务端重新配对。');
+  steps.append(
+    el('li', '', '在要被控的 Windows 电脑上双击安装包，按系统提示允许安装。Reach 会注册并启动 Windows 服务。'),
+    address,
+    el('li', '', '在网页「设备」生成配对码，将页面给出的 ryreach pair 命令复制到这台 Windows 上运行。设备首次上报后会显示在线。'),
+    change,
+  );
+  return steps;
+}
 async function drawDownloads() {
   const page = header('下载', null, iconButton('refresh', '刷新', () => render()));
   const view = viewGeneration; const loading = el('p', 'muted', '正在读取发行清单…'); page.append(loading);
@@ -998,6 +1017,7 @@ async function drawDownloads() {
   loading.remove();
   const latest = data.releases[0];
   if (!latest) { page.append(installGuide(data.configured)); return; }
+  if (latest.notes) page.append(el('p', 'muted', latest.notes));
   const dl = el('div', 'dl');
   for (const asset of latest.assets) dl.append(packageCard(latest, asset));
   page.append(dl);
@@ -1017,7 +1037,7 @@ function packageCard(release: Release, asset: ReleaseAsset) {
   const info = packageInfo[asset.kind];
   const card = el('section', 'card dl-card'); card.setAttribute('aria-label', info.title);
   const head = el('header'); const titles = el('span', 'dl-t'); titles.append(el('b', '', info.title), el('small', '', info.who));
-  head.append(thumb(asset.kind === 'node' ? 'devices' : 'terminal'), titles, pill(asset.signed ? '已签名' : '未签名', asset.signed ? 'ok' : 'warn'));
+  head.append(thumb(asset.kind === 'node' ? 'devices' : 'terminal'), titles, pill(asset.signed ? '更新清单已签名' : '更新清单未签名', asset.signed ? 'ok' : 'warn'));
   card.append(head, el('p', 'dl-lead', info.lead));
   const get = el('div', 'dl-get'); const meta = el('span'); meta.append(el('b', 'mono', asset.name), el('small', '', `${release.version} · Windows ${asset.arch} · ${M.formatBytes(asset.bytes)} · ${time(release.publishedAt)}`));
   get.append(meta);
@@ -1028,10 +1048,11 @@ function packageCard(release: Release, asset: ReleaseAsset) {
   hash.append(iconButton('copy', '复制 SHA-256', () => copy(asset.sha256, ok => { hint.textContent = ok ? '已复制，可用 Get-FileHash 核对。' : '未能访问剪贴板，请手动选择复制。'; }), 'btn icon sm'));
   card.append(hash, hint);
   card.append(el('h4', '', '包里有什么')); const contents = el('ul', 'bullets'); info.contents.forEach(item => contents.append(el('li', '', item))); card.append(contents);
-  card.append(el('h4', '', '怎么装')); const steps = el('ol', 'steps'); installSteps.forEach(item => steps.append(el('li', '', item))); card.append(steps);
+  card.append(el('h4', '', '安装 Worker'), workerInstallSteps());
   const footer = el('footer');
   for (const source of asset.sources.slice(1)) { const mirror = el('a', 'btn sm', `从 ${sourceName[source.kind]} 下载`); mirror.href = source.url; mirror.rel = 'noopener noreferrer'; footer.append(mirror); }
-  if (footer.childElementCount) card.append(footer);
+  footer.append(arrowLinkText({ page: 'devices' }, '去生成配对码'));
+  card.append(footer);
   return card;
 }
 // 没有已发布签名包时：左侧说明发布状态，右侧给出从安装到上线的完整路径。
@@ -1040,11 +1061,7 @@ function installGuide(configured: boolean | null) {
   const status = el('section', 'card ink s5'); status.append(cardHead('发布状态'));
   const big = el('b', '', '尚无签名包'); big.style.fontSize = '30px'; big.style.fontWeight = '300';
   status.append(big, el('p', 'dl-lead', configured === null ? '发行清单暂时读取不到，下面的安装路径仍然适用。' : configured ? '发行清单里还没有版本。发布后，这里会列出版本、架构、发布日期、SHA-256 以及 GitHub、Gitee、Reach 下载源。' : '这台服务尚未配置发行清单。签名包发布并登记清单后，这里会列出可下载的版本与校验值。'));
-  const list = el('ul', 'bullets'); for (const text of ['GitHub 与 Gitee 发布同一提交、同一标签、同一安装包', 'GitHub 不可达时由 Gitee 分发，Reach 服务提供已核验的同版本备用', '每个包都给出 SHA-256，便于下载后核对']) list.append(el('li', '', text));
-  status.append(list);
-  const guide = el('section', 'card dl-card s7'); guide.append(cardHead('新设备从安装到上线'));
-  const steps = el('ol', 'steps'); [...installSteps.slice(0, 2), '在「设备」生成一次性配对码，到那台设备上运行配对命令。', '设备出现在列表中；首次上报能力后显示为在线，并生成上线通知。'].forEach(item => steps.append(el('li', '', item)));
-  guide.append(steps);
+  const guide = el('section', 'card dl-card s7'); guide.append(cardHead('安装 Worker'), workerInstallSteps());
   const footer = el('footer'); footer.append(arrowLinkText({ page: 'devices' }, '去生成配对码')); guide.append(footer);
   grid.append(status, guide); return grid;
 }
