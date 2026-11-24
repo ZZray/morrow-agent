@@ -52,7 +52,7 @@
 
 ## nmrkit 发布配置
 
-用户授权将本版提交、推送并部署到 `https://nmrkit.ciqtek.com/reach/`，控制端只用 Reach PIN。该实例设置 `REACH_PIN_ONLY=1`，服务拒绝密码与 Ray 登录接口。浏览器 Cookie 限制在 `/reach/`，CLI 和 MCP 用相同 PIN 取得同一账户的令牌。新库需要私有初始 PIN 才能启动，初始化后由数据库保存摘要。
+用户授权将本版提交、推送并部署到 `https://nmrkit.ciqtek.com/reach/`，控制端只用 Reach PIN。该实例设置 `REACH_PIN_ONLY=1`，服务拒绝密码与 Ray 登录接口。浏览器 Cookie 限制在 `/reach/`，CLI 和 MCP 用相同 PIN 取得同一账户的令牌。用户确认正式站使用 `2026`，服务以 `REACH_PIN=2026` 明确选择该默认值。启动时临时设置 `REACH_PIN_RESET=1` 可以重置 PIN 并清除锁定。正常启动只读取数据库中保存的 PIN 摘要。
 
 Reach 由独立的 systemd 服务绑定 `127.0.0.1:18910`。Nginx 的 Reach 路由去掉一次 `/reach/` 前缀，只向上游发送 Reach 会话 Cookie。本实例使用独立 SQLite 数据目录。`/reach/` 的实际上线结果和证据按发布记录核对。
 

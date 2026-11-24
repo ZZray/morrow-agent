@@ -63,7 +63,9 @@ export function reachServer(options: Options) {
   const { store } = options;
   options.desk?.bindDevices?.(userId=>deskDevices(store,userId));
   const rate = new RateLimit();
-  const pin = new PinLogin(store, options.pin?.initial ?? DEFAULT_PIN, options.pin?.reset ?? false, options.pinOnly);
+  const configuredPin = options.pin?.initial;
+  const requirePrivatePin = options.pinOnly && configuredPin !== DEFAULT_PIN;
+  const pin = new PinLogin(store, configuredPin ?? DEFAULT_PIN, options.pin?.reset ?? false, requirePrivatePin);
   const secure = origin.protocol === 'https:';
   const cookiePath = options.cookiePath ?? '/';
   requireCondition(['/', '/reach/'].includes(cookiePath), 500, 'invalid_cookie_path', 'Cookie path must be / or /reach/');

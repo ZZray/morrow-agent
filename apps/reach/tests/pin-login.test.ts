@@ -93,3 +93,28 @@ test('HTTP: a PIN-only deployment denies legacy logins and scopes the secure bro
     assert.equal((await me.json()).pinIsDefault, false);
   } finally { server.close(); server.closeAllConnections(); await once(server, 'close'); store.close(); }
 });
+
+test('HTTP: a PIN-only deployment can explicitly reset to the default PIN and keep it after restart', async () => {
+  const store = new ReachStore(':memory:');
+  const options = { store, publicOrigin: 'https://nmrkit.ciqtek.com', pinOnly: true };
+  try {
+    const previous = new PinLogin(store, '482913', false, true);
+    assert.equal(code(() => previous.login('1111')), '401:invalid_pin');
+    assert.equal(code(() => previous.login('1111')), '401:invalid_pin');
+    assert.equal(code(() => previous.login('1111')), '429:pin_locked');
+    reachServer({ ...options, pin: { initial: '2026', reset: true } });
+    const state = store.db.prepare('SELECT is_default, failures, locked_until FROM pin_auth').get()!;
+    assert.equal(state.is_default, 1);
+    assert.equal(state.failures, 0);
+    assert.equal(state.locked_until, null);
+    const server = reachServer({ ...options, pin: { initial: '2026' } });
+    server.listen(0, '127.0.0.1'); await once(server, 'listening'); const address = server.address(); assert.ok(address && typeof address !== 'string');
+    try {
+      const login = await fetch(`http://127.0.0.1:${address.port}/api/v1/auth/pin`, {
+        method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ pin: '2026' }),
+      });
+      assert.equal(login.status, 200);
+      assert.equal((await login.json()).pinIsDefault, true);
+    } finally { server.close(); server.closeAllConnections(); await once(server, 'close'); }
+  } finally { store.close(); }
+});
