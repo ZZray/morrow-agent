@@ -44,3 +44,21 @@
 nmrkit 与 Ray 均切换到发行目录 `20261127-87af0a7-download-0ca9c51c`。发行归档 SHA-256 为 `0ca9c51cbd48abbe1a93904efbeea6b859ae377158313d7f536563e7b9cf3885`，每站 973 个文件逐项核对。两站发行清单最新项为 `0.1.9-preview`，页面脚本支持 Worker + Agent 包。Ray 的已登录 Controller 实际读取到该清单；nmrkit 的运行代码和公网 `admin.js` 已核对，切换后的浏览器页面尚未复验。公网完整下载 `Reach-Setup-0.1.9-preview-41fc956066c8dff4.exe`，24,837,120 字节，SHA-256 为 `41fc956066c8dff4b385649ecf9e8c00ac716afe11b9cac54e074be9c2f4cea5`。
 
 切换前后，nmrkit 保留 1 个对话、1 个回合和 6 条事件；Ray 保留 2 台设备、4 个操作及 37 条操作事件，Desk 保留 1 个对话和 3 个回合。两站模型及账户/PIN 指纹未变化。该安装器是未做 Windows 代码签名的手动安装预览版；完整 Worker + Agent 的自动更新尚未实现。GitHub/Gitee 预览标签已同步；核对时 GitHub 尚无该标签的 Release，Gitee 公开发行列表为空，发行附件尚未核验。
+
+## 2026-11-27 晚间更新：悬浮胶囊工具栏与多平台下载指令（f26e9ae）
+
+`origin/main` 与 `gitee/main` 已推送并核对为提交 `f26e9ae84526797226d5ab0fd27337c1bba5e60a`（范围限定为下载页多平台设计及安装指令、Desk 对话气泡悬浮胶囊工具栏与隐藏已保存状态，以及对应单元测试和知识库条目，共 12 个文件；同仓另一会话未暂存的便携版 Worker 改动保持原样）。提交前 `tsc --noEmit`、`tsc --project tsconfig.admin.json --noEmit`、`npm run build:admin`、管理端 12 份测试（53/53）、服务端测试（11/11）及平台单元测试（55/55）全部通过，共 119/119 通过；`platform/tests/web.browser.test.ts` 因本机未安装 Playwright（未设置 `REACH_PLAYWRIGHT_ENTRY`）未运行。
+
+发行包基于该提交构建，合入从 `ray-dev` 提取的静态 Linux 侧车 `morrow-agent-jsonl`（SHA-256 为 `b46a6406d1986d0a6c91df3c5b666d1bf3afdd83fab1214e8b00413160f868e6`），发行归档 `reach-20261127-f26e9ae-ui.tar.gz` 共 973 个文件、9,284,981 字节，SHA-256 为 `c539b622ba362b74e9e27db465827a55e928f682bd826ed6c8d94c3c571e1949`；构建产物前端资源 SHA-256 为：
+
+- `admin.js`: `415effe014f93ab8c84167afff5df6fafb8378b20e3fd96781db07d4c9f09627`
+- `desk.js`: `935a41f88908edd6bf71b2f46768edddbc16f802d3f6e55acfcc79580137b934b`
+- `admin.css`: `fa765392a898e3f885b1a72d5d4ff7bcffb1b8119e8327c0e3e4123e32c68c36`
+- `desk.css`: `95ecae2834092d15477b0a07b6493ae6ad3280b786e0bf48cf08ac5bde6ddd8c`
+
+两站均由 `/opt/reach/releases/20261127-87af0a7-download-0ca9c51c` 切换至 `/opt/reach/releases/20261127-f26e9ae-ui-c539b622`，保留现有 `/etc/reach/service.env` 与站点专属发行清单（`ray-releases.json` 与 `nmrkit-releases.json` 迁移后 SHA-256 均为 `72be31701b3249fc0793d17e070138542c8d871a639af941db2f74a21b696052`），临时切换文件均已清理：
+
+- **Ray（`ray-dev`，`118.25.103.226`）**：状态 `updated-ledger-preserved`，`reach` 主进程 PID `523163`，备份目录 `/root/reach-deploy-backup-20261127-224459`。`reach` 与 `ray-front` 服务运行正常，`journalctl -u reach` 记录 `reach_model_enabled`（`agent` 与 `desk` 使用 `deepseek-flash`）及 `reach_listening` `127.0.0.1:18910`。账本保持为 1 位用户、2 台设备、4 个操作、37 条操作事件与 Desk 1 个对话、3 个回合、14 条事件。本机回环 `http://127.0.0.1:18910/assets/{admin.js,desk.js,admin.css,desk.css}` 返回 HTTP `200` 且 SHA-256 与发布包逐一吻合；公网 `https://bigrayzhang.cn/reach/healthz` 返回 `200`（`{"service":"Reach","version":"0.1.0-dev.1","protocol":1}`），`https://bigrayzhang.cn/reach/` 返回 `303` 跳转至 `https://bigrayzhang.cn/ray/login?next=%2Freach%2F`（登录页 `200`），未登录请求 `/reach/api/v1/auth/me` 与 `/reach/api/v1/releases` 返回 `401`。
+- **nmrkit（`labslot-prod-root`，`101.37.76.80:31565`）**：状态 `updated-ledger-preserved`，`reach` 主进程 PID `3086684`，备份目录 `/root/reach-deploy-backup-20261127-224743`，`/etc/reach/service.env` 保持 `REACH_PIN_ONLY=1` 与 `REACH_PUBLIC_ORIGIN=https://nmrkit.ciqtek.com` 未变。`reach` 与 `nginx` 服务运行正常，`journalctl -u reach` 记录 `reach_model_enabled`（`agent` 与 `desk` 使用 `deepseek-flash`）及 `reach_listening` `127.0.0.1:18910`。账本保持为 1 位用户、1 台设备、17 个操作、375 条操作事件与 Desk 1 个对话、1 个回合、6 条事件。公网 HTTPS 下载 `https://nmrkit.ciqtek.com/reach/assets/{admin.js,desk.js,admin.css,desk.css}` 均返回 `200` 且 SHA-256 与发布包逐一吻合；`https://nmrkit.ciqtek.com/reach/healthz` 返回 `200`，`/reach/` 返回 `200`，主站 `/` 返回 `307`，未登录请求 `/reach/api/v1/auth/me` 与 `/reach/api/v1/releases` 返回 `401`。
+
+上线后，两站在未登录态下的服务进程、静态资源哈希与鉴权入口已确认就绪；登录态浏览器（Ray SSO 与 nmrkit PIN）中的 Desk 悬浮工具栏及下载页交互未在生产站模拟账号测试，需由已登录用户实机页面确认。

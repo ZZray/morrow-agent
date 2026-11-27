@@ -262,6 +262,14 @@
   - 真实浏览器在 `18921` 核验闲置零噪声（`hover-toolbar-idle-dark.png`）、助手明暗双主题悬浮与复制高亮（`hover-toolbar-assistant-{dark,light}.png`）、用户带技能气泡悬浮净空 `+10px`（`hover-toolbar-user-dark.png`）、停止回答 `已停止` 内联显现（`hover-toolbar-alert-status.png`）与 `390×844` 窄屏表现（`hover-toolbar-mobile-390.png`），0 控制台报错且已清理临时测试会话还原干净工作区。
   - **边界记录**：`ocr delegate preview/rule` 与 `code-reviewer` 只读复审 0 高/中缺陷；因当前环境未安装 Node Playwright 包（`REACH_PLAYWRIGHT_ENTRY` 未设），尚未实跑 `platform/tests/web.browser.test.ts` 验证其对 `.is-settled`（`clip: rect(0,0,0,0)`）定位器可见性的实际兼容性（注：浏览器沙箱 `webview_browser` 对 `.is-settled` 报告不可见）。
 
+<a id="deploy-receipt-20261127"></a>
+## 2026-11-27 提交推送与 Ray / nmrkit 上线回执
+
+- **源码提交与远端同步**：多平台下载页面设计与安装指令、Desk 对话气泡悬浮胶囊工具栏及隐藏常态「回答已保存」已限定范围提交至 `main`（提交 `f26e9ae84526797226d5ab0fd27337c1bba5e60a`，12 个文件 +806/-95 行；提交前跑完 `tsc`、管理端 53/53、服务端 11/11、平台 55/55 共 119/119 用例与 OCR/只读复审），并同步推送至 `origin/main` 与 `gitee/main`；同仓未纳入本次交付的便携版 Worker WIP 与 `E:\repos\RayWorkbench` 均未改动。
+- **打包产物**：`reach-20261127-f26e9ae-ui.tar.gz`（973 文件，9,284,981 字节，SHA-256 `c539b622ba362b74e9e27db465827a55e928f682bd826ed6c8d94c3c571e1949`；Linux 侧车 `morrow-agent-jsonl` SHA-256 `b46a6406d1986d0a6c91df3c5b666d1bf3afdd83fab1214e8b00413160f868e6`）。
+- **上线站点与核验**：Ray（PID `523163`，备份 `/root/reach-deploy-backup-20261127-224459`）与 nmrkit（PID `3086684`，备份 `/root/reach-deploy-backup-20261127-224743`）均已切换至 `/opt/reach/releases/20261127-f26e9ae-ui-c539b622`，站点 `deploy/{ray,nmrkit}-releases.json`、`/etc/reach/service.env` 及 SQLite 账本完整保留；两站 `reach`、`ray-front`、`nginx` 活跃，模型启用与本地监听日志正常，且回环/公网获取的 `admin.js`、`desk.js`、`admin.css`、`desk.css` 均返回 HTTP `200` 并与发布包 SHA-256 一致。明细见 [2026-11-24-nmrkit-web-pin.md](../evidence/2026-11-24-nmrkit-web-pin.md)。
+- **未覆盖边界**：生产站未通过 SSO / PIN 登录执行真实浏览器点击验收，需已登录用户打开两站控制台确认页面渲染与交互。
+
 
 
 
