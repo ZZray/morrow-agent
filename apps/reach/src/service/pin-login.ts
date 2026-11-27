@@ -51,9 +51,13 @@ export class PinLogin {
     });
   }
 
-  login(rawPin: unknown) {
+  login(rawPin: unknown, rayUsername?: string) {
     const now = this.store.now();
     const row = this.row();
+    if (rayUsername !== undefined) {
+      const owner = row.user_id && this.store.db.prepare('SELECT username FROM users WHERE id=?').get(row.user_id);
+      requireCondition(row.is_default === 0 && owner && owner.username === rayUsername, 403, 'private_pin_required', '请先在已登录的 Ray 控制台设置私有 Reach PIN');
+    }
     if (row.locked_until && row.locked_until > now) throw new ReachError(429, 'pin_locked', `PIN 连续输错 ${MAX_PIN_ATTEMPTS} 次，已锁定，约 ${Math.ceil((row.locked_until - now) / 60000)} 分钟后再试`);
     const pin = typeof rawPin === 'string' && /^\d{1,12}$/.test(rawPin) ? rawPin : '';
     const ok = timingSafeEqual(Buffer.from(digest(pin, row.salt), 'hex'), Buffer.from(row.hash, 'hex'));

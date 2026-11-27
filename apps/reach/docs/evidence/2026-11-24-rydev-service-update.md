@@ -181,3 +181,14 @@ Windows PowerShell 5.1 回归覆盖延迟监听、其他进程占用、端口不
 - Setup SHA-256 为 `eab89de14407e534f2c58435389c7fa5ad2cbdbe829caf2fc1a673b8b5c59cf7`，清单内的 Worker、Agent 和离线 OpenSSH 字节已核对。Setup 的 Windows PowerShell 5.1 内嵌验证通过 5 项。[安装包](../../outputs/agent-first/Reach-Setup-0.1.8-preview-eab89de14407e534.exe) · [包清单](../../outputs/agent-first/package-0.1.8.json) · [Setup 检查](../../outputs/agent-first/verify-payload-0.1.8.txt)
 - RAYWORK 在前台运行解包出的 Worker 和相对路径 Agent。测试前后均无 `sshd` 服务与 TCP 22 监听。本机 Reach 测试服务完成配对，实际 Agent 写入一次测试文件，测试服务重启后按原操作 ID 查询仍为成功。模型请求使用受控本机响应。单次集成运行通过 6 项。[运行结果](../../outputs/agent-first/packaged-agent-0.1.8.txt) · [SSH 状态](../../outputs/agent-first/runtime-ssh-after.json)
 - 独立复核核对了冻结输入、首装和按需启用路径。安装编排全量运行两次分别出现既有 `File.Replace` 文件替换错误，相关用例单独复跑通过。新机双击、UAC、LocalSystem 服务、正式配对和经 Agent 启用 SSH 待真机验收。预览包未签名、未发布，完整包的 Git 自动更新待实现并单独验收。
+
+## 2026-11-27 RyDev 升级和 Ray Controller 登录复验
+
+- 在 CAN00 上核对安装器 SHA-256 后运行 0.1.8 `--silent`，退出码为 1。安装事务记录为 `rolled_back`，目标为 0.1.8，原 0.1.2 收据仍有效，`RYReach` 和 `sshd` 均在运行。RyDev 仍绑定旧回环地址。检查时两端 43143 都未监听，测试 CA 已过期。0.1.2 的维护停止要求先向原服务确认无待结算操作。旧服务账本只有一条该设备的 `acknowledged`、`succeeded` 操作。安装器本次只保留退出码和事务状态，具体错误文本未取得。
+- Ray 上的 Reach 发行版为 `20261127-a0d6bd039365`。公开健康路由返回 200，Controller 首次登录的 `POST /reach/api/v1/auth/pin` 和 `POST /reach/api/v1/auth/login` 均在 Ray 入口返回 401。Ray 入口二进制 `15ce10c…00d3f` 的路由要求原生 API 请求已有 Bearer，而官方 Controller 两种首次登录请求均无 Bearer。已登录的 Ray 网页仍能进入设备列表。RyDev 配对、Agent 能力、派单和原始回执仍待验证。
+
+- 核对旧账本后，以 0.1.2 的 `config set server-url` 切换到 Ray，再用一次性码配对。Ray 节点 `716322c7-de35-4a4a-8c7d-d28b6087870a`，epoch 1。重试 0.1.8 后安装事务 `committed`，LocalSystem PID 6648 持续连接，安装 ID 和当前配对保留。实际 Worker SHA-256 `d30f4dfe…3dad`，Morrow `23349e02…7fc7`，均与预览包匹配。Ray 心跳已记录 `agent.delegate`，现场 Agent 模型在运行。
+- Reach 先上线私有 PIN 和 Ray 固定账户绑定检查，发行目录 `20261127-native-controller-pin-f877d3e8`，升级前后 Reach 和 Desk 的账本计数一致。随后仅重启 `ray-front`，运行二进制 SHA-256 `82072b62…388c`。Reach 62 项测试、RayWorkbench `scripts/check.ps1` 和独立鉴权复核通过。公网原生 PIN 登录已到达 Reach，在私有 PIN 尚未设置时返回 `403 private_pin_required`。浏览器登录、匿名 API 拒绝以及跨站 PIN 拒绝的入口状态通过核对。完成私有 PIN 初始化后，仍需从 Codex 获取原生会话，派单并读取原始回执。
+- Ray 模式原先隐藏 PIN 表单。发行 `20261127-native-controller-pin-settings-c38fd34b` 只增加「设置 → 账户与设备」的 Controller PIN 操作并沿用已有表单和 CSRF 校验，更新前后两套账本计数一致。公网浏览器以原 Ray 账户打开表单。服务器实际 `admin.js` 与制品 SHA-256 `b54d618f…7957` 一致。私有 PIN 由用户亲自设置。
+- 用户完成本机 Controller 登录后，Codex 从原生 CLI 单次提交 `agent.delegate`，请求 `91f92818-b2f8-4523-b346-a741e26a542b`。RyDev 准确返回 `REACH-RYDEV-E2862148CFFB`，1 个 Run、1 次完成的实际模型请求、0 个子操作，测试目录仍为空。投递为 `acknowledged`，执行为 `succeeded`。从服务记录接单到终态为 1.953 秒。原生结果为 `Verified`，执行锁已释放，业务任务状态仍为 `awaiting_review`。[原操作和回执](https://bigrayzhang.cn/reach/#/operations/a5bc46d5-610b-4ba5-a5ae-1f20408f262f)
+- Ray 的 `operation_events` 与 RyDev 的本地 outbox 共 14 条原始事件。逐条核对序号、事件 ID、类型和 `data` 原字节 SHA-256，全部一致，RyDev 全部收到 ACK。终态事件 `a4a74f90-9197-4204-b7c5-7f70c28759bc` 的原数据 SHA-256 为 `2d5e03fdedf0c028e9eee0c51081fe2ba32bb845396c2f283a7e84be16340f45`。原生结算记录显示侧车正常退出，Windows Job 已空。

@@ -6,6 +6,7 @@ import { randomBytes, createHmac } from 'node:crypto';
 import { ReachStore } from '../src/service/store.ts';
 import { reachServer } from '../src/service/server.ts';
 import { RayLoginBridge } from '../src/service/ray-login.ts';
+import { DEFAULT_PIN } from '../src/service/pin-login.ts';
 import type { DeskExtension } from '../src/service/desk-extension.ts';
 
 test('Ray-bridged browser session reaches the conversation and settings APIs; a PIN session cannot', async () => {
@@ -38,10 +39,13 @@ test('Ray-bridged browser session reaches the conversation and settings APIs; a 
     const write = (headers: Record<string, string>) => fetch(origin + '/api/v1/settings/providers', { method: 'POST', headers: { cookie, 'content-type': 'application/json', ...headers }, body: JSON.stringify({ name: 'P', baseUrl: 'https://m.example/v1', token: 'ray-fixture-token-0123456789' }) });
     assert.equal((await write({})).status, 403, '写请求仍需 CSRF');
     assert.equal((await write({ origin: 'https://127.0.0.1', 'x-reach-csrf': me.csrf })).status, 201);
-    // PIN 登录得到的浏览器会话不是 Ray 会话，统一认证下不能用来访问对话。
-    const pin = await fetch(origin + '/api/v1/auth/pin', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{"pin":"2026"}' });
+    const privatePin = '591607324182';
+    const changed = await fetch(origin + '/api/v1/auth/pin/change', { method: 'POST', headers: { cookie, origin: 'https://127.0.0.1', 'x-reach-csrf': me.csrf, 'content-type': 'application/json' }, body: JSON.stringify({ current: DEFAULT_PIN, next: privatePin }) });
+    assert.equal(changed.status, 200);
+    const pin = await fetch(origin + '/api/v1/auth/pin', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ pin: privatePin }) });
     assert.equal(pin.status, 200, 'PIN 接口仍供本机控制器使用');
-    const pinCookie = pin.headers.getSetCookie()[0].split(';')[0];
+    assert.equal(pin.headers.has('set-cookie'), false);
+    const pinCookie = `reach_session=${(await pin.json()).token}`;
     const denied = await fetch(origin + '/api/v1/desk/conversations', { headers: { cookie: pinCookie } });
     assert.equal(denied.status, 401); assert.equal((await denied.json()).error.code, 'authentication_kind_mismatch');
     assert.equal(seen.length, 1);

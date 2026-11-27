@@ -157,9 +157,11 @@ export function reachServer(options: Options) {
       }
       if (method === 'POST' && route === '/api/v1/auth/pin') {
         requireCondition(!request.headers.origin || request.headers.origin === origin.origin, 403, 'origin_rejected', '登录来源不匹配');
+        if (options.rayLogin) requireCondition(!request.headers.origin && !request.headers.cookie && !request.headers.authorization, 403, 'native_client_required', '请在本机 Reach Controller 登录');
         rate.take(`pin:${clientAddress(request)}`);
         const input = z.strictObject({ pin: z.string().max(64) }).parse(await body(request));
-        const result = pin.login(input.pin);
+        const result = pin.login(input.pin, options.rayLogin?.username);
+        if (options.rayLogin) return send(response, 200, result, { 'cache-control': 'no-store' });
         return send(response, 200, { ...result, pinIsDefault: pin.isDefault(result.user.id) }, { 'set-cookie': sessionCookies(result.token, 43200) });
       }
       if (method === 'POST' && route === '/api/v1/auth/pin/change') { const user = actor(request, true); return send(response, 200, pin.change(user.id, await body(request))); }

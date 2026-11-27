@@ -7,6 +7,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { once } from 'node:events';
 import { RayLoginBridge } from '../src/service/ray-login.ts';
+import { DEFAULT_PIN, PinLogin } from '../src/service/pin-login.ts';
 import { ReachStore } from '../src/service/store.ts';
 import { reachServer } from '../src/service/server.ts';
 
@@ -46,7 +47,13 @@ test('loopback signed exchange creates an existing Reach account session without
     return encoded + '.' + createHmac('sha256', key).update(encoded).digest('hex');
   };
   const exchange = (value: string, extra = {}) => fetch(origin + '/api/v1/auth/ray', { method: 'POST', headers: { 'content-type': 'application/json', ...extra }, body: JSON.stringify({ assertion: value }) });
+  const pinLogin = (pin: string, headers = {}) => fetch(origin + '/api/v1/auth/pin', { method: 'POST', headers: { 'content-type': 'application/json', ...headers }, body: JSON.stringify({ pin }) });
   try {
+    const defaultLogin = await pinLogin(DEFAULT_PIN);
+    assert.equal(defaultLogin.status, 403);
+    assert.equal((await defaultLogin.json()).error.code, 'private_pin_required');
+    assert.equal(defaultLogin.headers.has('set-cookie'), false);
+    assert.equal(store.db.prepare('SELECT user_id FROM pin_auth').get()?.user_id, null);
     assert.match(await (await fetch(origin)).text(), /reach-login-provider" content="ray"/);
     assert.equal((await exchange(assertion(), { origin: 'https://127.0.0.1' })).status, 401);
     assert.equal((await exchange('forged')).status, 401);
@@ -55,8 +62,21 @@ test('loopback signed exchange creates an existing Reach account session without
     const cookies = response.headers.getSetCookie(); assert.equal(cookies.length, 2); assert.match(cookies[0], /Path=\/reach\/;.*HttpOnly.*Secure/);
     const cookie = cookies[0].split(';')[0];
     const token = cookie.slice('reach_session='.length);
-    const firstIdentity = await (await fetch(origin + '/api/v1/auth/me', { headers: { cookie } })).json() as { csrf: string };
+    const firstIdentity = await (await fetch(origin + '/api/v1/auth/me', { headers: { cookie } })).json() as { id: string; csrf: string };
     assert.equal((await fetch(origin + '/api/v1/auth/me', { headers: { authorization: `Bearer ${token}` } })).status, 401);
+    const pinChange = (csrf = {}) => fetch(origin + '/api/v1/auth/pin/change', { method: 'POST', headers: { cookie, origin: 'https://127.0.0.1', 'content-type': 'application/json', ...csrf }, body: JSON.stringify({ current: DEFAULT_PIN, next: '838159260714' }) });
+    assert.equal((await pinChange()).status, 403);
+    assert.equal((await pinChange({ 'x-reach-csrf': firstIdentity.csrf })).status, 200);
+    assert.equal((await pinLogin('838159260714', { origin: 'https://127.0.0.1', cookie })).status, 403);
+    const controller = await pinLogin('838159260714');
+    assert.equal(controller.status, 200);
+    assert.equal(controller.headers.has('set-cookie'), false);
+    assert.equal(controller.headers.get('cache-control'), 'no-store');
+    const controllerToken = (await controller.json()).token;
+    const controllerMe = await fetch(origin + '/api/v1/auth/me', { headers: { authorization: `Bearer ${controllerToken}` } });
+    assert.equal(controllerMe.status, 200);
+    assert.equal((await controllerMe.json()).id, firstIdentity.id);
+    assert.equal((await fetch(origin + '/api/v1/auth/me', { headers: { cookie: `reach_session=${controllerToken}` } })).status, 401);
     const reused = await exchange(assertion({ reachToken: token })); assert.equal(reused.status, 200); assert.equal(reused.headers.getSetCookie()[0].split(';')[0], cookie);
     const concurrent = await Promise.all([exchange(assertion()), exchange(assertion())]);
     for (const response of concurrent) { assert.equal(response.status, 200); assert.equal(response.headers.getSetCookie()[0].split(';')[0], cookie); }
@@ -81,4 +101,16 @@ test('loopback signed exchange creates an existing Reach account session without
     assert.equal((await fetch(origin + '/api/v1/auth/me', { headers: { authorization: `Bearer ${native.token}` } })).status, 200);
     assert.equal((await fetch(origin + '/api/v1/auth/me', { headers: { cookie: `reach_session=${native.token}` } })).status, 401);
   } finally { server.close(); server.closeAllConnections(); await once(server, 'close'); bridge.close(); store.close(); }
+});
+
+test('Ray PIN login requires a private PIN already bound to the configured account', () => {
+  const store = new ReachStore(':memory:');
+  try {
+    store.bootstrap('another-account', 'test-only-account-password');
+    const pin = new PinLogin(store, '838159260714');
+    assert.throws(() => pin.login('838159260714', 'ray'), /设置私有 Reach PIN/);
+    assert.equal(store.db.prepare('SELECT user_id FROM pin_auth').get()?.user_id, null);
+    assert.equal(pin.login('838159260714').user.username, 'another-account');
+    assert.throws(() => pin.login('838159260714', 'ray'), /设置私有 Reach PIN/);
+  } finally { store.close(); }
 });

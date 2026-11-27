@@ -869,8 +869,11 @@ function openPairing(device: Device | null) {
 }
 function openChangePin() {
   if (document.querySelector('dialog[open]')) return;
-  const dialog = modal('修改 PIN');
-  dialog.append(el('p', '', '网页和本机控制器都用这个 PIN 登录。新 PIN 为 4–12 位数字，不能是默认的 2026。'));
+  const dialog = modal(rayLogin ? '修改 Controller PIN' : '修改 PIN');
+  const note = rayLogin
+    ? (user?.pinIsDefault ? '首次设置时，当前 PIN 填 2026。新 PIN 为 4–12 位数字，用于本机 Reach Controller 登录。' : '新 PIN 为 4–12 位数字，用于本机 Reach Controller 登录。')
+    : '网页和本机控制器都用这个 PIN 登录。新 PIN 为 4–12 位数字，不能是默认的 2026。';
+  dialog.append(el('p', '', note));
   const form = el('form', 'form');
   const fields = ['当前 PIN', '新 PIN', '再输一次新 PIN'].map((label, i) => {
     const wrap = el('label', 'field'); const input = el('input'); input.type = 'password'; input.inputMode = 'numeric'; input.maxLength = 12; input.required = true; input.autocomplete = i ? 'new-password' : 'current-password';
@@ -886,7 +889,7 @@ function openChangePin() {
     try { await api('/auth/pin/change', 'POST', { current, next }); }
     catch (error) { if (!(error instanceof StaleRequest)) { status.className = 'notice error'; status.textContent = error instanceof Error ? error.message : '修改未完成'; } return; }
     if (user) user.pinIsDefault = false;
-    dialog.close(); render(); message('PIN 已修改。下次登录请使用新 PIN。', 'ok');
+    dialog.close(); render(); message(rayLogin ? 'Controller PIN 已修改。下次从本机 Controller 登录时请使用新 PIN。' : 'PIN 已修改。下次登录请使用新 PIN。', 'ok');
   }); });
   dialog.append(form); dialog.showModal(); fields[0].focus();
 }
@@ -1370,7 +1373,8 @@ function otherSettings() {
   card.append(cardHead('账户与设备'));
   const list = el('div', 'settings-links');
   const item = (iconName: string, title: string, note: string, action: HTMLElement) => { const row = el('div', 'settings-link'); const text = el('div'); text.append(el('strong', '', title), el('small', '', note)); row.append(thumb(iconName), text, action); list.append(row); };
-  if (!rayLogin) item('key', '登录 PIN', user?.pinIsDefault ? '仍在使用默认 PIN 2026' : '网页和本机控制器共用', button('修改 PIN', openChangePin, 'btn sm'));
+  if (rayLogin) item('key', 'Controller PIN', user?.pinIsDefault ? '首次从本机 Controller 登录前需要设置私有 PIN' : '用于本机 Reach Controller 登录', button('修改 PIN', openChangePin, 'btn sm'));
+  else item('key', '登录 PIN', user?.pinIsDefault ? '仍在使用默认 PIN 2026' : '网页和本机控制器共用', button('修改 PIN', openChangePin, 'btn sm'));
   item('plus', '配对设备', '生成一次性配对码，在设备上执行', button('配对', () => openPairing(null), 'btn sm'));
   item('download', '安装包', '版本和摘要来自正式发行清单', arrowLinkText({ page: 'downloads' }, '下载'));
   item('copy', 'MCP 接入', '让本机 Agent 通过 Reach 调用设备', arrowLinkText({ page: 'mcp' }, '查看'));
