@@ -5,7 +5,7 @@ import { Dropdown } from './dropdown.js';
 import { consoleSections } from './shell.js';
 import { mountDesk } from './desk.js';
 import * as M from './model.js';
-import type { Device, DeviceEvent, Json, OperationSummary, Route, Tone, WebKind } from './model.js';
+import type { Device, DeviceEvent, Json, OperationSummary, Release, ReleaseArch, ReleaseAsset, ReleaseOs, Route, Tone, WebKind } from './model.js';
 import { accentPresets, currentAccent, currentTheme, defaultAccent, restoreAppearance, setAccent, setTheme } from './theme.js';
 import type { ThemeChoice } from './theme.js';
 
@@ -18,8 +18,6 @@ interface Page { events: Receipt[]; nextAfter: number; hasMore: boolean }
 interface EventPage { events: DeviceEvent[]; nextAfter: number; hasMore: boolean; unreadCount: number }
 interface ConfigHistory { targetVersion: number; requestId: string; heartbeatIntervalSeconds: number; status: 'pending' | 'applied' | 'rejected'; createdAt: number; settledAt: number | null; receipt: Json }
 type Runtime = Device & { configHistory: ConfigHistory[] };
-interface ReleaseAsset { name: string; kind: 'node' | 'agent' | 'complete'; arch: string; bytes: number; sha256: string; signed: boolean; sources: { kind: 'github' | 'gitee' | 'reach'; url: string }[] }
-interface Release { version: string; tag: string; publishedAt: number; notes?: string; assets: ReleaseAsset[] }
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
 const meta = (name: string) => document.querySelector<HTMLMetaElement>(`meta[name="${name}"]`)?.content;
@@ -44,6 +42,9 @@ let deviceFilter: M.DeviceFilter = 'all';
 let deviceQuery = '';
 let operationFilter: M.OperationFilter = 'all';
 let operationQuery = '';
+let downloadOs: ReleaseOs | null = null;
+let downloadArch: 'all' | ReleaseArch = 'all';
+let downloadHistoryAll = false;
 let notice: HTMLDivElement | null = null;
 let top: HTMLElement | null = null;
 let main: HTMLElement | null = null;
@@ -88,6 +89,9 @@ const iconPaths: Record<string, string[]> = {
   lock: ['M7.5 11V8a4.5 4.5 0 0 1 9 0v3', 'M6.5 11h11A1.5 1.5 0 0 1 19 12.5v7a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 5 19.5v-7A1.5 1.5 0 0 1 6.5 11z', 'M12 15v2.5'],
   sparkle: ['M11 3.5l1.7 4.8 4.8 1.7-4.8 1.7L11 16.5l-1.7-4.8L4.5 10l4.8-1.7z', 'M18 14.5l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z'],
   arrow: ['M7 17L17 7', 'M8 7h9v9'],
+  win: ['M4 5.5L10.5 4.6v6.7H4z', 'M12.5 4.3L20 3.2v8.1h-7.5z', 'M4 13h6.5v6.4L4 18.5z', 'M12.5 13H20v7.8l-7.5-1.1z'],
+  mac: ['M4 6.5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8.5H4z', 'M2 17h20', 'M9 17v1.5h6V17'],
+  linux: ['M4 5.5a1.5 1.5 0 0 1 1.5-1.5h13A1.5 1.5 0 0 1 20 5.5v13a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18.5z', 'M8 9.5l3 2.5-3 2.5', 'M12.5 15.5h4'],
 };
 function icon(name: string) {
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); svg.setAttribute('viewBox', '0 0 24 24'); svg.setAttribute('class', 'ic'); svg.setAttribute('aria-hidden', 'true');
@@ -488,9 +492,9 @@ function notificationItem(event: DeviceEvent, before: () => void) {
 function firstDeviceEmpty() {
   const grid = el('div', 'grid');
   const card = el('section', 'card s8'); card.append(cardHead('让第一台设备连过来'));
-  card.append(el('p', 'dl-lead', '在目标 Windows 上装好 Reach 后，生成一次性配对码并在那台设备上运行配对命令。首次上报能力后，它会在这里显示为在线，并生成上线通知。'));
+  card.append(el('p', 'dl-lead', '在要接入的电脑上准备 Reach，再用一次性配对码连接。首次上报能力后，这里会显示设备在线。'));
   const steps = el('ol', 'steps');
-  for (const step of ['下载并运行 Windows 安装包，服务会自动注册并启动。', '首次运行 ryreach 时填写本服务地址（安装器已预配置则跳过）。', '在这里生成配对码，到那台设备上运行配对命令。']) steps.append(el('li', '', step));
+  for (const step of ['打开「下载」，按目标电脑的系统选择包。', '在这里生成配对码，按下载页的步骤在那台电脑上完成配对和启动。']) steps.append(el('li', '', step));
   const actions = el('div', 'page-actions'); actions.append(button('生成配对码', () => openPairing(null), 'btn primary', 'plus'), arrowLinkText({ page: 'downloads' }, '去下载安装包'));
   card.append(steps, actions);
   const accent = el('section', 'card accent s4'); accent.append(cardHead('还没有设备'));
@@ -848,11 +852,12 @@ function openPairing(device: Device | null) {
   dialog.append(el('p', '', device ? '在这台设备的终端运行下面的命令。安装身份会保留；原操作须先结算，否则服务会拒绝更换配对。' : '在目标设备的终端运行下面的命令。配对后，这个账户即可完全控制该设备。'));
   const status = el('p', 'hint'); status.setAttribute('role', 'status');
   const body = el('div', 'vstack'); dialog.append(body, status);
-  const development = location.protocol === 'http:' && ['127.0.0.1', '[::1]', 'localhost'].includes(location.hostname);
+  const server = M.serverBase(location.href);
+  const development = M.isDevelopmentServer(server);
   const renderCode = () => {
     body.replaceChildren();
     if (!pairing) { status.textContent = '配对码 10 分钟内有效，只能使用一次。'; return; }
-    const command = M.pairCommand(M.serverBase(location.href), pairing.code, development);
+    const command = M.pairCommand(server, pairing.code, development);
     status.textContent = Date.now() >= pairing.expiresAt ? '配对码已过期，请生成新码。' : `有效期至 ${time(pairing.expiresAt)}，只能使用一次。`;
     body.append(el('div', 'pair-code', pairing.code), el('pre', 'codebox', command));
     body.append(button('复制命令', () => copy(command, ok => { status.textContent = ok ? '命令已复制，到目标设备的终端运行。' : '未能访问剪贴板，请选中上面的命令复制。'; }), 'btn sm', 'copy'));
@@ -1095,78 +1100,456 @@ function toggleAccountMenu(anchor: HTMLElement) {
   popover.append(who, themeSec, colorSec, exitSec);
 }
 
-// ---------- 下载 ----------
-const packageInfo: Record<ReleaseAsset['kind'], { title: string; who: string; lead: string; contents: string[]; tone: string }> = {
-  node: { title: 'Reach Node', who: '装在被控 Windows 上', lead: '让这台 Windows 常驻接受 Reach 控制：命令、文件、心跳与受管 SSH。', tone: '', contents: ['Reach Node Windows 服务，开机自启并按退避重连', 'ryreach 配置命令（加入 PATH）', '离线 OpenSSH 载荷与准备脚本，默认启用受管 SSH'] },
-  agent: { title: 'Reach Worker + Agent', who: '装在被控 Windows 上', lead: '安装常驻 Worker 与现场 Agent，支持远程任务和按需启用 SSH。', tone: '', contents: ['Reach Worker Windows 服务与 ryreach 配置命令', 'Morrow Agent 侧车', '离线 OpenSSH 载荷；SSH 按需启用'] },
-  complete: { title: 'Reach 完整包', who: '需要桌面与现场 Agent 时', lead: '在 Node 之外，带上桌面能力与现场 Agent 侧车，可远程查看与操作桌面。', tone: '', contents: ['Reach Node 与 ryreach 配置命令', '桌面能力 helper 与现场 Agent 侧车', '固定版本的便携 Python 运行时', '离线 OpenSSH 载荷'] },
+// ---------- 多平台下载 ----------
+const osIcon: Record<ReleaseOs, string> = { windows: 'win', macos: 'mac', linux: 'linux' };
+const sourceName: Record<ReleaseAsset['sources'][number]['kind'], string> = { github: 'GitHub', gitee: 'Gitee', reach: 'Reach 镜像' };
+const osEnvironmentLead: Record<ReleaseOs, string> = {
+  windows: '支持 Windows x64 / ARM64 服务安装程序与离线 OpenSSH',
+  macos: '支持 Apple Silicon / Intel 便携 Worker（终端运行）',
+  linux: '支持 Linux x64 / ARM64 便携 Worker（终端 / 守护运行）',
 };
-const installSteps = ['运行安装程序。它会自动安装、注册 Windows 服务、加入 PATH 并启动服务。', '首次运行 ryreach 时填写本服务地址（安装器已预配置则跳过）。', '回到「设备」生成配对码，在这台设备上运行配对命令。首次上报能力后会收到上线通知。'];
-const agentInstallSteps = ['双击运行安装程序，按提示完成安装。', '未配置服务地址时，在安装结束后的窗口填写；也可以稍后运行 ryreach 设置。', '回到「设备」生成配对码，在这台设备上运行配对命令。首次上报能力后会收到上线通知。'];
+const packageInfo: Record<ReleaseAsset['kind'], { title: string; who: string; lead: string; contents: string[] }> = {
+  node: { title: 'Reach Node', who: '装在被控 Windows 上', lead: '让这台 Windows 常驻接受 Reach 控制：命令、文件、心跳与受管 SSH。', contents: ['Reach Node Windows 服务，开机自启并按退避重连', 'ryreach 配置命令（加入 PATH）', '离线 OpenSSH 载荷与准备脚本，默认启用受管 SSH'] },
+  agent: { title: 'Reach Worker + Agent', who: '装在被控 Windows 上', lead: '安装常驻 Worker 与现场 Agent，支持远程任务和按需启用 SSH。', contents: ['Reach Worker Windows 服务与 ryreach 配置命令', 'Morrow Agent 侧车', '离线 OpenSSH 载荷；SSH 按需启用'] },
+  complete: { title: 'Reach 完整包', who: '需要桌面与现场 Agent 时', lead: '在 Node 之外，带上桌面能力与现场 Agent 侧车，可远程查看与操作桌面。', contents: ['Reach Node 与 ryreach 配置命令', '桌面能力 helper 与现场 Agent 侧车', '固定版本的便携 Python 运行时', '离线 OpenSSH 载荷'] },
+};
+const portableInfo = { title: 'Reach Worker', who: '便携预览版', lead: '支持心跳、命令和文件操作。Worker 在终端前台运行。', contents: ['ryreach 命令行程序和使用说明'] };
+
+type StepPart = string | Node;
+interface StepCmd { label?: string; text: string }
+interface RichStep { lead: StepPart[]; cmds?: StepCmd[] }
+
+function inlineCode(text: string) {
+  return el('code', '', text);
+}
+function inlineRouteLink(target: M.Route, label: string) {
+  const link = el('a', 'dl-link', label);
+  link.href = M.routeHash(target);
+  return link;
+}
+function commandBox(text: string, label?: string, onCopied?: (ok: boolean, copiedText: string) => void) {
+  const wrap = el('div', 'dl-cmd');
+  const body = el('div', 'dl-cmd-body');
+  if (label) body.append(el('small', 'dl-cmd-label', label));
+  body.append(el('code', 'mono dl-cmd-code', text));
+  const actionLabel = label || '命令';
+  let timer = 0;
+  const copyBtn = iconButton('copy', `复制${actionLabel}`, () => {
+    copy(text, ok => {
+      copyBtn.classList.toggle('copied', ok);
+      copyBtn.title = ok ? '已复制' : '未能访问剪贴板';
+      copyBtn.setAttribute('aria-label', ok ? `已复制：${actionLabel}` : '未能访问剪贴板，请手动选择复制');
+      if (onCopied) onCopied(ok, text);
+      else message(ok ? `已复制：${text}` : '未能访问剪贴板，请手动选择复制。', ok ? 'ok' : 'warn');
+      if (ok) {
+        window.clearTimeout(timer);
+        timer = window.setTimeout(() => {
+          copyBtn.classList.remove('copied');
+          copyBtn.title = `复制${actionLabel}`;
+          copyBtn.setAttribute('aria-label', `复制${actionLabel}`);
+        }, 1500);
+      }
+    });
+  }, 'btn icon sm dl-cmd-copy');
+  wrap.append(body, copyBtn);
+  return wrap;
+}
+function serverAddressBox(server: string, dev: boolean, onCopied?: (ok: boolean, text: string) => void) {
+  const label = dev ? '安装 / 配对填写服务地址（本地 HTTP 测试命令需带 --development）' : '安装 / 配对填写服务地址';
+  return commandBox(server, label, onCopied);
+}
+function renderRichSteps(items: RichStep[], onCopied?: (ok: boolean, text: string) => void) {
+  const list = el('ol', 'steps');
+  for (const item of items) {
+    const li = el('li');
+    const lead = el('span', '', '');
+    lead.append(...item.lead);
+    li.append(lead);
+    for (const cmd of item.cmds ?? []) li.append(commandBox(cmd.text, cmd.label, onCopied));
+    list.append(li);
+  }
+  return list;
+}
+function buildPackageSteps(opts: { os: ReleaseOs; kind: ReleaseAsset['kind']; portable: boolean; assetName: string; verifyCmd: string; server: string; dev: boolean }): RichStep[] {
+  const { os, kind, portable, assetName, verifyCmd, server, dev } = opts;
+  const bin = portable ? './ryreach' : 'ryreach';
+  const configCmd = M.configServerCommand(server, dev, bin);
+  const pairCmd = M.pairCommand(server, '<配对码>', dev, bin);
+  const devHint = dev ? '（当前为本地 HTTP 测试地址，命令需保留 --development）' : '';
+  const addrLabel = dev ? '服务地址（本地 HTTP 测试）' : '服务地址';
+
+  if (portable) {
+    const extractCmd = M.archiveExtractCommand(assetName);
+    const prepareCmds: StepCmd[] = [{ label: `核对 SHA-256（${os === 'macos' ? 'macOS 终端' : 'Linux Shell'}）`, text: verifyCmd }];
+    if (extractCmd) prepareCmds.push({ label: '解压归档并进入含 ryreach 的目录（无权限可执行 chmod +x ./ryreach）', text: extractCmd });
+    return [
+      { lead: ['下载 ', inlineCode(assetName), ' 后先核对 SHA-256，解压并打开终端进入解压目录：'], cmds: prepareCmds },
+      { lead: ['在解压目录执行配置命令写入当前服务地址', devHint, '：'], cmds: [{ label: addrLabel, text: server }, { label: '写入服务地址', text: configCmd }] },
+      { lead: ['前往「', inlineRouteLink({ page: 'devices' }, '设备'), '」点击「连接设备」生成配对码，将 ', inlineCode('<配对码>'), ' 替换后运行：'], cmds: [{ label: '配对设备', text: pairCmd }] },
+      { lead: ['执行第一条命令启动 Worker 并保持终端开启（按 ', inlineCode('Ctrl+C'), ' 等当前操作完成后退出）；另开终端可执行第二条检查状态：'], cmds: [{ label: '启动前台 Worker', text: './ryreach run' }, { label: '另开终端检查连接状态', text: './ryreach status' }] },
+    ];
+  }
+
+  const lastCmds: StepCmd[] = [{ label: '检查连接与服务状态', text: 'ryreach status' }];
+  if (kind !== 'node') lastCmds.push({ label: '按需启用内置 OpenSSH（管理员终端）', text: 'ryreach ssh enable' });
+
+  return [
+    { lead: ['双击运行 ', inlineCode(assetName), ' 完成安装（会自动注册 Reach Windows 服务并把 ', inlineCode('ryreach'), ' 加入 PATH）；安装前可先核对 SHA-256：'], cmds: [{ label: '核对安装包 SHA-256（PowerShell）', text: verifyCmd }] },
+    {
+      lead: kind === 'node'
+        ? ['若安装器未预设或需切换到本控制台，在配置窗口填入下面地址', devHint, '，或直接打开终端执行：']
+        : ['安装结束弹出「配置服务地址」窗口时填入下方地址', devHint, '；若已跳过弹窗或需改地址，打开终端执行：'],
+      cmds: [{ label: addrLabel, text: server }, { label: '命令行设置服务地址（若弹窗已填可跳过）', text: configCmd }],
+    },
+    { lead: ['前往「', inlineRouteLink({ page: 'devices' }, '设备'), '」点击「连接设备」生成配对码，将 ', inlineCode('<配对码>'), ' 替换为实际配对码后在此设备终端执行：'], cmds: [{ label: '配对设备', text: pairCmd }] },
+    {
+      lead: kind === 'node'
+        ? ['安装器已自动启动后台服务并启用受管 SSH；首次上报能力后会在「', inlineRouteLink({ page: 'devices' }, '设备'), '」显示在线，执行下条可确认状态：']
+        : ['首次上报能力后设备将在「', inlineRouteLink({ page: 'devices' }, '设备'), '」上线；执行状态检查确认运行，如需启用内置离线 OpenSSH 请以管理员身份运行第二条：'],
+      cmds: lastCmds,
+    },
+  ];
+}
+
+function platformLabel(asset: ReleaseAsset) {
+  const os = M.assetOs(asset);
+  if (os === 'macos') return { arm64: 'macOS Apple Silicon', x64: 'macOS Intel', universal: 'macOS 通用版' }[asset.arch];
+  return `${os === 'linux' ? 'Linux' : 'Windows'} ${asset.arch === 'arm64' ? 'ARM64' : asset.arch}`;
+}
+function describeAsset(asset: ReleaseAsset) {
+  const os = M.assetOs(asset);
+  const portable = (os === 'macos' || os === 'linux') && asset.kind === 'node';
+  const info = portable ? portableInfo : packageInfo[asset.kind];
+  return { os, portable, info, platform: platformLabel(asset) };
+}
+
+interface ResolvedAsset { release: Release; asset: ReleaseAsset }
+
 async function drawDownloads() {
   const page = header('下载', null, iconButton('refresh', '刷新', () => render()));
-  const view = viewGeneration; const loading = el('p', 'muted', '正在读取发行清单…'); page.append(loading);
+  const view = viewGeneration;
+  const server = M.serverBase(location.href);
+  const dev = M.isDevelopmentServer(server);
+  const detected = M.detectClientPlatform(navigator.userAgent, navigator.platform);
+  if (!downloadOs) downloadOs = detected.os;
+
+  const loading = el('p', 'muted', '正在读取多平台发行清单…'); page.append(loading);
   let data: { configured: boolean; releases: Release[] };
   try { data = await api('/releases'); }
   catch (error) {
     if (error instanceof StaleRequest || view !== viewGeneration) return;
     loading.remove();
     message(error instanceof HttpError && error.status === 404 && error.code === 'not_found' ? '此服务版本尚未提供发行清单接口。' : error instanceof Error ? error.message : '发行清单读取失败', 'error');
-    page.append(installGuide(null)); return;
+    page.append(installGuide(null, downloadOs, detected, [], server, dev)); return;
   }
   if (view !== viewGeneration) return;
   loading.remove();
-  const latest = data.releases[0];
-  if (!latest) { page.append(installGuide(data.configured)); return; }
-  if (latest.notes) page.append(el('p', 'muted', latest.notes));
-  const dl = el('div', 'dl');
-  for (const asset of latest.assets) dl.append(packageCard(latest, asset));
-  page.append(dl);
-  if (data.releases.length > 1) {
-    const history = el('section', 'card'); history.append(cardHead('历史版本'));
-    const list = el('ul', 'history');
-    for (const release of data.releases.slice(1)) {
-      const li = el('li'); li.append(el('b', '', release.version), el('span', 'muted', `${release.tag} · ${time(release.publishedAt)}`), el('span', 'grow'));
-      for (const asset of release.assets) for (const source of asset.sources) { const link = el('a', 'btn sm', `${asset.arch} · ${sourceName[source.kind]}`); link.href = source.url; link.rel = 'noopener noreferrer'; li.append(link); }
-      list.append(li);
+
+  // 按「平台 + 架构」收集最新可用包，其余旧包归入历史版本（兼容部分发布仅含单平台/单架构的情况）。
+  const latestByOs: Record<ReleaseOs, ResolvedAsset[]> = { windows: [], macos: [], linux: [] };
+  const shown = new Set<string>();
+  const older: { release: Release; assets: ReleaseAsset[] }[] = [];
+  for (const release of data.releases) {
+    const previous: ReleaseAsset[] = [];
+    for (const asset of release.assets) {
+      const os = M.assetOs(asset);
+      const slot = `${os}:${asset.arch}:${asset.kind}`;
+      if (!shown.has(slot)) { shown.add(slot); latestByOs[os].push({ release, asset }); }
+      else previous.push(asset);
     }
-    history.append(list); page.append(history);
+    if (previous.length) older.push({ release, assets: previous });
   }
+
+  const selectedOs = downloadOs;
+  const osEntries = latestByOs[selectedOs];
+  const arches = [...new Set(osEntries.map(item => item.asset.arch))];
+  if (downloadArch !== 'all' && !arches.includes(downloadArch)) downloadArch = 'all';
+
+  const bar = el('div', 'dl-bar');
+  const osTabs = el('div', 'chips dl-os-tabs'); osTabs.setAttribute('role', 'tablist'); osTabs.setAttribute('aria-label', '选择目标操作系统');
+  for (const os of M.releaseOperatingSystems) {
+    const count = latestByOs[os].length;
+    const tab = el('button', 'chip dl-os-tab'); tab.type = 'button';
+    tab.setAttribute('role', 'tab');
+    tab.setAttribute('aria-selected', String(os === selectedOs));
+    tab.setAttribute('aria-pressed', String(os === selectedOs));
+    tab.append(icon(osIcon[os]), el('span', '', M.osLabel(os)));
+    if (os === detected.os) tab.append(el('em', 'dl-here', '本机'));
+    tab.append(el('span', `n${count ? '' : ' muted'}`, count ? String(count) : '待发布'));
+    tab.addEventListener('click', () => { downloadOs = os; downloadArch = 'all'; render(); });
+    osTabs.append(tab);
+  }
+  bar.append(osTabs);
+
+  const rightBar = el('div', 'dl-bar-meta');
+  if (arches.length > 1) {
+    const archTabs = el('div', 'chips'); archTabs.setAttribute('aria-label', '按 CPU 架构筛选');
+    const archItems: ['all' | ReleaseArch, string][] = [['all', '全部架构'], ...arches.map(a => [a, M.archLabel(a)] as [ReleaseArch, string])];
+    for (const [val, label] of archItems) {
+      const chip = el('button', 'chip', label); chip.type = 'button';
+      chip.setAttribute('aria-pressed', String(downloadArch === val));
+      chip.addEventListener('click', () => { downloadArch = val; render(); });
+      archTabs.append(chip);
+    }
+    rightBar.append(archTabs);
+  }
+  rightBar.append(el('span', 'dl-detected', `当前环境：${M.osLabel(detected.os)} · ${M.archLabel(detected.arch)}`));
+  bar.append(rightBar);
+  page.append(bar);
+
+  const filtered = downloadArch === 'all' ? osEntries : osEntries.filter(item => item.asset.arch === downloadArch);
+  const availablePlatforms = M.releaseOperatingSystems.filter(os => latestByOs[os].length > 0);
+
+  if (!filtered.length) {
+    page.append(installGuide(data.configured, selectedOs, detected, availablePlatforms, server, dev));
+  } else {
+    const recAsset = M.pickRecommendedAsset(filtered.map(item => item.asset), detected.arch) ?? filtered[0].asset;
+    const rec = filtered.find(item => item.asset === recAsset) ?? filtered[0];
+    const hero = releaseHero(rec.release, rec.asset, selectedOs, server, dev);
+    const stage = el('div', 'grid dl-stage');
+    if (filtered.length === 1) {
+      stage.append(hero, packageCard(filtered[0].release, filtered[0].asset, server, dev, 's7'));
+      page.append(stage);
+    } else {
+      stage.append(hero, quickGuideCard(selectedOs, filtered, server, dev));
+      page.append(stage);
+      const dl = el('div', 'dl');
+      for (const item of filtered) dl.append(packageCard(item.release, item.asset, server, dev));
+      page.append(dl);
+    }
+  }
+
+  if (older.length) page.append(historyCard(older, selectedOs));
 }
-const sourceName: Record<ReleaseAsset['sources'][number]['kind'], string> = { github: 'GitHub', gitee: 'Gitee', reach: 'Reach 镜像' };
-function packageCard(release: Release, asset: ReleaseAsset) {
-  const info = packageInfo[asset.kind];
-  const card = el('section', 'card dl-card'); card.setAttribute('aria-label', info.title);
-  const head = el('header'); const titles = el('span', 'dl-t'); titles.append(el('b', '', info.title), el('small', '', info.who));
-  head.append(thumb(asset.kind === 'node' ? 'devices' : 'terminal'), titles, pill(asset.signed ? '已签名' : '未签名', asset.signed ? 'ok' : 'warn'));
+
+function releaseHero(release: Release, rec: ReleaseAsset, os: ReleaseOs, server: string, dev: boolean) {
+  const details = describeAsset(rec);
+  const card = el('section', 'card ink s5 dl-hero');
+  const badge = pill(rec.signed ? `已签名 · ${M.osLabel(os)}` : `未签名预览 · ${M.osLabel(os)}`, rec.signed ? 'ok' : 'warn');
+  card.append(cardHead(`${M.osLabel(os)} 最新推荐`, '', badge));
+  card.append(el('b', 'dl-ver', release.version), el('p', 'dl-sub', `${release.tag} · ${time(release.publishedAt)} · ${osEnvironmentLead[os]}`));
+  if (release.notes) card.append(el('p', 'dl-lead', release.notes));
+
+  const fileBox = el('div', 'dl-get'); const meta = el('span');
+  meta.append(el('b', 'mono', rec.name), el('small', '', `${details.info.title} · ${details.platform} (${M.assetFormat(rec)}) · ${M.formatBytes(rec.bytes)}`));
+  fileBox.append(meta);
+  card.append(fileBox);
+
+  const ctaRow = el('div', 'dl-cta-row');
+  const primary = rec.sources[0];
+  const link = el('a', 'btn accent'); link.href = primary.url; link.rel = 'noopener noreferrer';
+  link.append(icon('download'), el('span', '', `下载 ${M.assetFormat(rec)} · ${M.formatBytes(rec.bytes)}`));
+  ctaRow.append(link);
+  for (const src of rec.sources.slice(1)) {
+    const mirror = el('a', 'btn sm', sourceName[src.kind]); mirror.href = src.url; mirror.rel = 'noopener noreferrer';
+    ctaRow.append(mirror);
+  }
+  card.append(ctaRow);
+
+  const verifyStatus = el('small', 'hint dl-verify-status');
+  const reportCopy = (ok: boolean, copied: string) => {
+    verifyStatus.textContent = ok ? `已复制：${copied}` : '未能访问剪贴板，请手动选择复制。';
+  };
+  card.append(serverAddressBox(server, dev, reportCopy));
+
+  const verifyRow = el('div', 'dl-verify');
+  const verifyCmd = M.verifyCommand({ os, name: rec.name });
+  const copyHashBtn = button(`SHA-256 · ${rec.sha256.slice(0, 12)}…`, () => copy(rec.sha256, ok => {
+    verifyStatus.textContent = ok ? `已复制完整 SHA-256（${rec.sha256.slice(0, 12)}…）` : '未能访问剪贴板，请下方卡片手动复制。';
+  }), 'btn sm', 'copy');
+  const copyCmdBtn = button('复制校验命令', () => copy(verifyCmd, ok => {
+    verifyStatus.textContent = ok ? `已复制：${verifyCmd}` : '未能访问剪贴板，请手动复制。';
+  }), 'btn sm', 'terminal');
+  verifyRow.append(copyHashBtn, copyCmdBtn);
+  card.append(verifyRow, verifyStatus);
+  return card;
+}
+
+function quickGuideCard(os: ReleaseOs, entries: ResolvedAsset[], server: string, dev: boolean) {
+  const card = el('section', 'card dl-card s7');
+  card.append(cardHead(`${M.osLabel(os)} 安装后执行指令`, `共 ${entries.length} 个可用包`));
+  const archTips = entries.map(e => `${M.archLabel(e.asset.arch)} (${M.assetFormat(e.asset)})`).join('、');
+  const bin = os === 'windows' ? 'ryreach' : './ryreach';
+  const sampleName = entries[0]?.asset.name ?? '<下载文件名>';
+  const verifyCmd = M.verifyCommand({ os, name: sampleName });
+  const configCmd = M.configServerCommand(server, dev, bin);
+  const pairCmd = M.pairCommand(server, '<配对码>', dev, bin);
+  const hint = el('small', 'hint');
+  const devHint = dev ? '（本地 HTTP 测试命令需带 --development）' : '';
+  const stepItems: RichStep[] = os === 'windows'
+    ? [
+        { lead: [`下方按需选择安装包（${archTips}），先核对 SHA-256 再运行安装程序：`], cmds: [{ label: '校验示例（具体文件名见下方卡片）', text: verifyCmd }] },
+        { lead: ['安装结束若弹出地址窗口请填入下方服务地址', devHint, '；或直接在终端执行设置命令：'], cmds: [{ label: '服务地址', text: server }, { label: '设置服务地址', text: configCmd }] },
+        { lead: ['打开「', inlineRouteLink({ page: 'devices' }, '设备'), '」→「连接设备」获取配对码，替换 ', inlineCode('<配对码>'), ' 后在被控设备运行：'], cmds: [{ label: '配对设备', text: pairCmd }] },
+        { lead: ['安装器已自动启动服务；运行下方命令确认已配对且在线（Worker + Agent/完整包如需 SSH 可另行运行 ', inlineCode('ryreach ssh enable'), '）：'], cmds: [{ label: '检查连接状态', text: 'ryreach status' }] },
+      ]
+    : [
+        { lead: [`从下方选择对应架构（${archTips}），核对 SHA-256 后解压并进入含 `, inlineCode('ryreach'), ' 的目录：'], cmds: [{ label: '校验示例（具体文件名见下方卡片）', text: verifyCmd }] },
+        { lead: ['在解压目录执行以下命令写入当前服务地址', devHint, '：'], cmds: [{ label: '服务地址', text: server }, { label: '写入服务地址', text: configCmd }] },
+        { lead: ['打开「', inlineRouteLink({ page: 'devices' }, '设备'), '」→「连接设备」获取配对码，替换 ', inlineCode('<配对码>'), ' 后运行配对：'], cmds: [{ label: '配对设备', text: pairCmd }] },
+        { lead: ['启动前台 Worker 并保持终端开启（按 ', inlineCode('Ctrl+C'), ' 等当前操作完成后退出）；另开终端可执行状态检查：'], cmds: [{ label: '启动前台 Worker', text: './ryreach run' }, { label: '检查连接状态', text: './ryreach status' }] },
+      ];
+  card.append(renderRichSteps(stepItems, (ok, copied) => { hint.textContent = ok ? `已复制：${copied}` : '未能访问剪贴板，请手动复制。'; }), hint);
+  const footer = el('footer');
+  footer.append(arrowLinkText({ page: 'devices' }, '去生成配对码'), arrowLinkText({ page: 'mcp' }, '查看 MCP 接入'));
+  card.append(footer);
+  return card;
+}
+
+function packageCard(release: Release, asset: ReleaseAsset, server: string, dev: boolean, spanClass = '') {
+  const { os, portable, info, platform } = describeAsset(asset);
+  const card = el('section', `card dl-card${spanClass ? ` ${spanClass}` : ''}`); card.setAttribute('aria-label', `${info.title} · ${platform}`);
+  const head = el('header'); const titles = el('span', 'dl-t'); titles.append(el('b', '', info.title), el('small', '', portable ? `${platform} · ${info.who}` : info.who));
+  head.append(thumb(asset.kind === 'node' && os === 'windows' ? 'devices' : osIcon[os]), titles, pill(asset.signed ? '已签名' : '未签名', asset.signed ? 'ok' : 'warn'));
   card.append(head, el('p', 'dl-lead', info.lead));
-  const get = el('div', 'dl-get'); const meta = el('span'); meta.append(el('b', 'mono', asset.name), el('small', '', `${release.version} · Windows ${asset.arch} · ${M.formatBytes(asset.bytes)} · ${time(release.publishedAt)}`));
+
+  const get = el('div', 'dl-get'); const meta = el('span');
+  meta.append(el('b', 'mono', asset.name), el('small', '', `${release.version} · ${platform} · ${M.assetFormat(asset)} · ${M.formatBytes(asset.bytes)} · ${time(release.publishedAt)}`));
   get.append(meta);
   const primary = asset.sources[0]; const link = el('a', 'btn primary'); link.href = primary.url; link.rel = 'noopener noreferrer'; link.append(icon('download'), el('span', '', '下载'));
   get.append(link); card.append(get);
-  const hash = el('div', 'dl-get'); const hashMeta = el('span'); hashMeta.append(el('small', '', 'SHA-256'), el('b', 'mono', asset.sha256)); hash.append(hashMeta);
+
+  const hash = el('div', 'dl-get'); const hashMeta = el('span');
+  const cmd = M.verifyCommand({ os, name: asset.name });
+  hashMeta.append(el('small', '', `SHA-256（核验：${cmd.split(' ')[0]}）`), el('b', 'mono', asset.sha256)); hash.append(hashMeta);
   const hint = el('small', 'hint');
-  hash.append(iconButton('copy', '复制 SHA-256', () => copy(asset.sha256, ok => { hint.textContent = ok ? '已复制，可用 Get-FileHash 核对。' : '未能访问剪贴板，请手动选择复制。'; }), 'btn icon sm'));
+  hash.append(iconButton('copy', '复制 SHA-256', () => copy(asset.sha256, ok => { hint.textContent = ok ? `已复制，可用「${cmd}」核对。` : '未能访问剪贴板，请手动选择复制。'; }), 'btn icon sm'));
   card.append(hash, hint);
+
   card.append(el('h4', '', '包里有什么')); const contents = el('ul', 'bullets'); info.contents.forEach(item => contents.append(el('li', '', item))); card.append(contents);
-  card.append(el('h4', '', '怎么装')); const steps = el('ol', 'steps'); (asset.kind === 'agent' ? agentInstallSteps : installSteps).forEach(item => steps.append(el('li', '', item))); card.append(steps);
+  card.append(el('h4', '', '怎么装 · 安装后执行与填写'));
+  card.append(renderRichSteps(buildPackageSteps({ os, kind: asset.kind, portable, assetName: asset.name, verifyCmd: cmd, server, dev }), (ok, copied) => {
+    hint.textContent = ok ? `已复制：${copied}` : '未能访问剪贴板，请手动复制。';
+  }));
+
   const footer = el('footer');
+  footer.append(button('复制校验命令', () => copy(cmd, ok => { hint.textContent = ok ? `已复制校验命令：${cmd}` : '未能访问剪贴板，请手动复制。'; }), 'btn sm', 'terminal'));
   for (const source of asset.sources.slice(1)) { const mirror = el('a', 'btn sm', `从 ${sourceName[source.kind]} 下载`); mirror.href = source.url; mirror.rel = 'noopener noreferrer'; footer.append(mirror); }
-  if (footer.childElementCount) card.append(footer);
+  card.append(footer);
   return card;
 }
-// 没有已发布签名包时：左侧说明发布状态，右侧给出从安装到上线的完整路径。
-function installGuide(configured: boolean | null) {
+
+function historyCard(older: { release: Release; assets: ReleaseAsset[] }[], selectedOs: ReleaseOs) {
+  const card = el('section', 'card dl-history');
+  const filterBar = el('div', 'chips'); filterBar.setAttribute('aria-label', '历史版本筛选');
+  for (const [all, label] of [[false, M.osLabel(selectedOs)], [true, '全部平台']] as [boolean, string][]) {
+    const b = el('button', 'chip', label); b.type = 'button';
+    b.setAttribute('aria-pressed', String(downloadHistoryAll === all));
+    b.addEventListener('click', () => { downloadHistoryAll = all; render(); });
+    filterBar.append(b);
+  }
+  card.append(cardHead('历史版本', '保留各平台已签发记录与源站校验入口', filterBar));
+  const list = el('ul', 'history');
+  let rendered = 0;
+  for (const { release, assets } of older) {
+    const matched = downloadHistoryAll ? assets : assets.filter(a => M.assetOs(a) === selectedOs);
+    if (!matched.length) continue;
+    rendered++;
+    const li = el('li');
+    const left = el('div', 'dl-hist-meta');
+    left.append(el('b', '', release.version), el('span', 'muted', `${release.tag} · ${time(release.publishedAt)}`));
+    const items = el('div', 'dl-hist-assets');
+    for (const asset of matched) {
+      const pillRow = el('div', 'dl-hist-asset');
+      pillRow.append(el('span', 'dl-hist-tag', `${platformLabel(asset)} · ${M.assetFormat(asset)}`));
+      for (const source of asset.sources) {
+        const link = el('a', 'btn sm', sourceName[source.kind]); link.href = source.url; link.rel = 'noopener noreferrer'; link.title = asset.name;
+        pillRow.append(link);
+      }
+      pillRow.append(iconButton('copy', `复制 ${asset.name} SHA-256`, () => copy(asset.sha256, ok => message(ok ? `已复制 ${asset.name} 的 SHA-256` : '复制失败，请手动查看。', ok ? 'ok' : 'warn')), 'btn icon sm'));
+      items.append(pillRow);
+    }
+    li.append(left, items);
+    list.append(li);
+  }
+  if (!rendered) card.append(el('p', 'hint', `历史发布中暂无 ${M.osLabel(selectedOs)} 安装包，可切到「全部平台」查看其他系统的历史版本。`));
+  else card.append(list);
+  return card;
+}
+
+function installStatusCopy(configured: boolean | null, selectedOs: ReleaseOs, detectedOs: ReleaseOs, availablePlatforms: ReleaseOs[]) {
+  const hasOther = availablePlatforms.length > 0;
+  if (configured === null) {
+    return {
+      hasOther,
+      badge: '读取失败',
+      heading: '暂时无法读取',
+      lead: '发行清单暂时读取不到，请刷新页面重试；也可按下方或右侧说明从源码编译与配对。',
+    };
+  }
+  if (hasOther) {
+    return {
+      hasOther,
+      badge: '该平台待发布',
+      heading: `暂未发布 ${M.osLabel(selectedOs)} 安装包`,
+      lead: `当前发行清单仅包含 ${availablePlatforms.map(M.osLabel).join('、')} 发行包；${M.osLabel(selectedOs)} 归档或安装包将在验证后列入同一清单。`,
+    };
+  }
+  if (configured) {
+    return {
+      hasOther,
+      badge: '暂无可下载的包',
+      heading: '暂无可下载的包',
+      lead: `发行清单里还没有版本。发布后将按 ${M.osLabel(detectedOs)} / macOS / Linux 分类列出版本、架构、SHA-256 与三源下载链接。`,
+    };
+  }
+  return {
+    hasOther,
+    badge: '暂无可下载的包',
+    heading: '暂无可下载的包',
+    lead: '这台服务尚未配置发行清单。各平台安装包或便携归档发布并登记后，这里将自动按系统呈现。',
+  };
+}
+
+function installGuide(configured: boolean | null, selectedOs: ReleaseOs, detected: { os: ReleaseOs; arch: 'x64' | 'arm64' }, availablePlatforms: ReleaseOs[], server: string, dev: boolean) {
   const grid = el('div', 'grid');
-  const status = el('section', 'card ink s5'); status.append(cardHead('发布状态'));
-  const big = el('b', '', '尚无签名包'); big.style.fontSize = '30px'; big.style.fontWeight = '300';
-  status.append(big, el('p', 'dl-lead', configured === null ? '发行清单暂时读取不到，下面的安装路径仍然适用。' : configured ? '发行清单里还没有版本。发布后，这里会列出版本、架构、发布日期、SHA-256 以及 GitHub、Gitee、Reach 下载源。' : '这台服务尚未配置发行清单。签名包发布并登记清单后，这里会列出可下载的版本与校验值。'));
-  const list = el('ul', 'bullets'); for (const text of ['GitHub 与 Gitee 发布同一提交、同一标签、同一安装包', 'GitHub 不可达时由 Gitee 分发，Reach 服务提供已核验的同版本备用', '每个包都给出 SHA-256，便于下载后核对']) list.append(el('li', '', text));
+  const status = el('section', 'card ink s5 dl-hero');
+  const info = installStatusCopy(configured, selectedOs, detected.os, availablePlatforms);
+  status.append(cardHead(`${M.osLabel(selectedOs)} 发布状态`, '', pill(info.badge, 'warn')));
+  const big = el('b', 'dl-ver', info.heading);
+  status.append(big, el('p', 'dl-lead', info.lead));
+  if (info.hasOther) {
+    const jumps = el('div', 'dl-cta-row');
+    for (const other of availablePlatforms) {
+      jumps.append(button(`切换到 ${M.osLabel(other)} 下载`, () => { downloadOs = other; downloadArch = 'all'; render(); }, 'btn accent', osIcon[other]));
+    }
+    status.append(jumps);
+  }
+  const statusHint = el('small', 'hint dl-verify-status');
+  status.append(serverAddressBox(server, dev, (ok, copied) => {
+    statusHint.textContent = ok ? `已复制服务地址：${copied}` : '未能访问剪贴板，请手动复制。';
+  }), statusHint);
+  const list = el('ul', 'bullets');
+  for (const text of ['GitHub 与 Gitee 同步同一提交、标签与各平台构建产物', 'GitHub 不可达时由 Gitee 分发，Reach 镜像提供同摘要备用源', '每个安装包与便携归档均提供 SHA-256 与原生校验命令']) list.append(el('li', '', text));
   status.append(list);
-  const guide = el('section', 'card dl-card s7'); guide.append(cardHead('新设备从安装到上线'));
-  const steps = el('ol', 'steps'); [...installSteps.slice(0, 2), '在「设备」生成一次性配对码，到那台设备上运行配对命令。', '设备出现在列表中；首次上报能力后显示为在线，并生成上线通知。'].forEach(item => steps.append(el('li', '', item)));
-  guide.append(steps);
-  const footer = el('footer'); footer.append(arrowLinkText({ page: 'devices' }, '去生成配对码')); guide.append(footer);
+
+  const guide = el('section', 'card dl-card s7');
+  guide.append(cardHead(`在 ${M.osLabel(selectedOs)} 上构建与接入`));
+  const platBullets = el('ul', 'bullets');
+  const platFacts = selectedOs === 'macos'
+    ? ['Reach Worker 源码（Rust src/node）原生支持 Darwin Apple Silicon / Intel', '支持通过便携 ./ryreach 在终端前台完成配对并执行命令与文件操作', '本机控制端 CLI 与 MCP 基于 Node.js 24，直接在 macOS 运行']
+    : selectedOs === 'linux'
+      ? ['Reach Worker 源码（Rust src/node）原生编译 Linux x64 / ARM64 目标', '服务端 deploy/build-release.mjs 与控制端 MCP 均可直接在 Linux 运行', '支持配合 systemd / 后台会话与无头 SSH 进行设备排查']
+      : ['Windows 安装器位于 packaging/windows/（含延迟自启服务与离线 OpenSSH）', '签名正式包内置 Get-FileHash 与 Ed25519 自更新验签', '开发或预览验证可直接从 apps/reach 编译 reach.exe 与 ryreach.exe'];
+  for (const text of platFacts) platBullets.append(el('li', '', text));
+  guide.append(platBullets);
+
+  const buildCmd = 'cargo build --release --bin reach --bin ryreach';
+  const buildBox = el('div', 'dl-get'); const buildMeta = el('span');
+  buildMeta.append(el('small', '', `${M.osLabel(selectedOs)} 从源码编译（在 apps/reach 目录）`), el('b', 'mono', buildCmd));
+  buildBox.append(buildMeta, iconButton('copy', '复制编译命令', () => copy(buildCmd, ok => message(ok ? '已复制编译命令' : '复制失败，请手动复制。', ok ? 'ok' : 'warn')), 'btn icon sm'));
+  guide.append(buildBox);
+
+  const srcBin = selectedOs === 'windows' ? '.\\target\\release\\ryreach.exe' : './target/release/ryreach';
+  const devHint = dev ? '（当前为本地 HTTP 测试地址，命令需保留 --development）' : '';
+  const guideHint = el('small', 'hint');
+  const srcSteps: RichStep[] = [
+    { lead: ['若从源码运行，先写入下方服务地址', devHint, '（若已通过安装包安装到 PATH，把命令前缀改为 ', inlineCode('ryreach'), ' 即可）：'], cmds: [{ label: '当前服务地址', text: server }, { label: '写入服务地址', text: M.configServerCommand(server, dev, srcBin) }] },
+    { lead: ['前往「', inlineRouteLink({ page: 'devices' }, '设备'), '」点击「连接设备」生成配对码，替换 ', inlineCode('<配对码>'), ' 后执行配对：'], cmds: [{ label: '配对设备', text: M.pairCommand(server, '<配对码>', dev, srcBin) }] },
+    { lead: ['启动 Worker 并保持运行（按 ', inlineCode('Ctrl+C'), ' 等当前操作结束后停止）；另开终端可执行状态检查，上线后设备会出现在「', inlineRouteLink({ page: 'devices' }, '设备'), '」：'], cmds: [{ label: '启动 Worker', text: `${srcBin} run` }, { label: '查看连接状态', text: `${srcBin} status` }] },
+  ];
+  guide.append(renderRichSteps(srcSteps, (ok, copied) => { guideHint.textContent = ok ? `已复制：${copied}` : '未能访问剪贴板，请手动复制。'; }), guideHint);
+  const footer = el('footer'); footer.append(arrowLinkText({ page: 'mcp' }, '查看 MCP 跨平台接入'), arrowLinkText({ page: 'devices' }, '去生成配对码')); guide.append(footer);
   grid.append(status, guide); return grid;
 }
 

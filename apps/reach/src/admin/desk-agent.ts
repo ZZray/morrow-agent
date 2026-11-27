@@ -22,18 +22,22 @@ export function elapsedLabel(ms:number){const total=Math.max(0,Math.floor(ms/100
 interface AgentView {live:boolean;createdAt?:number;steps:number;running:number;guidance:Guidance[];canGuide:boolean;canRetry:boolean;showGuideForm?:boolean}
 interface Handlers {guide(text:string):Promise<void>;retry():void}
 function el<K extends keyof HTMLElementTagNameMap>(tag:K,className='',content?:string){const node=document.createElement(tag);if(className)node.className=className;if(content!==undefined)node.textContent=content;return node;}
+function iconSvg(paths:string[]){const ns='http://www.w3.org/2000/svg',node=document.createElementNS(ns,'svg');node.setAttribute('width','13');node.setAttribute('height','13');node.setAttribute('viewBox','0 0 24 24');node.setAttribute('class','ic');node.setAttribute('aria-hidden','true');for(const d of paths){const p=document.createElementNS(ns,'path');p.setAttribute('d',d);node.append(p);}return node;}
 
 // 面板节点只建一次；每次 update 只改文字与列表，输入框里正在写的引导不会被清掉。
 export class AgentPanel {
   readonly root:HTMLElement;
-  private readonly meta:HTMLElement;private readonly list:HTMLOListElement;private readonly form:HTMLFormElement;private readonly field:HTMLTextAreaElement;private readonly submit:HTMLButtonElement;private readonly retry:HTMLButtonElement;
+  readonly retry:HTMLButtonElement;
+  private readonly meta:HTMLElement;private readonly list:HTMLOListElement;private readonly form:HTMLFormElement;private readonly field:HTMLTextAreaElement;private readonly submit:HTMLButtonElement;
   private view:AgentView|null=null;private timer=0;private sending=false;
   constructor(handlers:Handlers){
     this.root=el('div','agent-panel');this.meta=el('div','agent-meta');this.list=el('ol','agent-guidance');
     this.form=el('form','agent-guide');this.field=el('textarea');this.field.rows=1;this.field.maxLength=GUIDANCE_MAX;this.field.placeholder='补充引导：例如「先别改配置，只看日志」';this.field.setAttribute('aria-label','补充引导');
     this.submit=el('button','btn','发送引导');this.submit.type='submit';
     this.form.append(this.field,this.submit);
-    this.retry=el('button','quiet agent-retry','重新回答');this.retry.type='button';this.retry.title='用同一条消息、同一执行位置再回答一次';this.retry.addEventListener('click',()=>handlers.retry());
+    this.retry=el('button','msg-act agent-retry');this.retry.type='button';this.retry.title='用同一条消息、同一执行位置再回答一次';
+    this.retry.append(iconSvg(['M20 11a8 8 0 1 0-2.3 5.7','M20 5v6h-6']),el('span','','重新回答'));
+    this.retry.addEventListener('click',()=>handlers.retry());
     this.field.addEventListener('input',()=>this.paintForm());
     this.field.addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){event.preventDefault();this.form.requestSubmit();}});
     this.form.addEventListener('submit',async event=>{event.preventDefault();const text=this.field.value.trim();if(!text||this.sending)return;this.sending=true;this.paintForm();
@@ -41,7 +45,7 @@ export class AgentPanel {
     this.root.append(this.meta,this.list,this.form,this.retry);
   }
   update(view:AgentView){
-    this.view=view;const visible=view.live||view.guidance.length>0||view.canRetry;this.root.hidden=!visible;
+    this.view=view;const visible=view.live||view.guidance.length>0||(this.retry.parentElement===this.root&&view.canRetry);this.root.hidden=!visible;
     this.paintMeta();clearInterval(this.timer);if(view.live&&view.createdAt)this.timer=window.setInterval(()=>{if(!this.root.isConnected){clearInterval(this.timer);return;}this.paintMeta();},1000);
     this.list.hidden=!view.guidance.length;
     this.list.replaceChildren(...view.guidance.map(item=>{const row=el('li','agent-guidance-item');row.append(el('span','agent-guidance-text',item.text||'（引导正文未读取）'),el('span','agent-guidance-state '+guidanceTone(item.status),guidanceLabel(item.status)));return row;}));

@@ -324,3 +324,12 @@ RyDev 的 0.1.8 和 0.1.9 预览版已分别从 Codex 完成现场 Agent 委托�
 
 **后续需确认。** 选定 OSS 存储位置与访问方式、版本化文件名及下载链接有效期；发布时核对清单中的版本和 SHA-256 与 OSS 下载的实际文件一致，并检查页面缓存和旧版本链接。GitHub/Gitee 同提交、标签及发行附件的既有要求仍适用；OSS 作为下载分发方向，不代替双端发行核验。
 
+<a id="desk-bubble-multidownload-20261127"></a>
+## 对话气泡悬浮操作栏与多平台下载页（2026-11-27）
+
+来源：用户 2026-11-27 在控制台查看现场效果后提出的两项交互与布局要求（「这个样式要改改，对话气泡，改完我看看效果。有些操作按钮可以悬浮的时候显示」与「同时设计，这里应该是多平台的，注意好好设计下载页面」）。
+
+- **对话气泡与悬浮胶囊小工具栏（已实现并本地验收）。** 用户消息右对齐渲染为带柔和强调边线的 `.user-bubble-wrap` 圆角气泡（隐藏冗余文本标题、保留 `.sr-only`）与悬浮「复制」胶囊（有技能/目标/附件标签时保持 `+10px` 净距不压字）；助手回复正文渲染进柔和卡片（`:empty` 隐藏），将「复制回答 / 重新回答 / 查询原记录」收拢到 Reach 风格半透明圆角胶囊 `.message-actions`（点击仅高亮当前复制钮 `.is-copied`）。桌面精确指针（`> 720px`）默认隐藏且不占垂直空间，悬停气泡下缘、键盘聚焦或复制锁定时以 `140ms / 160ms` 平滑显现；**正常完成态（`completed`）隐藏「回答已保存」文字（`.message-status.is-settled` 视觉零高隐身）**，仅在进行中、已停止及失败/未确认/断连态内联显示状态文字并常驻操作胶囊；`<= 720px` / 触屏端操作胶囊保持右对齐内联常显（注：`platform/tests/` 内依赖 `.message-status('回答已保存')` 的 Playwright 集成用例因环境无 `REACH_PLAYWRIGHT_ENTRY` 尚待直接跑通确认）。
+- **多平台下载页与安装后具体指令直出（已实现并本地+隔离清单一览验收）。** `src/service/releases.ts` 与 `src/admin/model.ts`、`admin.ts`、`admin.css` 支持 `Windows / macOS / Linux` 切换（自动识别本机系统并允许切换，保留 macOS/Linux 仅便携 Worker 归档约束，且兼容省略 `os` 的旧清单），提供架构筛选、单/多包平衡版式、各系统原生 SHA-256 校验命令（`Get-FileHash` / `shasum -a 256` / `sha256sum`）、可按平台切换的历史版本及未发布平台的如实说明与源码构建路径。页面直接基于实时 `M.serverBase(location.href)` 与 `M.isDevelopmentServer(server)` 输出当前要填的服务地址与可一键复制的具体 CLI 命令：`config set server-url`（本地环回 HTTP 自动加 `--development`）、`pair <配对码> --server ...`、`ryreach status` / `./ryreach run`，并对 Windows `Agent` / `完整包` 按需补充 `ryreach ssh enable`、对 macOS/Linux 便携归档补充 `tar -xzf` / `unzip` 与 `./ryreach` 前缀、对未发布空态给源码编译二进制路径；`<= 640px` 使用自适应等高单行胶囊，避免「待发布」折行挤压。
+
+

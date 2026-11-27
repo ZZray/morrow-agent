@@ -217,4 +217,52 @@
 
 本轮覆盖云端对话。后续使用 [Codex 调用入口](../knowledge/product-decisions.md#codex-remote-agent-test-20261127)完成 RyDev 远端 Agent 执行及原始回执核对，结果见[验收记录](../evidence/2026-11-24-rydev-service-update.md#rydev-019-preview-20261127)。
 
+## 2026-11-27 对话气泡悬浮操作栏与多平台下载页设计与验收
+
+按用户两项反馈（「这个样式要改改，对话气泡，改完我看看效果。有些操作按钮可以悬浮的时候显示」与「同时设计，这里应该是多平台的，注意好好设计下载页面」）完成设计与验收（均在 `apps/reach/`）：
+
+- **改动文件（9 个，未动 `crates/`，未提交）**：
+  - 对话气泡与悬浮操作：`src/admin/desk-agent.ts`、`src/admin/desk.ts`、`src/admin/desk.css`。
+  - 多平台下载页与测试：`src/service/releases.ts`、`src/admin/model.ts`、`src/admin/admin.ts`、`src/admin/admin.css`、`tests/admin-model.test.ts`、`tests/device-events.test.ts`。
+- **实现要点**：
+  - **对话气泡与单行悬浮操作栏**：用户消息改为右对齐柔和描边气泡（隐藏冗余「你」文字、`.sr-only` 保留可读、悬浮显示「复制」）；助手正文以圆角卡片包覆（`:empty` 隐藏），保留 `.message-status` 文案「回答已保存」并与「复制回答 / 重新回答 / 查询原记录」合入 `.message-foot` 同一水平行；桌面端（`hover: hover` + `> 720px`）闲置隐藏操作按钮，于消息悬浮/聚焦/复制锁定时淡入，运行中、异常态及 `<= 720px` / 触屏常显。
+  - **多平台下载页（Windows / macOS / Linux）**：`releases.ts` 兼容可选 `os`、`format` 与 `universal` 架构并保留 macOS / Linux 便携 Worker 规则；页面顶部按本机系统预选并提供三平台切换与架构筛选，单包以 `s5 ink` 主推荐卡 + `s7` 详情卡并排消除留白，多包采用 `s5 + s7` 快速指南配多列详情卡，无包平台如实说明状态并提供源码编译与 MCP 入口；附系统原生哈希校验命令（`Get-FileHash` / `shasum -a 256` / `sha256sum`）及可按平台切换的历史版本列表。
+- **构建、测试与真实浏览器验收**：
+  - `tsc --noEmit`、`tsc --project tsconfig.admin.json --noEmit`、`npm run build:admin` 全部退出码 `0`；管理端 12 个测试文件 **52/52** 通过（0 失败，0 跳过，10857.1ms）。
+  - 真实浏览器在 `18921` 核验气泡暗/亮主题闲置与悬停态（`复制回答` 与 `重新回答` 严格同行 `y=644.47`、`sameRow: true`）、`390×844` 手机端及未配置多平台下载页（`bubble-idle-dark.png`、`bubble-hover-dark.png`、`bubble-hover-light.png`、`bubble-mobile-390.png`、`downloads-unconfigured-macos.png`）；在临时 `18929` 隔离服务核验多平台 `releases.json`（Windows/macOS/Linux 切换、ARM64 筛选、历史切换、亮色主题稳态胶囊对比、`390×844` 三栏单行选项卡：`downloads-multi-{win-dark,win-light,mac-dark,linux-dark,mobile-390}.png`），临时服务已停用。
+  - 已知现象记录：在包含超长无空格设备路径的历史会话中，`.transcript` 在 `390px` 视口底部仍有一条横向滚动条（`.message-target` 未强制全断行）。
+- **只读代码复审**：通过 `ocr delegate rule --format json` 核对全部 9 个文件，0 高/中置信度缺陷，无虚构发行包与无秘密凭据泄露。
+
+<a id="downloads-concrete-commands-20261127"></a>
+## 2026-11-27 下载页具体服务地址与安装后执行指令直出
+
+按用户反馈（「下载页面要优化的另一个是, 安装完成后要执行什么指令，填写什么地址都要写上，步骤清晰，而不是根据xxx。ok？」）完成跟进优化，并顺带修复 `390px` 移动端「待发布」标签换行：
+
+- **改动文件（4 个核心文件 + 文档，未动 `crates/`，未提交）**：`src/admin/model.ts`、`src/admin/admin.ts`、`src/admin/admin.css`、`tests/admin-model.test.ts`（CLI 参数核对自 `src/node/main.rs` 实码：`config set server-url`、`pair`、`status`、`run`、`ssh enable`）。
+- **实现要点**：
+  - 在 `model.ts` 抽离并单测覆盖 `isDevelopmentServer`、`configServerCommand`、带可定制命令前缀的 `pairCommand` 及 `archiveExtractCommand`。
+  - 下载页所有流程块（Hero、多包接入卡、单包「怎么装」、未发布空态源码编译指引）直接展示实时 `M.serverBase(location.href)` 服务地址及逐条可一键复制命令框 `.dl-cmd`（带绿色 `.copied` 即时反馈），消除「填写本服务地址/按说明操作」等模糊描述。
+  - 修复 `@media (max-width: 640px)` `.dl-os-tabs`：改为 `flex: 1 0 auto` + `white-space: nowrap` 避免 `待发布` 状态在 `Windows / macOS` tab 中竖向折字；`.dl-hero` 增加 `grid-template-columns: minmax(0, 1fr)` 确保长网址与命令在 `390px` 窄屏正常换行、零溢出。
+- **构建、测试与真实浏览器验收**：
+  - 末次修改后通过 `tsc --noEmit`、`tsc --project tsconfig.admin.json --noEmit`、`npm run build:admin` 与 12 份管理端测试 **53/53** 通过（0 失败，0 跳过，9563.5ms；另有 `tests/portable-worker.test.ts` 需设置 `REACH_NODE_BINARY` 才能独立运行）。
+  - 真实浏览器先后在临时隔离 `18929`（Windows 双包、macOS 亮色单包与一键复制 `.copied` 状态；测试后已停止清理）及本地 `18921`（暗色 `1280×860` 未配置态、亮色 `390×844` 顶部 `Windows 待发布 / macOS 待发布 / Linux 待发布` 单行等高及滚动后 6 个 `.dl-cmd` 命令框无溢出）完成验收，并恢复 `18921/#/desk` 暗色 `1280×860` 登录态。
+- **待处理**：`crates/` 未改动；待用户明确提交范围与推送目标分支/远端后再执行 Git 提交推送。
+
+<a id="desk-hover-toolbar-20261127"></a>
+## 2026-11-27 对话消息悬浮胶囊小工具栏与隐藏「回答已保存」
+
+按用户反馈（「这个俩操作，包括复制等操作。建议悬浮的时候增加小工具栏，参考页面风格。而不是直接显示到页面上，回答已保存也不用显示，除非保存失败。可以吗？」）完成二次打磨（`apps/reach/src/admin/desk.ts`、`apps/reach/src/admin/desk.css`）：
+
+- **实现要点**：
+  - 将消息操作按钮（用户「复制」；助手「复制回答 / 重新回答 / 查询原记录」）收拢为贴合 Reach `.nav` / `.popover` 风格的半透明圆角胶囊工具栏（`.message-actions`），抽取 `bindMessageCopyButton` 去重且点击仅高亮当前复制钮（`.is-copied`）。
+  - 桌面端（`hover: hover` + `> 720px`）闲置时零高隐藏；悬停或聚焦气泡时在卡片右下角沿下缘无缝浮现（用户消息通过 `.user-bubble-wrap` 及 `margin-top: 20px` 为下方技能/目标元数据保留 `+10px` 盒模型净空）。
+  - 正常完成且无观测丢失的回答（`completed`）通过 `.is-settled`（`1×1px clip` 零高隐身）在界面上完全隐藏「回答已保存」；运行中、停止（`已停止`）及失败/未确认态继续在 `.message-foot` 左侧可见提示并与操作胶囊同排常驻；`<= 720px` / 触屏保持右对齐内联胶囊。
+- **构建、测试、浏览器验收与边界**：
+  - 末次 CSS 修改后 `tsc --noEmit`、`tsc --project tsconfig.admin.json --noEmit`、`npm run build:admin` 与 12 份管理端单测 **53/53** 通过（0 失败，0 跳过）。
+  - 真实浏览器在 `18921` 核验闲置零噪声（`hover-toolbar-idle-dark.png`）、助手明暗双主题悬浮与复制高亮（`hover-toolbar-assistant-{dark,light}.png`）、用户带技能气泡悬浮净空 `+10px`（`hover-toolbar-user-dark.png`）、停止回答 `已停止` 内联显现（`hover-toolbar-alert-status.png`）与 `390×844` 窄屏表现（`hover-toolbar-mobile-390.png`），0 控制台报错且已清理临时测试会话还原干净工作区。
+  - **边界记录**：`ocr delegate preview/rule` 与 `code-reviewer` 只读复审 0 高/中缺陷；因当前环境未安装 Node Playwright 包（`REACH_PLAYWRIGHT_ENTRY` 未设），尚未实跑 `platform/tests/web.browser.test.ts` 验证其对 `.is-settled`（`clip: rect(0,0,0,0)`）定位器可见性的实际兼容性（注：浏览器沙箱 `webview_browser` 对 `.is-settled` 报告不可见）。
+
+
+
+
 

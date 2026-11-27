@@ -153,3 +153,41 @@ test('desk route keeps the conversation id and ignores malformed ids', () => {
   assert.deepEqual(M.parseRoute('#/desk/not-an-id'), { page: 'desk', id: null });
   assert.equal(M.navSection({ page: 'desk', id: null }), 'desk');
 });
+
+test('post-install configuration, pairing, and archive extraction commands include exact server URL and dev flag', () => {
+  assert.equal(M.isDevelopmentServer('http://127.0.0.1:18921'), true);
+  assert.equal(M.isDevelopmentServer('http://localhost:18921'), true);
+  assert.equal(M.isDevelopmentServer('http://[::1]:18921'), true);
+  assert.equal(M.isDevelopmentServer('https://nmrkit.ciqtek.com/reach'), false);
+  assert.equal(M.isDevelopmentServer('not-a-url'), false);
+
+  assert.equal(M.configServerCommand('https://nmrkit.ciqtek.com/reach', false), 'ryreach config set server-url https://nmrkit.ciqtek.com/reach');
+  assert.equal(M.configServerCommand('http://127.0.0.1:18921', true, './ryreach'), './ryreach config set server-url http://127.0.0.1:18921 --development');
+  assert.equal(M.pairCommand('https://nmrkit.ciqtek.com/reach', '482910', false), 'ryreach pair 482910 --server https://nmrkit.ciqtek.com/reach');
+  assert.equal(M.pairCommand('http://127.0.0.1:18921', '<配对码>', true, './ryreach'), './ryreach pair <配对码> --server http://127.0.0.1:18921 --development');
+  assert.equal(M.archiveExtractCommand('reach-worker-arm64.tar.gz'), 'tar -xzf reach-worker-arm64.tar.gz');
+  assert.equal(M.archiveExtractCommand('reach-worker-x64.tgz'), 'tar -xzf reach-worker-x64.tgz');
+  assert.equal(M.archiveExtractCommand('reach-worker-x64.zip'), 'unzip reach-worker-x64.zip');
+  assert.equal(M.archiveExtractCommand('Reach-Setup.exe'), null);
+});
+
+test('multi-platform download helpers detect client OS, classify legacy assets and pick recommendations', () => {
+  assert.deepEqual(M.detectClientPlatform('Mozilla/5.0 (Macintosh; ARM64 Mac OS X 14_0)', 'MacIntel'), { os: 'macos', arch: 'arm64' });
+  assert.deepEqual(M.detectClientPlatform('Mozilla/5.0 (Windows NT 10.0; Win64; x64)', 'Win32'), { os: 'windows', arch: 'x64' });
+  assert.deepEqual(M.detectClientPlatform('Mozilla/5.0 (X11; Linux aarch64)', 'Linux aarch64'), { os: 'linux', arch: 'arm64' });
+  assert.equal(M.assetOs({ name: 'Reach-Setup.exe' }), 'windows');
+  assert.equal(M.assetOs({ name: 'Reach-0.2.0.dmg' }), 'macos');
+  assert.equal(M.assetOs({ name: 'reach-0.2.0-linux.tar.gz' }), 'linux');
+  assert.equal(M.assetOs({ os: 'macos', name: 'reach-cli.tar.gz' }), 'macos');
+  assert.equal(M.assetFormat({ name: 'reach-0.2.0.tar.gz' }), '.tar.gz');
+  assert.equal(M.assetFormat({ name: 'Reach-0.2.0.AppImage' }), '.AppImage');
+  assert.equal(M.verifyCommand({ name: 'Reach-Setup.exe' }), 'Get-FileHash .\\Reach-Setup.exe -Algorithm SHA256');
+  assert.equal(M.verifyCommand({ os: 'macos', name: 'Reach.dmg' }), 'shasum -a 256 Reach.dmg');
+  assert.equal(M.verifyCommand({ os: 'linux', name: 'reach.tar.gz' }), 'sha256sum reach.tar.gz');
+  const macArm: M.ReleaseAsset = { name: 'reach-worker-arm64.tar.gz', kind: 'node', os: 'macos', arch: 'arm64', bytes: 100, sha256: 'a'.repeat(64), signed: false, sources: [{ kind: 'github', url: 'https://github.com/example/a.tar.gz' }] };
+  const macNodeX64: M.ReleaseAsset = { ...macArm, name: 'reach-worker-x64.tar.gz', arch: 'x64' };
+  const winAgentX64: M.ReleaseAsset = { ...macArm, name: 'Reach-Setup.exe', kind: 'agent', os: 'windows', arch: 'x64' };
+  const winNodeX64: M.ReleaseAsset = { ...macArm, name: 'Reach-Node-Setup.exe', kind: 'node', os: 'windows', arch: 'x64' };
+  assert.equal(M.pickRecommendedAsset([macNodeX64, macArm], 'arm64')?.name, 'reach-worker-arm64.tar.gz');
+  assert.equal(M.pickRecommendedAsset([winNodeX64, winAgentX64], 'x64')?.name, 'Reach-Setup.exe');
+});

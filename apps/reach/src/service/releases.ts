@@ -1,4 +1,4 @@
-// Copyright (c) Ray Zhang. Published Windows installer manifest for the download page; never invents a release.
+// Copyright (c) Ray Zhang. Published multi-platform installer manifest (Windows / macOS / Linux) for the download page; never invents a release.
 import { readFile } from 'node:fs/promises';
 import { z } from 'zod';
 import { ReachError } from './errors.ts';
@@ -7,19 +7,22 @@ const httpsUrl = z.string().url().max(2048).refine(v => v.startsWith('https://')
 const assetSchema = z.strictObject({
   name: z.string().min(1).max(256),
   kind: z.enum(['node', 'agent', 'complete']),
-  arch: z.enum(['x64', 'arm64']),
+  os: z.enum(['windows', 'macos', 'linux']).optional(),
+  arch: z.enum(['x64', 'arm64', 'universal']),
+  format: z.string().min(1).max(32).optional(),
   bytes: z.number().int().min(1).max(Number.MAX_SAFE_INTEGER),
   sha256: z.string().regex(/^[a-f0-9]{64}$/),
   signed: z.boolean(),
   sources: z.array(z.strictObject({ kind: z.enum(['github', 'gitee', 'reach']), url: httpsUrl })).min(1).max(3),
-});
+}).refine(asset => (asset.os !== 'macos' && asset.os !== 'linux') || asset.kind === 'node',
+  'Expected a Worker archive for macOS or Linux');
 export const releaseManifestSchema = z.strictObject({
   releases: z.array(z.strictObject({
     version: z.string().min(1).max(64),
     tag: z.string().min(1).max(128),
     publishedAt: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
     notes: z.string().max(4000).optional(),
-    assets: z.array(assetSchema).min(1).max(8),
+    assets: z.array(assetSchema).min(1).max(24),
   })).max(50),
 });
 export type ReleaseManifest = z.infer<typeof releaseManifestSchema>;

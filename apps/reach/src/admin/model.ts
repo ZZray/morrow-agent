@@ -216,10 +216,26 @@ export function eventDetail(event: DeviceEvent, now = Date.now()): string {
   return `${when} · 设备首次上报能力`;
 }
 
-// ---------- 配对命令：服务地址末尾无斜杠，与 Node 配置口径一致 ----------
+// ---------- 配对与接入命令：服务地址末尾无斜杠，与 Node 配置口径一致 ----------
 export function serverBase(pageUrl: string): string { return new URL('./', pageUrl).href.replace(/\/$/, ''); }
-export function pairCommand(server: string, code: string, development: boolean) {
-  return `ryreach pair ${code} --server ${server}${development ? ' --development' : ''}`;
+export function isDevelopmentServer(serverUrl: string): boolean {
+  try {
+    const parsed = new URL(serverUrl);
+    return parsed.protocol === 'http:' && ['127.0.0.1', '[::1]', 'localhost'].includes(parsed.hostname);
+  } catch {
+    return false;
+  }
+}
+export function configServerCommand(server: string, development: boolean, bin = 'ryreach'): string {
+  return `${bin} config set server-url ${server}${development ? ' --development' : ''}`;
+}
+export function pairCommand(server: string, code: string, development: boolean, bin = 'ryreach') {
+  return `${bin} pair ${code} --server ${server}${development ? ' --development' : ''}`;
+}
+export function archiveExtractCommand(name: string): string | null {
+  if (name.endsWith('.zip')) return `unzip ${name}`;
+  if (name.endsWith('.tar.gz') || name.endsWith('.tgz')) return `tar -xzf ${name}`;
+  return null;
 }
 
 // ---------- 操作进度：投递、设备接收、执行、执行结果分开显示 ----------
@@ -303,4 +319,68 @@ export function formatTokens(value: number) {
 // 启用只针对当前草稿，且须本代测试通过、尚未启用。
 export function canEnableModel(view: ModelSettingView) {
   return !!view.saved && view.test?.generation === view.saved.generation && view.test.ok && view.enabled?.generation !== view.saved.generation;
+}
+
+// ---------- 多平台下载口径（Windows / macOS / Linux） ----------
+export type ReleaseOs = 'windows' | 'macos' | 'linux';
+export type ReleaseArch = 'x64' | 'arm64' | 'universal';
+export const releaseOperatingSystems: readonly ReleaseOs[] = ['windows', 'macos', 'linux'];
+export interface ReleaseAsset {
+  name: string;
+  kind: 'node' | 'agent' | 'complete';
+  os?: ReleaseOs;
+  arch: ReleaseArch;
+  format?: string;
+  bytes: number;
+  sha256: string;
+  signed: boolean;
+  sources: { kind: 'github' | 'gitee' | 'reach'; url: string }[];
+}
+export interface Release { version: string; tag: string; publishedAt: number; notes?: string; assets: ReleaseAsset[] }
+
+const OS_NAMES: Record<ReleaseOs, string> = { windows: 'Windows', macos: 'macOS', linux: 'Linux' };
+const ARCH_NAMES: Record<ReleaseArch, string> = { x64: 'x64', arm64: 'ARM64', universal: '通用' };
+const KIND_RANK: Record<ReleaseAsset['kind'], number> = { agent: 3, complete: 2, node: 1 };
+
+export function osLabel(os: ReleaseOs) { return OS_NAMES[os]; }
+export function archLabel(arch: ReleaseArch) { return ARCH_NAMES[arch]; }
+
+export function detectClientPlatform(userAgent: string, platform = ''): { os: ReleaseOs; arch: 'x64' | 'arm64' } {
+  const hint = `${platform} ${userAgent}`.toLowerCase();
+  const os: ReleaseOs = /\bwin(dows|32|64)?\b/.test(hint) ? 'windows'
+    : /(mac\s?os|macintosh|darwin|iphone|ipad)/.test(hint) ? 'macos'
+    : /\blinux\b|\bx11\b|\bubuntu\b|\bdebian\b/.test(hint) ? 'linux'
+    : 'windows';
+  const arch: 'x64' | 'arm64' = /(arm64|aarch64)/.test(hint) ? 'arm64' : 'x64';
+  return { os, arch };
+}
+
+export function assetOs(asset: Pick<ReleaseAsset, 'os' | 'name'>): ReleaseOs {
+  if (asset.os) return asset.os;
+  const lower = asset.name.toLowerCase();
+  if (/\.(dmg|pkg)$/.test(lower) || /-(darwin|macos)\b/.test(lower)) return 'macos';
+  if (/\.(deb|rpm|appimage|tar\.gz|tar\.xz)$/.test(lower) || /-linux\b/.test(lower)) return 'linux';
+  return 'windows';
+}
+
+export function assetFormat(asset: Pick<ReleaseAsset, 'format' | 'name'>): string {
+  if (asset.format) return asset.format;
+  const lower = asset.name.toLowerCase();
+  for (const ext of ['.tar.gz', '.tar.xz', '.appimage', '.exe', '.msi', '.dmg', '.pkg', '.deb', '.rpm', '.zip']) {
+    if (lower.endsWith(ext)) return ext === '.appimage' ? '.AppImage' : ext;
+  }
+  return '安装包';
+}
+
+export function verifyCommand(asset: Pick<ReleaseAsset, 'os' | 'name'>): string {
+  const os = assetOs(asset);
+  if (os === 'macos') return `shasum -a 256 ${asset.name}`;
+  if (os === 'linux') return `sha256sum ${asset.name}`;
+  return `Get-FileHash .\\${asset.name} -Algorithm SHA256`;
+}
+
+export function pickRecommendedAsset(assets: readonly ReleaseAsset[], preferredArch: 'x64' | 'arm64'): ReleaseAsset | null {
+  if (!assets.length) return null;
+  const archRank = (arch: ReleaseArch) => arch === preferredArch ? 3 : arch === 'universal' ? 2 : arch === 'x64' ? 1 : 0;
+  return [...assets].sort((a, b) => (KIND_RANK[b.kind] - KIND_RANK[a.kind]) || (archRank(b.arch) - archRank(a.arch)))[0];
 }

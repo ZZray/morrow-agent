@@ -435,6 +435,27 @@ a.avail-row:hover > span:first-child { color: var(--text); text-decoration: unde
 .copy-btn svg.ic { width: 13px; height: 13px; }
 
 /* ---------- 下载与 MCP 卡片 ---------- */
+.dl-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 14px; }
+.dl-os-tabs { display: inline-flex; flex-wrap: wrap; }
+.dl-os-tab { display: inline-flex; align-items: center; gap: 7px; height: 34px; padding: 0 14px; }
+.dl-os-tab svg.ic { width: 15px; height: 15px; }
+.dl-here { margin-left: 2px; padding: 1px 6px; border-radius: 999px; background: var(--accent-wash); color: var(--text); font-style: normal; font-size: 10.5px; transition: background-color 160ms, color 160ms; }
+.chip[aria-pressed="true"] .dl-here { background: color-mix(in srgb, var(--ink-text) 18%, transparent); color: var(--ink-text); }
+.chip .n { transition: color 160ms; }
+.chip[aria-pressed="true"] .n { color: var(--ink-text); opacity: 0.78; }
+.dl-bar-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.dl-detected { font-size: 12px; color: var(--text-3); white-space: nowrap; }
+.dl-stage { align-items: start; }
+.dl-hero { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; align-content: start; }
+.dl-ver { display: block; font-size: clamp(26px, 2.4vw, 34px); font-weight: 300; line-height: 1.15; letter-spacing: -0.02em; }
+.dl-sub { font-size: 12.5px; color: var(--ink-muted); }
+.dl-hero .dl-lead { margin: 2px 0 4px; }
+.dl-hero .dl-get { background: var(--ink-2); color: var(--ink-text); }
+.dl-hero .dl-get b { color: var(--ink-text); }
+.dl-hero .dl-get small { color: var(--ink-muted); }
+.dl-cta-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 2px; }
+.dl-verify { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 2px; }
+.dl-verify-status { min-height: 1.2em; }
 .dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 16px; align-items: start; }
 .dl-card { display: flex; flex-direction: column; }
 .dl-card > header { display: flex; align-items: center; gap: 14px; }
@@ -448,18 +469,36 @@ a.avail-row:hover > span:first-child { color: var(--text); text-decoration: unde
 .dl-get b { font-size: 13px; font-weight: 500; color: var(--text); overflow-wrap: anywhere; }
 .dl-get small { font-size: 11.5px; color: var(--text-3); overflow-wrap: anywhere; }
 .dl-card h4 { margin: 18px 0 8px; font-size: 14px; font-weight: 500; color: var(--text); }
+.dl-card .dl-get + .bullets, .dl-card .bullets + .dl-get { margin-top: 12px; }
+.dl-cmd { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 6px; padding: 8px 8px 8px 12px; border-radius: 14px; background: var(--well); min-width: 0; max-width: 100%; }
+.dl-cmd + .dl-cmd { margin-top: 6px; }
+.dl-cmd-body { display: flex; flex-direction: column; flex: 1; min-width: 0; gap: 2px; }
+.dl-cmd-label { font-size: 11px; line-height: 1.35; color: var(--text-3); overflow-wrap: anywhere; }
+.dl-cmd-code { padding: 0 !important; border-radius: 0 !important; background: transparent !important; font-family: var(--mono); font-size: 12px !important; line-height: 1.5; color: var(--text); overflow-wrap: anywhere; white-space: pre-wrap; user-select: all; }
+.dl-cmd-copy { flex: none; }
+.dl-cmd-copy.copied { color: var(--green); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--green) 45%, transparent); }
+.dl-link { color: var(--text); font-weight: 500; text-decoration: underline; text-underline-offset: 3px; }
+.dl-link:hover { color: var(--accent-ink, var(--text)); }
+.card.ink .dl-cmd { background: var(--ink-2); }
+.card.ink .dl-cmd-label { color: var(--ink-muted); }
+.card.ink .dl-cmd-code { color: var(--ink-text); }
+.card.ink .dl-link { color: var(--ink-text); }
 .bullets li { position: relative; padding: 3px 0 3px 18px; font-size: 12.5px; line-height: 1.6; color: var(--text-2); }
 .bullets li::before { content: ""; position: absolute; left: 3px; top: 10px; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
 .steps { counter-reset: step; }
 .steps li { position: relative; padding: 5px 0 5px 34px; font-size: 12.5px; line-height: 1.6; color: var(--text-2); counter-increment: step; }
 .steps li::before { content: counter(step); position: absolute; left: 0; top: 4px; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--ink); color: var(--ink-text); font-size: 11px; font-weight: 600; }
-.steps code, .bullets code { padding: 1px 6px; border-radius: 8px; background: var(--well); font-family: var(--mono); font-size: 11.5px; }
+.steps code, .bullets code { padding: 1px 6px; border-radius: 8px; background: var(--well); font-family: var(--mono); font-size: 11.5px; overflow-wrap: anywhere; }
 .card.ink .dl-lead, .card.ink .hint { color: var(--ink-muted); }
 .card.ink .bullets li { color: var(--ink-muted); } .card.ink .bullets code { background: var(--ink-2); color: var(--ink-text); }
 .dl-card > footer { margin-top: auto; padding-top: 14px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
-.history li { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 10px 0; font-size: 12.5px; }
+.history li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 14px; padding: 10px 0; font-size: 12.5px; }
 .history li + li { border-top: 1px solid var(--rule); }
-.history li b { min-width: 90px; color: var(--text); font-weight: 500; }
+.dl-hist-meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.dl-hist-meta b { color: var(--text); font-weight: 500; }
+.dl-hist-assets { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.dl-hist-asset { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 4px 6px 4px 10px; border-radius: 999px; background: var(--well); }
+.dl-hist-tag { font-size: 11.5px; color: var(--text-2); white-space: nowrap; }
 
 @media (max-width: 1080px) {
   .top { grid-template-columns: auto minmax(0, 1fr); row-gap: 12px; }
@@ -493,6 +532,13 @@ a.avail-row:hover > span:first-child { color: var(--text); text-decoration: unde
   .top-actions { gap: 6px; }
   .fresh { height: 30px; padding: 0 8px; gap: 6px; font-size: 11.5px; }
   .btn.icon, .round, .avatar { width: 36px; height: 36px; }
+  .dl-bar { flex-direction: column; align-items: stretch; }
+  .dl-os-tabs { display: flex; flex-wrap: wrap; width: 100%; }
+  .dl-os-tab { flex: 1 0 auto; justify-content: center; padding: 0 9px; gap: 4px; font-size: 12px; white-space: nowrap; }
+  .dl-os-tab svg.ic { width: 13px; height: 13px; }
+  .dl-os-tab .n { margin-left: 1px; font-size: 11px; }
+  .dl-os-tab .dl-here { display: none; }
+  .dl-get { flex-wrap: wrap; padding: 10px 12px; }
 }
 /* 按钮进行中：操作超过 150ms 时在文字后显示小圆环（由 run() 加 .busy），按钮保持原尺寸与位置 */
 .btn.busy::after { content: ""; flex: none; width: 12px; height: 12px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; opacity: 0.7; animation: spin 700ms linear infinite; }

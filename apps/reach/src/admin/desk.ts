@@ -49,7 +49,7 @@ const OPT_MEMORY_KEY='reach.desk.optMemory';
 const OPT_TOOLS_KEY='reach.desk.optTools';
 
 const states=new Map<string,ConversationState>(),streams=new Map<string,Stream>(),drafts=new Map<string,string>();
-const messageNodes=new Map<string,{body:HTMLElement;status:HTMLElement;record:HTMLButtonElement;copyAnswer:HTMLButtonElement;operations:HTMLElement;gallery:ImageGallery;steps:HTMLDetailsElement;agent:AgentPanel}>();
+const messageNodes=new Map<string,{root:HTMLElement;body:HTMLElement;status:HTMLElement;foot:HTMLElement;record:HTMLButtonElement;copyAnswer:HTMLButtonElement;actionsRow:HTMLElement;operations:HTMLElement;gallery:ImageGallery;steps:HTMLDetailsElement;agent:AgentPanel}>();
 const targets=new Map<string,Target|null>();let devices:DeviceNode[]=[],deviceSequence=0;
 const settlementReads=new Map<string,object>();
 let context:DeskContext|null=null,user:User|null=null,epoch=0,view=0,listSequence=0,selected:string|null=null,conversations:Conversation[]=[],admitting:object|null=null;
@@ -797,19 +797,54 @@ function paint(){
   updateNotice();drawTarget();if(drawerOpen){drawTreeBlock(false);drawToolLog();}
   skills?.use(selected??'new');attachments?.use(selected??'new');showSuggestion();composeState();drawQueue();transcript.scrollTop=transcript.scrollHeight;
 }
+function bindMessageCopyButton(button:HTMLButtonElement,label:HTMLElement,idleLabel:string,actions:HTMLElement,getText:()=>string){
+  let timer=0;
+  button.addEventListener('click',()=>{
+    actions.dataset.pinned='1';
+    void copyText(getText(),ok=>{
+      label.textContent=ok?'已复制':'复制失败';
+      button.classList.toggle('is-copied',ok);
+      window.clearTimeout(timer);
+      timer=window.setTimeout(()=>{
+        if(button.isConnected){label.textContent=idleLabel;button.classList.remove('is-copied');}
+        delete actions.dataset.pinned;
+      },1200);
+    });
+  });
+}
 function appendMessage(turn:Turn){
-  const userMessage=el('article','message user');userMessage.append(el('div','speaker','你'),el('div','body',turn.content));
+  const userMessage=el('article','message user');
+  const userSpeaker=el('div','speaker sr-only','你');
+  const userCopyLabel=el('span','','复制');
+  const userCopy=el('button','msg-act user-copy');userCopy.type='button';userCopy.title='复制发送内容';
+  userCopy.append(svg('0 0 24 24',['M9 9h11v11H9z','M5 15V4h11'],13),userCopyLabel);
+  const userActions=el('div','message-actions');userActions.append(userCopy);
+  bindMessageCopyButton(userCopy,userCopyLabel,'复制',userActions,()=>turn.content);
+  const userBubble=el('div','user-bubble-wrap');userBubble.append(el('div','body',turn.content),userActions);
+  userMessage.append(userSpeaker,userBubble);
   if(turn.target)userMessage.append(el('p','message-target',(turn.target.name??'Reach 设备')+' · '+turn.target.cwd));
   if(turn.attachments?.length)userMessage.append(attachmentList(turn.attachments,id=>new URL('desk/attachments/'+id,apiBase).href));
   if(turn.skills?.length)userMessage.append(el('p','message-skills','技能：'+turn.skills.map(skill=>skill.name||'已删除的技能').join('、')));
+
   const assistant=el('article','message assistant'),speaker=el('div','speaker');const mark=el('img');mark.src=logo;mark.alt='';speaker.append(mark,el('span','','Reach'));
-  const body=el('div','body md'),status=el('div','message-status'),record=button('查询原记录',()=>query(turn),'quiet'),operations=el('div','device-operations'),images=el('div','device-images'),steps=el('details','tool-steps');
-  const copyAnswer=el('button','quiet copy-answer','复制回答');copyAnswer.type='button';copyAnswer.hidden=true;
-  copyAnswer.addEventListener('click',()=>{void copyText(turn.output,ok=>{copyAnswer.textContent=ok?'已复制':'复制失败';window.setTimeout(()=>{if(copyAnswer.isConnected)copyAnswer.textContent='复制回答';},1200);});});
-  const actionsRow=el('div','message-actions');actionsRow.append(copyAnswer,record);
+  const body=el('div','body md'),status=el('div','message-status'),operations=el('div','device-operations'),images=el('div','device-images'),steps=el('details','tool-steps');
+  const record=el('button','msg-act');record.type='button';record.title='向服务端重新查询该条消息的最终结果';
+  record.append(svg('0 0 24 24',['M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14z','M20 20l-4-4'],13),el('span','','查询原记录'));
+  record.addEventListener('click',()=>{void Promise.resolve().then(()=>query(turn)).catch(error=>{if(!(error instanceof Stale))showError(error instanceof Error?error.message:'操作未完成，请重试。');});});
+  const copyLabel=el('span','','复制回答');
+  const copyAnswer=el('button','msg-act copy-answer');copyAnswer.type='button';copyAnswer.title='复制整段回答';copyAnswer.hidden=true;
+  copyAnswer.append(svg('0 0 24 24',['M9 9h11v11H9z','M5 15V4h11'],13),copyLabel);
+  const actionsRow=el('div','message-actions');
+  bindMessageCopyButton(copyAnswer,copyLabel,'复制回答',actionsRow,()=>turn.output);
   const version=epoch,paintView=view;const gallery:ImageGallery=new ImageGallery(images,{deviceName:turn.target?.name??'Reach 设备',current:()=>version===epoch&&paintView===view&&selected===turn.conversationId&&states.get(turn.conversationId)?.messages.find(t=>t.id===turn.id)===turn&&messageNodes.get(turn.id)?.gallery===gallery,fetch:async(image,signal)=>{const response=await fetch(new URL('desk/messages/'+encodeURIComponent(turn.id)+'/images/'+encodeURIComponent(image.callKey),apiBase),{credentials:'same-origin',headers:{accept:'image/png'},signal});if(version!==epoch||paintView!==view)throw new Stale();if(response.status===401){expired();throw new Stale();}return response;}});
   const agent=new AgentPanel({guide:text=>guide(turn,text),retry:()=>retry(turn)});
-  record.hidden=true;assistant.append(speaker,steps,operations,images,body,status,agent.root,actionsRow);transcript!.append(userMessage,assistant);messageNodes.set(turn.id,{body,status,record,copyAnswer,operations,gallery,steps,agent});update(turn);
+  record.hidden=true;
+  actionsRow.append(copyAnswer,agent.retry,record);
+  const foot=el('div','message-foot');foot.append(status,actionsRow);
+  assistant.append(speaker,steps,operations,images,body,agent.root,foot);
+  transcript!.append(userMessage,assistant);
+  messageNodes.set(turn.id,{root:assistant,body,status,foot,record,copyAnswer,actionsRow,operations,gallery,steps,agent});
+  update(turn);
 }
 function update(turn:Turn){
   if(selected!==turn.conversationId)return;const nodes=messageNodes.get(turn.id);if(!nodes)return;
@@ -817,12 +852,20 @@ function update(turn:Turn){
   nodes.body.innerHTML=turn.output?renderMarkdown(turn.output):'';
   nodes.copyAnswer.hidden=!turn.output.trim();
   const labels:Record<string,string>={submitting:'正在提交消息…',starting:'已接收，正在准备回答…',running:'正在处理…',cancelling:'已请求停止，正在核对结果…',completed:'回答已保存',cancelled:'已停止',failed:'回答未完成，原记录已保留',unknown:'结果尚未确定，原记录已保留',unconfirmed:'连接中断，尚未确认原消息状态',rejected:'本次提交未被接受，消息已保留'};
-  nodes.status.textContent=turn.observationLost?'连接中断，请查询原记录。':labels[turn.status]??turn.status;nodes.status.className='message-status'+(['unknown','unconfirmed','cancelled','cancelling'].includes(turn.status)||turn.observationLost?' warn':turn.status==='failed'?' bad':'');nodes.record.hidden=!(['unknown','unconfirmed','failed'].includes(turn.status)||turn.observationLost);
+  const running=live(turn),settled=turn.status==='completed'&&!turn.observationLost,alerted=['unknown','unconfirmed','failed','rejected','cancelled','cancelling'].includes(turn.status)||!!turn.observationLost;
+  nodes.root.classList.toggle('is-live',running);
+  nodes.root.classList.toggle('is-alert',alerted);
+  nodes.root.classList.toggle('is-settled',settled);
+  nodes.status.textContent=turn.observationLost?'连接中断，请查询原记录。':labels[turn.status]??turn.status;
+  nodes.status.className='message-status'+(settled?' is-settled':'')+(['unknown','unconfirmed','cancelled','cancelling'].includes(turn.status)||turn.observationLost?' warn':turn.status==='failed'?' bad':'');
+  nodes.foot.classList.toggle('is-settled',settled);
+  nodes.record.hidden=!(['unknown','unconfirmed','failed'].includes(turn.status)||turn.observationLost);
   const operations=new Map((turn.operations??turn.deviceCalls?.map(c=>c.operation).filter((op):op is DeviceOperation=>!!op)??[]).map(op=>[op.operationId,op]));nodes.operations.replaceChildren();
   nodes.gallery.update(turn.images??[]);
   paintSteps(nodes.steps,turn.steps);
-  {const state=states.get(turn.conversationId),running=live(turn),steps=turn.steps??[];nodes.agent.update({live:running,createdAt:turn.createdAt,steps:steps.length,running:steps.filter(step=>!step.ended).length,guidance:turn.guidance??[],
+  {const state=states.get(turn.conversationId),steps=turn.steps??[];nodes.agent.update({live:running,createdAt:turn.createdAt,steps:steps.length,running:steps.filter(step=>!step.ended).length,guidance:turn.guidance??[],
     canGuide:['starting','running'].includes(turn.status)&&!turn.cancelRequested,canRetry:!running&&['completed','failed','cancelled','rejected'].includes(turn.status)&&state?.messages.at(-1)===turn&&!state.conversation.blocked&&!state.conversation.settlement_conflict,showGuideForm:false});}
+  nodes.actionsRow.hidden=nodes.copyAnswer.hidden&&nodes.agent.retry.hidden&&nodes.record.hidden;
   const names:Record<string,string>={not_observed:'等待设备接收',received:'设备已接收',running:'设备执行中',succeeded:'原操作成功',failed:'原操作失败',cancelled:'原操作已取消',unknown:'原操作效果未知'};
   for(const op of operations.values()){const row=el('a','device-operation');row.href='#/operations/'+op.operationId;row.title='查看原操作记录';const state=el('span','',names[op.execution]??op.execution);row.append(state,el('code','',op.operationId));if(op.cancelRequested&&!['succeeded','failed','cancelled','unknown'].includes(op.execution))row.append(el('span','','已请求停止'));nodes.operations.append(row);}
   updateNotice();if(drawerOpen)drawToolLog();
