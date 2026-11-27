@@ -270,6 +270,13 @@
 - **上线站点与核验**：Ray（PID `523163`，备份 `/root/reach-deploy-backup-20261127-224459`）与 nmrkit（PID `3086684`，备份 `/root/reach-deploy-backup-20261127-224743`）均已切换至 `/opt/reach/releases/20261127-f26e9ae-ui-c539b622`，站点 `deploy/{ray,nmrkit}-releases.json`、`/etc/reach/service.env` 及 SQLite 账本完整保留；两站 `reach`、`ray-front`、`nginx` 活跃，模型启用与本地监听日志正常，且回环/公网获取的 `admin.js`、`desk.js`、`admin.css`、`desk.css` 均返回 HTTP `200` 并与发布包 SHA-256 一致。明细见 [2026-11-24-nmrkit-web-pin.md](../evidence/2026-11-24-nmrkit-web-pin.md)。
 - **未覆盖边界**：生产站未通过 SSO / PIN 登录执行真实浏览器点击验收，需已登录用户打开两站控制台确认页面渲染与交互。
 
+<a id="ctxmenu-deploy-receipt-20261127"></a>
+## 2026-11-27 右键菜单定位修复提交推送与双端上线回执
+
+- **源码提交与远端同步**：将 `.desk` 的 `backdrop-filter` 隔离至 `::before`、`.ctx-menu` 移挂 `document.body` 并抽离 `desk-menu.ts` 处理视口边界翻转与键盘回退，限定范围提交 `40bd8a607103528fe553a12c738a007d746e15f6`（8 个文件 +148/-52 行；`npm run check`、`npm run build:admin`、Admin 54/54、Service 11/11、Platform 55/55 共 120/120 通过，`18921` 浏览器核验零偏移与 OCR/只读复审通过）并推送同步至 `origin/main` 与 `gitee/main`。
+- **打包与双端上线**：构建 `reach-20261127-40bd8a6-ctx.tar.gz`（975 文件，9,246,780 字节，SHA-256 `5d93f4c0f3be27283a1ba258debd8849ebf85c03479c878ceabbdb5f21e9c899`），Ray（PID `531052`，备份 `/root/reach-deploy-backup-20261127-231930`）与 nmrkit（PID `3121422`，备份 `/root/reach-deploy-backup-20261127-232005`）均切换至 `/opt/reach/releases/20261127-40bd8a6-ctx-5d93f4c0`，账本、站点清单与 `/etc/reach/service.env` 完整保留；包含 `/assets/desk-menu.js` 在内的 5 个前端产物 SHA-256 与服务监听日志核对一致，详细回执见 [2026-11-24-nmrkit-web-pin.md](../evidence/2026-11-24-nmrkit-web-pin.md)。
+- **未覆盖边界**：真实触屏长按、`prefers-reduced-motion` 以及生产站 SSO/PIN 登录后页面交互待实机核对。
+
 
 
 

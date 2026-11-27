@@ -341,6 +341,6 @@ RyDev 的 0.1.8 和 0.1.9 预览版已分别从 Codex 完成现场 Agent 委托�
 - **当前约束**：
   - `.desk` 的毛玻璃与卡片底色拆入 `.desk::before`（`backdrop-filter: blur(18px); z-index: -1; pointer-events: none`），容器本身保持 `isolation: isolate; background: transparent`，不得再在 `.desk` 或外层壳体上直接放置会创建 `position: fixed` 包含块的属性（`backdrop-filter`、`transform`、`filter`、`contain`）。
   - `.ctx-menu` 挂入 `document.body` 并在 `desk.ts` `reset()` 销毁，定位逻辑抽至无 DOM 副作用的 `src/admin/desk-menu.ts`（并已在 `src/service/admin.ts` 注册 `/assets/desk-menu.js`）；贴近视口下/右边沿（`8px` 边距）时按触发源反向翻转并同步 `transform-origin`，键盘 `0,0` `contextmenu` 回退至行锚点，行内重命名 `<input>` 保留原生右键。
-- **验证与当前边界**：`npm run check`、`npm run build:admin`、管理端 12 份测试（54/54）及服务端测试（11/11）全部通过；本地 `127.0.0.1:18921` 无头浏览器验证桌面明暗主题（工作区右键、底边会话上翻、工作区 `⋯` 按钮、`.desk-aside` 抽屉）与 `390×844` 窄屏抽屉下坐标零偏移且无溢出/控制台报错。尚未提交 Git 或重新部署到 Ray / nmrkit 线上站点。
+- **验证与当前边界**：`npm run check`、`npm run build:admin`、管理端 12 份测试（54/54）、服务端测试（11/11）及平台单元测试（55/55）全部通过；本地 `127.0.0.1:18921` 无头浏览器验证桌面明暗主题（工作区右键、底边会话上翻、工作区 `⋯` 按钮、`.desk-aside` 抽屉）与 `390×844` 窄屏抽屉下坐标零偏移且无溢出/控制台报错。改动已通过提交 `40bd8a6` 同步至 `origin/main` 与 `gitee/main` 并切换上线至 Ray（`531052`）与 nmrkit（`3121422`），两站服务端静态资源哈希已核对；真实触屏长按、`prefers-reduced-motion` 及生产站登录态后交互待用户实机刷新确认。
 
 

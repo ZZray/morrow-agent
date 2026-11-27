@@ -62,3 +62,22 @@ nmrkit 与 Ray 均切换到发行目录 `20261127-87af0a7-download-0ca9c51c`。�
 - **nmrkit（`labslot-prod-root`，`101.37.76.80:31565`）**：状态 `updated-ledger-preserved`，`reach` 主进程 PID `3086684`，备份目录 `/root/reach-deploy-backup-20261127-224743`，`/etc/reach/service.env` 保持 `REACH_PIN_ONLY=1` 与 `REACH_PUBLIC_ORIGIN=https://nmrkit.ciqtek.com` 未变。`reach` 与 `nginx` 服务运行正常，`journalctl -u reach` 记录 `reach_model_enabled`（`agent` 与 `desk` 使用 `deepseek-flash`）及 `reach_listening` `127.0.0.1:18910`。账本保持为 1 位用户、1 台设备、17 个操作、375 条操作事件与 Desk 1 个对话、1 个回合、6 条事件。公网 HTTPS 下载 `https://nmrkit.ciqtek.com/reach/assets/{admin.js,desk.js,admin.css,desk.css}` 均返回 `200` 且 SHA-256 与发布包逐一吻合；`https://nmrkit.ciqtek.com/reach/healthz` 返回 `200`，`/reach/` 返回 `200`，主站 `/` 返回 `307`，未登录请求 `/reach/api/v1/auth/me` 与 `/reach/api/v1/releases` 返回 `401`。
 
 上线后，两站在未登录态下的服务进程、静态资源哈希与鉴权入口已确认就绪；登录态浏览器（Ray SSO 与 nmrkit PIN）中的 Desk 悬浮工具栏及下载页交互未在生产站模拟账号测试，需由已登录用户实机页面确认。
+
+## 2026-11-27 晚间更新：侧栏右键与「⋯」菜单视口包含块修复（40bd8a6）
+
+`origin/main` 与 `gitee/main` 已推送并核对为提交 `40bd8a607103528fe553a12c738a007d746e15f6`（范围限定为 `.desk::before` 隔离 `backdrop-filter`、`.ctx-menu` 挂至 `document.body`、`desk-menu.ts` 视口翻转与键盘锚点、`/assets/desk-menu.js` 注册及对应单测与知识库条目，共 8 个文件；同仓另一会话未暂存 WIP 保留未动）。提交前 `tsc --noEmit`、`tsconfig.admin.json`、`npm run build:admin`、管理端 12 份测试（54/54）、服务端测试（11/11）及平台单元测试（55/55）全部通过，共 120/120 通过；本地 `127.0.0.1:18921` 无头 Chromium 核验工作区右键零偏差、底边上翻、`⋯` 按钮亮色、`.desk-aside` 视口边距与 `390×844` 窄屏表现。
+
+发行包合入同一静态 Linux 侧车 `morrow-agent-jsonl`（SHA-256 `b46a6406d1986d0a6c91df3c5b666d1bf3afdd83fab1214e8b00413160f868e6`），打包 `reach-20261127-40bd8a6-ctx.tar.gz` 共 975 个文件、9,246,780 字节，SHA-256 为 `5d93f4c0f3be27283a1ba258debd8849ebf85c03479c878ceabbdb5f21e9c899`；静态资源 SHA-256 为：
+
+- `admin.js`: `415effe014f93ab8c84167afff5df6fafb8378b20e3fd96781db07d4c9f09627`
+- `desk.js`: `68c82d25fb4906a1d2e45d625449ed7fd8372fbb033924ba00ab80b864a1cbdd`
+- `desk-menu.js`: `9f017f733fbd449e51d8eea5835c4b77fb2d907419d395a8377d35f21c32c724`
+- `admin.css`: `fa765392a898e3f885b1a72d5d4ff7bcffb1b8119e8327c0e3e4123e32c68c36`
+- `desk.css`: `720851c7d34d660be7a918d553f2301c30957e99e4cdf148f1a3603befc72cf5`
+
+两站均由 `/opt/reach/releases/20261127-f26e9ae-ui-c539b622` 切换至 `/opt/reach/releases/20261127-40bd8a6-ctx-5d93f4c0`，保留 `/etc/reach/service.env` 与站点专属发行清单（`ray-releases.json` 与 `nmrkit-releases.json` SHA-256 均为 `72be31701b3249fc0793d17e070138542c8d871a639af941db2f74a21b696052`），临时部署文件已清理：
+
+- **Ray（`ray-dev`，`118.25.103.226`）**：状态 `updated-ledger-preserved`，`reach` PID `531052`，备份 `/root/reach-deploy-backup-20261127-231930`。`reach` 与 `ray-front` 运行正常，`journalctl -u reach` 记录 `reach_model_enabled`（`agent` 与 `desk` 使用 `deepseek-flash`）及 `127.0.0.1:18910` 监听。账本保留 1 位用户、2 台设备、4 个操作、37 条操作事件及 Desk 1 个对话、3 个回合、14 条事件。本机回环 `/assets/{admin.js,desk.js,desk-menu.js,admin.css,desk.css}` 均返回 HTTP `200` 且 SHA-256 与发布包一致；公网 `https://bigrayzhang.cn/reach/healthz` 返回 `200`，`/reach/` 返回 `303` 跳转至 `/ray/login?next=%2Freach%2F`（`/ray/login` `200`），匿名 `/reach/api/v1/auth/me` 与 `/reach/api/v1/releases` 返回 `401`。
+- **nmrkit（`labslot-prod-root`，`101.37.76.80:31565`）**：状态 `updated-ledger-preserved`，`reach` PID `3121422`，备份 `/root/reach-deploy-backup-20261127-232005`，`/etc/reach/service.env` 保持 `REACH_PIN_ONLY=1` 与 `REACH_PUBLIC_ORIGIN=https://nmrkit.ciqtek.com` 未变。`reach` 与 `nginx` 运行正常，`journalctl -u reach` 记录 `reach_model_enabled`（`agent` 与 `desk` 使用 `deepseek-flash`）及 `127.0.0.1:18910` 监听。账本保留 1 位用户、1 台设备、17 个操作、375 条操作事件及 Desk 1 个对话、1 个回合、6 条事件。公网 HTTPS 下载 `https://nmrkit.ciqtek.com/reach/assets/{admin.js,desk.js,desk-menu.js,admin.css,desk.css}` 均返回 `200` 且 SHA-256 与发布包一致；`/reach/healthz` 与 `/reach/` 返回 `200`，主站 `/` 返回 `307`，匿名 `/reach/api/v1/auth/me` 与 `/reach/api/v1/releases` 返回 `401`。
+
+两站在登录态（Ray SSO / nmrkit PIN）浏览器中的右键菜单、抽屉与界面交互需由已登录用户实机刷新核对。
