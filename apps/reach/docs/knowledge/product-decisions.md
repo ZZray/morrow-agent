@@ -306,4 +306,21 @@ Reach 继续作为独立基础产品；HandWave 的方向调整为云端对话�
 - **实现口径（已实现并完成本轮回归与真实验收）。** 后端在 `platform/src/store.ts` 与 `host.ts` 通过独立表 `desk_workspaces` 与 `conversation_meta`（保持 `PRAGMA user_version = 3`）持久化工作区和置顶状态；只读笔记检索（`reach_memory_search`、`reach_memory_read`）与只读 PNG 原图读取（`reach_attachment_image`）通过 Reach Desk Host 宿主工具接入；`POST /api/v1/desk/skills/generate` 提供 AI 技能草稿生成；`messageSchema` 增加 `options.memory` 支持按消息开关记忆检索。前端改动限定在 `apps/reach/src/admin/desk*` 与 `src/service/admin.ts`，补齐安全 Markdown 渲染与代码块/回答复制、输入区模型切换菜单（沿用 `PUT -> POST /test -> POST /enable`）、侧边栏筛选框、以及右抽屉「对话选项（记忆检索 / 远程设备工具）」与「+ 笔记」入口；不修改 `crates/` 目录。
 - **响应式与窄屏/移动端约束（2026-11-27 补充修复）。** `controls.css` / `admin.css` 在 `1080px` 处将三栏 `.top` 切为双行布局（避免 7 个导航项把右侧同步状态折行、把 `.btn.icon` 压扁成椭圆），并为 `.fresh`、`brand`、`btn.icon`、`.round` 强制 `flex: none` 与 `white-space: nowrap`；`.nav` 在窄屏横向可滚并在 `placeNavIndicator` 中滚动当前项到视野内。`desk.css` 修复 `.model-menu` 宽度偏移溢出、`popover` 窄屏限宽（`min(380px, calc(100vw - 24px))`）、`<= 720px` 仅对 `.drawer-toggle` 隐藏文字收成 `32×32` 圆钮（保留「记忆」文字），以及 `<= 860px / 520px / 360px` 移动端全屏高度与内边距收紧。
 
+<a id="codex-remote-agent-test-20261127"></a>
+## Codex 直接调用远端 Agent 验收（2026-11-27）
+
+用户在 Codex 会话 `01a21ae3-af6c-7183-b296-c8aff7265e7a` 确认：「测试，从codex调用远端agent即可。」后续远端 Agent 验收由 Codex 直接调用远端 Agent，依据[委托合同](../agent-delegation.md)核对执行结果和回执。
+
+本次 [Ray Desk 线上验收](../plans/2026-11-25-desk-handwave-parity.md#desk-ray-live-20261127)覆盖登录、生产模型回复、笔记检索和续聊。工具面板展开时的一次发送异常暂缓处理。
+
+RyDev 的 0.1.8 和 0.1.9 预览版已分别从 Codex 完成现场 Agent 委托，并按同一操作 ID 对照 Ray 与设备的原始事件。[验收记录](../evidence/2026-11-24-rydev-service-update.md#rydev-019-preview-20261127)
+
+<a id="installer-download-oss-20261127"></a>
+## 安装包通过阿里云 OSS 下载（2026-11-27）
+
+用户在 Codex 会话 `01a21ae3-af6c-7183-b296-c8aff7265e7a` 提出：「下载传递到阿里云，从阿里云地址下ok？」并要求记录到知识库。方向是发布时将 Reach 安装包上传到阿里云 OSS，由下载页提供对应的 OSS 下载地址。
+
+**当前状态。** 这一方向尚未实施或验证。目前两站的 `0.1.9-preview` 清单指向站点服务器上的安装包，实际下载和 SHA-256 见[站点发布记录](../evidence/2026-11-24-nmrkit-web-pin.md#nmrkit-model-download-20261127)。完整 Worker + Agent 自动更新尚未实现，不能把切换下载地址当作自动更新已完成。
+
+**后续需确认。** 选定 OSS 存储位置与访问方式、版本化文件名及下载链接有效期；发布时核对清单中的版本和 SHA-256 与 OSS 下载的实际文件一致，并检查页面缓存和旧版本链接。GitHub/Gitee 同提交、标签及发行附件的既有要求仍适用；OSS 作为下载分发方向，不代替双端发行核验。
 

@@ -208,5 +208,13 @@
   - 真实浏览器（`http://127.0.0.1:18921/?v=202611270908#/desk`）核对 `900×800` 暗色（`responsive-900-dark.png`）、`1024×800` 亮色（`responsive-1024-light.png`）、`768×900` 暗色（`responsive-768-dark.png`）、`390×844` 手机端（对话页、`.model-menu`、`工具与连接`抽屉、设置页：`responsive-390-*.png`）与 `1280×860` 桌面恢复态（`responsive-1280-dark.png`）。所有断点零页面横向溢出、`.fresh` 保持单行、铃铛与 `+`/发送钮保持 1:1 正圆；在 `390px` 窄手机端 `.nav` 7 项横向可滚且首尾项紧贴胶囊边缘。
 - **只读代码复审（`ocr-code-review` + `code-reviewer`）**：对 4 个修改文件通过 `ocr delegate rule --format json` 完成审查，0 高/中置信度缺陷，未修改 `crates/`。
 
+<a id="desk-ray-live-20261127"></a>
+## 2026-11-27 Ray 线上验收
+
+发行版本 `20261127-a0d6bd039365`，生产模型 `deepseek-flash`。用户完成 Ray 登录后直达 Reach Desk。首轮回复、笔记搜索和读取、刷新后在原会话续聊均通过。服务器确认同一 Morrow Journal 中的 3 个 Run 均已完成并通过交付校验，5 次模型调用均收到结果。保留了专用对话和合成笔记。[验收对话](https://bigrayzhang.cn/reach/#/desk/dd2c96fc-d53c-417b-904f-8522122a2b98)
+
+工具面板展开时，有一次点击「发送消息」后内容仍留在草稿。收起面板后，同一草稿提交成功。目前只观察到一次，原因尚未定位。用户确认暂缓处理。
+
+本轮覆盖云端对话。后续使用 [Codex 调用入口](../knowledge/product-decisions.md#codex-remote-agent-test-20261127)完成 RyDev 远端 Agent 执行及原始回执核对，结果见[验收记录](../evidence/2026-11-24-rydev-service-update.md#rydev-019-preview-20261127)。
 
 

@@ -6,6 +6,8 @@
 
 | 条目 | 内容 | 来源与状态 |
 |---|---|---|
+| [安装包通过阿里云 OSS 下载](product-decisions.md#installer-download-oss-20261127) | 安装包上传 OSS，下载页使用 OSS 地址的发布方向 | 2026-11-27 用户提出并要求记录；尚未实施、切换或验证 |
+| [Codex 直接调用远端 Agent 验收](product-decisions.md#codex-remote-agent-test-20261127) | 后续远端 Agent 验收入口及 Ray Desk 线上证据 | 2026-11-27 用户决定。RyDev 远端实测和原始回执已核对；工具面板发送现象暂缓处理 |
 | [Windows 必装 Agent、SSH 按需启用及 nmrkit 对话](product-decisions.md#worker-agent-desk-20261124) | Worker 与 Agent 独立上线，离线 OpenSSH 随包，启用现有 Reach Desk 与 PIN 会话 | 2026-11-24 用户决定。首装行为与 Desk 上线待实施和验收 |
 | [Windows 双击安装后配置地址](product-decisions.md#windows-双击安装后配置地址2026-11-24) | 安装后弹窗、原启动身份及现有配置入口 | 2026-11-24 用户决定；隔离验证通过，RyDev 待重试 |
 | [双端 Git 发布与独立 Web 管理](product-decisions.md#release-web-20261124) | Morrow 唯一维护位置、GitHub/Gitee、Git 自更新、Windows 服务恢复及独立控制台范围 | 2026-11-24 用户决定；镜像首同步、更新、身份及新入口待交付 |

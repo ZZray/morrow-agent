@@ -192,3 +192,12 @@ Windows PowerShell 5.1 回归覆盖延迟监听、其他进程占用、端口不
 - Ray 模式原先隐藏 PIN 表单。发行 `20261127-native-controller-pin-settings-c38fd34b` 只增加「设置 → 账户与设备」的 Controller PIN 操作并沿用已有表单和 CSRF 校验，更新前后两套账本计数一致。公网浏览器以原 Ray 账户打开表单。服务器实际 `admin.js` 与制品 SHA-256 `b54d618f…7957` 一致。私有 PIN 由用户亲自设置。
 - 用户完成本机 Controller 登录后，Codex 从原生 CLI 单次提交 `agent.delegate`，请求 `91f92818-b2f8-4523-b346-a741e26a542b`。RyDev 准确返回 `REACH-RYDEV-E2862148CFFB`，1 个 Run、1 次完成的实际模型请求、0 个子操作，测试目录仍为空。投递为 `acknowledged`，执行为 `succeeded`。从服务记录接单到终态为 1.953 秒。原生结果为 `Verified`，执行锁已释放，业务任务状态仍为 `awaiting_review`。[原操作和回执](https://bigrayzhang.cn/reach/#/operations/a5bc46d5-610b-4ba5-a5ae-1f20408f262f)
 - Ray 的 `operation_events` 与 RyDev 的本地 outbox 共 14 条原始事件。逐条核对序号、事件 ID、类型和 `data` 原字节 SHA-256，全部一致，RyDev 全部收到 ACK。终态事件 `a4a74f90-9197-4204-b7c5-7f70c28759bc` 的原数据 SHA-256 为 `2d5e03fdedf0c028e9eee0c51081fe2ba32bb845396c2f283a7e84be16340f45`。原生结算记录显示侧车正常退出，Windows Job 已空。
+
+<a id="rydev-019-preview-20261127"></a>
+## 2026-11-27 RyDev 0.1.9 预览版升级
+
+从提交 `46691c5` 的原始字节构建 Worker 和 Morrow Agent，后续到 `87af0a7` 的差异仅为许可文件 Git 属性。安装器 SHA-256 为 `41fc956066c8dff4b385649ecf9e8c00ac716afe11b9cac54e074be9c2f4cea5`；内嵌 Worker 为 `ef0b03dd2ac7718cd34bad4cd841ab8d46d113957f76378666c8ada85fd77077`，Agent 为 `6151f157e7ce12a3fed5a60c6ca30c2e8c4bc89df9cab98c8e764f28a0663d19`。依赖审计和安装器内嵌载荷校验通过，解包后的真实进程及错误路径回归 6 项通过。
+
+RyDev 使用 `--silent` 从 0.1.8 升级，安装事务为 `committed`、验证通过，原安装 ID、Ray 节点和 epoch 1 保留。服务和既有 SSH 保持运行，实际 Worker 与 Agent 摘要匹配。Codex 新提交的操作 `05524317-b916-4dbe-81db-a8fb3a3a8763` 为 `acknowledged/succeeded`，真实模型调用返回 HTTP 200，输出与指定标记一致。Ray 与 RyDev 的 13 条事件在序号、事件 ID、类型和原始数据摘要上逐条一致，全部 ACK；原生结算为 `Verified/Settled`，业务任务仍为 `awaiting_review`。
+
+首次打包因离线缓存缺少锁定依赖失败；补齐后第三方许可原文因 Windows Git 归档换行转换导致摘要不符。已用 Git 属性保持原始字节，默认归档六份原文的摘要均通过。QBuild 本次因远端沙箱权限错误未进入编译，本机使用固定源码和锁文件完成 Windows 构建。完整包的自动更新和双源发行附件仍待实现或核验。
