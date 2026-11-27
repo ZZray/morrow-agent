@@ -6,7 +6,7 @@ import { ReachError } from './errors.ts';
 const httpsUrl = z.string().url().max(2048).refine(v => v.startsWith('https://'), 'Expected HTTPS download URL');
 const assetSchema = z.strictObject({
   name: z.string().min(1).max(256),
-  kind: z.enum(['node', 'complete']),
+  kind: z.enum(['node', 'agent', 'complete']),
   arch: z.enum(['x64', 'arm64']),
   bytes: z.number().int().min(1).max(Number.MAX_SAFE_INTEGER),
   sha256: z.string().regex(/^[a-f0-9]{64}$/),

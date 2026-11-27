@@ -86,9 +86,14 @@ test('device events and releases require login and CSRF; unconfigured and broken
     writeFileSync(manifest, JSON.stringify({ releases: [{ version: '0.1.0', tag: 'v0.1.0', publishedAt: 1, assets: [{ name: 'a.exe', kind: 'node', arch: 'x64', bytes: 1, sha256: 'a'.repeat(64), signed: true, sources: [{ kind: 'github', url: 'http://insecure.example/a.exe' }] }] }] }));
     assert.equal((await fetch(bases[1] + '/api/v1/releases', { headers: auth })).status, 503, '非 HTTPS 下载源被拒绝');
     const asset = { name: 'Reach-Node-Setup.exe', kind: 'node', arch: 'x64', bytes: 1024, sha256: 'b'.repeat(64), signed: true, sources: [{ kind: 'github', url: 'https://github.com/example/a.exe' }, { kind: 'gitee', url: 'https://gitee.com/example/a.exe' }] };
-    writeFileSync(manifest, JSON.stringify({ releases: [{ version: '0.1.0', tag: 'v0.1.0', publishedAt: 1, assets: [asset] }, { version: '0.2.0', tag: 'v0.2.0', publishedAt: 2, assets: [asset] }] }));
+    const agentAsset = { ...asset, name: 'Reach-Setup-preview.exe', kind: 'agent', signed: false };
+    const completeAsset = { ...asset, name: 'Reach-Complete-Setup.exe', kind: 'complete' };
+    writeFileSync(manifest, JSON.stringify({ releases: [{ version: '0.1.0', tag: 'v0.1.0', publishedAt: 1, assets: [asset] }, { version: '0.2.0-preview', tag: 'v0.2.0-preview', publishedAt: 2, notes: '手动安装预览版', assets: [agentAsset, completeAsset] }] }));
     const ok = await (await fetch(bases[1] + '/api/v1/releases', { headers: auth })).json();
-    assert.equal(ok.configured, true); assert.deepEqual(ok.releases.map((r: { version: string }) => r.version), ['0.2.0', '0.1.0']);
+    assert.equal(ok.configured, true); assert.deepEqual(ok.releases.map((r: { version: string }) => r.version), ['0.2.0-preview', '0.1.0']);
+    assert.equal(ok.releases[0].notes, '手动安装预览版');
+    assert.deepEqual(ok.releases[0].assets, [agentAsset, completeAsset]);
+    assert.deepEqual(ok.releases[1].assets, [asset]);
   } finally {
     for (const server of servers) { server.close(); server.closeAllConnections(); await once(server, 'close'); }
     store.close(); rmSync(directory, { recursive: true, force: true });

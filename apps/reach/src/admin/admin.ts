@@ -18,7 +18,7 @@ interface Page { events: Receipt[]; nextAfter: number; hasMore: boolean }
 interface EventPage { events: DeviceEvent[]; nextAfter: number; hasMore: boolean; unreadCount: number }
 interface ConfigHistory { targetVersion: number; requestId: string; heartbeatIntervalSeconds: number; status: 'pending' | 'applied' | 'rejected'; createdAt: number; settledAt: number | null; receipt: Json }
 type Runtime = Device & { configHistory: ConfigHistory[] };
-interface ReleaseAsset { name: string; kind: 'node' | 'complete'; arch: string; bytes: number; sha256: string; signed: boolean; sources: { kind: 'github' | 'gitee' | 'reach'; url: string }[] }
+interface ReleaseAsset { name: string; kind: 'node' | 'agent' | 'complete'; arch: string; bytes: number; sha256: string; signed: boolean; sources: { kind: 'github' | 'gitee' | 'reach'; url: string }[] }
 interface Release { version: string; tag: string; publishedAt: number; notes?: string; assets: ReleaseAsset[] }
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
@@ -1098,9 +1098,11 @@ function toggleAccountMenu(anchor: HTMLElement) {
 // ---------- 下载 ----------
 const packageInfo: Record<ReleaseAsset['kind'], { title: string; who: string; lead: string; contents: string[]; tone: string }> = {
   node: { title: 'Reach Node', who: '装在被控 Windows 上', lead: '让这台 Windows 常驻接受 Reach 控制：命令、文件、心跳与受管 SSH。', tone: '', contents: ['Reach Node Windows 服务，开机自启并按退避重连', 'ryreach 配置命令（加入 PATH）', '离线 OpenSSH 载荷与准备脚本，默认启用受管 SSH'] },
+  agent: { title: 'Reach Worker + Agent', who: '装在被控 Windows 上', lead: '安装常驻 Worker 与现场 Agent，支持远程任务和按需启用 SSH。', tone: '', contents: ['Reach Worker Windows 服务与 ryreach 配置命令', 'Morrow Agent 侧车', '离线 OpenSSH 载荷；SSH 按需启用'] },
   complete: { title: 'Reach 完整包', who: '需要桌面与现场 Agent 时', lead: '在 Node 之外，带上桌面能力与现场 Agent 侧车，可远程查看与操作桌面。', tone: '', contents: ['Reach Node 与 ryreach 配置命令', '桌面能力 helper 与现场 Agent 侧车', '固定版本的便携 Python 运行时', '离线 OpenSSH 载荷'] },
 };
 const installSteps = ['运行安装程序。它会自动安装、注册 Windows 服务、加入 PATH 并启动服务。', '首次运行 ryreach 时填写本服务地址（安装器已预配置则跳过）。', '回到「设备」生成配对码，在这台设备上运行配对命令。首次上报能力后会收到上线通知。'];
+const agentInstallSteps = ['双击运行安装程序，按提示完成安装。', '未配置服务地址时，在安装结束后的窗口填写；也可以稍后运行 ryreach 设置。', '回到「设备」生成配对码，在这台设备上运行配对命令。首次上报能力后会收到上线通知。'];
 async function drawDownloads() {
   const page = header('下载', null, iconButton('refresh', '刷新', () => render()));
   const view = viewGeneration; const loading = el('p', 'muted', '正在读取发行清单…'); page.append(loading);
@@ -1116,6 +1118,7 @@ async function drawDownloads() {
   loading.remove();
   const latest = data.releases[0];
   if (!latest) { page.append(installGuide(data.configured)); return; }
+  if (latest.notes) page.append(el('p', 'muted', latest.notes));
   const dl = el('div', 'dl');
   for (const asset of latest.assets) dl.append(packageCard(latest, asset));
   page.append(dl);
@@ -1146,7 +1149,7 @@ function packageCard(release: Release, asset: ReleaseAsset) {
   hash.append(iconButton('copy', '复制 SHA-256', () => copy(asset.sha256, ok => { hint.textContent = ok ? '已复制，可用 Get-FileHash 核对。' : '未能访问剪贴板，请手动选择复制。'; }), 'btn icon sm'));
   card.append(hash, hint);
   card.append(el('h4', '', '包里有什么')); const contents = el('ul', 'bullets'); info.contents.forEach(item => contents.append(el('li', '', item))); card.append(contents);
-  card.append(el('h4', '', '怎么装')); const steps = el('ol', 'steps'); installSteps.forEach(item => steps.append(el('li', '', item))); card.append(steps);
+  card.append(el('h4', '', '怎么装')); const steps = el('ol', 'steps'); (asset.kind === 'agent' ? agentInstallSteps : installSteps).forEach(item => steps.append(el('li', '', item))); card.append(steps);
   const footer = el('footer');
   for (const source of asset.sources.slice(1)) { const mirror = el('a', 'btn sm', `从 ${sourceName[source.kind]} 下载`); mirror.href = source.url; mirror.rel = 'noopener noreferrer'; footer.append(mirror); }
   if (footer.childElementCount) card.append(footer);
