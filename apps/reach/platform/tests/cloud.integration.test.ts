@@ -5,7 +5,8 @@ import { createServer } from 'node:http';
 import { once } from 'node:events';
 import { spawn, spawnSync } from 'node:child_process';
 import { createInterface } from 'node:readline';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
+import { sendManagement } from '../../../../crates/morrow-agent-jsonl/clients/node/management.mjs';
 import { mkdirSync, writeFileSync, appendFileSync, readFileSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -17,7 +18,8 @@ const binary=process.env.REACH_DESK_SIDECAR;
 const delay=(ms:number)=>new Promise(resolve=>setTimeout(resolve,ms));
 async function until<T>(read:()=>T|Promise<T>,accept:(value:T)=>boolean){for(let i=0;i<400;i++){const value=await read();if(accept(value))return value;await delay(50);}throw Error('Desk condition timed out');}
 const firstDelta='原生流第一段：这是在上游完成之前就应该能看到的原始回答。';
-async function fixture(gated=false,tools?:{name:string;arguments:unknown}[]){
+type ToolCall = {name:string;arguments:unknown};
+async function fixture(gated=false,tools?:ToolCall[] | ((request:any)=>ToolCall[]|string)){
   assert.ok(binary);const root=resolve('work/desk-cloud-'+randomUUID());mkdirSync(root,{recursive:true});
   const requests:any[]=[],releases=new Map<number,()=>void>(),finished=new Set<number>();let now=Date.now();
   const provider=createServer(async(request,response)=>{
@@ -30,11 +32,13 @@ async function fixture(gated=false,tools?:{name:string;arguments:unknown}[]){
       appendFileSync(join(root,'provider-lifecycle.jsonl'),JSON.stringify({number,event:'started',waiting})+'\n');
       response.once('close',()=>appendFileSync(join(root,'provider-lifecycle.jsonl'),JSON.stringify({number,event:'closed',finished:finished.has(number)})+'\n'));
       response.writeHead(200,{'content-type':'text/event-stream'});
-      if(number===1&&tools){
-        response.write('data: '+JSON.stringify({id:'desk-tools',model:'desk-fixture',choices:[{index:0,delta:{role:'assistant',tool_calls:tools.map((tool,index)=>({index,id:'actual-tool-'+index,type:'function',function:{name:tool.name,arguments:JSON.stringify(tool.arguments)}}))},finish_reason:null}]})+'\n\n');
+      const reply=typeof tools==='function' ? tools(input) : number===1 ? tools : undefined;
+      if(Array.isArray(reply)){
+        response.write('data: '+JSON.stringify({id:'desk-tools',model:'desk-fixture',choices:[{index:0,delta:{role:'assistant',tool_calls:reply.map((tool,index)=>({index,id:typeof tools==='function' ? `actual-tool-${number}-${index}` : 'actual-tool-'+index,type:'function',function:{name:tool.name,arguments:JSON.stringify(tool.arguments)}}))},finish_reason:null}]})+'\n\n');
         response.end('data: '+JSON.stringify({id:'desk-tools',model:'desk-fixture',choices:[{index:0,delta:{},finish_reason:'tool_calls'}]})+'\n\ndata: [DONE]\n\n');return;
       }
       const chunk=(content:string|null,finish:string|null)=>response.write('data: '+JSON.stringify({id:'desk-response-'+requests.length,object:'chat.completion.chunk',model:'desk-fixture',choices:[{index:0,delta:content===null?{}:{role:'assistant',content},finish_reason:finish}]})+'\n\n');
+      if(typeof reply==='string'){chunk(reply,null);chunk(null,'stop');finished.add(number);response.end('data: [DONE]\n\n');return;}
       if(input.messages.some((m:any)=>m.role==='system'&&m.content?.startsWith('Summarize the supplied closed conversation'))){
         chunk(JSON.stringify({summary:'Controlled summary of retained original conversation.',candidates:[{kind:'fact',text:'An unadopted summary candidate.',source_ids:['ref-1']}]}),null);chunk(null,'stop');finished.add(number);response.end('data: [DONE]\n\n');return;
       }
@@ -48,14 +52,107 @@ async function fixture(gated=false,tools?:{name:string;arguments:unknown}[]){
   provider.listen(0,'127.0.0.1');await once(provider,'listening');const address=provider.address();assert.ok(address&&typeof address!=='string');
   const store=new ReachStore(join(root,'reach.sqlite'),()=>now);store.bootstrap('desk-test','controlled-desk-password');
   const session=store.login('desk-test','controlled-desk-password');
-  const config={stateDirectory:join(root,'desk'),binary,endpoint:`http://127.0.0.1:${address.port}/v1`,model:'desk-fixture',modelToken:'controlled-desk-token',developmentLoopback:true,maxSeconds:25};
+  const config={stateDirectory:join(root,'desk'),binary,endpoint:`http://127.0.0.1:${address.port}/v1`,model:'desk-fixture',modelToken:'controlled-desk-token',developmentLoopback:true,maxSeconds:25,...(typeof tools==='function'?{maxCalls:8,maxOutput:2048}: {})};
   const desk=new DeskHost(config),server=reachServer({store,desk,publicOrigin:'http://127.0.0.1',allowInsecureLoopback:true});
   server.listen(0,'127.0.0.1');await once(server,'listening');const a=server.address();assert.ok(a&&typeof a!=='string');const base=`http://127.0.0.1:${a.port}`;
   const request=(path:string,method='GET',data?:unknown,token=session.token,signal?:AbortSignal)=>fetch(base+path,{method,headers:{authorization:'Bearer '+token,'content-type':'application/json'},...(data===undefined?{}:{body:JSON.stringify(data)}),signal});
   const create=async()=>{const id=randomUUID();const response=await request('/api/v1/desk/conversations','POST',{id});assert.equal(response.status,201);return id;};
-  return {root,base,requests,finished,release:(n:number)=>releases.get(n)?.(),store,desk,config,session,request,create,expire:()=>{now+=13*60*60*1000;},async close(){await desk.close();server.close();server.closeAllConnections();await once(server,'close');store.close();provider.close();provider.closeAllConnections();await once(provider,'close');console.log(JSON.stringify({deskEvidence:root}));}};
+  return {root,base,requests,finished,release:(n:number)=>releases.get(n)?.(),store,desk,config,session,request,create,expire:()=>{now+=13*60*60*1000;},async close(){await server.shutdown();const closed=once(provider,'close');provider.close();provider.closeAllConnections();await closed;console.log(JSON.stringify({deskEvidence:root}));}};
 }
 async function consume(response:Response,onFrame?:(frame:any)=>void){assert.equal(response.status,200,await(response.status===200?Promise.resolve(''):response.text()));const reader=response.body!.getReader();const decoder=new TextDecoder();let pending='';const events:any[]=[];for(;;){const{value,done}=await reader.read();if(done)break;pending+=decoder.decode(value,{stream:true});for(let p=pending.indexOf('\n\n');p>=0;p=pending.indexOf('\n\n')){const frame=pending.slice(0,p);pending=pending.slice(p+2);const event=frame.split('\n').find(v=>v.startsWith('event: '))?.slice(7),data=frame.split('\n').find(v=>v.startsWith('data: '))?.slice(6);if(data){const item={event,...JSON.parse(data)};events.push(item);onFrame?.(item);}}}return events;}
+
+for (const kind of ['escaped','short'] as const) {
+  test(`Desk reads an adopted ${kind} note and refuses its stale page after correction`, {skip:!binary,timeout:90000}, async()=>{
+    const label='morrow-e2e-compatibility';
+    const source='Synthetic preference for '+label;
+    const sourceHash=createHash('sha256').update(source).digest('hex');
+    const code='K'+randomUUID().replaceAll('-','').slice(0,12);
+    const body=kind==='escaped' ? '"\n'.repeat(3970) : 'Regular text. '.repeat(26);
+    const note='Preference '+label+'\n'+body+'Verification code: '+code;
+    assert.equal(Buffer.byteLength(note),kind==='escaped'?8008:432);
+    let phase:'seed'|'disposable'|'current'|'corrected'='seed', step=0, id='';
+    const pages:{offset:number;next_offset:number|null;bytes:number;text:string;sources:unknown}[]=[];
+    let providerError:unknown;
+    const f=await fixture(false,input=>{
+      try {
+        const first=step++===0;
+        const call=(name:string,args:unknown)=>[{name,arguments:args}];
+        const last=input.messages.filter((message:any)=>message.role==='tool').at(-1);
+        if(phase==='disposable')return 'Recorded.';
+        if(phase==='seed'){
+          if(first)return call('memory_propose',{kind:'preference',text:note,source_ids:['ref-1']});
+          const candidate=JSON.parse(last.content);
+          assert.equal(candidate.status,'candidate');id=candidate.id;
+          return 'Proposed.';
+        }
+        if(first)return call('session_memory_search',{query:label});
+        if(step===2){
+          const {matches}=JSON.parse(last.content);
+          if(phase==='corrected') {
+            assert.deepEqual(matches,[]);
+            return call('session_memory_read',{id,offset:pages[1]?.offset??1});
+          }
+          assert.equal(matches[0].id,id);
+          assert.equal(matches[0].match_offset,Buffer.byteLength('Preference '));
+          if(kind==='escaped')assert.ok(!JSON.stringify(input.messages).includes(code));
+          return call('session_memory_read',{id});
+        }
+        if(phase==='corrected'){
+          assert.match(last.content,/current adopted Session note not found/);
+          assert.ok(!JSON.stringify(input.messages).includes(code));
+          return 'UNAVAILABLE';
+        }
+        const page=JSON.parse(last.content);
+        const offset=pages.at(-1)?.next_offset??0;
+        assert.equal(page.offset,offset);
+        assert.equal(page.bytes,Buffer.byteLength(note));
+        assert.deepEqual(page.sources,[{id:'ref-1',hash:sourceHash}]);
+        assert.ok(Buffer.byteLength(page.text)>0);
+        const end=offset+Buffer.byteLength(page.text);
+        assert.equal(page.next_offset,end===page.bytes ? null : end);
+        pages.push(page);
+        if(page.next_offset!==null)return call('session_memory_read',{id,offset:page.next_offset});
+        assert.equal(pages.map(page=>page.text).join(''),note);
+        return page.text.match(/Verification code: (K[0-9a-f]{12})$/)[1];
+      } catch(error) {providerError=error;throw error;}
+    });
+    try {
+      const conversation=await f.create(), directory=join(f.config.stateDirectory,'sessions',conversation);
+      const request=async(content:string)=>{
+        step=0;
+        const messageId=randomUUID();
+        const events=await consume(await f.request(`/api/v1/desk/conversations/${conversation}/messages`,'POST',{id:messageId,content}));
+        if(providerError)throw providerError;
+        assert.equal(events.at(-1).status,'completed',JSON.stringify(events.at(-1)));
+        if(phase==='current'||phase==='corrected'){
+          const task=f.desk.store.turn(f.session.user.id,messageId).task_id;
+          const log=readFileSync(join(f.config.stateDirectory,'tasks',task,'evidence','run-1-events.jsonl'),'utf8');
+          const projections=log.trim().split('\n').map(line=>JSON.parse(line).event)
+            .filter(event=>event.type==='context_status'&&event.status==='ready');
+          assert.equal(projections.length,step);
+          for(const event of projections){
+            assert.equal(event.projection_limit_bytes,13312);
+            assert.ok(event.projection_json_bytes<=event.projection_limit_bytes);
+          }
+        }
+        return events.at(-1).output;
+      };
+      const manage=(command:string)=>sendManagement({binary:binary!,request:{operation:'context_command',command,compact:true,
+        session:join(directory,'session.json'),cwd:join(directory,'workspace')}});
+      assert.equal(await request(source),'Proposed.');
+      await manage('/memory accept '+id);
+      phase='disposable';
+      assert.equal(await request('Disposable source without the verification code.'),'Recorded.');
+      await manage('/reference revoke ref-2');
+      phase='current';
+      assert.equal(await request('Retrieve the accepted note using its pages.'),code);
+      assert.ok(kind==='escaped'?pages.length>1:pages.length===1);
+      await manage('/reference correct ref-1 Replaced synthetic preference.');
+      phase='corrected';
+      assert.equal(await request('Check the previous note and page.'),'UNAVAILABLE');
+    } finally {await f.close();}
+  });
+}
 
 test('Desk streams actual native output, deduplicates POST and retains one Session across two tasks',{skip:!binary,timeout:60000},async()=>{
   const f=await fixture(true);
@@ -75,7 +172,7 @@ test('Desk streams actual native output, deduplicates POST and retains one Sessi
     const users=f.requests[1].messages.filter((m:any)=>m.role==='user');
     assert.ok(JSON.stringify(users).includes('First native message'));assert.ok(JSON.stringify(users).includes('Second native message'));
     assert.equal(users.filter((m:any)=>m.content==='First native message').length,1,'history must not be replayed as a new prompt');
-    for(const request of f.requests)assert.deepEqual(request.tools.map((tool:any)=>tool.function.name).sort(),['task_update','history_read','history_search','reference_read','reference_search','memory_propose','experience_propose','experience_search'].sort(),'only Core Session tools; no cloud local or device execution tools');
+    for(const request of f.requests)assert.deepEqual(request.tools.map((tool:any)=>tool.function.name).sort(),['task_update','history_read','history_search','reference_read','reference_search','session_memory_search','session_memory_read','memory_propose','experience_propose','experience_search'].sort(),'only Core Session tools; no cloud local or device execution tools');
     const original=await (await f.request('/api/v1/desk/messages/'+id)).json();assert.equal((original as any).output,firstDelta+'回答 1');
     writeFileSync(join(f.root,'asserted.json'),JSON.stringify({first:one,second,liveDelta,providerCalls:f.requests.length},null,2));
   }finally{await f.close();}

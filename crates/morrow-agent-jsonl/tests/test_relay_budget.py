@@ -22,7 +22,8 @@ EVIDENCE = Path(os.environ.get('MORROW_JSONL_RELAY_EVIDENCE',
 BINARY = Path(os.environ.get('MORROW_JSONL_TEST_BINARY',
     'D:/Temp/morrow-build/morrow-agent-target/debug/morrow-agent-jsonl.exe'))
 NATIVE_TOOLS = ('task_update', 'history_read', 'history_search', 'reference_read',
-                'reference_search', 'memory_propose', 'experience_propose', 'experience_search')
+                'reference_search', 'session_memory_search', 'session_memory_read',
+                'memory_propose', 'experience_propose', 'experience_search')
 
 
 def save(path: Path, value) -> None:

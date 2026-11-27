@@ -1,5 +1,7 @@
 # morrow-agent-core 项目知识
 
+- [会话记忆的自动注入与按需检索](host-contracts.md#会话记忆的自动注入与按需检索)记录注入预算、原文回查与失效规则。[会话笔记分页的 Reach 环回验收](host-contracts.md#会话笔记分页的-reach-环回验收)记录 8,008 字节笔记在真实模型请求中的分页结果。
+
 - [视觉输入与图片历史摘要](host-contracts.md#case-20261101视觉输入与能力后端的边界)：图片模态准入、多模态摘要与原始证据保留；Core/Harness/Host/MCP 分工及[本轮验证](../evidence/vision-20261101.md)。
 
 这个库从 HandWave 精简端提取。完整版 ARA／OMP 继续在原 workspace 开发，

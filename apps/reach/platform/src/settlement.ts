@@ -16,7 +16,7 @@ const imageInputs=new Set([IMAGE_INPUT_IMAGE,'26d9e99368a1ab239dcd6fe703a4ecf7f1
 export const isImageRuntime=(sha:string)=>imageInputs.has(sha);
 const supportedImage=(sha:string)=>sha===SESSION_ONLY_IMAGE||isImageRuntime(sha);
 export const toolsForRuntime=(target:unknown,sha:string)=>deviceToolsFor(target).filter(tool=>sha!==SESSION_ONLY_IMAGE||tool.name!=='reach_image');
-const tools = new Set(['task_update','history_read','history_search','reference_read','reference_search','memory_propose','experience_propose','experience_search']);
+const tools = new Set(['task_update','history_read','history_search','reference_read','reference_search','session_memory_search','session_memory_read','memory_propose','experience_propose','experience_search']);
 function need(ok:unknown, message:string): asserts ok { if (!ok) throw Error(message); }
 export const hashBytes = (bytes:Buffer|string) => createHash('sha256').update(bytes).digest('hex');
 const same = (a:unknown,b:unknown) => isDeepStrictEqual(a,b);

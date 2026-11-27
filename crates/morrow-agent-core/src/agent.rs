@@ -155,6 +155,8 @@ pub const BUILTIN_TOOL_NAMES: &[&str] = &[
     "history_search",
     "reference_read",
     "reference_search",
+    "session_memory_search",
+    "session_memory_read",
     "memory_propose",
     "experience_propose",
     "experience_search",
@@ -1452,7 +1454,7 @@ pub async fn execute(
     let summary_output_limit = json!({"effective":summary_limit.tokens,"sources":summary_limit.sources});
     let stream_fn = rpi_agent::stream_fn(move |model, context, options| {
         let (mut producer, consumer) = rpi_ai::event_stream::create_assistant_message_event_stream();
-        let context = with_run_budget(
+        let mut context = with_run_budget(
             context,
             call_counter.load(Ordering::SeqCst),
             max_calls,
@@ -1465,7 +1467,9 @@ pub async fn execute(
             Err(anyhow::anyhow!(error))
         } else {
             crate::model_caps::check_input(model, &context)
-                .and_then(|_| text_budget.check(&context))
+                .and_then(|_| {
+                    text_budget.check(&context).or_else(|_| context_memory::fit_note_request(&mut context, text_budget))
+                })
                 .and_then(|_| reserve_call(&call_counter, max_calls, &options.signal, deadline))
                 .and_then(|_| stream_root())
         };
@@ -1605,7 +1609,12 @@ pub async fn execute(
                 }
                 let reserved = if runtime_carrier.is_empty() {0} else {serde_json::to_vec(&runtime_carrier)?.len()};
                 let projection_limit = text_budget.projection_bytes.checked_sub(reserved).context("Host observation leaves no context budget")?;
-                let input=store.lock().unwrap().summary_content_with_limit(&messages,previous_message_count,projection_limit)?;
+                let (mut projection,input) = {
+                    let guard = store.lock().unwrap();
+                    let projection = guard.projection_with_note_budget(&messages,projection_limit)?;
+                    let input = guard.summary_content_with_projection(&messages,&projection,previous_message_count,projection_limit)?;
+                    (projection,input)
+                };
                 if let Some((cut,input))=input {
                     validate_transcript(&messages[..cut])?;
                     let options=rpi_ai::SimpleStreamOptions {cache_retention:rpi_ai::CacheRetention::None,api_key:Some(token.clone()),signal:signal.clone(),
@@ -1621,7 +1630,7 @@ pub async fn execute(
                         return Err(error);
                     }
                     root_reservation()?;
-                    let mut before=store.lock().unwrap().projection(&messages)?;
+                    let mut before=std::mem::take(&mut projection);
                     for carrier in runtime_carrier.iter().rev() { before.insert(1.min(before.len()),carrier.clone()); }
                     let receipt=crate::model_telemetry::projection_observation(
                         serde_json::to_vec(&before)?.len(),text_budget.projection_bytes,"compressing");
@@ -1665,8 +1674,8 @@ pub async fn execute(
                     if let Some(receipt) = refresh_receipt {
                         events.send(receipt).await.context("compaction refresh receipt transport closed after checkpoint")?;
                     }
+                    projection = store.lock().unwrap().projection_with_note_budget(&messages,projection_limit)?;
                 }
-                let mut projection=store.lock().unwrap().projection(&messages)?;
                 for carrier in runtime_carrier.into_iter().rev() { projection.insert(1.min(projection.len()), carrier); }
                 if let Some(directory)=crate::experience::directory(messages.get(previous_message_count..).context("native experience scope unavailable")?) {
                     attach_experience_directory(&mut projection,directory,text_budget.projection_bytes)?;

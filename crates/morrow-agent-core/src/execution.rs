@@ -43,6 +43,8 @@ impl RunMode {
                     | "system_info"
                     | "reference_read"
                     | "reference_search"
+                    | "session_memory_search"
+                    | "session_memory_read"
                     | "experience_search"
                     | "history_read"
                     | "history_search"
@@ -384,6 +386,8 @@ mod tests {
             "system_info",
             "reference_read",
             "reference_search",
+            "session_memory_search",
+            "session_memory_read",
             "experience_search",
         ] {
             assert!(RunMode::Plan.allows(name));
