@@ -930,7 +930,7 @@ async fn run_task(
                 StopEvidence::Length { source_raw_index, source_sha256, effective_output_tokens, .. } => {
                     let index = *source_raw_index;
                     ensure!(index >= basis.raw_start && index < basis.raw_end, "truncated message outside this Run");
-                    let stored = journal.read(index, index + 1, 8 * 1024 * 1024)?;
+                    let stored = journal.read(index, index + 1, morrow_agent_core::session_journal::RECORD_BYTES)?;
                     let stored = stored.first().context("truncated message missing from journal")?;
                     ensure!(
                         crate::storage::hash(&serde_json::to_vec(stored)?) == *source_sha256,
@@ -1460,7 +1460,10 @@ fn unknown_effect_records(
     let mut records: Vec<UnknownEffectRecord> = Vec::new();
     if let Ok(head) = journal.open() {
         for raw_index in raw_start..head.raw_count {
-            let Ok(messages) = journal.read(raw_index, raw_index + 1, 8 * 1024 * 1024) else { break };
+            let Ok(messages) = journal.read(raw_index, raw_index + 1, morrow_agent_core::session_journal::RECORD_BYTES)
+            else {
+                break;
+            };
             for message in messages {
                 let morrow_agent_core::rpi_agent::AgentMessage::ToolResult(result) = &message else { continue };
                 let Ok(value) = serde_json::to_value(result) else { continue };

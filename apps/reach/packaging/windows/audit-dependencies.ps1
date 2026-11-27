@@ -1,5 +1,5 @@
 # Copyright (c) Ray Zhang. Audit the actual independent workspaces, without changing policies or locks.
-param([Parameter(Mandatory=$true)][string]$Destination)
+param([Parameter(Mandatory=$true)][string]$Destination,[switch]$AgentWorkerOnly)
 $ErrorActionPreference='Stop'
 $project=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../..'))
 if(Test-Path -LiteralPath $Destination){throw 'Use a new dependency-audit destination'}
@@ -19,14 +19,17 @@ foreach($entry in @(
     # The Morrow runtime packages share the parent repository's workspace lock.
     @('agent','../../crates/morrow-agent-jsonl/Cargo.toml','../../crates/morrow-agent-core/deny.toml','../../Cargo.lock')
 )){
+    if($AgentWorkerOnly -and $entry[0]-ceq'desktop'){continue}
     $name=$entry[0];$manifest=Join-Path $project $entry[1];$policy=Join-Path $project $entry[2];$lock=Join-Path $project $entry[3]
     $before=AuditHash $lock;$policySha=AuditHash $policy;$manifestSha=AuditHash $manifest
     $metadataPath=Join-Path $destinationPath ($name+'-metadata.json');$auditLog=Join-Path $destinationPath ($name+'-deny.log')
-    & cargo metadata --manifest-path $manifest --locked --offline --all-features --format-version 1 > $metadataPath
+    $oldEap=$ErrorActionPreference;$ErrorActionPreference='Continue'
+    try { & cargo metadata --manifest-path $manifest --locked --offline --all-features --format-version 1 > $metadataPath } finally { $ErrorActionPreference=$oldEap }
     if($LASTEXITCODE-ne0){throw "Locked dependency resolution failed: $name"}
     $metadata=Get-Content -LiteralPath $metadataPath -Raw|ConvertFrom-Json
     AssertReachPinnedAgentSources $metadata ($name-in@('desktop','agent'))
-    & cargo deny --manifest-path $manifest --config $policy --all-features --locked --offline check *> $auditLog
+    $oldEap=$ErrorActionPreference;$ErrorActionPreference='Continue'
+    try { & cargo deny --manifest-path $manifest --config $policy --all-features --locked --offline check *> $auditLog } finally { $ErrorActionPreference=$oldEap }
     if($LASTEXITCODE-ne0){throw "Dependency audit failed: $name; see $auditLog"}
     if((AuditHash $lock)-cne$before -or (AuditHash $policy)-cne$policySha -or (AuditHash $manifest)-cne$manifestSha){throw 'Dependency audit input changed'}
     $records+=@{workspace=$name;manifest=[IO.Path]::GetFullPath($manifest);manifestSha256=$manifestSha;lock=[IO.Path]::GetFullPath($lock);lockSha256=$before;policy=[IO.Path]::GetFullPath($policy);policySha256=$policySha;metadataSha256=(AuditHash $metadataPath);auditLogSha256=(AuditHash $auditLog);packages=@($metadata.packages).Count}

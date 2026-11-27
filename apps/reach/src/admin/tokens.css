@@ -1,0 +1,73 @@
+/* Copyright (c) Ray Zhang. Reach 共享设计令牌：控制台与 Reach Desk 共用同一套字体、颜色、明暗主题与动效曲线。
+ * 明暗由系统或 data-theme 决定，强调色由 theme.js 写入 --accent-user；只放变量，不放组件样式。 */
+@font-face { font-family: Outfit; src: url("outfit.ttf") format("truetype"); font-weight: 100 900; font-style: normal; font-display: swap; }
+:root {
+  /* 动效：强 ease-out 用于进出场，ease-in-out 用于屏上移动；位移量在减少动效时归零 */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --rise: 10px; --pop: 0.96; --nudge: 4px;
+  color-scheme: light;
+  --accent: var(--accent-user, #f6d454);
+  --on-accent: #1f1f22;
+  --accent-wash: color-mix(in srgb, var(--accent) 22%, transparent);
+  --accent-ring: color-mix(in srgb, var(--accent) 55%, transparent);
+  --backdrop: #a9adb5;
+  --canvas: #eceeed;
+  --glow: color-mix(in srgb, var(--accent) 42%, #fdfbf3);
+  --card: rgba(255, 255, 255, 0.62);
+  --card-edge: rgba(255, 255, 255, 0.75);
+  --solid: #fbfbf9;
+  --well: rgba(31, 31, 34, 0.05);
+  --well-2: rgba(31, 31, 34, 0.08);
+  --ink: #232326;
+  --ink-2: #333338;
+  --ink-scheme: dark;
+  --ink-hover: #47474d;
+  --ink-text: #f3f3f0;
+  --ink-muted: #9a9aa1;
+  --text: #1f1f22;
+  --text-2: #55555c;
+  --text-3: #8f8f96;
+  --rule: rgba(31, 31, 34, 0.1);
+  --hatch: rgba(31, 31, 34, 0.16);
+  --green: #6cbf5a; --green-bg: #e3f3da; --green-text: #3f7f2e;
+  --peach: #f0a24f; --peach-bg: #fcebd8; --peach-text: #a8611c;
+  --rose: #e4686c; --rose-bg: #fadede; --rose-text: #b8403f;
+  --series-a: #b98300; --series-b: #7258d6;
+  --violet: #9b86ee; --violet-bg: #ece7fd; --violet-text: #6a52c9;
+  --shadow-pop: 0 2px 6px rgba(31, 31, 34, 0.05), 0 24px 56px rgba(60, 60, 50, 0.16);
+  /* 按窗口宽度在参考图尺寸（1024px）与宽屏尺寸（1400px）之间平滑变化 */
+  --pad: clamp(16px, 1.75vw, 24px);
+  --gap: clamp(7px, 0.72vw, 10px);
+  --mono: "Cascadia Code", "JetBrains Mono", Consolas, monospace;
+  font-family: Outfit, "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+  font-size: 14.5px;
+  font-synthesis: none;
+  -webkit-font-smoothing: antialiased;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --accent-wash: color-mix(in srgb, var(--accent) 16%, transparent);
+    --backdrop: #0a0a0b; --canvas: #18181b; --glow: color-mix(in srgb, var(--accent) 16%, #141416);
+    --card: rgba(255, 255, 255, 0.05); --card-edge: rgba(255, 255, 255, 0.06); --solid: #1d1d21;
+    --well: rgba(255, 255, 255, 0.06); --well-2: rgba(255, 255, 255, 0.1);
+    --ink-scheme: light; --series-a: #b58a14; --series-b: #8a74ea; --ink: #ecebe6; --ink-2: #d9d8d2; --ink-hover: #c9c8c1; --ink-text: #1f1f22; --ink-muted: #66666d;
+    --text: #f1f1ee; --text-2: #c2c2c8; --text-3: #85858d; --rule: rgba(255, 255, 255, 0.1); --hatch: rgba(255, 255, 255, 0.16);
+    --green-bg: rgba(108, 191, 90, 0.16); --green-text: #94d683; --peach-bg: rgba(240, 162, 79, 0.16); --peach-text: #f3b878;
+    --rose-bg: rgba(228, 104, 108, 0.16); --rose-text: #f19a9d; --violet-bg: rgba(155, 134, 238, 0.18); --violet-text: #bcadf6;
+    --shadow-pop: 0 2px 6px rgba(0, 0, 0, 0.4), 0 24px 56px rgba(0, 0, 0, 0.55);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --accent-wash: color-mix(in srgb, var(--accent) 16%, transparent);
+  --backdrop: #0a0a0b; --canvas: #18181b; --glow: color-mix(in srgb, var(--accent) 16%, #141416);
+  --card: rgba(255, 255, 255, 0.05); --card-edge: rgba(255, 255, 255, 0.06); --solid: #1d1d21;
+  --well: rgba(255, 255, 255, 0.06); --well-2: rgba(255, 255, 255, 0.1);
+  --ink-scheme: light; --series-a: #b58a14; --series-b: #8a74ea; --ink: #ecebe6; --ink-2: #d9d8d2; --ink-hover: #c9c8c1; --ink-text: #1f1f22; --ink-muted: #66666d;
+  --text: #f1f1ee; --text-2: #c2c2c8; --text-3: #85858d; --rule: rgba(255, 255, 255, 0.1); --hatch: rgba(255, 255, 255, 0.16);
+  --green-bg: rgba(108, 191, 90, 0.16); --green-text: #94d683; --peach-bg: rgba(240, 162, 79, 0.16); --peach-text: #f3b878;
+  --rose-bg: rgba(228, 104, 108, 0.16); --rose-text: #f19a9d; --violet-bg: rgba(155, 134, 238, 0.18); --violet-text: #bcadf6;
+  --shadow-pop: 0 2px 6px rgba(0, 0, 0, 0.4), 0 24px 56px rgba(0, 0, 0, 0.55);
+}

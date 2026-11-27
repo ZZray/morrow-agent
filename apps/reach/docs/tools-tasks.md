@@ -82,3 +82,5 @@ Task/Session/Run 使用 Lite/Harness 原身份与累计预算。Reach Host 实�
 新消息准入前检查原生历史容量并预留下一 Run 空间：当前新镜像历史输入预算1 GiB，预留128 MiB；旧镜像64 MiB，预留16 MiB。预检最多14,000项和96,000条原始消息，低于后续原生检查的16,384项/100,000条上限。超限返回明确提交拒绝，保留原会话和原记录，不创建替代 Session 或未结算 Task。
 
 任务上下文、候选技能和持久知识分别保存来源、版本和作用域；只有经过验证与审核才能晋升复用。[现场合同](agent-delegation.md)先冻结服务关系，组织模型、Node Host及原Task恢复随R01–R07继续补齐，不复制Agent循环。
+
+2026-11-14 接入 Morrow M04–M07 公共能力后，Controller CLI 与 MCP 新增四项无审批提示的委托控制与只读溯源入口：`reach_agent_guide`（`agent-guide`）、`reach_agent_guidance`（`agent-guidance`）、`reach_agent_continue`（`agent-continue`）与 `reach_agent_provenance`（`agent-provenance`）。服务对 Node 上报的 `POST /api/v1/node/events` 保留顶层 `data` 原始 JSON 字节（同时拒绝重复顶层键与同 `eventId` 异文重试），保证 Rust `serde_json` 与 Node V8 之间的 `eventsProof` 和 `resultSha256` 逐字节一致。

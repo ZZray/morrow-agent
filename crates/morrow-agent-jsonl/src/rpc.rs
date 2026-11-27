@@ -79,6 +79,7 @@ pub struct Bridge {
     guidance_messages: Mutex<BTreeMap<String, String>>,
     stop: CancellationToken,
     local_calls: AtomicUsize,
+    run_image_bytes: AtomicUsize,
     local_done: Notify,
     pending: Mutex<HashMap<String, Pending>>,
     serial: AtomicU64,
@@ -98,6 +99,7 @@ impl Bridge {
             guidance_messages: Mutex::new(BTreeMap::new()),
             stop: CancellationToken::new(),
             local_calls: AtomicUsize::new(0),
+            run_image_bytes: AtomicUsize::new(0),
             local_done: Notify::new(),
             pending: Mutex::new(HashMap::new()),
             serial: AtomicU64::new(0),
@@ -108,6 +110,10 @@ impl Bridge {
 
     pub fn fail(&self) {
         self.fail_with(CALLBACK_UNKNOWN);
+    }
+
+    pub fn reset_run_images(&self) {
+        self.run_image_bytes.store(0, Ordering::SeqCst);
     }
 
     /// Fail every pending callback. The first category is kept; it names why
@@ -333,6 +339,38 @@ impl Bridge {
                 let bytes = serde_json::to_vec(&result_value(&result)).map_err(|_| INVALID_REPLY_FIELDS)?;
                 check(bytes.len() <= TOOL_RESULT_BYTES, INVALID_REPLY_FIELDS)?;
                 check(!result.operation_receipt.trim().is_empty(), INVALID_REPLY_FIELDS)?;
+                if !result.images.is_empty() {
+                    use morrow_agent_harness::core::png_image::{
+                        is_lower_sha256, MAX_CALL_IMAGES, MAX_IMAGE_BYTES, MAX_IMAGE_DIMENSION, MAX_IMAGE_PIXELS,
+                        MAX_RUN_IMAGE_BYTES,
+                    };
+                    check(
+                        result.settlement == morrow_agent_harness::Settlement::Settled
+                            && !result.is_error
+                            && result.images.len() <= MAX_CALL_IMAGES,
+                        INVALID_REPLY_FIELDS,
+                    )?;
+                    let mut call_bytes = 0usize;
+                    for img in &result.images {
+                        check(
+                            img.mime_type == "image/png"
+                                && img.bytes > 0
+                                && img.bytes <= MAX_IMAGE_BYTES
+                                && is_lower_sha256(&img.sha256)
+                                && img.path.is_absolute()
+                                && img.root.as_ref().is_none_or(|r| r.is_absolute())
+                                && (1..=MAX_IMAGE_DIMENSION).contains(&img.width)
+                                && (1..=MAX_IMAGE_DIMENSION).contains(&img.height)
+                                && u64::from(img.width) * u64::from(img.height) <= MAX_IMAGE_PIXELS,
+                            INVALID_REPLY_FIELDS,
+                        )?;
+                        call_bytes = call_bytes.checked_add(img.bytes).ok_or(INVALID_REPLY_FIELDS)?;
+                    }
+                    let updated = self.run_image_bytes.fetch_update(Ordering::SeqCst, Ordering::SeqCst, |prev| {
+                        prev.checked_add(call_bytes).filter(|&sum| sum <= MAX_RUN_IMAGE_BYTES)
+                    });
+                    check(updated.is_ok(), INVALID_REPLY_FIELDS)?;
+                }
                 (
                     version,
                     rpc_id.clone(),
@@ -499,12 +537,47 @@ fn strict_receipt(value: &Value) -> Result<()> {
 /// value types and that no field is missing.
 fn strict_resume_receipt(value: &Value) -> Result<()> {
     keys(value, &["committed", "settlement", "tool_calls", "evidence"])?;
+    let mut total_reconciled_bytes = 0usize;
     for call in value["tool_calls"].as_array().context("tool_calls_array_required")? {
         keys(call, &["call_id", "settlement"])?;
         let settlement = &call["settlement"];
         match settlement["kind"].as_str() {
             Some("not_executed") => keys(settlement, &["kind"])?,
-            Some("completed" | "failed") => keys(settlement, &["kind", "output"])?,
+            Some("completed") => {
+                keys(settlement, &["kind", "output", "images"])?;
+                if let Some(images) = settlement.get("images") {
+                    use morrow_agent_harness::core::png_image::{
+                        is_lower_sha256, MAX_CALL_IMAGES, MAX_IMAGE_BYTES, MAX_IMAGE_DIMENSION, MAX_IMAGE_PIXELS,
+                        MAX_RUN_IMAGE_BYTES,
+                    };
+                    let list = images.as_array().context("settlement_images_array_required")?;
+                    ensure!(list.len() <= MAX_CALL_IMAGES, "settlement_images_count");
+                    for item in list {
+                        keys(item, &["path", "root", "sha256", "bytes", "mime_type", "width", "height"])?;
+                        let b = item["bytes"].as_u64().and_then(|v| usize::try_from(v).ok()).unwrap_or(0);
+                        let w = item["width"].as_u64().and_then(|v| u32::try_from(v).ok()).unwrap_or(0);
+                        let h = item["height"].as_u64().and_then(|v| u32::try_from(v).ok()).unwrap_or(0);
+                        ensure!(
+                            item["mime_type"].as_str() == Some("image/png")
+                                && item["path"].as_str().is_some_and(|p| PathBuf::from(p).is_absolute())
+                                && item
+                                    .get("root")
+                                    .is_none_or(|r| r.as_str().is_some_and(|p| PathBuf::from(p).is_absolute()))
+                                && item["sha256"].as_str().is_some_and(is_lower_sha256)
+                                && b > 0
+                                && b <= MAX_IMAGE_BYTES
+                                && (1..=MAX_IMAGE_DIMENSION).contains(&w)
+                                && (1..=MAX_IMAGE_DIMENSION).contains(&h)
+                                && u64::from(w) * u64::from(h) <= MAX_IMAGE_PIXELS,
+                            "settlement_image_invalid"
+                        );
+                        total_reconciled_bytes =
+                            total_reconciled_bytes.checked_add(b).context("settlement_image_bytes_overflow")?;
+                        ensure!(total_reconciled_bytes <= MAX_RUN_IMAGE_BYTES, "settlement_image_run_budget");
+                    }
+                }
+            }
+            Some("failed") => keys(settlement, &["kind", "output"])?,
             _ => bail!("settlement_kind_invalid"),
         }
     }
@@ -817,5 +890,88 @@ mod tests {
         let mut legacy = receipt;
         legacy["basis"] = basis;
         assert!(strict_receipt(&legacy).is_ok());
+    }
+
+    #[test]
+    fn tool_reply_and_reconcile_receipt_enforce_typed_image_invariants() {
+        let abs_png = std::env::temp_dir().join("fixture-shot.png");
+        let img = json!({
+            "path": abs_png,
+            "sha256": "a".repeat(64),
+            "bytes": 67,
+            "mime_type": "image/png",
+            "width": 1,
+            "height": 1
+        });
+
+        // Completed resume receipt with valid PNG image metadata passes strict_resume_receipt
+        let ok_resume = json!({
+            "committed": true,
+            "settlement": "Settled",
+            "tool_calls": [{
+                "call_id": "call-1",
+                "settlement": { "kind": "completed", "output": "ok", "images": [img.clone()] }
+            }],
+            "evidence": ["receipt:1"]
+        });
+        assert!(strict_resume_receipt(&ok_resume).is_ok());
+
+        // Failed resume receipt carrying images is rejected
+        let bad_resume = json!({
+            "committed": true,
+            "settlement": "Settled",
+            "tool_calls": [{
+                "call_id": "call-1",
+                "settlement": { "kind": "failed", "output": "err", "images": [img.clone()] }
+            }],
+            "evidence": ["receipt:1"]
+        });
+        assert!(strict_resume_receipt(&bad_resume).is_err());
+
+        // Failed or Unknown ToolReply carrying images is rejected without delivery
+        let fixture = Fixture::for_kind("tool_call");
+        fixture.bridge.pending.lock().unwrap().get_mut("rpc-1").unwrap().expected.tool =
+            Some(ToolKey { native_call_id: "call-1".into(), tool_name: "capture".into(), args_sha256: "b".repeat(64) });
+        let err_with_img = serde_json::to_vec(&json!({
+            "kind": "tool_reply",
+            "version": 1,
+            "rpc_id": "rpc-1",
+            "task_id": "task-1",
+            "run_id": "run-1",
+            "native_call_id": "call-1",
+            "tool_name": "capture",
+            "args_sha256": "b".repeat(64),
+            "result": {
+                "value": {"error": "boom"},
+                "is_error": true,
+                "settlement": "Settled",
+                "operation_receipt": "op-1",
+                "images": [img.clone()]
+            }
+        }))
+        .unwrap();
+        let (parsed, raw) = decode(&err_with_img).unwrap();
+        assert_eq!(fixture.bridge.receive(parsed, &raw), Err(INVALID_REPLY_FIELDS));
+
+        let ok_with_img = serde_json::to_vec(&json!({
+            "kind": "tool_reply",
+            "version": 1,
+            "rpc_id": "rpc-1",
+            "task_id": "task-1",
+            "run_id": "run-1",
+            "native_call_id": "call-1",
+            "tool_name": "capture",
+            "args_sha256": "b".repeat(64),
+            "result": {
+                "value": {"ok": true},
+                "is_error": false,
+                "settlement": "Settled",
+                "operation_receipt": "op-1",
+                "images": [img]
+            }
+        }))
+        .unwrap();
+        let (parsed_ok, raw_ok) = decode(&ok_with_img).unwrap();
+        assert_eq!(fixture.bridge.receive(parsed_ok, &raw_ok), Ok(()));
     }
 }

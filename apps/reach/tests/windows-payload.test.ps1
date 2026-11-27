@@ -1,4 +1,5 @@
 # Copyright (c) Ray Zhang. Exercise actual ZIP validation in Windows PowerShell 5.1.
+param([string]$OpenSshArchive)
 $ErrorActionPreference='Stop'
 Add-Type -AssemblyName System.IO.Compression
 . (Join-Path $PSScriptRoot '../packaging/windows/payload.ps1')
@@ -39,6 +40,20 @@ function AgentFixture {
     $f.manifest.agentSha256=Digest $f.items['agent/morrow-agent-jsonl.exe']
     $f.items['agent-runtime.json']=Bytes ('{"sidecar":"agent/morrow-agent-jsonl.exe","sha256":"'+$f.manifest.agentSha256+'","inspectionLeaseVersion":1}')
     foreach($name in @('agent/morrow-agent-jsonl.exe','agent-runtime.json')){$f.manifest.files+=@{path=$name;bytes=$f.items[$name].Length;sha256=(Digest $f.items[$name])}}
+    return $f
+}
+function WorkerAgentFixture([byte[]]$Archive) {
+    $f=AgentFixture
+    $f.manifest.version='0.1.8'
+    $f.manifest.desktopBundled=$false
+    $f.manifest.Remove('helperSha256')
+    $f.manifest.Remove('runtimeManifestSha256')
+    $f.manifest.files=@($f.manifest.files|Where-Object {$_.path-notlike'desktop*'})
+    foreach($name in @($f.items.Keys|Where-Object {$_-like'desktop*'})){$f.items.Remove($name)}
+    if($Archive){
+        $f.items['openssh-vendor.zip']=$Archive
+        $f.manifest.files+=@{path='openssh-vendor.zip';bytes=$Archive.Length;sha256=(Digest $Archive)}
+    }
     return $f
 }
 function AgentConfig($Fixture,[string]$Text){
@@ -102,6 +117,22 @@ Case 'actual stream underflow and overflow refused' {
 }
 Case 'schema2 binds Agent config and actual sidecar bytes as a complete component' {
     $f=AgentFixture;$result=ReadZip (Zip $f);Assert ($result.manifest.schema-eq2 -and $result.declared.Count-eq10 -and $result.manifest.agentBundled) 'Packaged Agent was omitted'
+}
+Case 'Worker and Agent only requires the fixed offline archive and rejects Desktop drift' {
+    $f=WorkerAgentFixture $null;Refused {ReadZip (Zip $f)} 'requires fixed offline OpenSSH'
+    $f=WorkerAgentFixture (Bytes 'altered archive');Refused {ReadZip (Zip $f)} 'requires fixed offline OpenSSH'
+    $f.manifest.helperSha256='0'*64;Refused {ReadZip (Zip $f)} 'cannot declare Desktop digests'
+    $f=AgentFixture;$f.manifest.desktopBundled=$false;$f.manifest.Remove('helperSha256');$f.manifest.Remove('runtimeManifestSha256')
+    Refused {ReadZip (Zip $f)} 'cannot contain Desktop files'
+}
+if($OpenSshArchive){
+    Case 'Worker and Agent only ZIP verifies the reviewed OpenSSH archive with no Desktop files' {
+        $f=WorkerAgentFixture ([IO.File]::ReadAllBytes((Resolve-Path -LiteralPath $OpenSshArchive).Path))
+        $manifest=(ReadZip (Zip $f)).manifest
+        Assert ($manifest.version-ceq'0.1.8' -and $manifest.agentBundled -and -not $manifest.desktopBundled -and $manifest.files.Count-eq5) 'Worker or Agent bundle shape differs'
+        $f.manifest.agentBundled=$false
+        Refused {ReadZip (Zip $f)} 'Agent is required'
+    }
 }
 Case 'schema2 cannot omit Agent files, declarations or boolean identity' {
     foreach($name in @('agent-runtime.json','agent/morrow-agent-jsonl.exe')){$f=AgentFixture;$f.items.Remove($name);$f.manifest.files=@($f.manifest.files|Where-Object path -ne $name);Refused {ReadZip (Zip $f)} 'Agent component'}

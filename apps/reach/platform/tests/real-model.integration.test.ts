@@ -56,7 +56,7 @@ test('Reach Desk completes two bounded real replies in the same native Session t
     assert.equal(originalStart.run.session_path,nextStart.run.session_path);assert.notEqual(turn.task_id,nextTurn.task_id);assert.notEqual(turn.run_id,nextTurn.run_id);assert.ok(!nextPrompt.includes(nonce));
     receipt={passed:true,model,replies:[{output:turn.output,taskId:turn.task_id,runId:turn.run_id},{output:nextTurn.output,taskId:nextTurn.task_id,runId:nextTurn.run_id}],nativeSession:originalStart.run.session_path,observedCalls:result.outcome.observed_calls+nextResult.outcome.observed_calls,scope:'two real cloud responses with native Session recall; not device delegation or production deployment'};
   }finally{
-    await desk?.close();if(server){server.close();server.closeAllConnections();await once(server,'close');}store?.close();
+    if(server)await server.shutdown();else{await desk?.close();store?.close();}
     if(tunnel.exitCode===null&&tunnel.signalCode===null){const done=once(tunnel,'exit');tunnel.kill();await done;}t.signal.removeEventListener('abort',abort);console.log(JSON.stringify({deskRealEvidence:root}));
   }
   t.signal.throwIfAborted();writeFileSync(join(root,'receipt.json'),JSON.stringify(receipt,null,2));

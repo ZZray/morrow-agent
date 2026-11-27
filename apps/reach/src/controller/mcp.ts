@@ -1,18 +1,23 @@
 // Copyright (c) Ray Zhang. MCP stdio transport for local coding agents.
 import { createInterface } from 'node:readline';
 import { z } from 'zod';
-import { identifier, submitSchema, reconciliationSchema, desktopCallSchema } from '../contracts/protocol.ts';
+import { identifier, submitSchema, reconciliationSchema, desktopCallSchema, agentContinueSchema, agentProvenanceSchema, agentGuidanceInputSchema } from '../contracts/protocol.ts';
 import { ReachClient } from './client.ts';
 import { artifactIdentity, downloadArtifact, readArtifactRange } from './artifacts.ts';
 import {agentReviewDecisionSchema} from '../contracts/agent-review.ts';
 import {agentModelStopSchema} from '../contracts/agent-model-stop.ts';
 import {libraryListSchema,libraryProposalSchema,librarySourceSchema,libraryValidationSchema,libraryReviewSchema} from '../contracts/source-library.ts';
+import { nodeConfigMcpInputSchema } from '../service/node-runtime-store.ts';
+import { runSshExecOnce, sshExecMcpInputSchema } from './starferry.ts';
 
 const empty = z.strictObject({});
 const operation = z.strictObject({ operationId: identifier });
 const libraryEntry=z.strictObject({entryId:identifier});
 const definitions = [
   { name: 'reach_nodes', description: 'List paired Reach machines and their actual connectivity and implemented capabilities.', schema: empty, readOnly: true },
+  { name: 'reach_node_runtime', description: 'Read a paired Reach Node runtime state, last minute-level heartbeat timestamp, effective heartbeat interval, config version, and pending/settled remote config history.', schema: z.strictObject({ nodeId: identifier }), readOnly: true },
+  { name: 'reach_node_config', description: 'Remotely adjust a paired Reach Node minute-level heartbeat interval (30..3600s) with idempotent requestId tracking. Remains pending until the Node applies and acknowledges it.', schema: nodeConfigMcpInputSchema, readOnly: false },
+  { name: 'reach_ssh_exec', description: 'Execute a real OpenSSH command on a paired Reach Node over Starferry transport (UDP direct hole-punching with automatic Cloud Relay fallback for new streams, pinned host key, and zero auto-replay of interrupted streams).', schema: sshExecMcpInputSchema, readOnly: false },
   { name: 'reach_protocol', description: 'Read versioned command and receipt schemas for this Reach service.', schema: empty, readOnly: true },
   {name:'reach_library_list',description:'List metadata of adopted device-scoped sources by default. No automatic Task injection. Explicit state selects unadopted candidates or revoked history.',schema:libraryListSchema,readOnly:true},
   {name:'reach_library_read',description:'Read an exact source version and its provenance, execution evidence and controller review history. Historical text is not a current adoption grant.',schema:libraryEntry,readOnly:true},
@@ -27,6 +32,10 @@ const definitions = [
   { name: 'reach_agent_task', description: 'Read original Task identity, fixed deadline, current execution generation and retained historical attempts. reconciling never authorizes model or tool execution.', schema: operation, readOnly: true },
   { name: 'reach_agent_model_stop', description: 'Stop and join one exact unknown model transport of an inactive original Task, then persist an evidence-backed receipt. Keep reconciliationId stable. Does not replay, refund, accept or resume the Task; ownerless legacy requests remain blocked.', schema: operation.extend(agentModelStopSchema.shape), readOnly: false },
   { name: 'reach_agent_review', description: 'Submit feedback for an exact candidate using its runId and basisSha256. continue requires correction feedback; return_result releases the result for review, without accepting the business Task. Retain reviewId for retries; budgets and deadline do not reset.', schema:operation.extend(agentReviewDecisionSchema.shape),readOnly:false },
+  { name: 'reach_agent_guide', description: 'Queue an idempotent in-run guidance note for an active delegated Task without starting a new Run, extending budgets, or granting permission.', schema: operation.extend(agentGuidanceInputSchema.shape), readOnly: false },
+  { name: 'reach_agent_guidance', description: 'Read durable guidance delivery receipts (queued, applied, unapplied, or unknown after interruption) for a delegated Task.', schema: operation, readOnly: true },
+  { name: 'reach_agent_continue', description: 'Submit a cross-process reviewed continuation for a settled and released delegated Task with remaining Run budget, binding expected released.json SHA-256 and NeedsChanges feedback.', schema: agentContinueSchema.omit({ kind: true }).extend({ requestId: identifier, nodeId: identifier }), readOnly: false },
+  { name: 'reach_agent_provenance', description: 'Query verified ToolArtifact and skill provenance across one or more delegated Tasks on a paired Node without executing business tools.', schema: agentProvenanceSchema.omit({ kind: true }).extend({ requestId: identifier, nodeId: identifier }), readOnly: true },
   { name: 'reach_artifacts', description: 'List original operation artifacts, including whether their bytes are fully uploaded. Incomplete evidence never authorizes replay.', schema: operation, readOnly: true },
   { name: 'reach_artifact', description: 'Read an original artifact. PNG returns a verified MCP image; text and files return metadata and one bounded byte range. Follow nextOffset with reach_artifact_range for further content. Never repeats the original action.', schema: operation.extend({ artifactId: identifier }), readOnly: true },
   { name: 'reach_artifact_range', description: 'Read and verify at most 64 KiB of original artifact bytes. Base64 is exact; optional text is present only when the range has complete UTF-8 characters. Use nextOffset/eof to continue without executing tools again.', schema: operation.extend({ artifactId: identifier, offset: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER).default(0), length: z.number().int().min(1).max(65536).default(65536) }), readOnly: true },
@@ -41,6 +50,9 @@ export async function invoke(client: ReachClient, name: string, args: unknown) {
   const input: any = definition.schema.parse(args ?? {});
   switch (name) {
     case 'reach_nodes': return client.request('/api/v1/nodes');
+    case 'reach_node_runtime': return client.request(`/api/v1/nodes/${input.nodeId}/runtime`);
+    case 'reach_node_config': { const { nodeId, ...cfgBody } = input; return client.request(`/api/v1/nodes/${nodeId}/config`, 'POST', cfgBody); }
+    case 'reach_ssh_exec': return runSshExecOnce(client, input);
     case 'reach_protocol': return client.request('/api/v1/protocol');
     case 'reach_library_list':return client.request(`/api/v1/library?${new URLSearchParams({nodeId:input.nodeId,epoch:String(input.epoch),state:input.state})}`);
     case 'reach_library_read':return client.request(`/api/v1/library/${input.entryId}`);
@@ -55,6 +67,10 @@ export async function invoke(client: ReachClient, name: string, args: unknown) {
     case 'reach_agent_task':return client.request(`/api/v1/operations/${input.operationId}/agent-task`);
     case 'reach_agent_model_stop':{const {operationId,...stop}=input;return client.request(`/api/v1/operations/${operationId}/agent-models`,'POST',stop);}
     case 'reach_agent_review':{const {operationId,...review}=input;agentReviewDecisionSchema.parse(review);return client.request(`/api/v1/operations/${operationId}/agent-reviews`,'POST',review);}
+    case 'reach_agent_guide': { const { operationId, ...guide } = input; return client.request(`/api/v1/operations/${operationId}/agent-guidance`, 'POST', guide); }
+    case 'reach_agent_guidance': return client.request(`/api/v1/operations/${input.operationId}/agent-guidance`);
+    case 'reach_agent_continue': { const { requestId, nodeId, ...cont } = input; return client.submit({ requestId, nodeId, command: { kind: 'agent.continue', ...cont } }); }
+    case 'reach_agent_provenance': { const { requestId, nodeId, ...prov } = input; return client.submit({ requestId, nodeId, command: { kind: 'agent.provenance', ...prov } }); }
     case 'reach_artifacts': return client.request(`/api/v1/operations/${input.operationId}/artifacts`);
     case 'reach_artifact': {
       const identity = await artifactIdentity(client, input.operationId, input.artifactId);

@@ -9,7 +9,9 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tokio_util::sync::CancellationToken;
 
-pub use morrow_agent_core::agent::{InterruptedRun, OpenToolCall, ToolCallReconciliation, ToolCallSettlement};
+pub use morrow_agent_core::agent::{
+    InterruptedRun, OpenToolCall, SettledToolImage, ToolCallReconciliation, ToolCallSettlement,
+};
 use morrow_agent_core::{artifact_provenance::ArtifactStatus, RunRequest};
 
 /// Guidance only. A task kind grants no tool, filesystem or network authority.

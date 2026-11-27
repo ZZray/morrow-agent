@@ -6,22 +6,27 @@ import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import { pairingSchema, nodeHelloSchema, operationEventSchema, protocolDocument, reconciliationSchema, submitSchema, identifier } from '../contracts/protocol.ts';
 import { ReachError, requireCondition } from './errors.ts';
-import { ReachStore } from './store.ts';
+import { ReachStore, extractRawJsonMember } from './store.ts';
 import { serveAdmin } from './admin.ts';
 import type { RayLoginBridge } from './ray-login.ts';
 import type { DeskExtension } from './desk-extension.ts';
 import { deskDevices } from './desk-devices.ts';
-import type {AgentModelBroker} from './agent-model.ts';
+import {AgentModelBroker} from './agent-model.ts';
 import {modelBindingSchema} from './agent-model-store.ts';
+import { readReleases } from './releases.ts';
+import { computeStats } from './stats.ts';
+import { ModelSettings, purposeSchema } from './model-settings.ts';
+import type { ModelConfig, ModelPurpose, RunningModel } from './model-settings.ts';
+import { PinLogin, DEFAULT_PIN } from './pin-login.ts';
 
-interface Options { store: ReachStore; publicOrigin: string; cookiePath?: string; rayLogin?: RayLoginBridge; desk?: DeskExtension; agentModel?:AgentModelBroker; allowInsecureLoopback?: boolean; trustedProxyAddresses?: string[] }
+interface Options { store: ReachStore; publicOrigin: string; releaseManifest?: string; pin?: { initial?: string; reset?: boolean }; pinOnly?: boolean; cookiePath?: string; rayLogin?: RayLoginBridge; desk?: DeskExtension; agentModel?:AgentModelBroker; modelSettings?: ModelSettings; modelRuntime?: Partial<Record<ModelPurpose, RunningModel>>; deskAvailable?: boolean; deskUnavailable?: string; modelLoopback?: boolean; createDesk?: (model: ModelConfig) => DeskExtension; allowInsecureLoopback?: boolean; trustedProxyAddresses?: string[] }
 const loginSchema = z.strictObject({ username: z.string().min(1).max(128), password: z.string().min(1).max(1024) });
 const jsonHeaders = { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff', 'referrer-policy': 'no-referrer', 'content-security-policy': "default-src 'none'; frame-ancestors 'none'" };
 function send(response: ServerResponse, status: number, data: unknown, headers: Record<string, string | string[]> = {}) {
   response.writeHead(status, { ...jsonHeaders, ...headers });
   response.end(JSON.stringify(data));
 }
-async function body(request: IncomingMessage): Promise<unknown> {
+async function rawJsonBody(request: IncomingMessage): Promise<{ raw: string; parsed: unknown }> {
   requireCondition(request.headers['content-type']?.split(';')[0] === 'application/json', 415, 'json_required', '请求必须使用 JSON');
   const chunks: Buffer[] = [];
   let size = 0;
@@ -30,8 +35,12 @@ async function body(request: IncomingMessage): Promise<unknown> {
     requireCondition(size <= 2_097_152, 413, 'request_too_large', '请求超过 2 MiB，请分段读取或传输');
     chunks.push(Buffer.from(chunk));
   }
-  try { return JSON.parse(Buffer.concat(chunks).toString('utf8')); }
+  const raw = Buffer.concat(chunks).toString('utf8');
+  try { return { raw, parsed: JSON.parse(raw) }; }
   catch { throw new ReachError(400, 'invalid_json', 'JSON 格式无效'); }
+}
+async function body(request: IncomingMessage): Promise<unknown> {
+  return (await rawJsonBody(request)).parsed;
 }
 function bearer(request: IncomingMessage) {
   const value = request.headers.authorization;
@@ -58,8 +67,28 @@ export function reachServer(options: Options) {
   requireCondition(origin.origin === options.publicOrigin, 500, 'invalid_public_origin', 'PUBLIC_ORIGIN must be an origin without a path');
   requireCondition(origin.protocol === 'https:' || (options.allowInsecureLoopback && ['127.0.0.1', '[::1]', 'localhost'].includes(origin.hostname)), 500, 'https_required', 'Public deployments require HTTPS');
   const { store } = options;
-  options.desk?.bindDevices?.(userId=>deskDevices(store,userId));
+  let desk = options.desk, agentModel = options.agentModel;
+  const modelRuntime: Partial<Record<ModelPurpose, RunningModel>> = { ...options.modelRuntime };
+  // 启用即切换：先在内存里替换，失败则整个启用回滚，已启用的旧配置不受影响。
+  function applyModel(purpose: ModelPurpose, config: ModelConfig, generation: number) {
+    if (purpose === 'agent') {
+      const broker = { endpoint: config.endpoint, token: config.token, model: config.model, contextWindow: config.contextWindow!, maxOutput: config.maxOutput!, imageInput: !!config.imageInput, development: !!options.allowInsecureLoopback || !!options.modelLoopback };
+      if (agentModel) agentModel.reconfigure(broker); else { const created = new AgentModelBroker(broker); created.bind(store); agentModel = created; }
+    } else if (desk) {
+      requireCondition(desk.reconfigure, 503, 'desk_reconfigure_unavailable', '当前 Reach Desk 不支持运行中替换模型');
+      desk.reconfigure!({ ...config, capabilities: config.contextWindow !== undefined ? { contextWindow: config.contextWindow, maxTokens: config.maxOutput!, imageInput: !!config.imageInput } : undefined });
+    } else if (options.createDesk) {
+      const created = options.createDesk(config); created.bindDevices?.(userId => deskDevices(store, userId)); desk = created; extensionsClosed = false;
+    } else return;
+    modelRuntime[purpose] = { generation, source: 'settings', endpoint: config.endpoint, model: config.model };
+    console.log(JSON.stringify({ event: 'reach_model_switched', purpose, generation, model: config.model }));
+  }
+  desk?.bindDevices?.(userId=>deskDevices(store,userId));
   const rate = new RateLimit();
+  const configuredPin = options.pin?.initial;
+  const requirePrivatePin = options.pinOnly && configuredPin !== DEFAULT_PIN;
+  const modelSettings = options.modelSettings ?? new ModelSettings(store, !!options.allowInsecureLoopback);
+  const pin = new PinLogin(store, configuredPin ?? DEFAULT_PIN, options.pin?.reset ?? false, requirePrivatePin);
   const secure = origin.protocol === 'https:';
   const cookiePath = options.cookiePath ?? '/';
   requireCondition(['/', '/reach/'].includes(cookiePath), 500, 'invalid_cookie_path', 'Cookie path must be / or /reach/');
@@ -85,8 +114,8 @@ export function reachServer(options: Options) {
     }
     return { ...user, token };
   }
-  options.agentModel?.bind(store);
-  let stopping=false,extensionsClosed=!options.desk,shutdownPromise:Promise<void>|undefined,listenPending=false,listenDone:Promise<void>|undefined;
+  agentModel?.bind(store);
+  let stopping=false,extensionsClosed=!desk,shutdownPromise:Promise<void>|undefined,listenPending=false,listenDone:Promise<void>|undefined;
   const active=new Set<Promise<void>>();
   const server = createServer(async (request, response) => {
     let finished!:()=>void;const done=new Promise<void>(resolve=>finished=resolve);active.add(done);
@@ -96,10 +125,10 @@ export function reachServer(options: Options) {
       const url = new URL(request.url ?? '/', origin.origin);
       const route = url.pathname;
       const method = request.method ?? 'GET';
-      if (await options.desk?.serveStatic?.(route, method, response, !!options.rayLogin)) return;
-      if (await serveAdmin(route, method, response, !!options.rayLogin, !!options.desk)) return;
+      if (await serveAdmin(route, method, response, !!options.rayLogin, !!desk, url.search)) return;
       if (method === 'GET' && route === '/healthz') return send(response, 200, { service: 'Reach', version: '0.1.0-dev.1', protocol: 1 });
       if (method === 'POST' && route === '/api/v1/auth/ray') {
+        requireCondition(!options.pinOnly, 404, 'not_found', '接口不存在');
         requireCondition(options.rayLogin && request.socket.remoteAddress === '127.0.0.1' && !request.headers.origin, 401, 'ray_bridge_required', '需要可信 Ray 登录入口');
         const signed = z.strictObject({ assertion: z.string().max(4096) }).parse(await body(request));
         const identity = options.rayLogin.consume(signed.assertion);
@@ -119,21 +148,30 @@ export function reachServer(options: Options) {
       }
       if (method === 'GET' && route === '/api/v1/protocol') { actor(request); return send(response, 200, protocolDocument()); }
       if (method === 'POST' && route === '/api/v1/auth/login') {
+        requireCondition(!options.pinOnly, 404, 'not_found', '接口不存在');
         requireCondition(!request.headers.origin || request.headers.origin === origin.origin, 403, 'origin_rejected', '登录来源不匹配');
         rate.take(`login:${clientAddress(request)}`);
         const input = loginSchema.parse(await body(request));
         const result = store.login(input.username, input.password);
         return send(response, 200, result, { 'set-cookie': sessionCookies(result.token, 43200) });
       }
-      if (method === 'GET' && route === '/api/v1/auth/me') { const user = actor(request); return send(response, 200, { id: user.id, username: user.username, csrf: user.csrf }); }
+      if (method === 'POST' && route === '/api/v1/auth/pin') {
+        requireCondition(!request.headers.origin || request.headers.origin === origin.origin, 403, 'origin_rejected', '登录来源不匹配');
+        rate.take(`pin:${clientAddress(request)}`);
+        const input = z.strictObject({ pin: z.string().max(64) }).parse(await body(request));
+        const result = pin.login(input.pin);
+        return send(response, 200, { ...result, pinIsDefault: pin.isDefault(result.user.id) }, { 'set-cookie': sessionCookies(result.token, 43200) });
+      }
+      if (method === 'POST' && route === '/api/v1/auth/pin/change') { const user = actor(request, true); return send(response, 200, pin.change(user.id, await body(request))); }
+      if (method === 'GET' && route === '/api/v1/auth/me') { const user = actor(request); return send(response, 200, { id: user.id, username: user.username, csrf: user.csrf, pinIsDefault: pin.isDefault(user.id) }); }
       if(route==='/api/v1/library'&&method==='POST'){const user=actor(request,true);return send(response,200,store.library.propose(user.id,await body(request)));}
       if(route==='/api/v1/library'&&method==='GET'){const user=actor(request);return send(response,200,store.library.list(user.id,{nodeId:url.searchParams.get('nodeId'),epoch:Number(url.searchParams.get('epoch')),state:url.searchParams.get('state')??'adopted'}));}
       const library=route.match(/^\/api\/v1\/library\/([^/]+)(?:\/(source|validate|review))?$/);
       if(library){const user=actor(request,method!=='GET'),id=identifier.parse(library[1]);if(method==='GET'&&!library[2])return send(response,200,store.library.read(user.id,id));if(method==='POST'){const input=await body(request);if(library[2]==='source')return send(response,200,store.library.source(user.id,id,input));if(library[2]==='validate')return send(response,200,store.library.validate(user.id,id,input));if(library[2]==='review')return send(response,200,store.library.review(user.id,id,input));}}
-      if (method === 'POST' && route === '/api/v1/auth/logout') { const user = actor(request, true); store.logout(user.token); options.desk?.revoke(createHash('sha256').update(user.token).digest('hex')); return send(response, 200, { loggedOut: true }, { 'set-cookie': sessionCookies('', 0) }); }
-      if (options.desk && route.startsWith('/api/v1/desk/')) {
+      if (method === 'POST' && route === '/api/v1/auth/logout') { const user = actor(request, true); store.logout(user.token); desk?.revoke(createHash('sha256').update(user.token).digest('hex')); return send(response, 200, { loggedOut: true }, { 'set-cookie': sessionCookies('', 0) }); }
+      if (desk && route.startsWith('/api/v1/desk/')) {
         const user = actor(request, method !== 'GET');
-        return await options.desk.handle({ request, response, url, userId: user.id, sessionId: createHash('sha256').update(user.token).digest('hex'),
+        return await desk.handle({ request, response, url, userId: user.id, sessionId: createHash('sha256').update(user.token).digest('hex'),
           sessionValid: () => { try { return store.session(user.token).id === user.id; } catch { return false; } }, body: () => body(request),devices:deskDevices(store,user.id) });
       }
       if (method === 'POST' && route === '/api/v1/pairing-codes') { const user = actor(request, true); return send(response, 201, store.createPairing(user.id)); }
@@ -148,12 +186,16 @@ export function reachServer(options: Options) {
         requireCondition(credential, 401, 'node_authentication_required', '需要节点身份');
         const receiptOnly = route === '/api/v1/node/events' || route === '/api/v1/node/pending' || route.startsWith('/api/v1/node/control/') || route.startsWith('/api/v1/node/agents/');
         const node = store.node(credential, receiptOnly);
-        if(method==='GET'&&route==='/api/v1/node/agent-model')return send(response,200,options.agentModel?{configured:true,descriptor:options.agentModel.descriptor()}:{configured:false});
+        if(method==='GET'&&route==='/api/v1/node/agent-model')return send(response,200,agentModel?{configured:true,descriptor:agentModel.descriptor()}:{configured:false});
         const agentContext=route.match(/^\/api\/v1\/node\/agents\/([^/]+)\/context$/);
         if(method==='POST'&&agentContext){const binding=modelBindingSchema.parse(await body(request));return send(response,200,store.executions.context(node,identifier.parse(agentContext[1]),binding.dispatchId,binding.payloadHash));}
         const agentFinalize=route.match(/^\/api\/v1\/node\/agents\/([^/]+)\/finalize\/(context|snapshot)$/);
         if(method==='POST'&&agentFinalize){const id=identifier.parse(agentFinalize[1]),input=await body(request);return send(response,200,agentFinalize[2]==='context'?store.finalizations.contextReply(node,id,input):store.finalizations.snapshot(node,id,input));}
         const agentResume=route.match(/^\/api\/v1\/node\/agents\/([^/]+)\/resume\/(plan|snapshot|arguments|reconcile|admit|final-snapshot)$/);
+        const agentContinuePlan=route.match(/^\/api\/v1\/node\/agents\/([^/]+)\/continue\/plan$/);
+        if(method==='POST'&&agentContinuePlan)return send(response,200,store.guidance.plan(node,identifier.parse(agentContinuePlan[1]),await body(request)));
+        const agentNodeGuidance=route.match(/^\/api\/v1\/node\/agents\/([^/]+)\/guidance\/(poll|report)$/);
+        if(method==='POST'&&agentNodeGuidance){const id=identifier.parse(agentNodeGuidance[1]),input=await body(request);return send(response,200,agentNodeGuidance[2]==='poll'?store.guidance.poll(node,id,input):store.guidance.report(node,id,input));}
         if(method==='POST'&&agentResume){const id=identifier.parse(agentResume[1]),input=await body(request);switch(agentResume[2]){case 'plan':return send(response,200,store.resumes.plan(node,id,input));case 'snapshot':return send(response,200,store.resumes.snapshot(node,id,input));case 'arguments':return send(response,200,store.resumes.arguments(node,id,input));case 'reconcile':return send(response,200,store.resumes.reconcile(node,id,input));case 'admit':return send(response,200,store.resumes.admit(node,id,input));case 'final-snapshot':return send(response,200,store.resumes.finalSnapshot(node,id,input));}}
         const agentReviews=route.match(/^\/api\/v1\/node\/agents\/([^/]+)\/reviews(?:\/([^/]+))?$/),agentRuns=route.match(/^\/api\/v1\/node\/agents\/([^/]+)\/runs$/);
         if(method==='POST'&&agentRuns)return send(response,200,store.reviews.register(node,identifier.parse(agentRuns[1]),await body(request)));
@@ -162,30 +204,83 @@ export function reachServer(options: Options) {
         if(method==='POST'&&modelStatus)return send(response,200,store.models.status(node,identifier.parse(modelStatus[1]),identifier.parse(modelStatus[2]),await body(request)));
         const modelRoute=route.match(/^\/api\/v1\/node\/agents\/([^/]+)\/model\/route$/),modelRequest=route.match(/^\/api\/v1\/node\/agents\/([^/]+)\/model\/requests\/([^/]+)$/);
         if(method==='POST'&&(modelRoute||modelRequest)){
-          requireCondition(options.agentModel,503,'agent_model_unconfigured','组织尚未配置现场委托模型');
-          if(modelRoute)return send(response,200,{...store.models.bind(node,identifier.parse(modelRoute[1]),await body(request),options.agentModel.descriptor()),nativeClosureVersion:1});
-          return await options.agentModel.stream(store,node,identifier.parse(modelRequest![1]),identifier.parse(modelRequest![2]),request,response);
+          requireCondition(agentModel,503,'agent_model_unconfigured','组织尚未配置现场委托模型');
+          if(modelRoute)return send(response,200,{...store.models.bind(node,identifier.parse(modelRoute[1]),await body(request),agentModel.descriptor()),nativeClosureVersion:1});
+          return await agentModel.stream(store,node,identifier.parse(modelRequest![1]),identifier.parse(modelRequest![2]),request,response);
         }
         const closure=route.match(/^\/api\/v1\/node\/agents\/([^/]+)\/closure\/snapshot$/);
         if(closure&&method==='POST')return send(response,200,store.closures.snapshot(node,identifier.parse(closure[1]),await body(request)));
         const agent=route.match(/^\/api\/v1\/node\/agents\/([^/]+)\/calls$/);
         if(agent&&method==='POST')return send(response,200,store.agents.create(node,identifier.parse(agent[1]),await body(request)));
+        const nodeTunnel = route.match(/^\/api\/v1\/node\/tunnels\/([^/]+)\/(ready|relay)$/);
+        if (method === 'POST' && nodeTunnel) {
+          const tid = identifier.parse(nodeTunnel[1]), input = await body(request);
+          return send(response, 200, nodeTunnel[2] === 'ready' ? store.starferry.nodeReady(node, tid, input) : store.starferry.nodeRelayExchange(node, tid, input));
+        }
+        if (method === 'POST' && route === '/api/v1/node/heartbeat') {
+          return send(response, 200, store.nodeRuntime.recordHeartbeat(node, await body(request)));
+        }
         if (method === 'POST' && route === '/api/v1/node/poll') {
           const input = nodeHelloSchema.parse(await body(request));
           store.hello(node, input.version, input.capabilities);
           store.observeStaleClaims();
-          // The initial protocol uses bounded short polls. Never repeat a claim.
-          return send(response, 200, { operation: store.claim(node), pollAfterMs: 1000 });
+          // Immediate control polling is decoupled from minute-level status heartbeats.
+          return send(response, 200, { operation: store.claim(node), pollAfterMs: 1000, desiredConfig: store.nodeRuntime.desiredForNode(node) });
         }
         if (method === 'GET' && route === '/api/v1/node/pending') return send(response, 200, { revoked: !!node.revoked, operations: store.pending(node) });
         if (method === 'GET' && route.startsWith('/api/v1/node/control/')) return send(response, 200, { revoked: !!node.revoked, operation: store.control(node, identifier.parse(route.slice('/api/v1/node/control/'.length))) });
-        if (method === 'POST' && route === '/api/v1/node/events') return send(response, 200, store.record(node, operationEventSchema.parse(await body(request))));
+        if (method === 'POST' && route === '/api/v1/node/events') {
+          const { raw, parsed } = await rawJsonBody(request);
+          return send(response, 200, store.record(node, operationEventSchema.parse(parsed), extractRawJsonMember(raw, 'data')));
+        }
         throw new ReachError(404, 'not_found', '接口不存在');
       }
       if (method === 'GET' && route === '/api/v1/nodes') return send(response, 200, { nodes: store.nodes(actor(request).id) });
       if (method === 'GET' && route === '/api/v1/overview') return send(response, 200, store.overview(actor(request).id));
+      if (method === 'GET' && route === '/api/v1/device-events') return send(response, 200, store.deviceEvents.list(actor(request).id, Object.fromEntries(url.searchParams)));
+      if (method === 'POST' && route === '/api/v1/device-events/read') { const user = actor(request, true); return send(response, 200, store.deviceEvents.markRead(user.id, await body(request))); }
+      if (method === 'GET' && route === '/api/v1/stats') return send(response, 200, computeStats(store, actor(request).id, Object.fromEntries(url.searchParams)));
+      if (method === 'GET' && route === '/api/v1/settings/models') { actor(request); return send(response, 200, { deskAvailable: !!options.deskAvailable || !!desk, deskRunning: !!desk, deskUnavailable: desk || options.deskAvailable ? null : options.deskUnavailable ?? null, providers: modelSettings.providers(), desk: modelSettings.view('desk', modelRuntime.desk), agent: modelSettings.view('agent', modelRuntime.agent) }); }
+      if (method === 'POST' && route === '/api/v1/settings/providers') { const user = actor(request, true); return send(response, 201, modelSettings.createProvider(user.id, await body(request))); }
+      const providerRoute = route.match(/^\/api\/v1\/settings\/providers\/([^/]+)(?:\/(models|models\/fetch))?$/);
+      if (providerRoute) {
+        const user = actor(request, method !== 'GET'), id = identifier.parse(providerRoute[1]);
+        if (method === 'PUT' && !providerRoute[2]) return send(response, 200, modelSettings.updateProvider(user.id, id, await body(request)));
+        if (method === 'DELETE' && !providerRoute[2]) return send(response, 200, modelSettings.deleteProvider(user.id, id));
+        if (method === 'PUT' && providerRoute[2] === 'models') return send(response, 200, modelSettings.setModels(user.id, id, await body(request)));
+        if (method === 'POST' && providerRoute[2] === 'models/fetch') { rate.take(`model-list:${user.id}`); return send(response, 200, await modelSettings.fetchModels(user.id, id)); }
+      }
+      const modelSetting = route.match(/^\/api\/v1\/settings\/models\/([^/]+)(?:\/(test|enable))?$/);
+      if (modelSetting) {
+        const purpose = purposeSchema.parse(modelSetting[1]);
+        if (method === 'PUT' && !modelSetting[2]) { const user = actor(request, true); return send(response, 200, modelSettings.save(user.id, purpose, await body(request))); }
+        if (method === 'POST' && modelSetting[2] === 'test') { const user = actor(request, true); rate.take(`model-test:${user.id}`); return send(response, 200, await modelSettings.test(user.id, purpose)); }
+        if (method === 'POST' && modelSetting[2] === 'enable') { const user = actor(request, true); return send(response, 200, modelSettings.enable(user.id, purpose, await body(request), applyModel)); }
+      }
+      if (method === 'GET' && route === '/api/v1/releases') { actor(request); return send(response, 200, await readReleases(options.releaseManifest)); }
       const revoke = route.match(/^\/api\/v1\/nodes\/([^/]+)\/unpair$/);
       if (method === 'POST' && revoke) { store.revoke(actor(request, true).id, identifier.parse(revoke[1])); return send(response, 200, { unpaired: true }); }
+      const nodeRuntimeRoute = route.match(/^\/api\/v1\/nodes\/([^/]+)\/(runtime|config)$/);
+      if (nodeRuntimeRoute) {
+        const user = actor(request, method !== 'GET'), nodeId = identifier.parse(nodeRuntimeRoute[1]);
+        if (method === 'GET' && nodeRuntimeRoute[2] === 'runtime') return send(response, 200, store.nodeRuntime.readRuntime(user.id, nodeId));
+        if (method === 'POST' && nodeRuntimeRoute[2] === 'config') return send(response, 200, store.nodeRuntime.updateConfig(user.id, nodeId, await body(request)));
+      }
+      if (method === 'POST' && route === '/api/v1/tunnels') {
+        const user = actor(request, true);
+        return send(response, 201, store.starferry.createSession(user.id, await body(request)));
+      }
+      const tunnelRoute = route.match(/^\/api\/v1\/tunnels\/([^/]+)(?:\/(relay|path|close))?$/);
+      if (tunnelRoute) {
+        const user = actor(request, method !== 'GET'), tid = identifier.parse(tunnelRoute[1]);
+        if (method === 'GET' && !tunnelRoute[2]) return send(response, 200, store.starferry.readForController(user.id, tid));
+        if (method === 'POST' && tunnelRoute[2] === 'relay') return send(response, 200, store.starferry.controllerRelayExchange(user.id, tid, await body(request)));
+        if (method === 'POST' && tunnelRoute[2] === 'path') {
+          const parsedPath = z.strictObject({ selectedPath: z.enum(['udp_direct', 'cloud_relay']) }).parse(await body(request));
+          return send(response, 200, store.starferry.recordSelectedPath(user.id, tid, parsedPath.selectedPath));
+        }
+        if (method === 'POST' && tunnelRoute[2] === 'close') return send(response, 200, store.starferry.closeSession(user.id, tid));
+      }
       if (method === 'POST' && route === '/api/v1/operations') {
         const user = actor(request, true);
         const input = submitSchema.parse(await body(request));
@@ -220,9 +315,11 @@ export function reachServer(options: Options) {
       const task=route.match(/^\/api\/v1\/operations\/([^/]+)\/agent-task$/);
       if(task&&method==='GET')return send(response,200,store.executions.projection(actor(request).id,identifier.parse(task[1])));
       const models=route.match(/^\/api\/v1\/operations\/([^/]+)\/agent-models$/);
-      if(models&&['GET','POST'].includes(method)){const user=actor(request,method==='POST'),id=identifier.parse(models[1]);if(method==='GET')return send(response,200,store.models.list(user.id,id));const input=await body(request);return send(response,200,options.agentModel?await options.agentModel.stop(user.id,id,input):store.models.recordStopped(user.id,id,input));}
+      if(models&&['GET','POST'].includes(method)){const user=actor(request,method==='POST'),id=identifier.parse(models[1]);if(method==='GET')return send(response,200,store.models.list(user.id,id));const input=await body(request);return send(response,200,agentModel?await agentModel.stop(user.id,id,input):store.models.recordStopped(user.id,id,input));}
       const reviews=route.match(/^\/api\/v1\/operations\/([^/]+)\/agent-reviews$/);
       if(reviews&&['GET','POST'].includes(method)){const user=actor(request,method==='POST'),id=identifier.parse(reviews[1]);return send(response,200,method==='GET'?store.reviews.list(user.id,id):store.reviews.decision(user.id,id,await body(request)));}
+      const guidance=route.match(/^\/api\/v1\/operations\/([^/]+)\/agent-guidance$/);
+      if(guidance&&['GET','POST'].includes(method)){const user=actor(request,method==='POST'),id=identifier.parse(guidance[1]);return send(response,200,method==='GET'?store.guidance.list(user.id,id):store.guidance.submit(user.id,id,await body(request)));}
       if(children&&method==='GET'){const user=actor(request),parent=store.operation(user.id,identifier.parse(children[1]));return send(response,200,{parentOperationId:parent.id,calls:store.agents.list(parent)});}
       throw new ReachError(404, 'not_found', '接口不存在');
     } catch (error) {
@@ -251,7 +348,7 @@ export function reachServer(options: Options) {
     if(shutdownPromise)return shutdownPromise;stopping=true;let complete!:()=>void,failed!:(error:unknown)=>void;
     shutdownPromise=new Promise<void>((resolve,reject)=>{complete=resolve;failed=reject;});
     void(async()=>{const startClose=(close:()=>Promise<void>|undefined)=>{try{return close();}catch(error){return Promise.reject(error);}};
-      const modelClosed=startClose(()=>options.agentModel?.close()),deskClosed=startClose(()=>options.desk?.close());
+      const modelClosed=startClose(()=>agentModel?.close()),deskClosed=startClose(()=>desk?.close());
       const httpClosed=(async()=>{if(listenPending)await listenDone;await new Promise<void>((resolve,reject)=>{if(!server.listening)return resolve();server.close(error=>error?reject(error):resolve());server.closeAllConnections();});})();
       await Promise.all([httpClosed,modelClosed,deskClosed]);extensionsClosed=true;while(active.size)await Promise.allSettled([...active]);options.rayLogin?.close();store.close();
     })().then(complete,failed);return shutdownPromise;

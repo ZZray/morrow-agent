@@ -1,22 +1,17 @@
-<!-- Copyright (c) Ray Zhang. Reach app mark; canonical vector source. -->
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+<!-- Copyright (c) Ray Zhang. Reach 图标，可编辑源稿。
+     字母 R：深蓝竖干是本机控制端，蓝色字碗是连接，绿色斜腿伸向右下，腿端橙色方块是被够到的远端设备。
+     图块规格与 QBuild、Keel、Helm 一致：白底圆角 rx 56/256、浅竖向渐变、发丝描边，笔画扁平、平头端点。 -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Reach">
   <defs>
-    <linearGradient id="tile" x1="72" y1="40" x2="432" y2="496" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#7488FF"/>
-      <stop offset=".48" stop-color="#5263E3"/>
-      <stop offset="1" stop-color="#343797"/>
-    </linearGradient>
-    <linearGradient id="edge" x1="128" y1="24" x2="384" y2="488" gradientUnits="userSpaceOnUse">
-      <stop stop-color="white" stop-opacity=".34"/>
-      <stop offset="1" stop-color="white" stop-opacity=".04"/>
-    </linearGradient>
-    <linearGradient id="reach" x1="244" y1="280" x2="353" y2="370" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#D5DCFF"/>
-      <stop offset="1" stop-color="#A9B9FF"/>
+    <linearGradient id="reach-tile" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF" /><stop offset="1" stop-color="#F3F6FA" />
     </linearGradient>
   </defs>
-  <rect x="16" y="16" width="480" height="480" rx="112" fill="url(#tile)"/>
-  <rect x="18" y="18" width="476" height="476" rx="110" stroke="url(#edge)" stroke-width="4"/>
-  <path d="M248 284 350 370" stroke="url(#reach)" stroke-width="48" stroke-linecap="round"/>
-  <path d="M162 370V146H266C318 146 350 171 350 215S318 284 266 284H218" stroke="#F8FAFF" stroke-width="48" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="1.5" y="1.5" width="253" height="253" rx="56" fill="url(#reach-tile)" stroke="#DCE2EB" stroke-width="3" />
+  <g fill="none" stroke-linecap="butt">
+    <path d="M78,50 V206" stroke="#1F3A6B" stroke-width="36" />
+    <path d="M96,68 H134 A40,40 0 0 1 134,148 H96" stroke="#2F6BDB" stroke-width="36" />
+    <path d="M126,150 L164,188" stroke="#22AC38" stroke-width="36" />
+  </g>
+  <rect x="168" y="172" width="38" height="38" fill="#FF8D35" />
 </svg>

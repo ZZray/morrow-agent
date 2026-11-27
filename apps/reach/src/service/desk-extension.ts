@@ -13,7 +13,8 @@ export interface DeskContext {
 }
 export interface DeskExtension {
   bindDevices?(factory:(userId:string)=>DeskDevices):void;
-  serveStatic?(route: string, method: string, response: ServerResponse, rayLogin: boolean): Promise<boolean>;
+  reconfigure?(model: { endpoint: string; model: string; token: string; capabilities?: { contextWindow: number; maxTokens: number; imageInput: boolean } }): void;
+  serveStatic?(route: string, method: string, response: ServerResponse, rayLogin: boolean, pinOnly?: boolean): Promise<boolean>;
   handle(context: DeskContext): Promise<void>;
   revoke(sessionId: string): void;
   close(): Promise<void>;

@@ -8,11 +8,13 @@
 |---|---|---|
 | `service/` | Node 24/TypeScript HTTP 服务；SQLite 身份、配对、操作收据和管理页资源 | Ray 已部署；模型委托接入仍待完成 |
 | `contracts/` | Zod 请求校验和机器可读协议 | Rust 消费者须使用同一合同夹具验证 |
-| `node/` | 客户端 Host、系统服务、工具后端、按需桌面会话接入、安装身份和执行记录 | 普通服务宿主与本机 IPC 已接通；SCM 安装、打包及具体桌面后端仍待完成 |
-| `controller/` | TypeScript CLI 与 MCP stdio；共享登录、稳定请求 ID 和分页事件读取 | 发行打包及实际 Codex 加载验收 |
+| `node/` | 独立常驻系统服务、Starferry 连接接线（待并入）、默认 SSH（待并入）、心跳退避、配置与收据、工具后端、按需桌面及 Morrow Agent Host | 普通服务宿主与本机 IPC 已接通；Starferry/SSH/心跳配置、SCM 安装及打包仍待完成 |
+| `controller/` | 本地 Agent 使用的 MCP 接口与 `ryreach` CLI（当前源码为 `reach`），共享目标选择、配置、连接、稳定请求 ID 和分页事件读取 | `ryreach` 命令与配置子命令对齐、发行打包及实际 Codex 加载验收 |
 | `admin/` | 独立登录、连接、配对和运行记录管理页 | 本机与 Ray 统一登录已有证据；完整功能继续按清单验收 |
 
 这些目录描述代码职责，不要求每个目录都成为独立进程或独立发布产品。服务入口为 `src/service/main.ts`，节点与控制器按架构继续实现。
+
+2026-11-13 已确定目标机 Node 独立常驻、默认启用 SSH、合并 Starferry 连接能力并采用 `ryreach` 配置命令与分钟级可远程调整心跳；QSpin 安装器侧默认安装 Reach 并配置地址归 QSpin 处理，不建设网关、IPC、产品托管子进程或进程内集成。需求见[产品范围](../docs/product-scope.md)，设计见[架构](../docs/architecture.md)。
 
 ## 依赖归属
 

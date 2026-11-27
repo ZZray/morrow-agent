@@ -1,8 +1,11 @@
 // Copyright (c) Ray Zhang. Windows service and authenticated local control transport.
 use crate::{
+    api::HttpError,
     control::{self, Command, Control, Request},
     ledger::Ledger,
-    pairing, runtime,
+    pairing,
+    resident::{self, ResidentTracker},
+    runtime,
 };
 use anyhow::{bail, ensure, Context, Result};
 use serde::{Deserialize, Serialize};
@@ -101,9 +104,16 @@ pub fn protect_state(root: &Path) -> Result<()> {
         "state DACL missing"
     );
     let mut paths = vec![root.to_owned()];
-    for name in
-        ["node.sqlite", "node.sqlite-wal", "node.sqlite-shm", "reach.lock", "control-owner.json", "control-owner.tmp"]
-    {
+    for name in [
+        "node.sqlite",
+        "node.sqlite-wal",
+        "node.sqlite-shm",
+        "reach.lock",
+        "control-owner.json",
+        "control-owner.tmp",
+        "ssh-key-intents.json",
+        "ssh-key-intents.lock",
+    ] {
         let path = root.join(name);
         if path.exists() {
             validate_state_path(&path)?;
@@ -178,7 +188,15 @@ async fn connection(
     pipe.read_exact(&mut bytes).await?;
     let request: WireRequest = serde_json::from_slice(&bytes)?;
     ensure!(request.version == 1 && !request.id.is_empty() && request.id.len() <= 64, "unsupported control request");
-    let is_pair = matches!(request.command, Command::Pair(_) | Command::MaintenanceStop);
+    let is_pair = matches!(
+        request.command,
+        Command::Pair(_)
+            | Command::MaintenanceStop
+            | Command::ConfigSetServer { .. }
+            | Command::ConfigSetHeartbeat { .. }
+            | Command::Preconfigure { .. }
+            | Command::Unpair
+    );
     let result = if is_pair
         && phase.compare_exchange(control::IDLE, control::PAIRING, Ordering::SeqCst, Ordering::SeqCst).is_err()
     {
@@ -233,14 +251,17 @@ pub async fn serve(root: PathBuf, owner_sid: String, stop: Arc<AtomicBool>, fore
     }
     let phase = Arc::new(AtomicU8::new(control::IDLE));
     let (tx, receiver) = mpsc::channel(16);
+    let resident = ResidentTracker::new();
     let mut control = Control {
         receiver,
         stop: stop.clone(),
         phase: phase.clone(),
         foreground,
         desktop_owner: if foreground { None } else { Some(owner_sid.clone()) },
+        resident: resident.clone(),
     };
     let listener_stop = stop.clone();
+    let update_owner = owner_sid.clone();
     let transport = tokio::task::spawn_local(async move {
         struct StopOnExit(Arc<AtomicBool>);
         impl Drop for StopOnExit {
@@ -270,47 +291,149 @@ pub async fn serve(root: PathBuf, owner_sid: String, stop: Arc<AtomicBool>, fore
         while connections.join_next().await.is_some() {}
         Ok::<_, anyhow::Error>(())
     });
-    if !foreground {
+    let updater = if !foreground {
         report_status(SERVICE_RUNNING, 0)?;
+        Some(tokio::spawn(crate::updater::run(ledger.root.clone(), update_owner)))
+    } else {
+        None
+    };
+    async fn wait_for_control(ledger: &Ledger, control: &mut Control, timeout: Duration) -> Result<Option<Request>> {
+        tokio::select! {
+            request = control.receiver.recv() => match request {
+                Some(request) => control.handle(ledger, request, false),
+                None if control.stopping() => Ok(None),
+                None => bail!("control transport closed"),
+            },
+            _ = tokio::time::sleep(timeout) => Ok(None),
+        }
     }
     let outcome: Result<()> = async {
         while !control.stopping() {
-            ensure!(!transport.is_finished(), "Windows control transport stopped");
-            let identity = ledger.identity()?;
-            let request = if identity.server.is_some() && identity.pending_pair.is_none() {
+            if control.stopping() {
+                break;
+            }
+            ensure!(!transport.is_finished() || control.stopping(), "Windows control transport stopped");
+            let mut identity = ledger.identity()?;
+            let cfg = resident::load_config(&ledger)?;
+            let request = if identity.server.is_none() {
+                resident.awaiting_initialization();
+                wait_for_control(&ledger, &mut control, Duration::from_millis(100)).await?
+            } else if identity.revoked {
+                resident.auth_or_config_error(
+                    "node_unpaired",
+                    "设备配对已被服务端撤销",
+                    "运行 ryreach pair <code> 重新完成可信配对",
+                );
+                wait_for_control(&ledger, &mut control, Duration::from_millis(200)).await?
+            } else if cfg.last_probe.as_ref().is_some_and(|p| p["isTlsOrConfigError"] == true)
+                && identity.node_id.is_none()
+            {
+                resident.auth_or_config_error(
+                    cfg.last_probe.as_ref().and_then(|p| p["code"].as_str()).unwrap_or("tls_or_endpoint_error"),
+                    cfg.last_probe.as_ref().and_then(|p| p["detail"].as_str()).unwrap_or("服务器地址或 TLS 校验失败"),
+                    "检查服务器地址与 TLS 证书后重新执行 ryreach config set server-url",
+                );
+                wait_for_control(&ledger, &mut control, Duration::from_millis(200)).await?
+            } else if identity.node_id.is_none() || identity.pending_pair.is_some() {
+                resident.awaiting_pairing(None);
+                wait_for_control(&ledger, &mut control, Duration::from_millis(100)).await?
+            } else {
                 match runtime::run_managed(&mut ledger, false, Some(&mut control)).await {
                     Ok(request) => request,
                     Err(error) => {
-                        eprintln!("Node connection suspended: {error}");
-                        // Retain the owner and IPC while the remote binding is unavailable.
-                        tokio::time::sleep(Duration::from_millis(500)).await;
-                        control::idle(&ledger, &mut Some(&mut control))?
+                        if let Some(http_err) = error.downcast_ref::<HttpError>() {
+                            if http_err.status == 401 && http_err.code == "node_unpaired" {
+                                identity.revoked = true;
+                                ledger.save_identity(&identity)?;
+                                let _ = crate::ssh::revoke_all_managed_keys(&ledger.root);
+                                resident.auth_or_config_error(
+                                    "node_unpaired",
+                                    http_err.to_string(),
+                                    "运行 ryreach pair <code> 重新完成可信配对",
+                                );
+                                control::idle(&ledger, &mut Some(&mut control))?
+                            } else if http_err.permanent() {
+                                resident.auth_or_config_error(
+                                    http_err.code.clone(),
+                                    http_err.to_string(),
+                                    "检查节点凭据与服务器配置状态",
+                                );
+                                wait_for_control(&ledger, &mut control, Duration::from_secs(2)).await?
+                            } else {
+                                let next_attempt = resident.current_backoff_attempt().saturating_add(1);
+                                let delay_ms = resident::next_backoff_delay_ms(
+                                    next_attempt.saturating_sub(1),
+                                    identity.development,
+                                );
+                                resident.offline_backoff(next_attempt, delay_ms, error.to_string());
+                                wait_for_control(&ledger, &mut control, Duration::from_millis(delay_ms)).await?
+                            }
+                        } else {
+                            let msg = error.to_string();
+                            let lower = msg.to_ascii_lowercase();
+                            let is_tls =
+                                lower.contains("certificate") || lower.contains("tls") || lower.contains("handshake");
+                            if is_tls {
+                                resident.auth_or_config_error(
+                                    "tls_handshake_failed",
+                                    msg,
+                                    "检查服务器 TLS 证书后运行 ryreach config set server-url",
+                                );
+                                wait_for_control(&ledger, &mut control, Duration::from_secs(2)).await?
+                            } else {
+                                let next_attempt = resident.current_backoff_attempt().saturating_add(1);
+                                let delay_ms = resident::next_backoff_delay_ms(
+                                    next_attempt.saturating_sub(1),
+                                    identity.development,
+                                );
+                                resident.offline_backoff(next_attempt, delay_ms, msg);
+                                wait_for_control(&ledger, &mut control, Duration::from_millis(delay_ms)).await?
+                            }
+                        }
                     }
-                }
-            } else {
-                tokio::select! {
-                    request = control.receiver.recv() => match request { Some(request) => control.handle(&ledger, request, false)?, None => bail!("control transport closed") },
-                    _ = tokio::time::sleep(Duration::from_millis(100)) => None,
                 }
             };
             if let Some(request) = request {
                 control.set_phase(control::PAIRING);
-                // The runtime has joined the old uploader before returning any mutation.
-                let result = if control.stopping() { Err(anyhow::anyhow!("Node is stopping; request was not applied")) } else {
+                let result = if control.stopping() {
+                    Err(anyhow::anyhow!("Node is stopping; request was not applied"))
+                } else {
                     match request.command {
-                        Command::Pair(input) => pairing::pair(&mut ledger, input).await,
+                        Command::Pair(input) => {
+                            let res = pairing::pair(&mut ledger, input).await;
+                            if res.is_ok() {
+                                resident.connecting();
+                            }
+                            res
+                        }
+                        Command::ConfigSetServer { server, development, allow_offline } => {
+                            resident::set_server_url(&mut ledger, &server, development, allow_offline, Some(&resident))
+                                .await
+                        }
+                        Command::ConfigSetHeartbeat { seconds } => resident::set_local_heartbeat(&mut ledger, seconds),
+                        Command::Preconfigure { server, development } => {
+                            resident::preconfigure_server_url(&mut ledger, &server, development, Some(&resident))
+                        }
+                        Command::Unpair => resident::local_unpair(&mut ledger, Some(&resident)),
                         Command::MaintenanceStop => maintenance_stop(&ledger, &control).await,
                         _ => Err(anyhow::anyhow!("unexpected host mutation")),
                     }
                 };
-                let _ = request.reply.send(result.map_err(|e|e.to_string()));
-                if !control.stopping() { control.set_phase(control::IDLE); }
+                let _ = request.reply.send(result.map_err(|e| e.to_string()));
+                if !control.stopping() {
+                    control.set_phase(control::IDLE);
+                }
             }
         }
         Ok(())
-    }.await;
+    }
+    .await;
     stop.store(true, Ordering::SeqCst);
     control.set_phase(control::STOPPING);
+    if let Some(updater) = updater {
+        updater.abort();
+        let _ = updater.await;
+    }
     // Normal shutdown retains the ledger until both execution and transport settle.
     let transport_result = transport.await?;
     outcome.and(transport_result)

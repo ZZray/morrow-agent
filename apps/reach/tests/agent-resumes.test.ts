@@ -104,3 +104,60 @@ test('the saved schema8 implementation migrates gen1 Run ownership even when a q
     const Current=(await import('../src/service/store.ts')).ReachStore,store=new Current(filename);try{assert.equal(store.db.prepare('PRAGMA user_version').get()!.user_version,11);assert.deepEqual(JSON.parse(JSON.stringify(store.operations(user.user.id))),original);const origin=store.db.prepare('SELECT * FROM agent_run_origins WHERE parent_id=? AND run_id=?').get(op.id,runId)!;assert.equal(origin.registered_execution_id,op.id);assert.equal(origin.registered_generation,1);assert.equal(origin.admitted_execution_id,null);assert.equal(store.executions.projection(user.user.id,op.id).activeExecutionId,attempt.id);assert.equal(store.executions.projection(user.user.id,op.id).recoveryRequired,true);}finally{store.close();}assert.throws(()=>new Old.ReachStore(filename),/newer than/);
   }finally{legacy?.close();await f.close();}
 });
+
+test('HTTP node events preserve raw Rust JSON float and key formatting for child eventsProof and resultSha256', async () => {
+  const t = await setup();
+  try {
+    const args = JSON.stringify({ command: { kind: 'file.read', path: 'synthetic.txt' } });
+    await t.admit();
+    const created = t.f.store.agents.create(t.f.node, t.operation.id, {
+      ...t.binding,
+      runId: t.plan.runId,
+      callId: 'shot-float',
+      tool: 'reach_execute',
+      argsSha256: sha256(args),
+      argumentsJson: args,
+    });
+    const child = created.operation;
+    const postRawEvent = async (rawBody: string) => {
+      const res = await fetch(`${t.f.origin}/api/v1/node/events`, {
+        method: 'POST',
+        headers: { authorization: `Bearer ${t.f.nodeToken}`, 'content-type': 'application/json' },
+        body: rawBody,
+      });
+      return { status: res.status, body: await res.json() as Record<string, unknown> };
+    };
+    const rawReceived = '{}';
+    const rawRunning = '{"helperGeneration":"gen-1","scale":1.0}';
+    const rawSucceeded = '{"structuredContent":{"scale":1.0,"z_first":2.0,"a_second":0.0},"text":"escaped \\"brace }\\" ok"}';
+    const ev1Id = randomUUID();
+    const ev2Id = randomUUID();
+    const ev3Id = randomUUID();
+    const makePayload = (eventId: string, sequence: number, kind: string, rawData: string) =>
+      `{"operationId":${JSON.stringify(child.operationId)},"dispatchId":${JSON.stringify(child.dispatchId)},"payloadHash":${JSON.stringify(child.payloadHash)},"eventId":${JSON.stringify(eventId)},"sequence":${sequence},"kind":${JSON.stringify(kind)},"data":${rawData}}`;
+    assert.equal((await postRawEvent(makePayload(ev1Id, 1, 'received', rawReceived))).status, 200);
+    assert.equal((await postRawEvent(makePayload(ev2Id, 2, 'running', rawRunning))).status, 200);
+    assert.equal((await postRawEvent(makePayload(ev3Id, 3, 'succeeded', rawSucceeded))).status, 200);
+    const dupExact = await postRawEvent(makePayload(ev3Id, 3, 'succeeded', rawSucceeded));
+    assert.equal(dupExact.status, 200);
+    assert.equal(dupExact.body.duplicate, true);
+    const dupMutated = await postRawEvent(makePayload(ev3Id, 3, 'succeeded', JSON.stringify(JSON.parse(rawSucceeded))));
+    assert.equal(dupMutated.status, 409);
+    const dupKey = await postRawEvent(
+      `{"operationId":${JSON.stringify(child.operationId)},"dispatchId":${JSON.stringify(child.dispatchId)},"payloadHash":${JSON.stringify(child.payloadHash)},"eventId":${JSON.stringify(randomUUID())},"sequence":4,"kind":"output","data":{"scale":1.0},"data":{"scale":2.0}}`,
+    );
+    assert.equal(dupKey.status, 400);
+    const snapshot = t.f.store.resumes.effectSnapshot(t.f.parent);
+    const snapped = snapshot.children.find(entry => entry.relation.child_id === child.operationId);
+    assert.ok(snapped);
+    const expectedProof = sha256(
+      `${ev1Id}\t1\treceived\t${sha256(rawReceived)}\n` +
+      `${ev2Id}\t2\trunning\t${sha256(rawRunning)}\n` +
+      `${ev3Id}\t3\tsucceeded\t${sha256(rawSucceeded)}\n`,
+    );
+    assert.equal(snapped.eventsProof, expectedProof);
+    assert.equal(snapped.operation.resultSha256, sha256(rawSucceeded));
+  } finally {
+    await t.f.close();
+  }
+});

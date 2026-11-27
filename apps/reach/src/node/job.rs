@@ -42,6 +42,7 @@ impl Job {
             Ok(job)
         }
     }
+    #[allow(dead_code)]
     pub fn assign_named(child: &tokio::process::Child, name: &str) -> Result<Self> {
         let job = Self::create(Some(name))?;
         let process = child.raw_handle().ok_or_else(|| anyhow::anyhow!("worker has no process handle"))?;
@@ -52,6 +53,7 @@ impl Job {
         );
         Ok(job)
     }
+    #[allow(dead_code)]
     pub fn observe_named(name: &str) -> Result<Option<u32>> {
         use windows_sys::Win32::{
             Foundation::{CloseHandle, GetLastError, ERROR_FILE_NOT_FOUND},

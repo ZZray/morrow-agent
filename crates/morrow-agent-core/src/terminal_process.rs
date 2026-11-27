@@ -87,7 +87,20 @@ mod tests {
     }
     #[tokio::test]
     async fn terminal_ctrl_c_interrupts_foreground_program() {
-        let mut process = TerminalProcess::spawn(&python("import signal,time\nsignal.signal(signal.SIGINT,lambda *_:exit(23))\nprint('READY',flush=True)\ntime.sleep(120)"), 24, 80).await.unwrap();
+        let command = python(
+            r"import signal,sys,time
+if sys.platform == 'win32':
+    # A launcher can create a process group with Ctrl+C ignored. The
+    # foreground fixture explicitly opts in before installing its handler.
+    import ctypes
+    kernel32 = ctypes.WinDLL('kernel32', use_last_error=True)
+    if not kernel32.SetConsoleCtrlHandler(None, False):
+        raise ctypes.WinError(ctypes.get_last_error())
+signal.signal(signal.SIGINT,lambda *_:sys.exit(23))
+print('READY',flush=True)
+time.sleep(120)",
+        );
+        let mut process = TerminalProcess::spawn(&command, 24, 80).await.unwrap();
         let mut reader = process.take_reader().unwrap();
         let mut writer = process.take_writer().unwrap();
         tokio::time::timeout(Duration::from_secs(8), async {

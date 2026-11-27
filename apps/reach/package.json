@@ -13,7 +13,7 @@
     "build:admin": "tsc --project tsconfig.admin.json",
     "test": "node --test --test-concurrency=1 tests/service.test.ts tests/service-process.test.ts",
     "test:node": "node --test --test-concurrency=1 tests/node.integration.test.ts",
-    "test:admin": "bun run build:admin && node --test --test-concurrency=1 tests/admin-http.test.ts",
+    "test:admin": "bun run build:admin && node --test --test-concurrency=1 tests/admin-http.test.ts tests/admin-model.test.ts tests/admin-artifacts.test.ts tests/admin-charts.test.ts tests/desk-panels.test.ts tests/device-events.test.ts tests/stats.test.ts tests/pin-login.test.ts tests/model-settings.test.ts tests/desk-runtime.test.ts tests/ray-login.test.ts tests/ray-desk.test.ts",
     "service": "node src/service/main.ts",
     "controller": "node src/controller/main.ts"
   },

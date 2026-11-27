@@ -6,8 +6,8 @@ use morrow_agent_harness::{
         model::{GenerationPolicy, LengthRecoveryPolicy},
         model_caps::ModelCaps,
     },
-    BudgetStopReviewPolicy, LengthStopReviewPolicy, ResumeReceipt, ReviewReceipt, ReviewedContinuation, Settlement,
-    TaskKind, TaskSpec,
+    BudgetStopReviewPolicy, LengthStopReviewPolicy, ResumeReceipt, ReviewReceipt, ReviewedContinuation,
+    SettledToolImage, Settlement, TaskKind, TaskSpec,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -231,6 +231,8 @@ pub struct ToolReply {
     pub is_error: bool,
     pub settlement: Settlement,
     pub operation_receipt: String,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub images: Vec<SettledToolImage>,
 }
 
 #[derive(Deserialize)]

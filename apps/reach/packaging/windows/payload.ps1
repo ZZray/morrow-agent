@@ -40,11 +40,28 @@ function AssertReachRuntimeConfig($Config) {
     }
 }
 function AssertReachManifestHeader($Manifest) {
-    if($Manifest.schema-isnot[int] -or $Manifest.schema-notin@(1,2) -or $Manifest.product-cne'Reach' -or $Manifest.version-cne'0.1.0' -or $Manifest.architecture-cne'x86_64-pc-windows-msvc' -or $Manifest.desktopBundled-isnot[bool] -or $Manifest.desktopBundled-ne$true -or $Manifest.files-isnot[array]){throw 'Unsupported complete package manifest'}
-    foreach($digest in @($Manifest.nodeSha256,$Manifest.helperSha256,$Manifest.runtimeManifestSha256)){
-        if($digest-notmatch'^[0-9a-f]{64}$'){throw 'Invalid package component digest'}
-    }
+    if($Manifest.schema-isnot[int] -or $Manifest.schema-notin@(1,2) -or $Manifest.product-cne'Reach' -or $Manifest.version-isnot[string] -or $Manifest.version-cnotmatch'^(0|[1-9][0-9]{0,4})\.(0|[1-9][0-9]{0,4})\.(0|[1-9][0-9]{0,4})$' -or @($Manifest.version.Split('.')|Where-Object{[int]$_-gt65535}).Count -or $Manifest.architecture-cne'x86_64-pc-windows-msvc' -or $Manifest.desktopBundled-isnot[bool] -or $Manifest.files-isnot[array]){throw 'Unsupported complete package manifest'}
+    if($Manifest.nodeSha256-cnotmatch'^[0-9a-f]{64}$'){throw 'Invalid Node digest'}
+    if($Manifest.schema-eq1 -and -not $Manifest.desktopBundled){throw 'Legacy complete package requires Desktop'}
     if($Manifest.schema-eq2 -and ($Manifest.agentBundled-isnot[bool] -or -not $Manifest.agentBundled -or $Manifest.agentSha256-isnot[string] -or $Manifest.agentSha256-cnotmatch'^[0-9a-f]{64}$')){throw 'Agent is required by complete package schema 2'}
+}
+function AssertReachPackageComponents($Manifest,$Declared,$DesktopConfig) {
+    if(-not $Declared.ContainsKey('reach.exe') -or $Declared['reach.exe'].sha256-cne$Manifest.nodeSha256 -or -not $Declared.ContainsKey('THIRD_PARTY_NOTICES.txt')){throw 'Required Node component identity mismatch'}
+    if($Manifest.desktopBundled){
+        foreach($pair in @(@('desktop/reach-desktop.exe',$Manifest.helperSha256),@('desktop/python/reach-provenance/files.json',$Manifest.runtimeManifestSha256))){
+            if($pair[1]-cnotmatch'^[0-9a-f]{64}$' -or -not $Declared.ContainsKey($pair[0]) -or $Declared[$pair[0]].sha256-cne$pair[1]){throw 'Required Desktop component identity mismatch'}
+        }
+        foreach($name in @('desktop-runtime.json','desktop/python/python.exe','desktop/python/python314._pth','desktop/config.toml')){
+            if(-not $Declared.ContainsKey($name)){throw "Required complete package file missing: $name"}
+        }
+        AssertReachRuntimeConfig $DesktopConfig
+    }else{
+        if($null-ne$Manifest.PSObject.Properties['helperSha256'] -or $null-ne$Manifest.PSObject.Properties['runtimeManifestSha256']){throw 'Worker and Agent only package cannot declare Desktop digests'}
+        foreach($name in $Declared.Keys){
+            if($name-ieq'desktop-runtime.json' -or $name.StartsWith('desktop/',[StringComparison]::OrdinalIgnoreCase)){throw 'Worker and Agent only package cannot contain Desktop files'}
+        }
+        if(-not $Declared.ContainsKey('openssh-vendor.zip') -or $Declared['openssh-vendor.zip'].sha256-cne'23f50f3458c4c5d0b12217c6a5ddfde0137210a30fa870e98b29827f7b43aba5'){throw 'Worker and Agent only package requires fixed offline OpenSSH'}
+    }
 }
 function AssertReachAgentPackage($Manifest,$Declared,$Config) {
     if($Manifest.schema-eq1){
@@ -96,13 +113,9 @@ function ReadReachPayload([IO.Compression.ZipArchive]$Archive) {
         try {if((ReachHashStream $entryStream $file.bytes)-cne$file.sha256){throw "Package file digest mismatch: $name"}}finally{$entryStream.Dispose()}
         $declared.Add($name,$file)
     }
-    $required=@{'reach.exe'=$manifest.nodeSha256;'desktop/reach-desktop.exe'=$manifest.helperSha256;'desktop/python/reach-provenance/files.json'=$manifest.runtimeManifestSha256}
-    foreach($name in $required.Keys){if(-not $declared.ContainsKey($name) -or $declared[$name].sha256-cne$required[$name]){throw 'Required component identity mismatch'}}
-    foreach($name in @('desktop-runtime.json','desktop/python/python.exe','desktop/python/python314._pth','desktop/config.toml','THIRD_PARTY_NOTICES.txt')){
-        if(-not $declared.ContainsKey($name)){throw "Required complete package file missing: $name"}
-    }
-    $configBytes=ReadReachEntry $entries['desktop-runtime.json'] 16384
-    AssertReachRuntimeConfig ([Text.UTF8Encoding]::new($false,$true).GetString($configBytes)|ConvertFrom-Json)
+    $desktopConfig=$null
+    if($manifest.desktopBundled -and $entries.ContainsKey('desktop-runtime.json')){$desktopConfig=[Text.UTF8Encoding]::new($false,$true).GetString((ReadReachEntry $entries['desktop-runtime.json'] 16384))|ConvertFrom-Json}
+    AssertReachPackageComponents $manifest $declared $desktopConfig
     $agentConfig=$null
     if($manifest.schema-eq2 -and $entries.ContainsKey('agent-runtime.json')){$agentConfig=[Text.UTF8Encoding]::new($false,$true).GetString((ReadReachEntry $entries['agent-runtime.json'] 16384))|ConvertFrom-Json}
     AssertReachAgentPackage $manifest $declared $agentConfig
@@ -118,7 +131,7 @@ function ReadReachInstalledPayload([string]$Root,[string]$ManifestSha) {
     try{if((ReachHashStream $stream $raw.Length)-cne$ManifestSha){throw 'Installed manifest digest mismatch'}}finally{$stream.Dispose()}
     $manifest=[Text.UTF8Encoding]::new($false,$true).GetString($raw)|ConvertFrom-Json
     AssertReachManifestHeader $manifest
-    if($manifest.files.Count-lt8 -or $manifest.files.Count-gt19999){throw 'Invalid installed file count'}
+    if($manifest.files.Count-lt5 -or $manifest.files.Count-gt19999){throw 'Invalid installed file count'}
     $files=[Collections.Generic.Dictionary[string,object]]::new([StringComparer]::OrdinalIgnoreCase)
     $queue=[Collections.Generic.Queue[string]]::new();$queue.Enqueue($Root)
     while($queue.Count){
@@ -146,11 +159,12 @@ function ReadReachInstalledPayload([string]$Root,[string]$ManifestSha) {
         try{if((ReachHashStream $stream $file.bytes)-cne$file.sha256){throw "Installed file digest mismatch: $relative"}}finally{$stream.Dispose()}
         $declared.Add($relative,$file)
     }
-    foreach($pair in @(@('reach.exe',$manifest.nodeSha256),@('desktop/reach-desktop.exe',$manifest.helperSha256),@('desktop/python/reach-provenance/files.json',$manifest.runtimeManifestSha256))){
-        if(-not $declared.ContainsKey($pair[0]) -or $declared[$pair[0]].sha256-cne$pair[1]){throw 'Installed component identity mismatch'}
+    $desktopConfig=$null
+    if($manifest.desktopBundled -and $files.ContainsKey('desktop-runtime.json')){
+        if($files['desktop-runtime.json'].Length-gt16384){throw 'Desktop runtime config exceeds the bound'}
+        $desktopConfig=[IO.File]::ReadAllText((Join-Path $Root 'desktop-runtime.json'))|ConvertFrom-Json
     }
-    foreach($name in @('desktop-runtime.json','desktop/python/python.exe','desktop/python/python314._pth','desktop/config.toml','THIRD_PARTY_NOTICES.txt')){if(-not $declared.ContainsKey($name)){throw 'Installed component missing'}}
-    AssertReachRuntimeConfig ([IO.File]::ReadAllText((Join-Path $Root 'desktop-runtime.json'))|ConvertFrom-Json)
+    AssertReachPackageComponents $manifest $declared $desktopConfig
     $agentConfig=$null
     if($manifest.schema-eq2 -and $files.ContainsKey('agent-runtime.json')){if($files['agent-runtime.json'].Length-gt16384){throw 'Agent runtime config exceeds the bound'};$agentConfig=[IO.File]::ReadAllText((Join-Path $Root 'agent-runtime.json'))|ConvertFrom-Json}
     AssertReachAgentPackage $manifest $declared $agentConfig

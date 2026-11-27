@@ -275,6 +275,7 @@ pub struct OpenToolCall {
     pub arguments: Value,
 }
 
+pub use crate::png_image::SettledToolImage;
 /// Host finding from its own receipts or artifacts, never inferred by Core.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case", tag = "kind")]
@@ -283,6 +284,8 @@ pub enum ToolCallSettlement {
     NotExecuted,
     Completed {
         output: String,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        images: Vec<SettledToolImage>,
     },
     Failed {
         output: String,
@@ -362,30 +365,57 @@ pub fn reconcile_interrupted_run(
                 .all(|(call, settlement)| call.id == settlement.call_id),
         "every open tool call needs exactly one Host settlement in original order"
     );
-    let timestamp = i64::try_from(SystemTime::now().duration_since(UNIX_EPOCH)?.as_millis())?;
+    let mut total_image_bytes = 0usize;
+    let mut total_images = 0usize;
+    let mut verified_results = Vec::with_capacity(reconciliations.len());
     for (call, reconciliation) in inspected.open_tool_calls.iter().zip(reconciliations) {
-        let (is_error, text) = match &reconciliation.settlement {
+        let (is_error, text, images) = match &reconciliation.settlement {
             ToolCallSettlement::NotExecuted => {
-                state.not_executed.push(NotExecutedCall {
-                    run_id: inspected.run_id.clone(),
-                    native_call_id: call.id.clone(),
-                    tool: call.name.clone(),
-                    arguments_sha256: arguments_sha256(&call.arguments),
-                });
-                (true, "Host reconciliation: this call was interrupted and did not execute.".to_owned())
+                (true, "Host reconciliation: this call was interrupted and did not execute.".to_owned(), Vec::new())
             }
-            ToolCallSettlement::Completed { output } => {
-                (false, format!("Host reconciliation of an interrupted call (completed):\n{output}"))
+            ToolCallSettlement::Completed { output, images } => {
+                total_images = total_images.saturating_add(images.len());
+                anyhow::ensure!(
+                    images.len() <= crate::png_image::MAX_CALL_IMAGES
+                        && total_images <= crate::png_image::MAX_RECONCILED_IMAGES,
+                    "reconciled tool call exceeds image count limit"
+                );
+                let mut loaded = Vec::with_capacity(images.len());
+                for item in images {
+                    total_image_bytes =
+                        total_image_bytes.checked_add(item.bytes).context("reconciled image byte count overflow")?;
+                    anyhow::ensure!(
+                        total_image_bytes <= crate::png_image::MAX_RUN_IMAGE_BYTES,
+                        "reconciled tool images exceed Run raw image limit"
+                    );
+                    let (image, _) = item.load_verified(None)?;
+                    loaded.push(Content::Image(image));
+                }
+                (false, format!("Host reconciliation of an interrupted call (completed):\n{output}"), loaded)
             }
             ToolCallSettlement::Failed { output } => {
-                (true, format!("Host reconciliation of an interrupted call (failed):\n{output}"))
+                (true, format!("Host reconciliation of an interrupted call (failed):\n{output}"), Vec::new())
             }
         };
+        verified_results.push((call, reconciliation, is_error, text, images));
+    }
+    let timestamp = i64::try_from(SystemTime::now().duration_since(UNIX_EPOCH)?.as_millis())?;
+    for (call, reconciliation, is_error, text, mut images) in verified_results {
+        if matches!(reconciliation.settlement, ToolCallSettlement::NotExecuted) {
+            state.not_executed.push(NotExecutedCall {
+                run_id: inspected.run_id.clone(),
+                native_call_id: call.id.clone(),
+                tool: call.name.clone(),
+                arguments_sha256: arguments_sha256(&call.arguments),
+            });
+        }
+        let mut content = vec![Content::text(local_tools::bounded(text, 128 * 1024))];
+        content.append(&mut images);
         state.messages.push(AgentMessage::ToolResult(Box::new(rpi_ai::ToolResultMessage {
             role: Default::default(),
             tool_call_id: call.id.clone(),
             tool_name: call.name.clone(),
-            content: vec![Content::text(local_tools::bounded(text, 128 * 1024))],
+            content,
             details: Some(json!({"source":"host_reconciled_interrupted_run","run_id":inspected.run_id,
                 "settlement":reconciliation.settlement,"evidence":evidence})),
             usage: None,
@@ -523,7 +553,8 @@ impl SessionState {
                 head.raw_count - head.active_base <= session_journal::CHECKPOINT_MESSAGES,
                 "journal active message bound exceeded"
             );
-            state.messages = journal.read(head.active_base, head.raw_count, session_journal::CHECKPOINT_BYTES)?;
+            state.messages =
+                journal.read(head.active_base, head.raw_count, session_journal::CHECKPOINT_ACTIVE_BYTES)?;
             state
         } else if !path.exists() {
             Self { version: 2, cwd: cwd.to_owned(), ..Self::default() }
@@ -685,9 +716,7 @@ impl HostEmitter {
         if let AgentEvent::MessageEnd { message } = event {
             let mut state = self.state.lock().unwrap();
             // Grants are host credentials, never durable session content.
-            let clean = serde_json::to_value(message)
-                .map(|v| redact_json(v, &self.token))
-                .and_then(serde_json::from_value::<AgentMessage>);
+            let clean = redact_message(message, &self.token);
             match clean {
                 Ok(message) => state.messages.push(message),
                 Err(error) => {
@@ -828,6 +857,48 @@ fn redact_json(value: Value, token: &str) -> Value {
         other => other,
     }
 }
+fn redact_content(blocks: &mut [Content], token: &str) {
+    if token.is_empty() {
+        return;
+    }
+    for block in blocks {
+        match block {
+            Content::Text(text) => text.text = redact(&text.text, token),
+            Content::Thinking(thinking) => thinking.thinking = redact(&thinking.thinking, token),
+            Content::ToolCall(call) => call.arguments = redact_json(call.arguments.clone(), token),
+            // ImageContent carries binary base64 bytes, never host grant strings.
+            Content::Image(_) => {}
+        }
+    }
+}
+fn redact_message(message: &AgentMessage, token: &str) -> Result<AgentMessage> {
+    let mut copy = serde_json::from_value::<AgentMessage>(serde_json::to_value(message)?)?;
+    if token.is_empty() {
+        return Ok(copy);
+    }
+    match &mut copy {
+        AgentMessage::User(user) => match &mut user.content {
+            rpi_ai::UserContent::Text(text) => *text = redact(text, token),
+            rpi_ai::UserContent::Blocks(blocks) => redact_content(blocks, token),
+        },
+        AgentMessage::Assistant(assistant) => {
+            redact_content(&mut assistant.content, token);
+            if let Some(err) = &mut assistant.error_message {
+                *err = redact(err, token);
+            }
+        }
+        AgentMessage::ToolResult(result) => {
+            redact_content(&mut result.content, token);
+            if let Some(details) = result.details.take() {
+                result.details = Some(redact_json(details, token));
+            }
+        }
+        AgentMessage::Custom(_) => {
+            copy = serde_json::from_value(redact_json(serde_json::to_value(&copy)?, token))?;
+        }
+    }
+    Ok(copy)
+}
 
 /// State a Completion_Gate check needs at an ordinary Stop.
 struct CompletionGateTurn {
@@ -841,7 +912,7 @@ struct CompletionGateTurn {
     calls: Arc<AtomicUsize>,
     max_calls: usize,
     deadline: tokio::time::Instant,
-    previous_message_count: usize,
+    run_start_raw_index: usize,
     sequence: Arc<std::sync::atomic::AtomicU32>,
     /// `completion_gate` detail for `agent_end` when the gate stops the Run.
     stop: Arc<Mutex<Option<Value>>>,
@@ -859,7 +930,8 @@ async fn run_completion_gate(turn: CompletionGateTurn) -> Vec<AgentMessage> {
     }
     let final_text = {
         let state = turn.state.lock().unwrap();
-        let current = state.messages.get(turn.previous_message_count..).unwrap_or_default();
+        let current_start = turn.run_start_raw_index.saturating_sub(state.raw_base).min(state.messages.len());
+        let current = state.messages.get(current_start..).unwrap_or_default();
         match state.messages.last() {
             Some(AgentMessage::Assistant(last))
                 if last.stop_reason == StopReason::Stop
@@ -951,19 +1023,20 @@ async fn run_completion_gate(turn: CompletionGateTurn) -> Vec<AgentMessage> {
     messages
 }
 
-/// Whether `call_id` names a tool call archived before `raw_base`. The set
-/// is read from the journal once per Run and cached.
+/// Whether `call_id` names a tool call archived before `raw_base`. Incremental
+/// mid-Run compaction advances `raw_base`, so newly archived records are added
+/// to the cached set on demand.
 fn archived_contains(
-    cache: &Mutex<Option<HashSet<String>>>,
+    cache: &Mutex<Option<(usize, HashSet<String>)>>,
     journal: &session_journal::Journal,
     raw_base: usize,
     call_id: &str,
 ) -> Result<bool> {
-    let mut cache = cache.lock().unwrap();
-    if cache.is_none() {
-        let mut ids = HashSet::new();
-        for index in 0..raw_base {
-            for message in journal.read(index, index + 1, 8 * 1024 * 1024)? {
+    let mut guard = cache.lock().unwrap();
+    let (mut scanned, mut ids) = guard.take().unwrap_or_else(|| (0, HashSet::new()));
+    if scanned < raw_base {
+        for index in scanned..raw_base {
+            for message in journal.read(index, index + 1, session_journal::RECORD_BYTES)? {
                 if let AgentMessage::Assistant(assistant) = message {
                     ids.extend(assistant.content.iter().filter_map(|content| match content {
                         Content::ToolCall(call) => Some(call.id.clone()),
@@ -972,9 +1045,11 @@ fn archived_contains(
                 }
             }
         }
-        *cache = Some(ids);
+        scanned = raw_base;
     }
-    Ok(cache.as_ref().is_some_and(|ids| ids.contains(call_id)))
+    let found = ids.contains(call_id);
+    *guard = Some((scanned, ids));
+    Ok(found)
 }
 
 fn tool_result_text(result: &rpi_ai::ToolResultMessage) -> String {
@@ -1332,6 +1407,7 @@ pub async fn execute(
     session.route = route.clone();
     let old_messages = session.messages.clone();
     let previous_message_count = old_messages.len();
+    let run_start_raw_index = session.raw_base + previous_message_count;
     let environment_roots = match &request.knowledge_roots {
         Some(roots) => Ok(roots.clone()),
         None => {
@@ -1541,6 +1617,7 @@ pub async fn execute(
     let transform_events = events.clone();
     let transform_journal = fatal.clone();
     let transform_state = state.clone();
+    let transform_state_path = request.state_path.clone();
     let transform_jobs = managed_jobs.clone();
     let transform_mode = request.mode;
     let transform_root = reserve_root.clone();
@@ -1554,6 +1631,7 @@ pub async fn execute(
     let transform_context = Arc::new(move |messages: Vec<AgentMessage>, signal: CancellationToken| {
         let store = transform_store.clone();
         let runtime_state = transform_state.clone();
+        let state_path = transform_state_path.clone();
         let runtime_jobs = transform_jobs.clone();
         let path = transform_path.clone();
         let model = summary_model(&transform_model);
@@ -1571,9 +1649,7 @@ pub async fn execute(
         let refresh_policy = transform_refresh.clone();
         let refresh_cwd = transform_cwd.clone();
         Box::pin(async move {
-            let clean = serde_json::to_value(&messages)
-                .map(|v| redact_json(v, &token))
-                .and_then(serde_json::from_value::<Vec<AgentMessage>>);
+            let clean: Result<Vec<AgentMessage>> = messages.iter().map(|m| redact_message(m, &token)).collect();
             let messages = match clean {
                 Ok(messages) => messages,
                 Err(error) => {
@@ -1612,7 +1688,7 @@ pub async fn execute(
                 let (mut projection,input) = {
                     let guard = store.lock().unwrap();
                     let projection = guard.projection_with_note_budget(&messages,projection_limit)?;
-                    let input = guard.summary_content_with_projection(&messages,&projection,previous_message_count,projection_limit)?;
+                    let input = guard.summary_content_with_image_limit(&messages,&projection,previous_message_count,projection_limit,crate::png_image::ACTIVE_IMAGE_BYTES)?;
                     (projection,input)
                 };
                 if let Some((cut,input))=input {
@@ -1632,8 +1708,9 @@ pub async fn execute(
                     root_reservation()?;
                     let mut before=std::mem::take(&mut projection);
                     for carrier in runtime_carrier.iter().rev() { before.insert(1.min(before.len()),carrier.clone()); }
+                    let (before_text_bytes, _) = crate::png_image::split_messages_bytes(&before)?;
                     let receipt=crate::model_telemetry::projection_observation(
-                        serde_json::to_vec(&before)?.len(),text_budget.projection_bytes,"compressing");
+                        before_text_bytes,text_budget.projection_bytes,"compressing");
                     tokio::select! {_=signal.cancelled()=>bail!("context maintenance canceled"), _=tokio::time::sleep_until(deadline)=>bail!("context maintenance deadline exceeded"), result=events.send(receipt)=>result.context("context status transport closed")?}
                     let receipt=json!({"type":"model_call","phase":"summary","call":calls.load(Ordering::SeqCst),"usage":"unknown","status":"reserved","output_limit":summary_output_limit});
                     tokio::select! {_=signal.cancelled()=>bail!("context maintenance canceled"),_=tokio::time::sleep_until(deadline)=>bail!("context maintenance deadline exceeded"),result=events.send(receipt)=>{if result.is_err(){*journal.lock().unwrap()=Some("context event transport closed".into());bail!("context event transport closed");}}}
@@ -1668,7 +1745,16 @@ pub async fn execute(
                             Some(policy) => Some(install_refresh(&mut next, policy, &messages[..cut], &refresh_cwd, goal_state.as_ref(), &run, &token)?),
                             None => None,
                         };
-                        next.save(&path)?;*guard=next;(receipt, refresh)
+                        let covered = next.covered_prefix();
+                        // The durable summary must cover the archived prefix before advancing the Journal.
+                        next.save(&path)?;
+                        *guard = next;
+                        {
+                            let mut state_guard = runtime_state.lock().unwrap();
+                            state_guard.archive_covered(covered)?;
+                            state_guard.save(&state_path)?;
+                        }
+                        (receipt, refresh)
                     };
                     events.send(compact_receipt).await.context("compact receipt transport closed after checkpoint")?;
                     if let Some(receipt) = refresh_receipt {
@@ -1680,8 +1766,8 @@ pub async fn execute(
                 if let Some(directory)=crate::experience::directory(messages.get(previous_message_count..).context("native experience scope unavailable")?) {
                     attach_experience_directory(&mut projection,directory,text_budget.projection_bytes)?;
                 }
-                let projection_bytes=serde_json::to_vec(&projection)?.len();
-                if projection_bytes>text_budget.projection_bytes {bail!("working context exceeds byte budget after compaction; narrow the request");}
+                let (projection_bytes, projection_image_bytes) = crate::png_image::split_messages_bytes(&projection)?;
+                if projection_bytes>text_budget.projection_bytes || projection_image_bytes>crate::png_image::ACTIVE_IMAGE_BYTES {bail!("working context exceeds byte budget after compaction; narrow the request");}
                 let receipt=crate::model_telemetry::projection_observation(projection_bytes,text_budget.projection_bytes,"ready");
                 tokio::select! {_=signal.cancelled()=>bail!("context maintenance canceled"), _=tokio::time::sleep_until(deadline)=>bail!("context maintenance deadline exceeded"), result=events.send(receipt)=>result.context("context status transport closed")?}
                 Ok::<_,anyhow::Error>(projection)
@@ -1718,7 +1804,8 @@ pub async fn execute(
     let stop_unknown = unknown_job.clone();
     let stop_job_failure = context_failure.clone();
     let tool_lease = request.goal_lease.clone();
-    let tool_archive: Arc<Mutex<Option<HashSet<String>>>> = Arc::new(Mutex::new(None));
+    type ArchivedCallCache = Option<(usize, HashSet<String>)>;
+    let tool_archive: Arc<Mutex<ArchivedCallCache>> = Arc::new(Mutex::new(None));
     let tool_journal = session_journal::Journal::for_session(&request.state_path);
     let tool_duplicate = context_failure.clone();
     let replay_state = state.clone();
@@ -1962,9 +2049,8 @@ pub async fn execute(
                     return Ok(None);
                 }
                 let current = state.lock().unwrap();
-                let Some(source) =
-                    length_recovery::source(&current.messages, previous_message_count, current.raw_base)?
-                else {
+                let current_start = run_start_raw_index.saturating_sub(current.raw_base).min(current.messages.len());
+                let Some(source) = length_recovery::source(&current.messages, current_start, current.raw_base)? else {
                     return Ok(None);
                 };
                 let text = source.message();
@@ -2014,7 +2100,7 @@ pub async fn execute(
                                 calls,
                                 max_calls,
                                 deadline,
-                                previous_message_count,
+                                run_start_raw_index,
                                 sequence: gate_sequence,
                                 stop: gate_stop,
                                 cwd: gate_cwd,
@@ -2289,7 +2375,11 @@ pub async fn execute(
             Ok(())
         };
         check()?;
-        let snapshot = evidence_state.lock().unwrap().messages[previous_message_count..].to_vec();
+        let snapshot = {
+            let guard = evidence_state.lock().unwrap();
+            let start = run_start_raw_index.saturating_sub(guard.raw_base).min(guard.messages.len());
+            guard.messages[start..].to_vec()
+        };
         check()?;
         Ok(snapshot)
     });
@@ -2370,10 +2460,11 @@ pub async fn execute(
     let no_progress_hit = no_progress.lock().unwrap().clone();
     let (text, failure, closed_budget_checkpoint, stop_evidence) = {
         let mut guard = state.lock().unwrap();
+        let current_start = run_start_raw_index.saturating_sub(guard.raw_base).min(guard.messages.len());
         // 16.1: identity of a final Length message, taken before archiving.
         let length_source = match guard.messages.last() {
             Some(message @ AgentMessage::Assistant(assistant))
-                if guard.messages.len() > previous_message_count
+                if guard.messages.len() > current_start
                     && assistant.stop_reason == StopReason::Length
                     && assistant.error_message.is_none()
                     && !assistant.content.iter().any(|content| matches!(content, Content::ToolCall(_))) =>
@@ -2385,13 +2476,12 @@ pub async fn execute(
             }
             _ => None,
         };
-        let last_assistant =
-            guard.messages.iter().skip(previous_message_count).rev().find_map(AgentMessage::as_assistant);
+        let last_assistant = guard.messages.iter().skip(current_start).rev().find_map(AgentMessage::as_assistant);
         let text = last_assistant.map(assistant_text).unwrap_or_default();
         let last_tool_use = last_assistant
             .is_some_and(|message| message.stop_reason == StopReason::ToolUse && message.error_message.is_none());
         let current_transcript_closed =
-            guard.messages.get(previous_message_count..).is_some_and(|messages| validate_transcript(messages).is_ok());
+            guard.messages.get(current_start..).is_some_and(|messages| validate_transcript(messages).is_ok());
         let mut budget_won = false;
         let failure = if let Some(error) = fatal.lock().unwrap().clone() {
             Some(error)
@@ -2984,7 +3074,7 @@ mod tests {
         assert_eq!(inspected.open_tool_calls[0].id, "open");
         let settle = |id: &str| ToolCallReconciliation {
             call_id: id.into(),
-            settlement: ToolCallSettlement::Completed { output: "file hash matched".into() },
+            settlement: ToolCallSettlement::Completed { output: "file hash matched".into(), images: vec![] },
         };
         let receipts = vec!["host-receipt:sha256:abc".to_owned()];
         // Missing receipts, wrong IDs, extra settlements and stale inspections are refused.
@@ -3150,7 +3240,7 @@ mod interrupted_run_property_tests {
     fn settlement(kind: u8) -> ToolCallSettlement {
         match kind {
             0 => ToolCallSettlement::NotExecuted,
-            1 => ToolCallSettlement::Completed { output: "receipt matched".into() },
+            1 => ToolCallSettlement::Completed { output: "receipt matched".into(), images: vec![] },
             _ => ToolCallSettlement::Failed { output: "receipt shows failure".into() },
         }
     }
@@ -3282,5 +3372,127 @@ mod interrupted_run_property_tests {
             }
             let _ = std::fs::remove_dir_all(&root);
         }
+    }
+
+    #[test]
+    fn reconcile_completed_with_verified_png_preserves_image_and_refuses_tampered_png() {
+        use base64::Engine;
+        let cwd = std::env::temp_dir().canonicalize().unwrap();
+        let root = cwd.join(format!(
+            "morrow-typed-img-reconcile-{}-{}",
+            std::process::id(),
+            SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos()
+        ));
+        std::fs::create_dir_all(&root).unwrap();
+        let path = root.join("session.json");
+        let png_b64 =
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+        let png_bytes = base64::engine::general_purpose::STANDARD.decode(png_b64).unwrap();
+        let png_path = root.join("shot.png");
+        std::fs::write(&png_path, &png_bytes).unwrap();
+        let sha = crate::png_image::sha256_hex(&png_bytes);
+
+        let mut assistant = rpi_ai::AssistantMessage::empty(rpi_ai::Api::OpenaiCompletions, "p", "m", 1);
+        assistant.stop_reason = StopReason::ToolUse;
+        assistant.content = vec![Content::ToolCall(rpi_ai::ToolCall {
+            kind: Default::default(),
+            id: "shot-1".into(),
+            name: "capture".into(),
+            arguments: json!({}),
+            thought_signature: None,
+            namespace: None,
+        })];
+        let state = SessionState {
+            version: 2,
+            cwd: cwd.clone(),
+            pending_run: Some("crashed-img-run".into()),
+            messages: vec![
+                context_memory::user("take screenshot".into()),
+                AgentMessage::Assistant(Box::new(assistant)),
+            ],
+            ..Default::default()
+        };
+        state.save(&path).unwrap();
+        let inspected = interrupted_run(&path, &cwd).unwrap().unwrap();
+
+        // Wrong sha256 must fail closed and leave pending_run untouched
+        let bad = ToolCallReconciliation {
+            call_id: "shot-1".into(),
+            settlement: ToolCallSettlement::Completed {
+                output: "captured".into(),
+                images: vec![SettledToolImage {
+                    path: png_path.clone(),
+                    root: None,
+                    sha256: "0".repeat(64),
+                    bytes: png_bytes.len(),
+                    mime_type: "image/png".into(),
+                    width: 1,
+                    height: 1,
+                }],
+            },
+        };
+        assert!(reconcile_interrupted_run(&path, &cwd, &inspected, &[bad], &["receipt:1".into()]).is_err());
+        assert!(interrupted_run(&path, &cwd).unwrap().is_some());
+
+        // Redaction with token="iVBOR" must never corrupt Content::Image base64
+        let img_msg = AgentMessage::ToolResult(Box::new(rpi_ai::ToolResultMessage {
+            role: Default::default(),
+            tool_call_id: "shot-1".into(),
+            tool_name: "capture".into(),
+            content: vec![
+                Content::text("secret=iVBOR"),
+                Content::Image(rpi_ai::ImageContent {
+                    kind: Default::default(),
+                    data: png_b64.into(),
+                    mime_type: "image/png".into(),
+                }),
+            ],
+            details: None,
+            usage: None,
+            added_tool_names: vec![],
+            is_error: false,
+            timestamp: 1,
+        }));
+        let redacted = redact_message(&img_msg, "iVBOR").unwrap();
+        let AgentMessage::ToolResult(redacted_res) = redacted else { unreachable!() };
+        assert_eq!(redacted_res.content[0], Content::text("secret=[redacted grant]"));
+        assert_eq!(
+            redacted_res.content[1],
+            Content::Image(rpi_ai::ImageContent {
+                kind: Default::default(),
+                data: png_b64.into(),
+                mime_type: "image/png".into(),
+            })
+        );
+
+        // Valid SettledToolImage restores Content::Image without re-executing tool
+        let good = ToolCallReconciliation {
+            call_id: "shot-1".into(),
+            settlement: ToolCallSettlement::Completed {
+                output: "captured".into(),
+                images: vec![SettledToolImage {
+                    path: png_path,
+                    root: None,
+                    sha256: sha,
+                    bytes: png_bytes.len(),
+                    mime_type: "image/png".into(),
+                    width: 1,
+                    height: 1,
+                }],
+            },
+        };
+        reconcile_interrupted_run(&path, &cwd, &inspected, &[good], &["receipt:1".into()]).unwrap();
+        let loaded = SessionState::load(&path, &cwd).unwrap();
+        let AgentMessage::ToolResult(last) = loaded.messages.last().unwrap() else { panic!("expected ToolResult") };
+        assert_eq!(last.content.len(), 2);
+        assert_eq!(
+            last.content[1],
+            Content::Image(rpi_ai::ImageContent {
+                kind: Default::default(),
+                data: png_b64.into(),
+                mime_type: "image/png".into(),
+            })
+        );
+        let _ = std::fs::remove_dir_all(&root);
     }
 }

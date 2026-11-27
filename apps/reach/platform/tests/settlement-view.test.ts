@@ -1,7 +1,7 @@
 // Copyright (c) Ray Zhang. Versioned transport ordering, independent of a DOM.
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {mergeSettlement,validSettlement} from '../web/settlement.ts';
+import {mergeSettlement,validSettlement} from '../../src/admin/desk-settlement.ts';
 const unlocked={blocked:0,blocker_task_id:null,settlement_revision:0,declaration_sha:null};
 const closing={blocked:1,blocker_task_id:'old-task',settlement_revision:1,declaration_sha:'a'.repeat(64)};
 const released={...unlocked,settlement_revision:2};

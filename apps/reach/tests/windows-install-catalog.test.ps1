@@ -1,7 +1,12 @@
 # Copyright (c) Ray Zhang. Actual installation orchestration, files, locks, atomic writes and HKCU.
 # Only platform ACL identity, SCM/processes and Node status are explicit adapters.
-param([string]$CasePattern='*')
+param([string]$CasePattern='*',[Alias('OpenSshArchive')][string]$VendorArchive)
 $ErrorActionPreference='Stop'
+# Shared SSH preparation is platform-adapted here; its production functions have dedicated tests.
+function ResolveReachSshAccount([string]$OwnerSid) { return @{sid=$OwnerSid;user='fixture'} }
+function EnsureReachSshd([byte[]]$Archive,[string]$ProgramParent,[string]$DataAnchor) { $script:sshPreparationCalls++;return @{exe='fixture-sshd.exe'} }
+function ResolveReachSshTarget([string]$OwnerSid,$Command) { return @{user='fixture'} }
+function InitializeReachSshKeys($Target) {}
 foreach($name in @('payload','ownership','maintenance-writes','uninstall-files','uninstall-transaction','uninstall-host','maintenance-entry')){. (Join-Path $PSScriptRoot ("../packaging/windows/$name.ps1"))}
 $source=Join-Path $PSScriptRoot '../packaging/windows/install.ps1';$text=[IO.File]::ReadAllText($source)
 $tokens=$null;$errors=$null;$ast=[Management.Automation.Language.Parser]::ParseFile($source,[ref]$tokens,[ref]$errors)
@@ -14,11 +19,12 @@ $installTail=[ScriptBlock]::Create($text.Substring($begin,$end-$begin))
 $realWriteJson=${function:WriteJson};$realStagedWrite=${function:WriteReachStagedFile};$realRegistrationWriter=${function:WriteReachRegistration}
 Add-Type -AssemblyName System.IO.Compression
 $payloadAst=[Management.Automation.Language.Parser]::ParseFile((Join-Path $PSScriptRoot 'windows-payload.test.ps1'),[ref]$tokens,[ref]$errors)
-foreach($name in @('Bytes','Digest','Fixture','AgentFixture','Zip')){
+foreach($name in @('Bytes','Digest','Fixture','AgentFixture','WorkerAgentFixture','Zip')){
     $definition=$payloadAst.Find({param($a)$a-is[Management.Automation.Language.FunctionDefinitionAst] -and $a.Name-eq$name},$true)
     $definitionText=$definition.Extent.Text
     if($name-ceq'Fixture'){$definitionText=$definitionText.Replace('function Fixture','function PayloadFixture')}
     if($name-ceq'AgentFixture'){$definitionText=$definitionText.Replace('function AgentFixture','function AgentPayloadFixture').Replace('$f=Fixture','$f=PayloadFixture')}
+    if($name-ceq'WorkerAgentFixture'){$definitionText=$definitionText.Replace('$f=AgentFixture','$f=AgentPayloadFixture')}
     . ([ScriptBlock]::Create($definitionText))
 }
 Add-Type -TypeDefinition @'
@@ -27,12 +33,15 @@ using System.Collections.Generic;
 public static class ReachSetupNative {
  public static string ServicePath;
  public static bool Running;
+ public static bool Disabled;
  public static List<string> Calls=new List<string>();
  public static string Path(){return ServicePath;}
- public static void Set(string value){Calls.Add("set");ServicePath=value;}
- public static void Stage(string value){Calls.Add("stage-disabled");ServicePath=value;}
- public static void Remove(){Calls.Add("remove");ServicePath=null;}
- public static void DisableOwned(string expected){if(ServicePath!=expected)throw new Exception("Unowned service");Calls.Add("disable-owned");}
+ public static uint Pid(){return Running ? 123u : 0u;}
+ public static void Set(string value){Calls.Add("set");ServicePath=value;Disabled=false;}
+ public static void Prepare(string value){Calls.Add("prepare");ServicePath=value;Disabled=false;}
+ public static void Stage(string value){Calls.Add("stage-disabled");ServicePath=value;Disabled=true;}
+ public static void Remove(){Calls.Add("remove");ServicePath=null;Disabled=true;}
+ public static void DisableOwned(string expected){if(ServicePath!=expected)throw new Exception("Unowned service");Calls.Add("disable-owned");Disabled=true;}
  public static void RemoveOwned(string expected){if(ServicePath!=expected)throw new Exception("Unowned service");Remove();}
 }
 '@
@@ -50,10 +59,11 @@ function ProcessRecord($Process){if($Process){return @{pid=123;startTicks=456;im
 function WaitRecordedExit($Record){[ReachSetupNative]::Calls.Add('wait-recorded')}
 function WaitStopped($Process){[ReachSetupNative]::Calls.Add('wait-stopped');if([ReachSetupNative]::Running){throw 'Service did not stop'}}
 function StopService($Process){[ReachSetupNative]::Calls.Add('stop');[ReachSetupNative]::Running=$false}
-function StartService{[ReachSetupNative]::Calls.Add('start');[ReachSetupNative]::Running=$true}
+function StartService{if([ReachSetupNative]::Disabled){throw 'Attempted to start a disabled service'};[ReachSetupNative]::Calls.Add('start');[ReachSetupNative]::Running=$true}
 function IsRunning{return [ReachSetupNative]::Running}
 function Node([string]$Executable,[string]$Operation){
     if($Operation-ceq'maintenance-stop'){[ReachSetupNative]::Running=$false;return @{maintenanceStopRequested=$true;installationId='persisted-node-id';epoch=7}}
+    [ReachSetupNative]::Calls.Add('validate')
     if($script:fault-ceq'status'){$script:fault=$null;throw 'Injected candidate status failure'}
     return @{installationId='persisted-node-id';epoch=7;host=@{pid=123}}
 }
@@ -80,7 +90,7 @@ function WriteReachStagedFile([string]$Path,[byte[]]$Bytes){
 function Assert([bool]$Value,[string]$Message){if(-not $Value){throw $Message}}
 function Refused([scriptblock]$Action,[string]$Pattern){$failed=$false;try{&$Action|Out-Null}catch{$failed=$true;Assert ($_.Exception.Message-match$Pattern) $_.Exception.Message};Assert $failed "Expected $Pattern"}
 $project=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'));$evidence=Join-Path $project ('work/install-catalog-'+[Guid]::NewGuid().ToString('N'));Directory $evidence $true
-$registryBase='Software\RY\ReachCatalogTests\'+[Guid]::NewGuid().ToString('N');$script:cases=0;$script:fault=$null
+$registryBase='Software\RY\ReachCatalogTests\'+[Guid]::NewGuid().ToString('N');$script:cases=0;$script:fault=$null;$script:sshPreparationCalls=0
 function Case([string]$Name,[scriptblock]$Action){if($Name-notlike$CasePattern){return};&$Action;$script:cases++;Write-Output "PASS $Name"}
 function Fixture {
     $directory=Join-Path $evidence ([Guid]::NewGuid().ToString('N'));$root=Join-Path $directory 'program';$dataParent=Join-Path $directory 'data';$state=Join-Path $dataParent 'Reach'
@@ -89,7 +99,7 @@ function Fixture {
     [ReachSetupNative]::Remove();[ReachSetupNative]::Running=$false;[ReachSetupNative]::Calls.Clear()
     return @{root=$root;dataParent=$dataParent;state=$state;registry=($registryBase+'\'+[Guid]::NewGuid().ToString('N'))}
 }
-function RunInstall($Fixture,[string]$Content='MZfirst',[string]$CallerSid='S-1-5-21-1-2-3-1001',[bool]$RecoveryOnly=$false,[byte[]]$ZipBytes=$null,[scriptblock]$Maintenance=$null) {
+function RunInstall($Fixture,[string]$Content='MZfirst',[string]$CallerSid='S-1-5-21-1-2-3-1001',[bool]$RecoveryOnly=$false,[byte[]]$ZipBytes=$null,[scriptblock]$Maintenance=$null,[string]$Version='0.1.0',[bool]$Automatic=$false) {
     $root=$Fixture.root;$dataParent=$Fixture.dataParent;$state=$Fixture.state
     $bin=Join-Path $root 'bin';$versions=Join-Path $root 'versions';$cli=Join-Path $bin 'reach.exe'
     $manifestPath=Join-Path $root 'install.json';$journalPath=Join-Path $root 'install-journal.json';$deploymentPath=Join-Path $root 'deployment.json'
@@ -97,6 +107,7 @@ function RunInstall($Fixture,[string]$Content='MZfirst',[string]$CallerSid='S-1-
     $environment=[Microsoft.Win32.Registry]::CurrentUser.CreateSubKey($Fixture.registry)
     $uninstallParent=[Microsoft.Win32.Registry]::CurrentUser.CreateSubKey($Fixture.registry+'\Uninstall')
     $MaintenanceOperation='install';$RecoveryScriptBytes=[Text.Encoding]::UTF8.GetBytes('# fixture recovery script');$EntryDeploymentGeneration=$null
+    $ReachInstallVersion=$Version;$ReachAutoUpdate=$Automatic
     $payloadStream=$null;$payloadArchive=$null
     try{
         RecoverReachAtomicWrites
@@ -143,9 +154,39 @@ function Installed($Fixture){
     return @{record=$record;catalog=$catalog;journal=$journal}
 }
 try{
+    if($VendorArchive){
+        $sshSource=[Management.Automation.Language.Parser]::ParseFile((Join-Path $PSScriptRoot '../packaging/windows/ssh.ps1'),[ref]$tokens,[ref]$errors)
+        if($errors.Count){throw ($errors.Message-join'; ')}
+        $validate=$sshSource.Find({param($a)$a-is[Management.Automation.Language.FunctionDefinitionAst] -and $a.Name-ceq'AssertReachOfflineSshArchive'},$true)
+        . ([ScriptBlock]::Create($validate.Extent.Text))
+        $sshArchiveBytes=[IO.File]::ReadAllBytes((Resolve-Path -LiteralPath $VendorArchive).Path)
+        Case 'Worker and Agent only installs without SSH and explicitly prepares SSH from the installed archive' {
+            $f=Fixture
+            $before=$script:sshPreparationCalls
+            $zip=Zip (WorkerAgentFixture $sshArchiveBytes)
+            RunInstall $f -ZipBytes $zip -Version '0.1.8'
+            $installed=(Installed $f).record
+            Assert ($installed.version-ceq'0.1.8' -and $installed.schema-eq2 -and -not $installed.desktopBundled -and $script:sshPreparationCalls-eq$before) 'First install unexpectedly prepared SSH or used the wrong package'
+            Assert (-not(Test-Path -LiteralPath (Join-Path $f.root 'last-ssh-preparation.json'))) 'First install wrote an SSH preparation receipt'
+            RunInstall $f -Maintenance {
+                $receipt=EnableReachInstalledSsh
+                Assert ($receipt.status-ceq'ready' -and $receipt.bindingOwner-ceq$installed.bindingOwner) 'Explicit SSH readiness not attributed to the installed owner'
+            }
+            $receipt=ReadJson (Join-Path $f.root 'last-ssh-preparation.json')
+            Assert ($receipt.status-ceq'ready' -and $script:sshPreparationCalls-eq($before+1)) 'Explicit SSH preparation did not write its receipt'
+            $next=Installed $f
+            Assert ($next.record.deploymentGeneration-ceq$installed.deploymentGeneration) 'SSH preparation altered the installation identity'
+            Refused {RunInstall $f -Version '0.1.9' -Automatic $true} 'Node-only Setup cannot replace'
+            $zipFile=Join-Path (Split-Path $installed.nodePath) 'openssh-vendor.zip'
+            [IO.File]::WriteAllBytes($zipFile,(Bytes 'tampered'))
+            Refused {RunInstall $f -Maintenance {EnableReachInstalledSsh}} 'size mismatch|digest mismatch'
+            Assert ($script:sshPreparationCalls-eq($before+1)) 'Modified installed SSH archive reached preparation'
+        }
+    }
     Case 'fresh install publishes catalog and schema4 with actual atomic metadata writes' {
         $f=Fixture;RunInstall $f;$result=Installed $f
         Assert ($result.catalog.groups.Count-eq1 -and $result.catalog.cliOwned -and $result.catalog.installationId-ceq'persisted-node-id') 'Missing ownership or Node identity'
+        Assert (([ReachSetupNative]::Calls -join ',')-ceq'prepare,start,validate,set') 'Automatic start and recovery must follow candidate validation'
         $files=GetReachOwnedFiles $result.catalog $f.root $f.state
         $null=NewReachDeletionPlan $f.root $files (ReachRetainedMetadata)
     }
@@ -154,11 +195,27 @@ try{
         Assert ($first.record.nodePath-ceq$second.record.nodePath -and $first.catalog.deploymentGeneration-cne$second.catalog.deploymentGeneration) 'Same package reused generation'
         Assert ($first.catalog.bindingOwner-ceq$second.catalog.bindingOwner -and $second.catalog.installationId-ceq'persisted-node-id') 'Reinstall changed persistent identity'
     }
+    Case 'automatic update requires an installed older node and commits the new version with the original identity' {
+        $f=Fixture
+        Refused {RunInstall $f -Version '0.1.1' -Automatic $true} 'supported existing installation'
+        Assert ($null-eq[ReachSetupNative]::Path()) 'Update unexpectedly created a service'
+        RunInstall $f
+        $old=Installed $f
+        RunInstall $f 'MZupdated' -Version '0.1.1' -Automatic $true
+        $new=Installed $f
+        $receipt=ReadJson (Join-Path $f.root 'last-install-result.json')
+        Assert ($new.record.version-ceq'0.1.1' -and $receipt.version-ceq'0.1.1' -and $receipt.automatic -and $new.catalog.installationId-ceq$old.catalog.installationId) 'Update lost version or installation identity'
+        Refused {RunInstall $f -Automatic $true} 'newer version'
+        Assert ((Installed $f).record.nodePath-ceq$new.record.nodePath) 'Refused downgrade replaced the current version'
+        RunInstall $f
+        Assert ((Installed $f).record.nodePath-ceq$old.record.nodePath) 'Explicit compatible rollback lost the previous version'
+    }
     Case 'candidate failure restores old generation while retaining candidate file attribution' {
         $f=Fixture;RunInstall $f;$first=Installed $f;$script:fault='status';Refused {RunInstall $f 'MZcandidate'} 'previous program restored'
         $catalog=Get-Content -LiteralPath (Join-Path $f.root 'deployment.json') -Raw|ConvertFrom-Json
         $record=Get-Content -LiteralPath (Join-Path $f.root 'install.json') -Raw|ConvertFrom-Json
         Assert ($catalog.deploymentGeneration-ceq$first.catalog.deploymentGeneration -and $record.nodePath-ceq$first.record.nodePath -and $catalog.groups.Count-eq2) 'Rollback lost old identity or candidate attribution'
+        Assert ((@([ReachSetupNative]::Calls|Where-Object{$_ -in @('prepare','validate','set','disable-owned','stop','stage-disabled')}) -join ',')-ceq'prepare,validate,set,prepare,validate,disable-owned,stop,stage-disabled,set') 'A failed candidate must stay without automatic recovery'
         $null=NewReachDeletionPlan $f.root (GetReachOwnedFiles $catalog $f.root $f.state) (ReachRetainedMetadata)
     }
     Case 'first-install commit interruption retains ledger identity without pretending an active installation' {

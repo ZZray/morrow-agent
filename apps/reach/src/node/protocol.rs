@@ -7,6 +7,7 @@ use sha2::{Digest, Sha256};
 pub const CAPABILITIES: &[&str] = &["command.run", "file.read", "file.write", "directory.list"];
 pub const DESKTOP_CAPABILITIES: &[&str] = &["desktop.describe", "desktop.call"];
 
+pub const SSH_CAPABILITIES: &[&str] = &["ssh.status", "ssh.authorize", "ssh.revoke", "starferry.session"];
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct Dispatch {
@@ -33,10 +34,13 @@ impl Dispatch {
         ensure!(
             CAPABILITIES.contains(&self.command["kind"].as_str().unwrap_or_default())
                 || DESKTOP_CAPABILITIES.contains(&self.command["kind"].as_str().unwrap_or_default())
+                || SSH_CAPABILITIES.contains(&self.command["kind"].as_str().unwrap_or_default())
                 || self.command["kind"] == "agent.delegate"
                 || self.command["kind"] == "agent.resume"
+                || self.command["kind"] == "agent.continue"
                 || self.command["kind"] == "agent.finalize"
-                || self.command["kind"] == "agent.inspect",
+                || self.command["kind"] == "agent.inspect"
+                || self.command["kind"] == "agent.provenance",
             "unsupported operation kind"
         );
         Ok(())

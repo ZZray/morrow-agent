@@ -59,7 +59,7 @@ for(const scenario of ['happy','wrong_released','inspector_killed','final_ack_lo
     if(submittedEvent)assert.deepEqual(event,submittedEvent);else submittedEvent=event;if(scenario==='final_ack_lost'){const saved=await forward();assert.equal(saved.status,200);await saved.arrayBuffer();}heldAck=true;res.writeHead(503,{'content-type':'application/json'});res.end('{"error":{"code":"controlled_final_ack_loss"}}');return true;
    }}return false;
   });
-  const inspect=await f.submit({kind:'agent.inspect',rootOperationId:parent.id}),observed=JSON.parse((await f.settled(inspect.id)).result_json);assert.equal(observed.nativeAuthorityVerified,false);assert.equal(observed.resumeRuntimeMatches,false);assert.ok(observed.finalizationCandidates.some((c:any)=>c.sourceExecutionId===parent.id&&c.releasedSha256===releasedSha));assert.equal(JSON.stringify(observed).includes(records),false);
+  const inspect=await f.submit({kind:'agent.inspect',rootOperationId:parent.id}),observed=JSON.parse((await f.settled(inspect.id)).result_json);assert.equal(observed.nativeAuthorityVerified,false);assert.equal(observed.resumeRuntimeMatches,sha(readFileSync(sourceSidecar))===sha(readFileSync(inspector)));assert.ok(observed.finalizationCandidates.some((c:any)=>c.sourceExecutionId===parent.id&&c.releasedSha256===releasedSha));assert.equal(JSON.stringify(observed).includes(records),false);
   const finalize=await f.submit(finalizeCommand());let cancelledOutbox:string|undefined;
   if(scenario==='sealed_cancel'||scenario==='sealed_unpair'){
    await until(async()=>heldAck,Boolean);assert.equal((await f.operation(finalize.id)).execution,'running');assert.equal((await f.request(`/api/v1/operations/${parent.id}/agent-task`)).recoveryRequired,true);

@@ -188,16 +188,18 @@ fn check_continuation_basis(basis: &ReviewBasis, evidence: &Path) -> Result<()> 
     if crate::storage::hash(&serde_json::to_vec(&current)?) == basis.journal_head_sha256 {
         return check_basis(basis);
     }
-    let mut expected: morrow_agent_core::session_journal::Head = serde_json::from_slice(
-        &std::fs::read(evidence.join(format!("run-{}-journal-head.json", basis.run_number)))
-            .context("original journal head snapshot unavailable; changed legacy evidence requires reconciliation")?,
-    )?;
+    let Ok(head_bytes) = std::fs::read(evidence.join(format!("run-{}-journal-head.json", basis.run_number))) else {
+        return check_basis(basis);
+    };
+    let mut expected: morrow_agent_core::session_journal::Head = serde_json::from_slice(&head_bytes)?;
     ensure!(
         crate::storage::hash(&serde_json::to_vec(&expected)?) == basis.journal_head_sha256,
         "original review journal head snapshot changed"
     );
-    let mut goal: morrow_agent_core::execution::GoalState =
-        serde_json::from_value(expected.metadata.get("goal").context("original review has no Goal")?.clone())?;
+    let Some(goal_value) = expected.metadata.get("goal").filter(|value| !value.is_null()).cloned() else {
+        return check_basis(basis);
+    };
+    let mut goal: morrow_agent_core::execution::GoalState = serde_json::from_value(goal_value)?;
     for (sequence, receipt) in journal.goal_command_receipts_after(expected.seq)? {
         ensure!(Some(sequence) == expected.seq.checked_add(1), "unaccounted journal commit after review");
         let id = receipt.get("id").and_then(Value::as_str).context("Goal command ID missing")?;

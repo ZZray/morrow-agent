@@ -2,6 +2,7 @@
 $ErrorActionPreference='Stop'
 Add-Type -AssemblyName System.IO.Compression
 . (Join-Path $PSScriptRoot '../packaging/windows/payload.ps1')
+. (Join-Path $PSScriptRoot '../packaging/windows/ownership.ps1')
 $source=Join-Path $PSScriptRoot '../packaging/windows/install.ps1'
 $tokens=$null;$errors=$null
 $ast=[Management.Automation.Language.Parser]::ParseFile($source,[ref]$tokens,[ref]$errors)
@@ -14,11 +15,13 @@ using System.Collections.Generic;
 public static class ReachSetupNative {
  public static string ServicePath;
  public static bool Running;
+ public static bool Disabled;
  public static List<string> Calls=new List<string>();
  public static string Path(){return ServicePath;}
- public static void Set(string value){Calls.Add("set");ServicePath=value;}
- public static void Stage(string value){Calls.Add("stage-disabled");ServicePath=value;}
- public static void Remove(){Calls.Add("remove");ServicePath=null;}
+ public static void Set(string value){Calls.Add("set");ServicePath=value;Disabled=false;}
+ public static void Stage(string value){Calls.Add("stage-disabled");ServicePath=value;Disabled=true;}
+ public static void DisableOwned(string value){if(ServicePath!=value)throw new InvalidOperationException("Unowned service");Calls.Add("disable-owned");Disabled=true;}
+ public static void Remove(){Calls.Add("remove");ServicePath=null;Disabled=true;}
 }
 '@
 $names=@('Hash','WriteJson','ReadJson','PathSnapshot','PlanPath','ApplyPath','RestorePath','ValidateManifestIdentity','ValidateManifest','ResumeRestored','MarkRestored','Restore','RecoverJournal','AcquireMaintenanceLock','AcquireInstallationLock')
@@ -37,7 +40,7 @@ function WriteFile([string]$Path,[byte[]]$Bytes,[bool]$Public=$false) {[IO.File]
 function NotifyEnvironment {}
 function CaptureProcess([string[]]$AllowedImages) {[ReachSetupNative]::Calls.Add('capture');return $null}
 function StopService($Process) {[ReachSetupNative]::Calls.Add('stop-and-wait');[ReachSetupNative]::Running=$false}
-function StartService {[ReachSetupNative]::Calls.Add('start');[ReachSetupNative]::Running=$true}
+function StartService {if([ReachSetupNative]::Disabled){throw 'Attempted to start a disabled service'};[ReachSetupNative]::Calls.Add('start');[ReachSetupNative]::Running=$true}
 function IsRunning {return [ReachSetupNative]::Running}
 function WaitRecordedExit($record) {[ReachSetupNative]::Calls.Add('wait-recorded')}
 function WaitReachServiceAbsent {if($null-ne[ReachSetupNative]::Path()){throw 'Service not absent'}}
@@ -56,13 +59,13 @@ try {
     foreach($directory in @($versions,$bin,$state)){$null=[IO.Directory]::CreateDirectory($directory)}
     $manifestPath=Join-Path $root 'install.json';$journalPath=Join-Path $root 'install-journal.json';$cli=Join-Path $bin 'reach.exe'
     $stateFile=Join-Path $state 'node.sqlite';[IO.File]::WriteAllText($stateFile,'original ledger and candidate receipts')
-    function Record([string]$Content) {
+    function Record([string]$Content,[string]$Version='0.1.0') {
         $bytes=[Text.Encoding]::UTF8.GetBytes($Content);$sha=Hash $bytes
-        $versionRoot=Join-Path $versions ('0.1.0-'+$sha.Substring(0,16));$null=[IO.Directory]::CreateDirectory($versionRoot)
+        $versionRoot=Join-Path $versions ($Version+'-'+$sha.Substring(0,16));$null=[IO.Directory]::CreateDirectory($versionRoot)
         $node=Join-Path $versionRoot 'reach.exe';[IO.File]::WriteAllBytes($node,$bytes)
-        return @{schema=1;version='0.1.0';nodeStateSchema=1;sha256=$sha;nodePath=$node;bindingOwner='S-1-5-21-1-2-3-1001';servicePath=('"'+$node+'" --state-dir "'+$state+'" service --binding-owner S-1-5-21-1-2-3-1001')}
+        return @{schema=1;version=$Version;nodeStateSchema=1;sha256=$sha;nodePath=$node;bindingOwner='S-1-5-21-1-2-3-1001';servicePath=('"'+$node+'" --state-dir "'+$state+'" service --binding-owner S-1-5-21-1-2-3-1001')}
     }
-    $previous=Record 'MZprevious';$next=Record 'MZcandidate'
+    $previous=Record 'MZprevious';$next=Record 'MZcandidate' '0.1.1'
     function Transaction([string]$Phase='switching') {return @{schema=1;phase=$Phase;previous=$previous;previousRunning=$true;target=$next;pathChange=$null;originalProcess=$null;targetProcess=$null}}
     function CompleteRecord([string]$Variant) {
         $items=@{'reach.exe'='MZsame-node';'desktop/reach-desktop.exe'=('MZhelper-'+$Variant)
@@ -133,13 +136,14 @@ try {
     Case 'uncertain maintenance ACK never stops a running original service or switches bytes' {
         $transaction=Transaction 'stopping';[ReachSetupNative]::ServicePath=$previous.servicePath;[ReachSetupNative]::Running=$true;[ReachSetupNative]::Calls.Clear()
         WriteFile $cli ([IO.File]::ReadAllBytes($previous.nodePath));Restore $transaction
-        Assert (-not ([ReachSetupNative]::Calls -contains 'stop-and-wait') -and -not ([ReachSetupNative]::Calls -contains 'stage-disabled')) 'Uncertain ACK switched or stopped original service'
+        Assert (-not ([ReachSetupNative]::Calls -contains 'stop-and-wait') -and -not ([ReachSetupNative]::Calls -contains 'stage-disabled') -and -not ([ReachSetupNative]::Calls -contains 'disable-owned')) 'Uncertain ACK disabled, switched or stopped original service'
         Assert ((Hash ([IO.File]::ReadAllBytes($cli)))-ceq$previous.sha256) 'Original CLI changed'
     }
-    Case 'candidate rollback stops and waits before restoring the previous image and running state' {
+    Case 'candidate rollback disables recovery starts before stopping and restoring the previous image' {
         $transaction=Transaction;[ReachSetupNative]::ServicePath=$next.servicePath;[ReachSetupNative]::Running=$true;[ReachSetupNative]::Calls.Clear()
         WriteJson $manifestPath $next;WriteFile $cli ([IO.File]::ReadAllBytes($next.nodePath));Restore $transaction
-        Assert ([ReachSetupNative]::Calls.IndexOf('stop-and-wait')-lt[ReachSetupNative]::Calls.IndexOf('stage-disabled')) 'Old program configured before candidate stopped'
+        $changes=@([ReachSetupNative]::Calls|Where-Object{$_ -in @('disable-owned','stop-and-wait','stage-disabled','set','start')})
+        Assert (($changes -join ',')-ceq'disable-owned,stop-and-wait,stage-disabled,set,start') 'Candidate must be disabled before stop and old service enabled before start'
         Assert ([ReachSetupNative]::ServicePath-ceq$previous.servicePath -and [ReachSetupNative]::Running) 'Old service not restored'
         Assert ((ReadJson $manifestPath).sha256-ceq$previous.sha256) 'Old manifest not restored'
         Assert ((Hash ([IO.File]::ReadAllBytes($cli)))-ceq$previous.sha256) 'Old CLI not restored'

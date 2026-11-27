@@ -80,7 +80,7 @@ proptest! {
                 settlement: if *not_executed {
                     ToolCallSettlement::NotExecuted
                 } else {
-                    ToolCallSettlement::Completed { output: "Host receipt: finished".into() }
+                    ToolCallSettlement::Completed { output: "Host receipt: finished".into(), images: vec![] }
                 },
             })
             .collect();

@@ -84,7 +84,7 @@ pub(crate) struct ReleasedSession {
     fence: PathBuf,
 }
 
-fn lock_session(session: &Path) -> Result<(File, PathBuf)> {
+pub(crate) fn lock_session(session: &Path) -> Result<(File, PathBuf)> {
     let parent = session.parent().context("Session parent missing")?;
     ensure!(parent.is_dir(), "Session parent must already exist");
     let identity = session.to_str().context("Session path must be Unicode")?;

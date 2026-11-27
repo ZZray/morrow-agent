@@ -37,10 +37,43 @@ test('incomplete, corrupt and cancelled image reads preserve the original operat
 test('ordinary candidate image proof binds native bytes, call and original basis',async()=>{const f=fixture();try{const png=new PNG({width:16,height:12});png.data.fill(128);const original=imageArtifact(f,PNG.sync.write(png));const request=frame(f,'native-image','reach_image',{operationId:original.op.id,artifactId:original.artifactId}),reply=await f.host.invoke(request,{signal:f.signal}),audit=f.host.review(),basis={task_id:f.turn.task_id,run_id:f.turn.run_id,raw_start:2,raw_end:7};const proof={kind:'jsonl-native-images-v1',basis,calls:[{id:request.native_call_id,name:request.tool_name,arguments:request.arguments,result_raw_index:5,is_error:false,text:JSON.stringify(reply.value),images:reply.images!.map(({mime_type,bytes,sha256})=>({mime_type,bytes,sha256}))}]};const path=join(f.directory,'evidence','proof.json'),persist=()=>{const bytes=JSON.stringify(proof)+'\n';writeFileSync(path,bytes);return {tool_images_ref:{path,sha256:createHash('sha256').update(bytes).digest('hex')}};};assert.ok(await verifyNativeImages(persist(),basis,audit,join(f.directory,'evidence')));proof.calls[0].images[0].sha256='0'.repeat(64);await assert.rejects(verifyNativeImages(persist(),basis,audit,join(f.directory,'evidence')),/模型图片/);await assert.rejects(verifyNativeImages({},basis,audit,join(f.directory,'evidence')),/缺少/);
 }finally{f.store.close();f.reach.close();}});
 test('duplicate callback returns its original receipt and changed arguments cannot reuse the call identity',async()=>{const f=fixture();try{const op=f.access.submit(randomUUID(),f.target,{kind:'file.read',path:'fixture.txt'}),request=frame(f,'read','reach_operation',{operationId:op.id}),one=await f.host.invoke(request,{signal:f.signal}),two=await f.host.invoke(request,{signal:f.signal});assert.deepEqual(one,two);assert.equal(f.store.deviceCalls(f.turn).length,1);await assert.rejects(f.host.invoke({...request,arguments:{operationId:randomUUID()}},{signal:f.signal}),/内容已变化/);assert.equal(f.reach.operations(f.session.user.id).length,1);}finally{f.store.close();f.reach.close();}});
+
+test('Desk delegation pins the selected device and budget, and reuses the original Reach receipt',async()=>{
+  const f=fixture();
+  try{
+    const name='reach_agent_delegate',objective='Read the hostname on this device.';
+    const forged=await f.host.invoke(frame(f,'invalid',name,{objective,cwd:'C:\\other',nodeId:randomUUID(),maxRuns:4}),{signal:f.signal});
+    assert.equal(forged.value.error,'invalid_device_tool_arguments');
+    const unavailable=await f.host.invoke(frame(f,'unavailable',name,{objective}),{signal:f.signal});
+    assert.equal(unavailable.value.error,'capability_unavailable');
+    assert.equal(f.reach.operations(f.session.user.id).length,0);
+
+    const node=f.reach.node(f.secret);
+    f.reach.hello(node,'fixture-only',['agent.delegate']);
+    const call=frame(f,'delegated',name,{objective}),pending=f.host.invoke(call,{signal:f.signal});
+    const dispatch=f.reach.claim(f.reach.node(f.secret))!;
+    assert.equal(dispatch.nodeId,f.target.nodeId);
+    assert.equal(dispatch.epoch,f.target.epoch);
+    const operation=f.access.operation(f.target,dispatch.operationId);
+    assert.deepEqual(dispatch.command,{kind:'agent.delegate',sessionId:operation.request_id,cwd:f.target.cwd,objective,sources:[],maxRuns:1,maxCalls:8,maxToolCalls:8,maxSeconds:120,maxOutput:4096});
+    for(const [index,kind] of ['received','running','failed'].entries()){
+      f.reach.record(node,{operationId:dispatch.operationId,dispatchId:dispatch.dispatchId,payloadHash:dispatch.payloadHash,eventId:randomUUID(),sequence:index+1,kind:kind as 'received'|'running'|'failed',data:{fixture:true}});
+    }
+    const receipt=await pending;
+    assert.equal(receipt.value.operation.operationId,dispatch.operationId);
+    assert.equal(receipt.value.operation.execution,'failed');
+    assert.equal(receipt.value.taskAccepted,false);
+    assert.equal(receipt.settlement,'Settled');
+    assert.deepEqual(await f.host.invoke(call,{signal:f.signal}),receipt);
+    await assert.rejects(f.host.invoke({...call,arguments:{objective:'Change the task'}},{signal:f.signal}),/内容已变化/);
+    assert.equal(f.reach.operations(f.session.user.id).length,1);
+    assert.equal(f.host.review().records.length,3);
+  }finally{f.store.close();f.reach.close();}
+});
 test('large event windows advance on UTF-8 and a too-small read rejects without cancelling the original running operation',async()=>{const f=fixture();try{const op=f.access.submit(randomUUID(),f.target,{kind:'command.run',command:'ledger fixture only'}),node=f.reach.node(f.secret),dispatch=f.reach.claim(node)!;const record=(sequence:number,kind:any,data:any)=>f.reach.record(node,{operationId:op.id,dispatchId:dispatch.dispatchId,payloadHash:dispatch.payloadHash,eventId:randomUUID(),sequence,kind,data});record(1,'received',{});record(2,'running',{});const data={text:'中😀'.repeat(6000)};record(3,'output',data);const expected=Buffer.from(JSON.stringify(data)),at=expected.indexOf(Buffer.from('中'));
     const tiny=await f.host.invoke(frame(f,'tiny','reach_event',{operationId:op.id,sequence:3,offset:at,length:1}),{signal:f.signal});assert.equal(tiny.settlement,'Settled');assert.equal(tiny.is_error,true);assert.equal(tiny.value.error,'desk_utf8_window_too_small');assert.equal(f.access.operation(f.target,op.id).cancel_requested,0);
     let offset=0;const parts:Buffer[]=[];while(offset<expected.length){const reply=await f.host.invoke(frame(f,'page-'+offset,'reach_event',{operationId:op.id,sequence:3,offset,length:8192}),{signal:f.signal});assert.equal(reply.is_error,false);assert.ok(Buffer.byteLength(JSON.stringify(reply))<128*1024);const window=reply.value.data;assert.ok(window.nextOffset>offset);parts.push(Buffer.from(window.text));offset=window.nextOffset;}assert.deepEqual(Buffer.concat(parts),expected);assert.equal(f.access.operation(f.target,op.id).cancel_requested,0);
   }finally{f.store.close();f.reach.close();}});
 test('restart recovers a missing operation mapping for cancelled blocked tasks without submitting the intent again',async()=>{const f=fixture();let replacement:DeskHost|undefined,server:ReturnType<typeof reachServer>|undefined;try{f.store.bindDeviceOperation=()=>{throw Error('fixture: failure after Reach commit before Desk mapping');};const request=frame(f,'original','reach_execute',{command:{kind:'file.read',path:'fixture.txt'}}),reply=await f.host.invoke(request,{signal:f.signal});assert.equal(reply.settlement,'Unknown');const op=f.reach.operations(f.session.user.id)[0] as any;assert.ok(op);assert.equal(f.store.deviceCalls(f.turn)[0].operation_id,null);f.store.cancel(f.session.user.id,f.turn.id,'fixture_cancel');f.store.finish(f.turn.id,'cancelled','','Cancelled',{fixtureOnly:true},true);f.store.close();
     replacement=new DeskHost({stateDirectory:f.state,binary:process.execPath,endpoint:'http://127.0.0.1:1/v1',model:'never-called',modelToken:'never-used',developmentLoopback:true});server=reachServer({store:f.reach,desk:replacement,publicOrigin:'http://127.0.0.1',allowInsecureLoopback:true});server.listen(0,'127.0.0.1');await once(server,'listening');const a=server.address();assert.ok(a&&typeof a!=='string');const response=await fetch(`http://127.0.0.1:${a.port}/api/v1/desk/conversations/${f.conversation}`,{headers:{authorization:'Bearer '+f.session.token}});assert.equal(response.status,200);const restored=await response.json() as any;assert.equal(restored.messages[0].status,'cancelled');assert.equal(restored.conversation.blocked,1);assert.equal(restored.messages[0].deviceCalls[0].operationId,op.id);assert.equal(replacement.store.deviceCalls(f.turn)[0].operation_id,op.id);assert.equal(f.reach.operations(f.session.user.id).length,1);assert.equal(f.access.operation(f.target,op.id).execution,'cancelled');const proofFile=readdirSync(f.directory).find(n=>n.startsWith('device-recovery-'))!;assert.equal(JSON.parse(readFileSync(join(f.directory,proofFile),'utf8')).resubmitted,false);
-  }finally{if(replacement)await replacement.close();else try{f.store.close();}catch{}if(server){server.close();server.closeAllConnections();await once(server,'close');}f.reach.close();}});
+  }finally{if(server)await server.shutdown();else{if(replacement)await replacement.close();else try{f.store.close();}catch{}f.reach.close();}}});

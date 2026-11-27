@@ -53,16 +53,21 @@ class CredentialGuard {
 }
 
 export class AgentModelBroker {
-  #url:string; #token:string; #descriptor:AgentModelDescriptor;
+  #url!:string; #token!:string; #descriptor!:AgentModelDescriptor;
   #stopping=false; #closed=false; #closing?:Promise<void>; #store?:ReachStore;
   #active=new Map<string,{controller:AbortController;done:Promise<void>;instanceId:string}>();
   #stops=new Set<Promise<unknown>>();
-  constructor(raw:AgentModelConfig){
+  constructor(raw:AgentModelConfig){this.#apply(raw);}
+  // 网页启用新配置后立即替换。新绑定的任务用新路由；按旧路由绑定的任务再请求模型时按既有合同返回「组织模型路由已变化」。
+  reconfigure(raw:AgentModelConfig){requireCondition(!this.#stopping,503,'agent_model_stopping','模型通道正在关闭');this.#apply(raw);}
+  #apply(raw:AgentModelConfig){
     const c=configSchema.parse(raw),url=new URL(c.endpoint);
-    requireCondition(!url.username&&!url.password&&!url.search&&!url.hash&&/^\/v1\/?$/.test(url.pathname),500,'agent_model_config','模型地址须为不含凭据的 /v1 根路径');
+    // 兼容 OpenAI 接口的自定义请求地址：填到版本路径为止（如 /v1、/api/paas/v4），通道在其后接 /chat/completions。
+    const base=url.pathname.replace(/\/+$/,'');
+    requireCondition(!url.username&&!url.password&&!url.search&&!url.hash&&!/\/(chat\/completions|models)$/.test(base),500,'agent_model_config','模型地址须为不含凭据的 OpenAI 兼容根路径');
     requireCondition(url.protocol==='https:'||(c.development&&url.protocol==='http:'&&['127.0.0.1','[::1]'].includes(url.hostname)),500,'agent_model_config','模型服务须使用 HTTPS；开发仅允许字面环回 HTTP');
     requireCondition(!c.model.includes(c.token)&&c.maxOutput<=c.contextWindow,500,'agent_model_config','模型配置无效');
-    this.#url=url.origin+'/v1/chat/completions';this.#token=c.token;
+    this.#url=url.origin+(base||'/v1')+'/chat/completions';this.#token=c.token;
     const visible={model:c.model,protocol:'openai-completions' as const,capabilitySource:'organization-config' as const,contextWindow:c.contextWindow,maxOutput:c.maxOutput,input:c.imageInput?['text','image'] as ('text'|'image')[]:['text'] as ('text'|'image')[]};
     const routeHash=createHmac('sha256',c.token).update(JSON.stringify({policy:1,url:this.#url,...visible})).digest('hex');this.#descriptor={...visible,routeHash};
   }
@@ -86,9 +91,9 @@ export class AgentModelBroker {
     const controller=new AbortController(),task=this.#stream(store,node,parentId,requestId,request,response,controller),done=task.finally(()=>this.#active.delete(key));this.#active.set(key,{controller,done,instanceId:store.owner.instanceId});return done;
   }
   async #stream(store:ReachStore,node:NodeRow,parentId:string,requestId:string,request:IncomingMessage,response:ServerResponse,controller:AbortController){
-    const {signal}=controller,binding=modelRequestBindingSchema.parse({dispatchId:request.headers['x-reach-dispatch-id'],payloadHash:request.headers['x-reach-payload-hash'],runId:request.headers['x-reach-run-id'],routeHash:request.headers['x-reach-model-route']});
+    const {signal}=controller,route={url:this.#url,token:this.#token,descriptor:this.#descriptor},binding=modelRequestBindingSchema.parse({dispatchId:request.headers['x-reach-dispatch-id'],payloadHash:request.headers['x-reach-payload-hash'],runId:request.headers['x-reach-run-id'],routeHash:request.headers['x-reach-model-route']});
     const rootId=store.agents.parent(node,parentId,binding.dispatchId,binding.payloadHash).op.id;
-    const check=()=>{aborted(signal);store.owner.assertCurrent();const current=store.agents.parent(node,parentId,binding.dispatchId,binding.payloadHash);requireCondition(current.op.id===rootId&&binding.routeHash===this.#descriptor.routeHash,409,'agent_model_route_changed','组织模型路由已变化');store.models.checkRoute(rootId,binding.routeHash);};check();
+    const check=()=>{aborted(signal);store.owner.assertCurrent();const current=store.agents.parent(node,parentId,binding.dispatchId,binding.payloadHash);requireCondition(current.op.id===rootId&&binding.routeHash===route.descriptor.routeHash,409,'agent_model_route_changed','组织模型路由已变化');store.models.checkRoute(rootId,binding.routeHash);};check();
     const closed=()=>{if(!response.writableFinished)controller.abort(failure('agent_model_client_closed',499));},inputClosed=()=>controller.abort(failure('agent_model_client_closed',499));response.once('close',closed);request.once('aborted',inputClosed);
     const monitor=setInterval(()=>{try{check();}catch(error){controller.abort(error);}},50);monitor.unref();
     let reserved=false,responseBytes=0,upstreamStatus:number|undefined,finishReason:string|undefined,usage:unknown,reader:ReadableStreamDefaultReader<Uint8Array>|undefined,upstreamBody:ReadableStream<Uint8Array>|null|undefined,owner:ModelOwnerBinding|undefined;
@@ -98,17 +103,17 @@ export class AgentModelBroker {
       try{for(;;){const item=await guarded(input.next(),signal);if(item.done)break;bytes+=item.value.length;requireCondition(bytes<=MODEL_REQUEST_BYTES,413,'agent_model_request_too_large','模型请求超过 32 MiB');chunks.push(Buffer.from(item.value));}}finally{if(!request.complete)request.destroy();await input.return?.();}
       let text:string;try{text=new TextDecoder('utf-8',{fatal:true}).decode(Buffer.concat(chunks));}catch{throw failure('agent_model_invalid_request',400);}
       requireCondition(validDesktopArguments(text),400,'agent_model_invalid_request','模型请求须为有效有限 JSON 对象');const body=requestSchema.parse(JSON.parse(text));
-      requireCondition(body.model===this.#descriptor.model,400,'agent_model_mismatch','须使用组织固定模型');
+      requireCondition(body.model===route.descriptor.model,400,'agent_model_mismatch','须使用组织固定模型');
       requireCondition((body.max_tokens===undefined)!==(body.max_completion_tokens===undefined),400,'agent_model_output_limit','须明确一个输出上限字段');
       const parent=store.agents.parent(node,parentId,binding.dispatchId,binding.payloadHash);
-      requireCondition((body.max_tokens??body.max_completion_tokens!)<=Math.min(parent.command.maxOutput,this.#descriptor.maxOutput),400,'agent_model_output_limit','模型输出超过原委托上限');
-      for(const message of body.messages as any[]){if(Array.isArray(message?.content))for(const block of message.content)if(block?.type==='image_url')requireCondition(this.#descriptor.input.includes('image'),400,'agent_model_image_unsupported','组织配置未声明图像输入能力');}
-      check();owner=Object.freeze(store.models.reserve(node,parentId,requestId,binding,createHash('sha256').update(text).digest('hex'),this.#descriptor).owner);reserved=true;
-      const upstream=await fetch(this.#url,{method:'POST',redirect:'manual',signal,headers:{authorization:'Bearer '+this.#token,'content-type':'application/json',accept:'text/event-stream'},body:text});upstreamStatus=upstream.status;upstreamBody=upstream.body;
+      requireCondition((body.max_tokens??body.max_completion_tokens!)<=Math.min(parent.command.maxOutput,route.descriptor.maxOutput),400,'agent_model_output_limit','模型输出超过原委托上限');
+      for(const message of body.messages as any[]){if(Array.isArray(message?.content))for(const block of message.content)if(block?.type==='image_url')requireCondition(route.descriptor.input.includes('image'),400,'agent_model_image_unsupported','组织配置未声明图像输入能力');}
+      check();owner=Object.freeze(store.models.reserve(node,parentId,requestId,binding,createHash('sha256').update(text).digest('hex'),route.descriptor).owner);reserved=true;
+      const upstream=await fetch(route.url,{method:'POST',redirect:'manual',signal,headers:{authorization:'Bearer '+route.token,'content-type':'application/json',accept:'text/event-stream'},body:text});upstreamStatus=upstream.status;upstreamBody=upstream.body;
       if(!upstream.ok){await upstream.body?.cancel().catch(()=>{});throw failure('agent_model_upstream_http');}
       requireCondition(upstream.headers.get('content-type')?.split(';')[0].trim().toLowerCase()==='text/event-stream'&&upstream.body,502,'agent_model_upstream_protocol','上游未返回 SSE');
       store.models.streaming(rootId,requestId,owner);response.writeHead(200,{'content-type':'text/event-stream; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff','x-accel-buffering':'no'});
-      reader=upstream.body.getReader();const decoder=new TextDecoder('utf-8',{fatal:true}),guard=new CredentialGuard(this.#token);let pending='',frameLines:string[]=[],frameBytes=0,finished=false,doneMarker=false;
+      reader=upstream.body.getReader();const decoder=new TextDecoder('utf-8',{fatal:true}),guard=new CredentialGuard(route.token);let pending='',frameLines:string[]=[],frameBytes=0,finished=false,doneMarker=false;
       const frame=async()=>{
         if(!frameLines.length)return;const lines=frameLines;frameLines=[];frameBytes=0;
         const data=lines.filter(line=>line==='data'||line.startsWith('data:')).map(line=>line==='data'?'':line.slice(5).replace(/^ /,'')).join('\n');
@@ -146,10 +151,15 @@ export class AgentModelBroker {
   }
 }
 
-export function agentModelFromEnvironment(env:NodeJS.ProcessEnv):AgentModelBroker|undefined{
+// 只读取并移除环境里的令牌；是否生效由启动流程按网页设置决定。
+export function agentModelConfigFromEnvironment(env:NodeJS.ProcessEnv){
   const token=env.REACH_AGENT_MODEL_TOKEN;delete env.REACH_AGENT_MODEL_TOKEN;
   const fields=[env.REACH_AGENT_MODEL_URL,env.REACH_AGENT_MODEL_ID,token,env.REACH_AGENT_MODEL_CONTEXT,env.REACH_AGENT_MODEL_MAX_OUTPUT,env.REACH_AGENT_MODEL_IMAGE_INPUT];
   if(fields.every(value=>!value))return undefined;
   requireCondition(fields.every(value=>!!value)&&['0','1'].includes(env.REACH_AGENT_MODEL_IMAGE_INPUT!),500,'agent_model_config','组织模型配置须完整，图像能力必须明确为 0 或 1');
-  return new AgentModelBroker({endpoint:env.REACH_AGENT_MODEL_URL!,token:token!,model:env.REACH_AGENT_MODEL_ID!,contextWindow:Number(env.REACH_AGENT_MODEL_CONTEXT),maxOutput:Number(env.REACH_AGENT_MODEL_MAX_OUTPUT),imageInput:env.REACH_AGENT_MODEL_IMAGE_INPUT==='1',development:env.REACH_DEVELOPMENT==='1'});
+  return {endpoint:env.REACH_AGENT_MODEL_URL!,token:token!,model:env.REACH_AGENT_MODEL_ID!,contextWindow:Number(env.REACH_AGENT_MODEL_CONTEXT),maxOutput:Number(env.REACH_AGENT_MODEL_MAX_OUTPUT),imageInput:env.REACH_AGENT_MODEL_IMAGE_INPUT==='1'};
+}
+export function agentModelFromEnvironment(env:NodeJS.ProcessEnv):AgentModelBroker|undefined{
+  const config=agentModelConfigFromEnvironment(env);
+  return config?new AgentModelBroker({...config,development:env.REACH_DEVELOPMENT==='1'}):undefined;
 }

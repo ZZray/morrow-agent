@@ -148,11 +148,22 @@ export interface ToolCallFrame extends RpcEnvelope {
   arguments: Record<string, unknown>;
 }
 
+export interface SettledToolImage {
+  path: string;
+  root?: string;
+  sha256: string;
+  bytes: number;
+  mime_type: 'image/png';
+  width: number;
+  height: number;
+}
+
 export interface ToolResult {
   value: unknown;
   is_error: boolean;
   settlement: Settlement;
   operation_receipt: string;
+  images?: SettledToolImage[];
 }
 
 export interface ReviewBasis {
@@ -347,13 +358,16 @@ export interface ResumeReceipt {
   settlement: Settlement;
   tool_calls: {
     call_id: string;
-    settlement: { kind: 'not_executed' } | { kind: 'completed' | 'failed'; output: string };
+    settlement: { kind: 'not_executed' } | { kind: 'failed'; output: string } | { kind: 'completed'; output: string; images?: SettledToolImage[] };
   }[];
   evidence: string[];
 }
 
 export type PayloadFrame<K extends string, P extends string, T> = RpcEnvelope & { kind: K }
   & ({ [Key in P]: T } | { [Key in `${P}_ref`]: JsonReference });
+export type VerifyPayloadFrame<K extends string, P extends string, T> = PayloadFrame<K, P, T> & {
+  tool_images_ref?: JsonReference;
+};
 
 export interface CallbackContext<F> {
   signal: AbortSignal;
@@ -368,12 +382,12 @@ export type ReconcileCallback = (
 
 export interface HostCallbacks {
   tool(frame: ToolCallFrame, context: { signal: AbortSignal }): Awaitable<ToolResult>;
-  verify(candidate: Candidate, context: CallbackContext<PayloadFrame<'verify_request', 'candidate', Candidate>>): Awaitable<ReviewReceipt>;
+  verify(candidate: Candidate, context: CallbackContext<VerifyPayloadFrame<'verify_request', 'candidate', Candidate>>): Awaitable<ReviewReceipt>;
   prepare(continuation: Continuation, context: CallbackContext<PayloadFrame<'prepare_request', 'continuation', Continuation>>): Awaitable<PreparedContinuation>;
   reviewArtifacts?(review: ArtifactReview, context: CallbackContext<PayloadFrame<'review_artifacts_request', 'review', ArtifactReview>>): Awaitable<ToolArtifact[]>;
-  verify_budget_snapshot?(snapshot: BudgetStopSnapshot, context: CallbackContext<PayloadFrame<'verify_budget_request', 'snapshot', BudgetStopSnapshot>>): Awaitable<ReviewReceipt>;
+  verify_budget_snapshot?(snapshot: BudgetStopSnapshot, context: CallbackContext<VerifyPayloadFrame<'verify_budget_request', 'snapshot', BudgetStopSnapshot>>): Awaitable<ReviewReceipt>;
   prepare_budget_stop_continuation?(continuation: Continuation<BudgetStopSnapshot>, context: CallbackContext<PayloadFrame<'prepare_budget_request', 'budget_continuation', Continuation<BudgetStopSnapshot>>>): Awaitable<PreparedContinuation>;
-  verifyStopSnapshot?(snapshot: StopSnapshot, context: CallbackContext<PayloadFrame<'verify_stop_request', 'snapshot', StopSnapshot>>): Awaitable<ReviewReceipt>;
+  verifyStopSnapshot?(snapshot: StopSnapshot, context: CallbackContext<VerifyPayloadFrame<'verify_stop_request', 'snapshot', StopSnapshot>>): Awaitable<ReviewReceipt>;
   prepareStopContinuation?(continuation: Continuation<StopSnapshot>, context: CallbackContext<PayloadFrame<'prepare_stop_request', 'stop_continuation', Continuation<StopSnapshot>>>): Awaitable<PreparedContinuation>;
   reconcileResume?: ReconcileCallback;
 }

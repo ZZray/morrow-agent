@@ -1,4 +1,4 @@
-import type { TaskConfig } from './client.mjs';
+import type { JsonReference, TaskConfig, TaskOutcome } from './client.mjs';
 
 export interface LibraryRoots {
   environment_dir: string;
@@ -62,6 +62,8 @@ export type ManagementRequest = { id?: string } & (
   | { operation: 'queue_cancel'; directory: string; assignment_id: string; at_ms: number }
   | { operation: 'queue_watchdog'; directory: string; at_ms: number }
   | { operation: 'queue_enqueue'; directory: string; trigger: QueueTrigger; mandate: QueueMandate; assignment: QueueAssignment; at_ms: number }
+  | { operation: 'session_inspect'; request: Record<string, unknown>; output_directory: string; hold?: { version: 1; lease_id: string; timeout_ms: number } }
+  | { operation: 'settled_task_close'; declaration_ref: JsonReference }
 );
 export interface ManagementOptions {
   binary: string;
@@ -74,3 +76,7 @@ export class ManagementError extends Error {
   delivery: 'not_started' | 'validated' | 'unknown';
 }
 export function sendManagement<T = unknown>(options: ManagementOptions): Promise<T>;
+export function inspectSession(options: { binary: string; binaryArgs?: string[]; request: Record<string, unknown>; operationDirectory: string; timeoutMs?: number; env?: Record<string, string> }): Promise<{ delivery: 'validated'; result: any; result_ref: JsonReference }>;
+export function closeTask(options: { binary: string; binaryArgs?: string[]; declarationRef: JsonReference; operationDirectory: string; timeoutMs?: number; env?: Record<string, string> }): Promise<{ delivery: 'validated'; declaration_ref: JsonReference; result: { version: 1; kind: 'settled_task_closed'; declaration_ref: JsonReference; original_outcome: TaskOutcome; task_accepted: false; fence_released: true; close_receipt_ref: JsonReference } }>;
+export function readCloseOperation(options: { declarationRef: JsonReference; operationDirectory: string }): Promise<{ delivery: 'validated'; declaration_ref: JsonReference; result: { version: 1; kind: 'settled_task_closed'; declaration_ref: JsonReference; original_outcome: TaskOutcome; task_accepted: false; fence_released: true; close_receipt_ref: JsonReference } }>;
+export function queryProvenance(options: { binary: string; binaryArgs?: string[]; scopes: EvidenceScope[]; query?: ProvenanceQuery; timeoutMs?: number; env?: Record<string, string> }): Promise<{ entries: any[]; scope_errors: any[] }>;

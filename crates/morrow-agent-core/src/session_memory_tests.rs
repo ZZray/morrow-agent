@@ -246,7 +246,7 @@ fn closed_turn_summary_retains_a_locator_for_a_long_note_read() {
     let store = fixture.store.lock().unwrap();
     let limit = serde_json::to_vec(&messages[4..]).unwrap().len() + 256;
     let projection = store.projection_with_note_budget(&messages, limit).unwrap();
-    let (cut, summary) = store.summary_content_with_projection(&messages, &projection, 4, limit).unwrap().unwrap();
+    let (cut, summary) = store.summary_content_with_image_limit(&messages, &projection, 4, limit, 0).unwrap().unwrap();
     assert_eq!(cut, 4);
     let rpi_ai::UserContent::Text(summary) = summary else { panic!("expected a text summary") };
     assert!(!summary.contains("summary-tail-marker"));
@@ -277,7 +277,7 @@ fn closed_turn_summary_retains_a_locator_for_a_long_note_read() {
     let limit = 6000;
     assert!(serde_json::to_vec(&messages[4..]).unwrap().len() > limit);
     let projected = store.projection_with_note_budget(&messages, limit).unwrap();
-    assert!(store.summary_content_with_projection(&messages, &projected, 4, limit).unwrap().is_some());
+    assert!(store.summary_content_with_image_limit(&messages, &projected, 4, limit, 0).unwrap().is_some());
 }
 
 #[test]

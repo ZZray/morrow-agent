@@ -83,11 +83,30 @@ const toolUnknown = (frame, receipt) => ({ ...envelope(frame, 'tool_reply'),
   result: { value: { error: 'Host callback outcome unknown; inspect original receipts; no replay' },
     is_error: true, settlement: 'Unknown', operation_receipt: receipt } });
 
+function validSettledImage(image) {
+  return (exact(image, ['path', 'sha256', 'bytes', 'mime_type', 'width', 'height'])
+      || (exact(image, ['path', 'root', 'sha256', 'bytes', 'mime_type', 'width', 'height']) && typeof image.root === 'string' && path.isAbsolute(image.root)))
+    && typeof image.path === 'string' && path.isAbsolute(image.path)
+    && sha(image.sha256) && image.mime_type === 'image/png'
+    && Number.isSafeInteger(image.bytes) && image.bytes > 0 && image.bytes <= 8 * 1024 * 1024
+    && Number.isSafeInteger(image.width) && image.width >= 1 && image.width <= 8192
+    && Number.isSafeInteger(image.height) && image.height >= 1 && image.height <= 8192
+    && image.width * image.height <= 16_777_216;
+}
 function validateToolResult(result) {
-  requireValue(exact(result, ['value', 'is_error', 'settlement', 'operation_receipt']), 'invalid tool callback result fields');
+  const hasImages = object(result) && Object.hasOwn(result, 'images');
+  requireValue(exact(result, ['value', 'is_error', 'settlement', 'operation_receipt'])
+    || exact(result, ['value', 'is_error', 'settlement', 'operation_receipt', 'images']), 'invalid tool callback result fields');
   requireValue(typeof result.is_error === 'boolean' && ['Settled', 'Unknown'].includes(result.settlement)
     && nonempty(result.operation_receipt), 'invalid tool callback settlement');
-  requireValue(Buffer.byteLength(JSON.stringify(result)) <= RESULT_BYTES, 'tool result exceeds protocol bound');
+  if (hasImages) {
+    requireValue(result.settlement === 'Settled' && result.is_error === false
+      && Array.isArray(result.images) && result.images.length <= 4
+      && result.images.every(validSettledImage)
+      && result.images.reduce((sum, img) => sum + img.bytes, 0) <= 16 * 1024 * 1024, 'invalid tool callback images');
+  }
+  const coreResult = { value: result.value, is_error: result.is_error, settlement: result.settlement, operation_receipt: result.operation_receipt };
+  requireValue(Buffer.byteLength(JSON.stringify(coreResult)) <= RESULT_BYTES, 'tool result exceeds protocol bound');
 }
 function validateReceipt(receipt, candidate) {
   requireValue(exact(receipt, ['basis', 'committed', 'settlement', 'verdict', 'evidence']), 'invalid review receipt fields');
@@ -253,12 +272,20 @@ const reconcileError = (category) => Object.assign(new Error(category), { catego
  * otherwise throws an Error whose message and `category` are `reconcile_receipt_invalid`.
  */
 export function reconcileReplyFor(frame, receipt) {
+  let totalImageBytes = 0;
   const settlement = (value) => object(value) && (value.kind === 'not_executed' ? exact(value, ['kind'])
-    : ['completed', 'failed'].includes(value.kind) && exact(value, ['kind', 'output']) && typeof value.output === 'string');
+    : value.kind === 'failed' ? (exact(value, ['kind', 'output']) && typeof value.output === 'string')
+    : value.kind === 'completed' && (exact(value, ['kind', 'output']) || exact(value, ['kind', 'output', 'images']))
+      && typeof value.output === 'string'
+      && (!Object.hasOwn(value, 'images') || (Array.isArray(value.images) && value.images.length <= 4 && value.images.every((img) => {
+        if (!validSettledImage(img)) return false;
+        totalImageBytes += img.bytes;
+        return totalImageBytes <= 16 * 1024 * 1024;
+      }))));
   const valid = exact(receipt, ['committed', 'settlement', 'tool_calls', 'evidence'])
     && typeof receipt.committed === 'boolean' && ['Settled', 'Unknown'].includes(receipt.settlement)
     && Array.isArray(receipt.evidence) && receipt.evidence.every((item) => typeof item === 'string')
-    && Array.isArray(receipt.tool_calls) && receipt.tool_calls.every((call) => exact(call, ['call_id', 'settlement'])
+    && Array.isArray(receipt.tool_calls) && receipt.tool_calls.length <= 16 && receipt.tool_calls.every((call) => exact(call, ['call_id', 'settlement'])
       && typeof call.call_id === 'string' && settlement(call.settlement));
   if (!valid) throw reconcileError('reconcile_receipt_invalid');
   const reply = { ...envelope(frame, 'reconcile_reply'), receipt };
@@ -625,8 +652,13 @@ export async function startTask({ binary, start, modelToken, operationDirectory,
     if (['verify_request','prepare_request','verify_budget_request','prepare_budget_request','verify_stop_request','prepare_stop_request','review_artifacts_request'].includes(frame.kind)) {
       const payload = ({ verify_request:'candidate',prepare_request:'continuation',verify_budget_request:'snapshot',prepare_budget_request:'budget_continuation',
         verify_stop_request:'snapshot',prepare_stop_request:'stop_continuation',review_artifacts_request:'review' })[frame.kind];
-      requireValue(exact(frame, ['kind','version','rpc_id','task_id','run_id',payload])
-        || exact(frame, ['kind','version','rpc_id','task_id','run_id',`${payload}_ref`]), 'invalid callback payload fields');
+      const base = ['kind','version','rpc_id','task_id','run_id'];
+      const allowsImageProof = ['verify_request','verify_budget_request','verify_stop_request'].includes(frame.kind);
+      const hasImageProof = allowsImageProof && Object.hasOwn(frame, 'tool_images_ref');
+      const extra = hasImageProof ? ['tool_images_ref'] : [];
+      requireValue((exact(frame, [...base, payload, ...extra]) || exact(frame, [...base, `${payload}_ref`, ...extra]))
+        && (!hasImageProof || (exact(frame.tool_images_ref, ['path','sha256']) && typeof frame.tool_images_ref.path === 'string'
+          && path.isAbsolute(frame.tool_images_ref.path) && sha(frame.tool_images_ref.sha256))), 'invalid callback payload fields');
     }
     seen.add(frame.rpc_id);
     const item = { frame, controller: new AbortController(), settled: false, replied: false };

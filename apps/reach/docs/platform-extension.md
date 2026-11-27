@@ -1,19 +1,44 @@
 # Reach Desk 云端对话扩展
 
-作者：Ray Zhang（Ray）。建立：2026-11-02；更新：2026-11-04。状态：平台已迁入 Reach 的 platform/ 子项目，云端 Host 与设备原图已有本地分项证据；完整扩展验收及 Ray 启用仍未完成。用户已确认正式名称 Reach Desk，命令名 reach-desk。
+作者 Ray Zhang（Ray）。建立于 2026-11-02，更新于 2026-11-25。正式名称为 Reach Desk，命令为 `reach-desk`。自 2026-11-24 起 Reach 默认带云端对话：前端并入控制台，服务默认组合对话运行时（见[统一前端决定](knowledge/product-decisions.md#unified-frontend-20261124)）。真实模型的纯云端流式对话已在本地验证，nmrkit 部署待实施。
 
 用户原话及对旧“无云端聊天”要求的修正见[产品决定](knowledge/product-decisions.md)。基础 52 项保持原 ID 与范围，另设 X01–X05 选装任务，统一维护在[任务清单](task-checklist.md)。
 
-实现目标是把原 HandWave 收敛为 Reach 内部的 Reach Desk 子项目。用户进一步要求新产品不再叫 HandWave，源码及后续维护进入 Reach，不继续在旧项目开发。维护入口为 [platform/README.md](../platform/README.md)；下文 HandWave 仅指旧产品、来源或尚未迁移的兼容行为。“Ray 可集成”不等于已经启用或立即退役旧服务。
+nmrkit 使用 Morrow 中现有的 Reach Desk。HandWave 提供对话与工具过程的交互参考。旧代码的迁入及兼容记录保留在本文后半部分，活动 Host 的维护入口见 [platform/README.md](../platform/README.md)。
 
-## 两种交付组合
+## 交付形态（2026-11-24 起）
 
-| 组合 | 用户可做什么 | 部署内容 |
-|---|---|---|
-| 默认 Reach | 配对、查看设备和操作；本地 Codex 经 CLI/MCP 调用工具或委托现场任务 | Reach service/admin、controller 和现场 Node；无 Reach Desk 聊天资源、路由、Host 或聊天数据库，不要求云端聊天模型配置 |
-| Reach + Reach Desk（Ray 可选） | 在网页直接对话；选择已配对的 Reach 设备读取信息、执行任务并查看证据 | 基础 Reach 加可选聊天界面、会话存储、云端 Host 和组织模型接线；现场仍只安装 Reach Node |
+Reach 只有一种交付形态：默认带云端对话。原「默认 Reach / Reach + Reach Desk 按站点启用」两种组合不再区分。
 
-“默认不集成”应落实到发行依赖和启动行为，不能只隐藏一个聊天按钮。基础安装在没有 Reach Desk 包、模型凭据或聊天库时仍须正常启动和使用。扩展启用由部署配置决定，不增加用户逐工具授权或权限模式。
+| 部分 | 现状 |
+|---|---|
+| 前端 | 对话是控制台里的一个页面（`#/desk/<对话 ID>`），与设备、操作、设置共用外框、导航、登录会话和主题。代码在 `src/admin/desk*.ts`，由控制台构建统一编译。旧 `/desk/?c=` 地址由基础服务 308 跳转。 |
+| 服务 | `src/service/main.ts` 启动时由 `src/service/desk-runtime.ts` 默认组合 Desk Host；`platform/src/main.ts` 仅作兼容入口。 |
+| 运行组件 | `morrow-agent-jsonl` 取自 `REACH_DESK_SIDECAR`（绝对路径）或 PATH；状态目录默认 `<REACH_DATA_DIR>/desk`，可用 `REACH_DESK_STATE_DIR` 覆盖。 |
+| 模型 | 在设置页配置供应商与模型，测试通过并启用后立即生效；`REACH_DESK_ENDPOINT/MODEL/MODEL_TOKEN` 只在首次启动时导入。 |
+| 缺组件或缺模型 | 服务照常启动；对话接口不开放；设置页与对话页如实显示原因与补齐方法。 |
+
+现场 Windows 仍使用同一个 Reach Worker 与 Morrow Agent，不维护第二套被控端、配对或操作账本。
+
+## nmrkit 启用目标
+
+从 `https://nmrkit.ciqtek.com/reach/` 登录后进入「对话」（`/reach/#/desk`）。浏览器复用 Reach PIN 会话及写请求 CSRF 校验；会话过期回到控制台登录页，登录后回到原对话。部署到 RayWorkbench 时改用工作台的同一套认证（待实施）。
+
+部署还需要：
+
+- 与服务器平台匹配的 `morrow-agent-jsonl`（Linux）；
+- 受保护的数据目录（含 `desk/`）；
+- 编译后的 `dist/admin`；
+- 在设置页启用生产模型。
+
+上线验收应覆盖：
+
+- 用 PIN 进入；
+- 纯云端流式对话；
+- 选定已配对设备发出真实 Agent 任务，并读取原回执；
+- 会话刷新后结果保留。
+
+2026-11-24 的公开检查中，`/reach/healthz` 返回 200，`/reach/desk/` 返回 404（线上仍是旧版）。2026-11-25 本地以真实模型（CAS，经只在内存持有密钥的本地转发器）验证了纯云端流式对话、停止和刷新找回。
 
 不需要设备也能完成纯云端对话。选择设备后，操作以明确的 Node ID、配对 epoch 和工作目录为目标；云端对话不会因为缺少目标而默认在 Ray 服务器运行命令。切换目标作用于后续提交，正在执行的 Run 和 operation 保留原目标，避免同一动作跨机器重做。这是执行位置合同，不是权限分层。
 
@@ -49,6 +74,8 @@ Ray 浏览器继续使用已上线的统一登录。扩展 HTTP 入口验证同�
 
 页面必须区分模型在回答、工具已提交、现场执行中、成功、失败、取消请求及效果未知。最终成功依据 Reach 收据和实际产物，而不是模型说“完成”。模型可读取的图片/文件与页面缩略展示分别验证；聊天窗口出现图片不证明模型已接收到图片。
 
+
+Reach Desk 宿主同样默认启用 `artifact_review: true` 与 `guidance: true`：已结算设备工具调用生成 `verified` `ToolArtifact`（`verifier = "reach-desk-host"`），通过 `GET /api/v1/desk/conversations/:id/provenance` 跨同会话历史任务聚合 `provenance_query`；运行中消息支持 `POST/GET /api/v1/desk/messages/:id/guidance` 幂等引导（中途取消的引导引用在 `effects-review.json` 中与 `jsonl-guidance.json` 逐条核对，进程中断保留 `unknown`）；显式声明多 Run 额度的已完成消息支持 `POST /api/v1/desk/messages/:id/continue` 跨进程 `continue_reviewed` 续作，篡改 `released.json` 直接拒绝准入。
 ## 已核对的来源与可复用部分
 
 以下为迁入前核对的固定来源，不能据此推定线上二进制版本。源码迁入与兼容构建结果另见[迁入证据](evidence/platform-migration-20261102.md)：

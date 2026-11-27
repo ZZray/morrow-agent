@@ -207,6 +207,7 @@ impl HarnessHost for QueueHost {
                     call_id: call.id.clone(),
                     settlement: ToolCallSettlement::Completed {
                         output: "Host checked the original committed effect".into(),
+                        images: vec![],
                     },
                 })
                 .collect(),

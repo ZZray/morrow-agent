@@ -677,14 +677,16 @@ impl Store {
         old_count: usize,
         limit: usize,
     ) -> Result<Option<(usize, rpi_ai::UserContent)>> {
-        if serde_json::to_vec(projected)?.len() <= limit && !crate::session_journal::hot_limit(messages)? {
+        let previous =
+            self.covered_prefix().checked_sub(self.raw_base).context("summary prefix predates raw window")?;
+        let hot_start = previous.min(messages.len());
+        if serde_json::to_vec(projected)?.len() <= limit && !crate::session_journal::hot_limit(&messages[hot_start..])?
+        {
             return Ok(None);
         }
         if old_count > messages.len() {
             bail!("current run exceeds context byte budget; narrow the request or tool output");
         }
-        let previous =
-            self.covered_prefix().checked_sub(self.raw_base).context("summary prefix predates raw window")?;
         // Fit the visible part of the current Run without charging it for closed turns.
         let mut current = messages[old_count.max(previous)..].to_vec();
         self.hide_unadopted(&mut current)?;
@@ -756,6 +758,106 @@ impl Store {
         if bytes > limit {
             bail!("summary input exceeds context byte budget");
         }
+        Ok(Some((cut, content)))
+    }
+
+    pub(crate) fn summary_content_with_image_limit(
+        &self,
+        messages: &[AgentMessage],
+        projected: &[AgentMessage],
+        old_count: usize,
+        text_limit: usize,
+        image_limit: usize,
+    ) -> Result<Option<(usize, rpi_ai::UserContent)>> {
+        let (projected_text, projected_images) = crate::png_image::split_messages_bytes(projected)?;
+        let previous =
+            self.covered_prefix().checked_sub(self.raw_base).context("summary prefix predates raw window")?;
+        let prior_end = old_count.min(messages.len());
+        let uncovered_old_images = if previous < prior_end {
+            crate::png_image::messages_image_bytes(&messages[previous..prior_end])
+        } else {
+            0
+        };
+        if projected_text <= text_limit
+            && projected_images <= image_limit
+            && uncovered_old_images < crate::png_image::PRIOR_IMAGE_COMPACT_BYTES
+            && !crate::session_journal::hot_limit(&messages[previous.min(messages.len())..])?
+        {
+            return Ok(None);
+        }
+        if old_count > messages.len() {
+            bail!("current run exceeds context byte budget; narrow the request or tool output");
+        }
+        // A projection may have omitted closed read pairs. Test whether the
+        // visible current Run can fit on its own, using its native boundaries.
+        let mut current = messages[old_count.max(previous)..].to_vec();
+        self.hide_unadopted(&mut current)?;
+        session_memory_projection::fit(&mut current, text_limit)?;
+        let (current_text, current_images) = crate::png_image::split_messages_bytes(&current)?;
+        if current_text > text_limit || current_images > image_limit {
+            bail!("current run exceeds context byte budget; narrow the request or tool output");
+        }
+        let mut cut = old_count;
+        let mut retained = 0;
+        for index in (previous..old_count).rev() {
+            retained += serde_json::to_vec(&messages[index])?.len();
+            if matches!(messages[index], AgentMessage::User(_)) {
+                cut = index;
+                if retained >= RECENT_BYTES {
+                    break;
+                }
+            }
+        }
+        if cut <= previous && old_count > previous {
+            cut = old_count;
+        }
+        if cut <= previous {
+            bail!("context projection exceeds byte budget with no closed prior turn available to compact");
+        }
+        let mut closed = messages[previous..cut].to_vec();
+        self.hide_unadopted(&mut closed)?;
+        let mut attachments = Vec::new();
+        let mut attachment_image_bytes = 0usize;
+        for (message_index, message) in closed.iter_mut().enumerate() {
+            let content = match message {
+                AgentMessage::User(user) => match &mut user.content {
+                    rpi_ai::UserContent::Text(_) => continue,
+                    rpi_ai::UserContent::Blocks(blocks) => blocks,
+                },
+                AgentMessage::ToolResult(result) => &mut result.content,
+                AgentMessage::Assistant(assistant) => &mut assistant.content,
+                AgentMessage::Custom(_) => continue,
+            };
+            for (content_index, block) in content.iter_mut().enumerate() {
+                if let Content::Image(image) = block {
+                    let reference = json!({"summary_image":{
+                        "message_index":self.raw_base + previous + message_index,
+                        "content_index":content_index,
+                        "mime_type":image.mime_type,
+                        "base64_sha256":format!("{:x}",Sha256::digest(image.data.as_bytes()))
+                    }})
+                    .to_string();
+                    attachment_image_bytes = attachment_image_bytes.saturating_add(image.data.len());
+                    attachments.push(Content::text(reference.clone()));
+                    attachments.push(Content::Image(image.clone()));
+                    *block = Content::text(reference);
+                }
+            }
+        }
+        session_memory_projection::summarize_notes(&mut closed)?;
+        let text = serde_json::to_string(
+            &json!({"source_directory":self.directory(),"previous_summary":self.summary,"closed_old_messages":closed}),
+        )?;
+        if text.len() > text_limit || attachment_image_bytes > image_limit {
+            bail!("summary input exceeds context byte budget");
+        }
+        let content = if attachments.is_empty() {
+            rpi_ai::UserContent::Text(text)
+        } else {
+            let mut blocks = vec![Content::text(text)];
+            blocks.append(&mut attachments);
+            rpi_ai::UserContent::Blocks(blocks)
+        };
         Ok(Some((cut, content)))
     }
     pub fn install_summary(&mut self, text: &str, cut: usize, messages: &[AgentMessage], run: &str) -> Result<()> {

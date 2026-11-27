@@ -1,7 +1,8 @@
 import { spawn } from 'node:child_process';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
+import { promises as fs } from 'node:fs';
 import path from 'node:path';
-import { TextDecoder } from 'node:util';
+import { isDeepStrictEqual, TextDecoder } from 'node:util';
 import { readCheckedJsonReference } from './client.mjs';
 
 const FRAME_BYTES = 262144;
@@ -125,4 +126,130 @@ export async function sendManagement({ binary, binaryArgs = [], request, timeout
     });
     child.stdin.end(bytes);
   });
+}
+
+const sha256 = (bytes) => createHash('sha256').update(bytes).digest('hex');
+
+async function writeAtomicExclusive(file, value) {
+  const bytes = Buffer.from(`${JSON.stringify(value, null, 2)}\n`);
+  const handle = await fs.open(file, 'wx');
+  try {
+    await handle.writeFile(bytes);
+    await handle.sync();
+  } finally {
+    await handle.close();
+  }
+  return { path: await fs.realpath(file), sha256: sha256(bytes) };
+}
+
+export async function inspectSession({ binary, binaryArgs = [], request, operationDirectory, timeoutMs = 15000, env = {} }) {
+  if (typeof operationDirectory !== 'string' || !path.isAbsolute(operationDirectory)) {
+    throw new ManagementError('inspectSession requires an absolute operationDirectory', 'not_started');
+  }
+  await fs.mkdir(operationDirectory, { recursive: true });
+  const response = await sendManagement({
+    binary,
+    binaryArgs,
+    request: { operation: 'session_inspect', request, output_directory: operationDirectory },
+    timeoutMs,
+    env,
+  });
+  if (!object(response) || response.kind !== 'session_inspection_result' || !object(response.result_ref)) {
+    throw new ManagementError('invalid session_inspection_result payload');
+  }
+  const record = await readCheckedJsonReference(response.result_ref, operationDirectory, RESULT_BYTES);
+  const envelope = { delivery: 'validated', result: record, result_ref: response.result_ref };
+  await writeAtomicExclusive(path.join(operationDirectory, 'client-result.json'), envelope);
+  return envelope;
+}
+
+export async function closeTask({ binary, binaryArgs = [], declarationRef, operationDirectory, timeoutMs = 15000, env = {} }) {
+  if (typeof operationDirectory !== 'string' || !path.isAbsolute(operationDirectory)
+    || !exact(declarationRef, ['path', 'sha256']) || typeof declarationRef.path !== 'string'
+    || !path.isAbsolute(declarationRef.path) || !/^[0-9a-f]{64}$/.test(declarationRef.sha256)) {
+    throw new ManagementError('invalid closeTask options', 'not_started');
+  }
+  await fs.mkdir(operationDirectory, { recursive: true });
+  const declDir = path.dirname(declarationRef.path);
+  const decl = await readCheckedJsonReference(declarationRef, declDir, 16 * 1024 * 1024);
+  const receiptDir = typeof decl?.request?.evidence_dir === 'string' && path.isAbsolute(decl.request.evidence_dir)
+    ? decl.request.evidence_dir
+    : declDir;
+  const result = await sendManagement({
+    binary,
+    binaryArgs,
+    request: { operation: 'settled_task_close', declaration_ref: declarationRef },
+    timeoutMs,
+    env,
+  });
+  if (!object(result) || result.kind !== 'settled_task_closed' || result.task_accepted !== false
+    || !object(result.close_receipt_ref)) {
+    throw new ManagementError('invalid settled_task_closed response');
+  }
+  await readCheckedJsonReference(result.close_receipt_ref, receiptDir, 16 * 1024 * 1024);
+  const envelope = {
+    delivery: 'validated',
+    declaration_ref: { path: await fs.realpath(declarationRef.path), sha256: declarationRef.sha256 },
+    result,
+  };
+  await writeAtomicExclusive(path.join(operationDirectory, 'client-result.json'), envelope);
+  return envelope;
+}
+
+export async function readCloseOperation({ declarationRef, operationDirectory }) {
+  if (typeof operationDirectory !== 'string' || !path.isAbsolute(operationDirectory)
+    || !exact(declarationRef, ['path', 'sha256'])) {
+    throw new ManagementError('invalid readCloseOperation options', 'not_started');
+  }
+  const resultPath = path.join(operationDirectory, 'client-result.json');
+  const raw = await fs.readFile(resultPath);
+  const stored = await readCheckedJsonReference(
+    { path: resultPath, sha256: sha256(raw) },
+    operationDirectory,
+    16 * 1024 * 1024,
+  );
+  const expectedPath = await fs.realpath(declarationRef.path);
+  if (!object(stored) || stored.delivery !== 'validated'
+    || !object(stored.declaration_ref)
+    || stored.declaration_ref.sha256 !== declarationRef.sha256
+    || (await fs.realpath(stored.declaration_ref.path)) !== expectedPath
+    || !object(stored.result) || stored.result.kind !== 'settled_task_closed'
+    || stored.result.task_accepted !== false || !object(stored.result.close_receipt_ref)) {
+    throw new ManagementError('stored close operation failed verification');
+  }
+  const decl = await readCheckedJsonReference({ path: expectedPath, sha256: declarationRef.sha256 }, path.dirname(expectedPath), 16 * 1024 * 1024);
+  const receiptDir = typeof decl?.request?.evidence_dir === 'string' && path.isAbsolute(decl.request.evidence_dir)
+    ? decl.request.evidence_dir
+    : path.dirname(expectedPath);
+  await readCheckedJsonReference(stored.result.close_receipt_ref, receiptDir, 16 * 1024 * 1024);
+  return stored;
+}
+
+export async function queryProvenance({ binary, binaryArgs = [], scopes, query = {}, timeoutMs = 15000, env = {} }) {
+  if (!Array.isArray(scopes) || scopes.length === 0 || scopes.length > 64 || !object(query)) {
+    throw new ManagementError('invalid queryProvenance options', 'not_started');
+  }
+  const entries = [];
+  const scope_errors = [];
+  for (const scope of scopes) {
+    if (!exact(scope, ['task_id', 'session_id', 'evidence_dir'])
+      || typeof scope.task_id !== 'string' || !scope.task_id
+      || typeof scope.session_id !== 'string' || !scope.session_id
+      || typeof scope.evidence_dir !== 'string' || !path.isAbsolute(scope.evidence_dir)) {
+      throw new ManagementError('invalid provenance evidence scope', 'not_started');
+    }
+    const report = await sendManagement({
+      binary,
+      binaryArgs,
+      request: { operation: 'provenance_query', scopes: [scope], query },
+      timeoutMs,
+      env,
+    });
+    if (!object(report) || !Array.isArray(report.entries) || !Array.isArray(report.scope_errors)) {
+      throw new ManagementError('invalid provenance_query response');
+    }
+    entries.push(...report.entries);
+    scope_errors.push(...report.scope_errors);
+  }
+  return { entries, scope_errors };
 }

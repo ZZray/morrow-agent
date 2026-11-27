@@ -3,7 +3,7 @@
 # journal owns installation phases; these entries only prove reserved temp paths.
 function AssertReachWriteTarget([string]$Path) {
     $full=[IO.Path]::GetFullPath($Path)
-    $allowed=@((Join-Path $dataParent 'Reach.installation.json'),(Join-Path $dataParent 'Reach.maintenance/uninstall.ps1'),(Join-Path $root 'bin/reach.exe'))
+    $allowed=@((Join-Path $dataParent 'Reach.installation.json'),(Join-Path $dataParent 'Reach.maintenance/uninstall.ps1'),(Join-Path $root 'bin/reach.exe'),(Join-Path $root 'bin/ryreach.exe'))
     foreach($name in (ReachRetainedMetadata)){
         if($name-cne'install.lock'){$allowed+=@(Join-Path $root $name)}
     }

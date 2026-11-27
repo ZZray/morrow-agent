@@ -62,7 +62,17 @@ impl Inspector {
             getrandom::fill(&mut bytes).map_err(|_| anyhow::anyhow!("inspector lease entropy unavailable"))?;
             base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(bytes)
         };
-        let request = json!({"kind":"inspect_session","version":1,"request_id":execution.operation_id,"request":request,"output_directory":directory,"hold":{"version":1,"lease_id":lease,"timeout_ms":30000}});
+        let request = json!({
+            "kind": "manage",
+            "version": 1,
+            "id": execution.operation_id,
+            "request": {
+                "operation": "session_inspect",
+                "request": request,
+                "output_directory": directory,
+                "hold": { "version": 1, "lease_id": lease, "timeout_ms": 30000 }
+            }
+        });
         let mut bytes = serde_json::to_vec(&request)?;
         bytes.push(b'\n');
         let request_sha = protocol::hash(&bytes);
@@ -105,7 +115,15 @@ impl Inspector {
         let mut stdin = child.stdin.take().context("inspector stdin missing")?;
         let mut stdout = BufReader::new(child.stdout.take().context("inspector stdout missing")?);
         agent::send(&mut stdin, &request).await?;
-        let result = frame(&mut stdout).await?;
+        let envelope = frame(&mut stdout).await?;
+        ensure!(
+            envelope["kind"] == "management_result"
+                && envelope["version"] == 1
+                && envelope["id"] == execution.operation_id
+                && envelope["ok"] == true,
+            "inspector management response rejected"
+        );
+        let result = envelope["value"].clone();
         ensure!(
             result["kind"] == "session_inspection_result"
                 && result["version"] == 1
@@ -123,7 +141,7 @@ impl Inspector {
             record["kind"] == "locked_session_inspection"
                 && record["request_id"] == execution.operation_id
                 && record["request_sha256"] == request_sha
-                && record["snapshot"]["inspection"]["request"] == request["request"],
+                && record["snapshot"]["inspection"]["request"] == request["request"]["request"],
             "native inspector did not use the original request"
         );
         Ok(Self { child, stdin, stdout, job, frame: result, record, raw, lease, deadline, request_sha })
@@ -139,7 +157,17 @@ impl Inspector {
         self.live()?;
         let commitment_json = serde_json::to_string(commitment)?;
         let commitment_sha = protocol::hash(commitment_json.as_bytes());
-        let request = json!({"kind":"seal_inspection","version":1,"request_id":self.frame["request_id"],"lease_id":self.lease,"snapshot_sha256":self.frame["result_ref"]["sha256"],"commitment_sha256":commitment_sha});
+        let request = json!({
+            "kind": "manage",
+            "version": 1,
+            "id": format!("{}-seal", self.frame["request_id"].as_str().unwrap_or_default()),
+            "request": {
+                "operation": "session_inspect_seal",
+                "lease_id": self.lease,
+                "snapshot_sha256": self.frame["result_ref"]["sha256"],
+                "commitment_sha256": commitment_sha
+            }
+        });
         // A complete published receipt is authoritative even if the inspector
         // exits after publication but before its stdout ACK reaches this Host.
         if agent::send(&mut self.stdin, &request).await.is_ok() {
@@ -159,13 +187,27 @@ impl Inspector {
     }
     async fn close(mut self, committed: bool) -> Result<()> {
         if committed && self.live().is_ok() {
-            let release = json!({"kind":"release_inspection","version":1,"request_id":self.frame["request_id"],"lease_id":self.lease,"snapshot_sha256":self.frame["result_ref"]["sha256"]});
+            let release_id = format!("{}-release", self.frame["request_id"].as_str().unwrap_or_default());
+            let release = json!({
+                "kind": "manage",
+                "version": 1,
+                "id": release_id,
+                "request": {
+                    "operation": "session_inspect_release",
+                    "lease_id": self.lease,
+                    "snapshot_sha256": self.frame["result_ref"]["sha256"]
+                }
+            });
             agent::send(&mut self.stdin, &release).await?;
             let released = frame(&mut self.stdout).await?;
             ensure!(
-                released["kind"] == "session_inspection_released"
-                    && released["lease_id"] == self.lease
-                    && released["snapshot_sha256"] == self.frame["result_ref"]["sha256"],
+                released["kind"] == "management_result"
+                    && released["version"] == 1
+                    && released["id"] == release_id
+                    && released["ok"] == true
+                    && released["value"]["kind"] == "session_inspection_released"
+                    && released["value"]["lease_id"] == self.lease
+                    && released["value"]["snapshot_sha256"] == self.frame["result_ref"]["sha256"],
                 "inspector release changed"
             );
         }
@@ -248,7 +290,19 @@ fn validate_native(
         ensure!(subject == decision["subject"], "native budget snapshot changed");
         reference(&records.join("evidence").join(format!("run-{number}-budget-review-index.json")))?
     } else {
-        ensure!(outcome["last_candidate"] == decision["subject"], "original native candidate changed");
+        if decision["subject"]["basis"].get("session_id").is_some() {
+            ensure!(outcome["last_candidate"] == decision["subject"], "original native candidate changed");
+        } else {
+            let session_id = original.dispatch.command["sessionId"].as_str().context("original Session ID missing")?;
+            agent::check_ordinary_basis(
+                &outcome["last_candidate"]["basis"],
+                &decision["subject"]["basis"],
+                session_id,
+            )?;
+            let mut projected = outcome["last_candidate"].as_object().context("native candidate missing")?.clone();
+            projected.insert("basis".into(), decision["subject"]["basis"].clone());
+            ensure!(Value::Object(projected) == decision["subject"], "original native candidate changed");
+        }
         reference(&records.join(format!("review-decision-{number}.json")))?
     };
     let _ = checked_reference(

@@ -8,7 +8,7 @@ use std::{
 
 use anyhow::{ensure, Context, Result};
 use morrow_agent_core::{
-    agent::{self, InterruptedRun, ToolCallSettlement},
+    agent::{self, InterruptedRun, OpenToolCall, ToolCallReconciliation, ToolCallSettlement},
     artifact_provenance::{ArtifactStatus, ToolArtifact},
     rpi_agent::AgentMessage,
     rpi_ai::Content,
@@ -232,7 +232,7 @@ fn prepare_plan(
     if !inspected.open_tool_calls.is_empty() {
         let mut found = false;
         for index in (0..inspected.raw_count).rev() {
-            let messages = journal.read(index, index + 1, 8 * 1024 * 1024)?;
+            let messages = journal.read(index, index + 1, morrow_agent_core::session_journal::RECORD_BYTES)?;
             if matches!(messages.first(), Some(AgentMessage::Assistant(_))) {
                 call_index = index;
                 found = true;
@@ -409,7 +409,11 @@ fn validate_plan(plan: &RecoveryPlan) -> Result<()> {
                 && location.result_raw_index == plan.inspected.raw_count + index,
             "recovery call location mismatch"
         );
-        let messages = journal.read(location.call_raw_index, location.call_raw_index + 1, 8 * 1024 * 1024)?;
+        let messages = journal.read(
+            location.call_raw_index,
+            location.call_raw_index + 1,
+            morrow_agent_core::session_journal::RECORD_BYTES,
+        )?;
         let Some(AgentMessage::Assistant(assistant)) = messages.first() else {
             anyhow::bail!("recovery call source is not Assistant")
         };
@@ -455,6 +459,55 @@ fn check_chain(current: &Path, plan: &RecoveryPlan) -> Result<()> {
     }
 }
 
+pub(crate) fn check_reconciled_result(
+    journal: &Journal,
+    result_index: usize,
+    call: &OpenToolCall,
+    run_id: &str,
+    receipt: &ToolCallReconciliation,
+    evidence: &[String],
+) -> Result<()> {
+    let messages = journal.read(result_index, result_index + 1, session_journal::RECORD_BYTES)?;
+    let Some(AgentMessage::ToolResult(result)) = messages.first() else { anyhow::bail!("recovery result missing") };
+    let (is_error, text, expected_images): (bool, String, &[morrow_agent_core::png_image::SettledToolImage]) =
+        match &receipt.settlement {
+            ToolCallSettlement::NotExecuted => {
+                (true, "Host reconciliation: this call was interrupted and did not execute.".to_owned(), &[])
+            }
+            ToolCallSettlement::Completed { output, images } => {
+                (false, format!("Host reconciliation of an interrupted call (completed):\n{output}"), images.as_slice())
+            }
+            ToolCallSettlement::Failed { output } => {
+                (true, format!("Host reconciliation of an interrupted call (failed):\n{output}"), &[])
+            }
+        };
+    let expected_details = json!({"source":"host_reconciled_interrupted_run","run_id":run_id,
+        "settlement":receipt.settlement,"evidence":evidence});
+    ensure!(
+        receipt.call_id == call.id
+            && result.tool_call_id == call.id
+            && result.tool_name == call.name
+            && result.is_error == is_error
+            && result.details.as_ref() == Some(&expected_details),
+        "recovery result settlement mismatch"
+    );
+    let Some((Content::Text(actual), trailing)) = result.content.split_first() else {
+        anyhow::bail!("recovery result content mismatch")
+    };
+    ensure!(
+        actual.text == morrow_agent_core::local_tools::bounded(text, 128 * 1024),
+        "recovery result output mismatch"
+    );
+    ensure!(trailing.len() == expected_images.len(), "recovery result image count mismatch");
+    for (block, expected) in trailing.iter().zip(expected_images) {
+        let Content::Image(image) = block else { anyhow::bail!("recovery result non-image trailing block") };
+        ensure!(image.mime_type == "image/png", "recovery result image mime mismatch");
+        let (expected_content, _) = expected.load_verified(None)?;
+        ensure!(image.data == expected_content.data, "recovery result image bytes mismatch");
+    }
+    Ok(())
+}
+
 fn settled_artifacts(plan: &RecoveryPlan) -> Result<(Journal, Vec<ToolArtifact>)> {
     let journal = Journal::for_session(&plan.session_path);
     ensure!(journal.contains_run(&plan.inspected.run_id)?, "original recovery Run is not durably complete");
@@ -467,35 +520,14 @@ fn settled_artifacts(plan: &RecoveryPlan) -> Result<(Journal, Vec<ToolArtifact>)
     for ((location, call), receipt) in
         plan.calls.iter().zip(&plan.inspected.open_tool_calls).zip(&plan.receipt.tool_calls)
     {
-        let messages = journal.read(location.result_raw_index, location.result_raw_index + 1, 8 * 1024 * 1024)?;
-        let Some(AgentMessage::ToolResult(result)) = messages.first() else { anyhow::bail!("recovery result missing") };
-        let (is_error, text) = match &receipt.settlement {
-            ToolCallSettlement::NotExecuted => {
-                (true, "Host reconciliation: this call was interrupted and did not execute.".to_owned())
-            }
-            ToolCallSettlement::Completed { output } => {
-                (false, format!("Host reconciliation of an interrupted call (completed):\n{output}"))
-            }
-            ToolCallSettlement::Failed { output } => {
-                (true, format!("Host reconciliation of an interrupted call (failed):\n{output}"))
-            }
-        };
-        let expected_details = json!({"source":"host_reconciled_interrupted_run","run_id":plan.inspected.run_id,
-            "settlement":receipt.settlement,"evidence":plan.receipt.evidence});
-        ensure!(
-            result.tool_call_id == call.id
-                && result.tool_name == call.name
-                && result.is_error == is_error
-                && result.details.as_ref() == Some(&expected_details),
-            "recovery result settlement mismatch"
-        );
-        let [Content::Text(actual)] = result.content.as_slice() else {
-            anyhow::bail!("recovery result content mismatch")
-        };
-        ensure!(
-            actual.text == morrow_agent_core::local_tools::bounded(text, 128 * 1024),
-            "recovery result output mismatch"
-        );
+        check_reconciled_result(
+            &journal,
+            location.result_raw_index,
+            call,
+            &plan.inspected.run_id,
+            receipt,
+            &plan.receipt.evidence,
+        )?;
     }
     if matches!(plan.coverage, Coverage::UnavailableSession { .. }) {
         return Ok((journal, Vec::new()));

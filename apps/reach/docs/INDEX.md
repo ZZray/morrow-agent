@@ -2,12 +2,18 @@
 
 作者：Ray Zhang（Ray）。
 
-当前阶段：Reach 已于 2026-11-13 迁入 Morrow Agent 的 `apps/reach/`，见[最新交接](handoffs/2026-11-13-morrow-subproject.md)。服务、Node、CLI/MCP 与可选 Desk 仍在本地实施；Ray 443 与统一登录仅有此前上线证据，当前不访问服务器或部署。基础验收仍为 0/52、Desk 为 0/5；旧 ARA 版本的证据不代表 Morrow 版本验收，LabSlot 仍延期。
+当前阶段：Reach 已于 2026-11-13 迁入 Morrow Agent 的 `apps/reach/`，见[最新交接](handoffs/2026-11-13-morrow-subproject.md)。2026-11-14 按用户后续授权修复独立复验发现的问题，当前连接与常驻回归 8/8 通过，已构建含离线 OpenSSH 的 Node-only 候选。RyDev 0.1.2 已实测安装、网页配对上线、原命令回执和 SCM 崩溃恢复。双源更新验收暂停，公网 NAT 和生产部署待验，见[RyDev 证据](evidence/2026-11-24-rydev-service-update.md)。基础验收仍为 0/52、Desk 为 0/5；LabSlot 延期。
 
 ## 已有文档
 
 | 文档 | 内容 | 状态 |
 |---|---|---|
+| [Web 控制台设计交接](handoffs/2026-11-24-web-control.md) | Morrow 版本边界、Microsoft 登录、设备、配置、操作、通知、下载、MCP 和 `/reach/` 部署 | 2026-11-24；前端设计与部署接续入口 |
+| [Reach 设置与 Desk 前端交接](handoffs/2026-11-24-reach-desk-settings-frontend.md) | PIN 后台设置、生产模型配置、Desk 对话、设备 Agent 与 SSH 回执 | 2026-11-24，供前端实施及联调 |
+| [Reach Web 正式部署与 PIN 验收](evidence/2026-11-24-nmrkit-web-pin.md) | nmrkit 独立部署、PIN 与 Cookie、公网页面和 API、双仓发布 SHA | 已部署；正式设备和签名发行仍待验 |
+| [Reach 正式上线交接](handoffs/2026-11-24-reach-production.md) | Worker 安装、正式地址、发行摘要和接手待办 | 2026-11-24 |
+| [RyDev Windows 服务与 Git 双源更新验收](evidence/2026-11-24-rydev-service-update.md) | SCM 恢复、真实设备上线和原回执、GitHub 与 Gitee 的签名更新 | RyDev 0.1.2 安装、配对、命令回执和强杀恢复通过；双源更新暂停 |
+| [Morrow 接入与常驻改造任务单](tasks.md) | 接入 Morrow 新 Agent 能力、修复 R06、实施独立常驻/Starferry/`ryreach`/心跳退避计划与本地真实模型验证执行单（M01–M14） | 2026-11-14；M14 本地修复回归通过，正式网络及安装验收开放 |
 | [会话交接](handoffs/2026-11-02-ara-subproject.md) | 迁入 ARA、当前状态、验证与新会话入口 | 2026-11-02 |
 | [项目计划](project-plan.md) | 目标、组件、阶段、依赖、里程碑和文档流程 | 实施中；已纳入独立工作台应用修正 |
 | [任务清单](task-checklist.md) | 52 项基础任务及 5 项可选扩展任务 | 唯一任务状态来源；分别 0/52、0/5 |
@@ -17,7 +23,12 @@
 | [知识库索引](knowledge/INDEX.md) | 项目决定与耐久经验的入口 | 已建立 |
 | [产品决定及来源](knowledge/product-decisions.md) | 用户要求、修正与生效范围 | 已记录来源；不表示功能已实现 |
 | [源码目录说明](../src/README.md) | 组件与源码归属 | 服务、Node、控制器已开始实现 |
-| [首版架构](architecture.md) | 组件、数据归属、Windows 会话与部署 | 前台 Node 与 Ray 部署已有证据；完整架构仍在实施 |
+| [首版实现与常驻服务架构](architecture.md) | 既有首版组件/数据归属 + 2026-11-13 独立常驻、Starferry 合并、默认 SSH、首次 `ryreach` 配置、心跳退避与外部安装边界 | 常驻与合并实现已有本地修复证据；正式安装及网络验收开放，D01 未验收 |
+| [Starferry 与 Reach 工作流程及合并计划](starferry-reach-workflows.md) | Starferry 当前流程、Reach 常驻设计及合并后的独立安装结构，含三张流程图 | 2026-11-13 设计快照；当前实现与修复见独立复验记录 |
+| [常驻计划文档检查](evidence/2026-11-13-resident-plan.md) | 独立复核、REQ-01–REQ-06 任务/链接检查及迁入 Morrow 同步核对 | 2026-11-13；仅文档验证，不计功能验收 |
+| [CAS 真实模型与视觉委托证据](evidence/cas-real-model-20261114.md) | `deepseek-v4.1-flash` 委托续作/溯源、`gpt-5.6-luna` 真机截图像素识别与 Reach Desk 多轮+设备验证（零密钥落盘） | 2026-11-14 本地实跑 3/3 通过 |
+| [常驻服务、受管 OpenSSH 与 Starferry 合并证据](evidence/resident-starferry-20261114.md) | M11–M14 六态常驻、`ryreach`、分钟级可调心跳/退避、受管 Ed25519 公钥与 Starferry UDP 直连/中转回退实测及 M15 安全复核 | 2026-11-14 本地实跑与独立复核通过 |
+| [独立复验、修复与安装阻断](evidence/independent-validation-20261114.md) | 保留首次 M14 失败；续写握手、SSH、outbox、STUN 与健康路由修复及最终回归 | 2026-11-14；本地 8/8 通过，真实安装未执行 |
 | [身份与配对](identity-pairing.md) | 独立账户、幂等配对、再次配对与解绑 | 前台 Node 已验证；安装版 IPC 待完成，LabSlot 延期 |
 | [工具与收据](tools-tasks.md) | 协议来源、投递/执行状态与结果上传 | v1 实施中 |
 | [复用调查](reuse-map.md) | Lite/Harness/桌面后端的固定来源与缺口 | D02/D06 进行中 |

@@ -76,8 +76,31 @@ def valid_resume_receipt(value: Any) -> bool:
         if settlement.get('kind') == 'not_executed':
             if set(settlement) != {'kind'}:
                 return False
-        elif (settlement.get('kind') not in ('completed', 'failed') or set(settlement) != {'kind', 'output'}
-              or not isinstance(settlement['output'], str)):
+        elif settlement.get('kind') == 'failed':
+            if set(settlement) != {'kind', 'output'} or not isinstance(settlement['output'], str):
+                return False
+        elif settlement.get('kind') == 'completed':
+            if set(settlement) not in ({'kind', 'output'}, {'kind', 'output', 'images'}) or not isinstance(settlement['output'], str):
+                return False
+            if 'images' in settlement:
+                imgs = settlement['images']
+                if not isinstance(imgs, list) or len(imgs) > 4:
+                    return False
+                for img in imgs:
+                    if (not isinstance(img, dict)
+                            or set(img) not in ({'path', 'sha256', 'bytes', 'mime_type', 'width', 'height'},
+                                                {'path', 'root', 'sha256', 'bytes', 'mime_type', 'width', 'height'})
+                            or not isinstance(img['path'], str) or not Path(img['path']).is_absolute()
+                            or ('root' in img and (not isinstance(img['root'], str) or not Path(img['root']).is_absolute()))
+                            or not isinstance(img['sha256'], str) or len(img['sha256']) != 64
+                            or any(ch not in '0123456789abcdef' for ch in img['sha256'])
+                            or img['mime_type'] != 'image/png'
+                            or type(img['bytes']) is not int or not (0 < img['bytes'] <= 8 * 1024 * 1024)
+                            or type(img['width']) is not int or not (1 <= img['width'] <= 8192)
+                            or type(img['height']) is not int or not (1 <= img['height'] <= 8192)
+                            or img['width'] * img['height'] > 16_777_216):
+                        return False
+        else:
             return False
     return True
 
@@ -473,12 +496,22 @@ async def run_task(binary: str | Path, config: dict, host: Host, *, token: str,
         try:
             if kind == 'tool_call':
                 result = await host.tool_call(frame, signal)
-                if set(result) != {'value', 'is_error', 'settlement', 'operation_receipt'}:
+                if set(result) not in ({'value', 'is_error', 'settlement', 'operation_receipt'},
+                                       {'value', 'is_error', 'settlement', 'operation_receipt', 'images'}):
                     raise ValueError('tool result fields do not match the protocol')
                 if (type(result['is_error']) is not bool or result['settlement'] not in ('Settled', 'Unknown')
                         or not isinstance(result['operation_receipt'], str) or not result['operation_receipt'].strip()):
                     raise ValueError('tool effect settlement and operation receipt are required')
-                if len(json.dumps(result, ensure_ascii=False, allow_nan=False).encode()) > RESULT_BYTES:
+                if 'images' in result:
+                    if (result['settlement'] != 'Settled' or result['is_error'] is not False
+                            or not isinstance(result['images'], list) or len(result['images']) > 4):
+                        raise ValueError('tool result images require settled non-error execution')
+                    for img in result['images']:
+                        if not valid_resume_receipt({'committed': True, 'settlement': 'Settled', 'evidence': ['ok'],
+                                                     'tool_calls': [{'call_id': 'c', 'settlement': {'kind': 'completed', 'output': '', 'images': [img]}}]}):
+                            raise ValueError('invalid settled tool image fields')
+                core_result = {k: result[k] for k in ('value', 'is_error', 'settlement', 'operation_receipt')}
+                if len(json.dumps(core_result, ensure_ascii=False, allow_nan=False).encode()) > RESULT_BYTES:
                     raise ValueError('tool result payload exceeds the encoded byte limit')
                 reply = {'kind': 'tool_reply', **base,
                          **{key: frame[key] for key in ('native_call_id', 'tool_name', 'args_sha256')}, 'result': result}

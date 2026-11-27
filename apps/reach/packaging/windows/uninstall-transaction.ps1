@@ -123,6 +123,7 @@ function InvokeReachUninstallTransaction($Journal,[string]$Root) {
                 AssertReachUninstallHost $Journal
                 if($null-ne(GetReachServicePath)){throw 'Service reappeared before file removal'}
                 WaitRecordedExit $Journal.originalProcess
+                if(Get-Command RevokeReachManagedSshKeys -ErrorAction SilentlyContinue){RevokeReachManagedSshKeys}
                 InvokeReachDeletionPlan $Journal.programPlan $Journal.root
                 AssertReachProgramsAbsent $Journal
                 SaveReachUninstallPhase $Journal 'removing_path'

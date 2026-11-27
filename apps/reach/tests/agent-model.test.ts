@@ -12,7 +12,9 @@ import {fixture as baseFixture} from './service-fixture.ts';
 test('organization model is optional, requires explicit capabilities, protects credentials and pins safe URLs',async()=>{
   assert.equal(agentModelFromEnvironment({}),undefined);const env={REACH_AGENT_MODEL_TOKEN:'local-secret-fixture-token'};assert.throws(()=>agentModelFromEnvironment(env),/配置/);assert.equal('REACH_AGENT_MODEL_TOKEN' in env,false);
   const config={endpoint:'https://example.invalid/v1',token:'local-secret-fixture-token',model:'configured',contextWindow:65536,maxOutput:4096,imageInput:true};
-  for(const endpoint of ['http://example.invalid/v1','http://localhost/v1','https://user:pass@example.invalid/v1','https://example.invalid/v1?key=secret','https://example.invalid/v1#secret','https://example.invalid/other'])assert.throws(()=>new AgentModelBroker({...config,endpoint,development:true}));
+  for(const endpoint of ['http://example.invalid/v1','http://localhost/v1','https://user:pass@example.invalid/v1','https://example.invalid/v1?key=secret','https://example.invalid/v1#secret','https://example.invalid/v1/chat/completions'])assert.throws(()=>new AgentModelBroker({...config,endpoint,development:true}));
+  // 2026-11-24 用户要求：兼容 OpenAI 接口的自定义请求地址（版本路径不限于 /v1）。
+  await new AgentModelBroker({...config,endpoint:'https://example.invalid/api/paas/v4'}).close();
   const broker=new AgentModelBroker(config);assert.equal(JSON.stringify(broker),'{}');const descriptor=broker.descriptor();assert.equal(descriptor.capabilitySource,'organization-config');assert.ok(!JSON.stringify(descriptor).includes('example.invalid'));assert.ok(!JSON.stringify(descriptor).includes(config.token));descriptor.input.length=0;assert.deepEqual(broker.descriptor().input,['text','image']);await broker.close();assert.throws(()=>broker.descriptor(),/关闭/);
 });
 

@@ -183,6 +183,12 @@ Host 回 `tool_reply`，精确复制原关联字段，不能重算或改写参�
 已知失败可以结算，未知效果会阻止成功和自动续作。Host 保管原操作收据，sidecar
 记录回调关联与结果。工具文本不能触发控制回调。
 
+当已结算且非错误的调用（`settlement: "Settled", is_error: false`）产生本地已核验的静态 PNG 原图时，
+`result` 可选附带 `images`（最多 4 项，单项上限 8 MiB、单 Run 原图累计上限 16 MiB）：
+每项包含绝对路径 `path`、原字节 `sha256`、`bytes`、`mime_type: "image/png"`、`width` 和 `height`。
+sidecar 按原文件重核字节长度、SHA-256、PNG chunk CRC 与尺寸后转为原生 `Content::Image`，
+不把 base64 图片计入 131072 字节文本结果预算；`is_error: true` 或 `Unknown` 调用携带 `images` 会被拒绝。
+
 ## 产物检查和续作
 
 所有控制请求及回复都有 `kind/version/rpc_id/task_id/run_id`。
@@ -198,6 +204,11 @@ Host 回 `tool_reply`，精确复制原关联字段，不能重算或改写参�
 始终保存 Session 身份。大型旧格式候选通过 `candidate_ref` 引用
 `jsonl-candidate-N.json`，其内容与 inline 候选一致，原件及投影文件都在
 回调前后接受核验。
+
+若本轮 Run（`basis.raw_start..basis.raw_end`）内有工具结果携带原生图片，`verify_request`、
+`verify_budget_request` 与 `verify_stop_request` 会额外附带受检引用 `tool_images_ref`，
+指向证据目录内的 `run-N-tool-images.json`（`kind: "jsonl-native-images-v1"`，含匹配的
+`basis`、`full_proof` 以及各工具调用的参数、结果索引、文本与解码后图片 `mime_type/bytes/sha256`）。
 
 Host 原样复制收到的完整 basis 到 `receipt.basis`，保存实际检查证据后返回以下回执。
 
@@ -354,7 +365,7 @@ Host 在 Task deadline 之前回一帧 `reconcile_reply`：
 | `receipt.settlement` | 字符串 | 必填 | `Settled` 或 `Unknown`；`Unknown` 时拒绝 | 结算是否完成 |
 | `receipt.tool_calls` | 数组 | 必填 | 与 `interrupted_run.open_tool_calls` 一一对应且顺序相同；没有开放调用时为空数组 | 每个开放调用的结算 |
 | `receipt.tool_calls[].call_id` | 字符串 | 必填 | 等于对应开放调用的 `id` | 被结算的调用 |
-| `receipt.tool_calls[].settlement` | 对象 | 必填 | `{"kind":"not_executed"}`，或 `{"kind":"completed"或"failed","output":字符串}` | Host 依据自己的回执得出的结果，写入该调用唯一的 ToolResult |
+| `receipt.tool_calls[].settlement` | 对象 | 必填 | `{"kind":"not_executed"}`，`{"kind":"failed","output":字符串}`，或 `{"kind":"completed","output":字符串,"images"?:[...]}` | Host 依据自己的回执得出的结果，写入该调用唯一的 ToolResult（`completed` 可选附带最多 4 项已核验 PNG 原图引用，sidecar 重核原文件后恢复 `Content::Image` 而不重跑工具） |
 | `receipt.evidence` | 字符串数组 | 必填 | 为空时拒绝 | Host 自己的操作回执引用 |
 
 请求与回复按现有方式写入新证据目录的 `jsonl-rpc-<n>-request.json`、`jsonl-rpc-<n>-reply.json`。回复写盘后才交给 Harness 校验，是否放行以 Harness 结果为准。请求只发一次，从不重发。

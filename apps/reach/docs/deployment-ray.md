@@ -38,7 +38,9 @@ Ray 统一登录另用 deploy/enable-ray-sso.py 升级。它核对当前发布�
 
 并发首次开页的稳定会话修正使用 deploy/update-ray-service.py，已执行。该脚本固定旧 release、归档哈希和原 Go 二进制哈希，停服前后均拒绝活动操作，只删除侧库标记的旧 SSO 会话，再切换 Reach 应用；原生会话、Ray 登录、密钥及操作账本保留。失败恢复旧应用并检查健康，不恢复旧数据库。此脚本绑定本次发布前置条件，不能直接重复用于后续更新。
 
-当前 release 为 `/opt/reach/releases/20261102-sso-stable-05d25e8c84eb`。部署收据及准确源码/产物快照见[Ray 统一登录证据](evidence/ray-sso-20261102.md)。SSO 启用与更新脚本的失败恢复经过源码复核，但尚未执行独立故障回滚试验；443 迁移脚本的两项受控回滚测试不替代此项。
+用 `readlink -f /opt/reach/current` 核对线上发行目录，再比对目录中的侧车 SHA-256 和部署收据。2026-11-25 先切到统一前端 `20261125-unified-d0b1ab4b596e`，随后更新为 `20261125-caps-9da1143147d8`。发行目录内的 `service` 指向 `morrow/apps/reach`。相关切换和制品见[统一前端部署](evidence/ray-unified-20261125.md)及[Ray 统一登录证据](evidence/ray-sso-20261102.md)。
+
+`deploy/update-unified.py` 在设备操作和 Desk 对话均空闲时切换。停服后备份 Reach、Ray 认证和 Desk 的 SQLite 文件及存在的 WAL、SHM 文件。隔离验收使用真实 SQLite、发行归档和软链接，模拟 systemd 启停。覆盖启动失败、Desk 记录减少和数据库消失，恢复旧服务前逐字节复核三套数据库备份。
 
 ## 恢复与证据
 

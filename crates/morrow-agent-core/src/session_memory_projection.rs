@@ -207,13 +207,14 @@ pub(crate) fn fit_request(context: &mut rpi_ai::Context, budget: crate::model_ca
 }
 
 pub(super) fn fit(messages: &mut Vec<AgentMessage>, limit: usize) -> Result<()> {
-    let total = serde_json::to_vec(messages)?.len();
+    let (total, _) = crate::png_image::split_messages_bytes(messages)?;
     if total <= limit {
         return Ok(());
     }
     let original_len = messages.len();
     fold_repeated_reads(messages, native_read, note_text)?;
-    let total = if messages.len() == original_len { total } else { serde_json::to_vec(messages)?.len() };
+    let total =
+        if messages.len() == original_len { total } else { crate::png_image::split_messages_bytes(messages)?.0 };
     if total <= limit {
         return Ok(());
     }

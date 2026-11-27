@@ -3,7 +3,7 @@
 作者：Ray Zhang（Ray）。本目录是 Reach 内部的平台子项目，正式产品名为 Reach Desk，命令名为 reach-desk，用户已确认。
 
 - 遵循 Reach 与 Morrow Agent 父目录规则。平台后续在此维护，不回写旧 HandWave 或 ARA 项目。
-- 默认 Reach 安装、启动和构建不加载此子项目；可选 Ray 接入按扩展清单验收。
+- 自 2026-11-24 起 Reach 默认带云端对话：基础服务默认组合本目录的 Desk Host，对话前端已并入 `src/admin/`（控制台 `#/desk`），本目录不再提供页面。见 [统一前端决定](../docs/knowledge/product-decisions.md#unified-frontend-20261124)。
 - `legacy/` 是迁入的平台兼容源码，现阶段保留原协议和测试以支持完整迁移；不表示已接通 Reach 身份/设备或已替换线上平台。旧 node/ctl 不再通过平台命令入口提供，现场设备只采用 Reach Node。
 - 旧共享 Go 库仅按 source.lock.json 固定版本制备到忽略的构建缓存，不复制进维护源码；不得更新标记或在缓存中开发。新扩展 Agent Host 使用 ARA Lite/Harness。
 - `provenance/` 中的原始守则和说明仅用于来源核对，不是本目录的活动开发指令。保留原许可证和第三方作者；新增内容署名 Ray Zhang。

@@ -86,7 +86,7 @@ export class AgentCalls {
     if(this.store.finalizations.isFinalizer(op)){if(state==='succeeded')requireCondition(!historicalEvidence&&(data as any)?.finalizationProof,409,'agent_finalizer_proof_required','只读结算须有准确原 Node 终态证明');return;}
     if(state==='succeeded'){
       requireCondition(context.attempt.phase==='active'&&((context.task.active_execution_id===op.id&&this.store.resumes.admitted(context))||historicalEvidence),409,'agent_execution_reconciling','恢复尚未核清原生会话，不能声明成功');
-      requireCondition(historicalEvidence||context.generation===1||(data as any)?.finalProof,409,'agent_resume_final_binding','恢复成功须携带原生释放与进程退出原件');
+      requireCondition(historicalEvidence||context.generation===1||this.store.guidance.isContinuation(op)||(data as any)?.finalProof,409,'agent_resume_final_binding','恢复成功须携带原生释放与进程退出原件');
       if(historicalEvidence){
         const historical=this.store.db.prepare('SELECT m.request_id,m.state,o.generation FROM agent_model_calls m LEFT JOIN agent_model_owners o ON o.parent_id=m.parent_id AND o.request_id=m.request_id WHERE m.parent_id=?').all(root.id).filter(m=>Number(m.generation)<=context.generation);
         requireCondition(historical.every(m=>m.state==='stream_complete'||this.store.resumes.explainsModel(root.id,String(m.request_id),false,op.id)),409,'agent_model_unsettled','原执行仍有未知模型请求，历史证据不能借用后代回执');

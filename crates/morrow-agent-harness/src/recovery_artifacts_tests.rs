@@ -50,7 +50,10 @@ struct Fixture {
 
 impl Fixture {
     fn new(legacy: bool) -> Self {
-        Self::with_settlement(legacy, ToolCallSettlement::Completed { output: "Host checked actual effect".into() })
+        Self::with_settlement(
+            legacy,
+            ToolCallSettlement::Completed { output: "Host checked actual effect".into(), images: vec![] },
+        )
     }
 
     fn with_settlement(legacy: bool, settlement: ToolCallSettlement) -> Self {
@@ -442,7 +445,7 @@ fn empty_native_session_identity_preserves_reconciliation_and_records_unavailabl
             for stage in ["before-reconcile", "after-reconcile"] {
                 let fixture = Fixture::with_options(
                     legacy,
-                    ToolCallSettlement::Completed { output: "Host observed committed effect".into() },
+                    ToolCallSettlement::Completed { output: "Host observed committed effect".into(), images: vec![] },
                     "",
                     open_calls,
                 );

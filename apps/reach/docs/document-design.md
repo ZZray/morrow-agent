@@ -2,7 +2,7 @@
 
 作者：Ray Zhang（Ray）。
 
-建立：2026-11-01。更新：2026-11-02（Asia/Hong_Kong）。状态：实施中的文档约定。
+建立：2026-11-01。更新：2026-11-13（Asia/Taipei）。状态：实施中的文档约定。
 
 本文确定文档分工。产品范围、文档索引、项目知识库以及架构、身份配对、工具合同和复用调查已建立；安装、集成与完整验收专项设计继续补齐。
 
@@ -20,7 +20,8 @@ docs/
   project-plan.md               已有：目标、阶段、里程碑与依赖
   task-checklist.md             已有：52 项基础任务与 5 项选装任务，分别维护状态
   plans/project-plan-20261101/  已有：本次 JSON 与 HTML 阅读快照
-  architecture.md               已有：组件、数据归属、部署与依赖
+  architecture.md               已有：首版组成与 2026-11-13 常驻服务架构草案、数据归属与依赖
+  starferry-reach-workflows.md  已有：现有 Starferry 连接及合并后的常驻设计流程图
   identity-pairing.md            已有：独立登录、安装身份、配对和解绑
   installation-update.md        拟建：独立安装、随产品安装与更新
   tools-tasks.md                 已有：工具、技能、任务和收据
@@ -45,6 +46,7 @@ docs/
 | `project-plan.md` | 首版目标、组件职责、阶段与里程碑、依赖和推进顺序 | 专项接口字段和实时任务状态 |
 | `task-checklist.md` | 每项任务的交付物、前置、验收与完成证据 | 另行定义产品行为或接口合同 |
 | `architecture.md` | 本地 Agent、服务、Node、Lite/Harness 与工具后端怎样协作；什么数据归谁；哪些组件同进程或独立部署 | 详细 API 字段、完整功能实现计划 |
+| `starferry-reach-workflows.md` | 现有 Starferry 与 Reach 待实现常驻流程如何区别；合并后独立安装和常驻运行如何衔接 | 另行定义身份、配置和工具合同；声称计划已实现 |
 | `identity-pairing.md` | 如何独立登录；如何建立安装与控制端身份；首次/再次配对、解绑、多端连接如何处理 | Auto/Full 模式、工具权限开关、角色权限表或逐次审批 |
 | `installation-update.md` | 双击安装的实际步骤、服务启动、PATH、生效窗口；已有安装、更新、共享基础包、卸载如何处理 | 产品业务工具的实现细节 |
 | `tools-tasks.md` | 本地 MCP/CLI 提供什么；能力说明与技能怎样传递；单次工具和委托任务怎样返回状态与证据 | 重新实现 Core 循环、复制全部产品 API |

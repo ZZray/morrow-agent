@@ -161,6 +161,7 @@ impl HarnessHost for Resumer {
                 call_id: if mode == Mode::WrongCalls { "invented".into() } else { call.id.clone() },
                 settlement: ToolCallSettlement::Completed {
                     output: "Host deploy log: step finished; artifact checksum verified.".into(),
+                    images: vec![],
                 },
             })
             .collect();
@@ -632,7 +633,10 @@ impl HarnessHost for PropResumer {
             .iter()
             .map(|call| ToolCallReconciliation {
                 call_id: if fault == ReceiptFault::WrongCall { "invented".into() } else { call.id.clone() },
-                settlement: ToolCallSettlement::Completed { output: "Host deploy log: step finished.".into() },
+                settlement: ToolCallSettlement::Completed {
+                    output: "Host deploy log: step finished.".into(),
+                    images: vec![],
+                },
             })
             .collect();
         match fault {

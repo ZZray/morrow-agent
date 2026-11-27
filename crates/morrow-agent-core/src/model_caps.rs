@@ -127,14 +127,18 @@ pub struct TextBudget {
 }
 impl TextBudget {
     pub fn request_json_bytes(&self, context: &rpi_ai::Context) -> Result<usize> {
-        Ok(serde_json::to_vec(context)?.len())
+        let total = serde_json::to_vec(context)?.len();
+        Ok(total.saturating_sub(crate::png_image::context_image_bytes(context)))
     }
     pub fn check(&self, context: &rpi_ai::Context) -> Result<()> {
         // Includes actual system prompt, schemas and escaped message strings.
-        // UTF-8 JSON bytes are a conservative text allocation, not a tokenizer
-        // or a guarantee about undocumented supplier framing/image accounting.
+        // UTF-8 JSON bytes are a conservative text allocation; typed PNG blocks
+        // are bounded separately by ACTIVE_IMAGE_BYTES.
         if self.request_json_bytes(context)? > self.request_bytes {
             bail!("complete model request exceeds declared context/local text-byte budget; original Session retained");
+        }
+        if crate::png_image::context_image_bytes(context) > crate::png_image::ACTIVE_IMAGE_BYTES {
+            bail!("complete model request exceeds active image byte budget; original Session retained");
         }
         Ok(())
     }

@@ -1,6 +1,7 @@
 // Copyright (c) Ray Zhang. Product identity and receipts belong to Reach Host.
 import { DatabaseSync } from 'node:sqlite';
 import { createHash, randomBytes, randomUUID, scryptSync, timingSafeEqual } from 'node:crypto';
+import { isDeepStrictEqual } from 'node:util';
 import { finalStates } from '../contracts/protocol.ts';
 import type { Command, DeliveryState, ExecutionState, OperationEvent, Reconciliation } from '../contracts/protocol.ts';
 import { requireCondition, ReachError } from './errors.ts';
@@ -15,6 +16,10 @@ import {AgentResumes} from './agent-resumes.ts';
 import {AgentFinalizations} from './agent-finalizations.ts';
 import {AgentClosures} from './agent-closures.ts';
 import {SourceLibrary} from './source-library.ts';
+import {AgentGuidanceStore} from './agent-guidance-store.ts';
+import {NodeRuntimeStore} from './node-runtime-store.ts';
+import {StarferryStore} from './starferry-store.ts';
+import {DeviceEvents} from './device-events.ts';
 
 export const sha256 = (value: string) => createHash('sha256').update(value).digest('hex');
 function canonical(value: unknown): string {
@@ -23,6 +28,91 @@ function canonical(value: unknown): string {
   return JSON.stringify(value);
 }
 export const digest = (value: unknown) => sha256(canonical(value));
+const isJsonWs = (code: number) => code === 32 || code === 9 || code === 10 || code === 13;
+function scanJsonStringEnd(text: string, start: number): number {
+  requireCondition(text.charCodeAt(start) === 34, 400, 'invalid_json', 'JSON 格式无效');
+  for (let i = start + 1; i < text.length; i++) {
+    const ch = text.charCodeAt(i);
+    if (ch === 92) { i++; continue; }
+    if (ch === 34) return i + 1;
+  }
+  throw new ReachError(400, 'invalid_json', 'JSON 格式无效');
+}
+function scanJsonValueEnd(text: string, start: number): number {
+  const first = text.charCodeAt(start);
+  if (first === 34) return scanJsonStringEnd(text, start);
+  if (first === 123 || first === 91) {
+    let depth = 1;
+    for (let i = start + 1; i < text.length; i++) {
+      const ch = text.charCodeAt(i);
+      if (ch === 34) { i = scanJsonStringEnd(text, i) - 1; continue; }
+      if (ch === 123 || ch === 91) depth++;
+      else if (ch === 125 || ch === 93) { depth--; if (depth === 0) return i + 1; }
+    }
+    throw new ReachError(400, 'invalid_json', 'JSON 格式无效');
+  }
+  let i = start;
+  while (i < text.length) {
+    const ch = text.charCodeAt(i);
+    if (isJsonWs(ch) || ch === 44 || ch === 125 || ch === 93) break;
+    i++;
+  }
+  requireCondition(i > start, 400, 'invalid_json', 'JSON 格式无效');
+  return i;
+}
+function assertNoDuplicateJsonKeys(text: string) {
+  const stack: ({ keys: Set<string>; expectKey: boolean } | null)[] = [];
+  for (const [token] of text.matchAll(/"(?:\\[\s\S]|[^"\\])*"|[{}\[\]:,]/g)) {
+    if (token === '{') stack.push({ keys: new Set(), expectKey: true });
+    else if (token === '[') stack.push(null);
+    else if (token === '}' || token === ']') stack.pop();
+    else if (token === ',') { const top = stack.at(-1); if (top) top.expectKey = true; }
+    else if (token.startsWith('"')) {
+      const top = stack.at(-1);
+      if (top?.expectKey) {
+        const key = JSON.parse(token) as string;
+        requireCondition(!top.keys.has(key), 400, 'duplicate_json_key', 'JSON 字段重复');
+        top.keys.add(key);
+        top.expectKey = false;
+      }
+    }
+  }
+}
+export function extractRawJsonMember(jsonText: string, memberName: string): string {
+  let pos = 0;
+  while (pos < jsonText.length && isJsonWs(jsonText.charCodeAt(pos))) pos++;
+  requireCondition(jsonText.charCodeAt(pos) === 123, 400, 'invalid_json', 'JSON 必须为对象');
+  pos++;
+  const seen = new Set<string>();
+  let matched: string | undefined;
+  while (pos < jsonText.length && isJsonWs(jsonText.charCodeAt(pos))) pos++;
+  if (jsonText.charCodeAt(pos) === 125) throw new ReachError(400, 'invalid_json', 'JSON 缺少必要字段');
+  for (;;) {
+    while (pos < jsonText.length && isJsonWs(jsonText.charCodeAt(pos))) pos++;
+    const keyEnd = scanJsonStringEnd(jsonText, pos);
+    const decodedKey = JSON.parse(jsonText.slice(pos, keyEnd)) as string;
+    requireCondition(!seen.has(decodedKey), 400, 'duplicate_json_key', 'JSON 顶层字段重复');
+    seen.add(decodedKey);
+    pos = keyEnd;
+    while (pos < jsonText.length && isJsonWs(jsonText.charCodeAt(pos))) pos++;
+    requireCondition(jsonText.charCodeAt(pos) === 58, 400, 'invalid_json', 'JSON 格式无效');
+    pos++;
+    while (pos < jsonText.length && isJsonWs(jsonText.charCodeAt(pos))) pos++;
+    const valueEnd = scanJsonValueEnd(jsonText, pos);
+    if (decodedKey === memberName) matched = jsonText.slice(pos, valueEnd);
+    pos = valueEnd;
+    while (pos < jsonText.length && isJsonWs(jsonText.charCodeAt(pos))) pos++;
+    const sep = jsonText.charCodeAt(pos);
+    if (sep === 44) { pos++; continue; }
+    requireCondition(sep === 125, 400, 'invalid_json', 'JSON 格式无效');
+    pos++;
+    break;
+  }
+  while (pos < jsonText.length && isJsonWs(jsonText.charCodeAt(pos))) pos++;
+  requireCondition(pos === jsonText.length && matched !== undefined, 400, 'invalid_json', 'JSON 缺少必要字段');
+  assertNoDuplicateJsonKeys(matched!);
+  return matched!;
+}
 const secret = () => randomBytes(32).toString('base64url');
 interface UserRow { id: string; username: string; salt: string; password_hash: string }
 export interface User { id: string; username: string }
@@ -48,6 +138,10 @@ export class ReachStore {
   readonly finalizations:AgentFinalizations;
   readonly closures:AgentClosures;
   readonly library:SourceLibrary;
+  readonly guidance:AgentGuidanceStore;
+  readonly nodeRuntime:NodeRuntimeStore;
+  readonly deviceEvents:DeviceEvents;
+  readonly starferry:StarferryStore;
   readonly owner:ServiceOwner;
   private closed=false;
   private broker?:{identity:object;closed:()=>boolean};
@@ -103,6 +197,11 @@ export class ReachStore {
       CREATE TABLE IF NOT EXISTS source_library_reviews(id TEXT PRIMARY KEY,user_id TEXT NOT NULL REFERENCES users(id),request_id TEXT NOT NULL,request_sha256 TEXT NOT NULL,entry_id TEXT NOT NULL REFERENCES source_library(id),version_sha256 TEXT NOT NULL,decision TEXT NOT NULL CHECK(decision IN ('adopt','revoke')),validation_id TEXT REFERENCES source_library_validations(id),reason TEXT NOT NULL,created_at INTEGER NOT NULL,UNIQUE(user_id,request_id));
       CREATE TABLE IF NOT EXISTS source_library_uses(task_id TEXT NOT NULL REFERENCES agent_tasks(root_id),entry_id TEXT NOT NULL REFERENCES source_library(id),version_sha256 TEXT NOT NULL,stage TEXT NOT NULL CHECK(stage IN ('candidate','adopted')),source_id TEXT NOT NULL,PRIMARY KEY(task_id,source_id));
       CREATE TABLE IF NOT EXISTS agent_native_closures(operation_id TEXT PRIMARY KEY REFERENCES operations(id),event_id TEXT NOT NULL,proof_sha256 TEXT NOT NULL,at INTEGER NOT NULL,FOREIGN KEY(operation_id,event_id) REFERENCES operation_events(operation_id,event_id) DEFERRABLE INITIALLY DEFERRED);
+      CREATE TABLE IF NOT EXISTS agent_guidance(parent_id TEXT NOT NULL REFERENCES agent_tasks(root_id),execution_id TEXT NOT NULL REFERENCES agent_executions(execution_id),message_id TEXT NOT NULL,text TEXT NOT NULL,text_sha256 TEXT NOT NULL,status TEXT NOT NULL CHECK(status IN ('queued','applied','unapplied','unknown')),delivered INTEGER NOT NULL DEFAULT 0,receipt_json TEXT,created_at INTEGER NOT NULL,updated_at INTEGER NOT NULL,PRIMARY KEY(parent_id,message_id));
+      CREATE TABLE IF NOT EXISTS agent_continuations(execution_id TEXT PRIMARY KEY REFERENCES agent_executions(execution_id),root_id TEXT NOT NULL REFERENCES agent_tasks(root_id),previous_execution_id TEXT NOT NULL REFERENCES agent_executions(execution_id),expected_released_sha256 TEXT NOT NULL,feedback TEXT NOT NULL,run_id TEXT NOT NULL,run_number INTEGER NOT NULL,consumed_runs INTEGER NOT NULL,consumed_calls INTEGER NOT NULL,created_at INTEGER NOT NULL,UNIQUE(root_id,previous_execution_id));
+      CREATE TABLE IF NOT EXISTS node_runtime(node_id TEXT PRIMARY KEY REFERENCES nodes(id),epoch INTEGER NOT NULL,last_heartbeat_at INTEGER,effective_heartbeat_seconds INTEGER NOT NULL DEFAULT 60,effective_config_version INTEGER NOT NULL DEFAULT 0,resident_state TEXT NOT NULL DEFAULT 'connected',ssh_status_json TEXT,updated_at INTEGER NOT NULL);
+      CREATE TABLE IF NOT EXISTS node_config_requests(node_id TEXT NOT NULL REFERENCES nodes(id),epoch INTEGER NOT NULL,target_version INTEGER NOT NULL,request_id TEXT NOT NULL,user_id TEXT NOT NULL REFERENCES users(id),heartbeat_seconds INTEGER NOT NULL,status TEXT NOT NULL CHECK(status IN ('pending','applied','rejected')),receipt_json TEXT,created_at INTEGER NOT NULL,settled_at INTEGER,PRIMARY KEY(node_id,epoch,target_version),UNIQUE(user_id,request_id));
+      CREATE TABLE IF NOT EXISTS starferry_tunnels(tunnel_session_id TEXT PRIMARY KEY,user_id TEXT NOT NULL REFERENCES users(id),node_id TEXT NOT NULL REFERENCES nodes(id),epoch INTEGER NOT NULL,operation_id TEXT NOT NULL REFERENCES operations(id),grant_id TEXT NOT NULL,allow_direct INTEGER NOT NULL DEFAULT 1,selected_path TEXT,status TEXT NOT NULL,target_json TEXT,created_at INTEGER NOT NULL,expires_at INTEGER NOT NULL,closed_at INTEGER);
       `);
     this.agents=new AgentCalls(this);
     this.models=new AgentModels(this);
@@ -113,6 +212,10 @@ export class ReachStore {
     this.finalizations=new AgentFinalizations(this);
     this.closures=new AgentClosures(this);
     this.library=new SourceLibrary(this);
+    this.guidance=new AgentGuidanceStore(this);
+    this.nodeRuntime=new NodeRuntimeStore(this);
+    this.deviceEvents=new DeviceEvents(this);
+    this.starferry=new StarferryStore(this);
     if(version.user_version<8)this.db.exec('INSERT OR IGNORE INTO agent_runs SELECT DISTINCT parent_id,run_id FROM agent_calls');
     this.budgets.migrate(version.user_version);
     this.executions.migrate(version.user_version);
@@ -173,6 +276,12 @@ export class ReachStore {
       this.audit(user.id, 'session.ray', sessionHash);
       return session;
     });
+  }
+  // PIN 登录等已在边界完成认证的入口，用账户 ID 签发普通 12 小时会话。
+  issueSession(userId: string) {
+    const user = this.db.prepare('SELECT id, username FROM users WHERE id=?').get(userId) as unknown as User | undefined;
+    requireCondition(user, 401, 'authentication_required', '账户不存在');
+    return this.createSession(user, this.now() + 12 * 60 * 60 * 1000);
   }
   private createSession(user: User, expiresAt: number, token = secret()) {
     const csrf = secret();
@@ -241,7 +350,7 @@ export class ReachStore {
     return row;
   }
   nodes(userId: string) {
-    return (this.db.prepare('SELECT id,name,platform,version,epoch,last_seen,revoked,capabilities FROM nodes WHERE user_id=? ORDER BY name').all(userId)).map(row => ({ ...row, capabilities: JSON.parse(row.capabilities as string), online: !row.revoked && row.last_seen !== null && this.now() - Number(row.last_seen) < 30000 }));
+    return (this.db.prepare('SELECT id,name,platform,version,epoch,last_seen,revoked,capabilities FROM nodes WHERE user_id=? ORDER BY name').all(userId)).map(row => this.nodeRuntime.enrichNodeSummary(row as unknown as Record<string, unknown>));
   }
   revoke(userId: string, id: string) {
     return this.transaction(() => {
@@ -254,7 +363,10 @@ export class ReachStore {
     });
   }
   hello(node: NodeRow, version: string, capabilities: string[]) {
-    this.db.prepare('UPDATE nodes SET last_seen=?,version=?,capabilities=? WHERE id=? AND epoch=? AND revoked=0').run(this.now(), version, JSON.stringify([...new Set(capabilities)]), node.id, node.epoch);
+    this.transaction(() => {
+      this.deviceEvents.observeContact(node, capabilities);
+      this.db.prepare('UPDATE nodes SET last_seen=?,version=?,capabilities=? WHERE id=? AND epoch=? AND revoked=0').run(this.now(), version, JSON.stringify([...new Set(capabilities)]), node.id, node.epoch);
+    });
   }
   submit(userId: string, requestId: string, nodeId: string, command: Command, expectedEpoch?:number) {
     return this.transaction(() => {
@@ -269,6 +381,7 @@ export class ReachStore {
       }
       if(command.kind==='agent.delegate')this.agents.validate(command,node);
       if(command.kind==='agent.inspect'){const root=this.operation(userId,command.rootOperationId);requireCondition(JSON.parse(root.command_json).kind==='agent.delegate'&&root.node_id===nodeId&&root.epoch===node.epoch,409,'agent_inspection_binding','检查须对应同一设备配对的原 Task');}
+      if(command.kind==='agent.provenance'){for(const rootId of command.rootOperationIds){const root=this.operation(userId,rootId);requireCondition(JSON.parse(root.command_json).kind==='agent.delegate'&&root.node_id===nodeId&&root.epoch===node.epoch,409,'agent_provenance_binding','来源查询须对应同一设备配对的原 Task');}}
       requireCondition((JSON.parse(node.capabilities) as string[]).includes(command.kind), 409, 'capability_unavailable', '节点尚未声明这项能力');
       if (command.kind === 'file.read' && (command.resultFormat !== undefined || command.expectedFileVersion !== undefined)) {
         requireCondition((JSON.parse(node.capabilities) as string[]).includes('file.read.artifact'), 409, 'capability_unavailable', '节点尚未声明文件产物与版本核对能力');
@@ -277,6 +390,7 @@ export class ReachStore {
       this.db.prepare("INSERT INTO operations(id,user_id,node_id,epoch,request_id,command_json,payload_hash,delivery,execution,created_at,updated_at) VALUES(?,?,?,?,?,?,?,'queued','not_observed',?,?)").run(id, userId, nodeId, node.epoch, requestId, JSON.stringify(command), payloadHash, this.now(), this.now());
       if(command.kind==='agent.delegate'){const op=this.operation(userId,id);this.executions.addRoot(op);this.library.recordUses(op);}
       if(command.kind==='agent.resume')this.executions.addResume(this.operation(userId,id));
+      if(command.kind==='agent.continue')this.guidance.addContinue(this.operation(userId,id));
       if(command.kind==='agent.finalize')this.finalizations.add(this.operation(userId,id));
       this.audit(userId, 'operation.queued', id);
       return this.operation(userId, id);
@@ -326,7 +440,7 @@ export class ReachStore {
         ORDER BY created_at,id`).all(node.id, node.epoch, current.capabilities, current.capabilities) as unknown as OperationRow[];
       for(const row of rows){
         const kind=JSON.parse(row.command_json).kind;
-        if(kind==='agent.delegate'||kind==='agent.resume'){
+        if(kind==='agent.delegate'||kind==='agent.resume'||kind==='agent.continue'){
           try{this.agents.validateRequirements(this.executions.resolve(row.user_id,row.id).command,current);}
           catch(error){
             if(!(error instanceof ReachError))throw error;
@@ -393,14 +507,20 @@ export class ReachStore {
       return this.operation(userId, id);
     });
   }
-  record(node: NodeRow, event: OperationEvent) {
+  record(node: NodeRow, event: OperationEvent, rawDataJson?: string) {
     return this.transaction(() => {
+      if (rawDataJson !== undefined) {
+        assertNoDuplicateJsonKeys(rawDataJson);
+        try { JSON.parse(rawDataJson); }
+        catch { throw new ReachError(400, 'invalid_json', 'JSON 格式无效'); }
+      }
+      const serializedData = rawDataJson ?? JSON.stringify(event.data);
       const op = this.db.prepare('SELECT * FROM operations WHERE id=? AND node_id=? AND epoch=?').get(event.operationId, node.id, node.epoch) as unknown as OperationRow | undefined;
       requireCondition(op && op.dispatch_id === event.dispatchId && op.payload_hash === event.payloadHash, 409, 'operation_binding_mismatch', '回执与原操作不匹配');
       const eventDigest = digest(event);
       const previous = this.db.prepare('SELECT * FROM operation_events WHERE operation_id=? AND event_id=?').get(op.id, event.eventId) as unknown as EventRow | undefined;
       if (previous) {
-        requireCondition(previous.digest === eventDigest, 409, 'event_id_conflict', '同一事件 ID 内容发生变化');
+        requireCondition(previous.digest === eventDigest && (rawDataJson === undefined || previous.data_json === rawDataJson), 409, 'event_id_conflict', '同一事件 ID 内容发生变化');
         return { accepted: true, duplicate: true, sequence: previous.sequence };
       }
       requireCondition(event.sequence === op.last_sequence + 1, 409, 'event_sequence_conflict', '请按顺序补传原始回执');
@@ -415,10 +535,14 @@ export class ReachStore {
       if(event.kind==='succeeded')this.agents.settle(op,event.kind,event.data,reconciled);
       if(event.kind!=='output'&&finalStates.has(event.kind))this.closures.finish(op,event.kind,event.data,event.eventId,reconciled);
       if(!reconciled&&event.kind!=='output'&&finalStates.has(event.kind))this.resumes.finish(op,event.kind,event.data,event.eventId);
+      if(!reconciled&&event.kind==='unknown'&&this.executions.isAgent(op)&&this.guidance.isContinuation(op)){
+        const root=this.executions.root(op);
+        this.db.prepare('UPDATE agent_tasks SET requires_reconciliation=1 WHERE root_id=? AND active_execution_id=?').run(root.id,op.id);
+      }
       if(!reconciled&&event.kind!=='output'&&finalStates.has(event.kind))this.finalizations.finish(op,event.kind,event.data,event.eventId);
       validateArtifactEvent(this.db, op.id, event.kind, event.data);
-      const result = finalStates.has(execution) ? JSON.stringify(event.data) : op.result_json;
-      this.db.prepare('INSERT INTO operation_events VALUES(?,?,?,?,?,?,?)').run(op.id, event.eventId, eventDigest, event.sequence, event.kind, JSON.stringify(event.data), this.now());
+      const result = finalStates.has(execution) ? serializedData : op.result_json;
+      this.db.prepare('INSERT INTO operation_events VALUES(?,?,?,?,?,?,?)').run(op.id, event.eventId, eventDigest, event.sequence, event.kind, serializedData, this.now());
       if (reconciled) {
         // Preserve late original evidence without replacing the independently
         // attributed reconciliation or allowing the original action to replay.

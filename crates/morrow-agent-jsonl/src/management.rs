@@ -11,7 +11,7 @@ use serde_json::{json, Value};
 
 use crate::{
     evidence,
-    protocol::{TaskConfig, FRAME_BYTES},
+    protocol::{Reference, TaskConfig, FRAME_BYTES},
 };
 
 const RESULT_BYTES: usize = 64 * 1024 * 1024;
@@ -140,6 +140,14 @@ struct ProvenanceFilters {
     time_to_ms: Option<i64>,
 }
 
+#[derive(Clone, Debug, Deserialize, serde::Serialize)]
+#[serde(deny_unknown_fields)]
+struct InspectHold {
+    version: u32,
+    lease_id: String,
+    timeout_ms: u64,
+}
+
 #[derive(Deserialize)]
 #[serde(tag = "operation", rename_all = "snake_case", deny_unknown_fields)]
 enum Request {
@@ -261,6 +269,24 @@ enum Request {
         mandate: Mandate,
         assignment: Box<Assignment>,
         at_ms: u64,
+    },
+    SessionInspect {
+        request: morrow_agent_harness::core::session_inspect::InspectionRequest,
+        output_directory: PathBuf,
+        #[serde(default)]
+        hold: Option<InspectHold>,
+    },
+    SessionInspectSeal {
+        lease_id: String,
+        snapshot_sha256: String,
+        commitment_sha256: String,
+    },
+    SessionInspectRelease {
+        lease_id: String,
+        snapshot_sha256: String,
+    },
+    SettledTaskClose {
+        declaration_ref: Reference,
     },
 }
 
@@ -478,6 +504,39 @@ fn apply(request: Request, command_id: &str) -> Result<Value> {
                 at_ms,
             )
         }
+        Request::SessionInspect { request, output_directory, hold } => {
+            ensure!(hold.is_none(), "held session_inspect requires interactive stdio loop");
+            absolute(&request.session_path)?;
+            absolute(&request.cwd)?;
+            absolute(&output_directory)?;
+            let req_sha = evidence::hash(&serde_json::to_vec(&request)?);
+            let held = host::inspect_session_held(&request)?;
+            fs::create_dir_all(&output_directory)?;
+            let target = output_directory.join("session-inspection.json");
+            let record = json!({
+                "kind": "locked_session_inspection",
+                "version": 1,
+                "request_id": command_id,
+                "request_sha256": req_sha,
+                "snapshot": held.snapshot,
+            });
+            let result_ref = evidence::write_new(&target, &record)?;
+            drop(held);
+            Ok(json!({
+                "kind": "session_inspection_result",
+                "version": 1,
+                "request_id": command_id,
+                "request_sha256": req_sha,
+                "result_ref": result_ref,
+            }))
+        }
+        Request::SettledTaskClose { declaration_ref } => {
+            absolute(&declaration_ref.path)?;
+            host::close_settled_task(&declaration_ref.path, &declaration_ref.sha256)
+        }
+        Request::SessionInspectSeal { .. } | Request::SessionInspectRelease { .. } => {
+            anyhow::bail!("session_inspect_seal/release is valid only on an active held session_inspect stream")
+        }
     }
 }
 
@@ -548,6 +607,242 @@ pub fn stdio(bytes: &[u8]) -> Result<(), &'static str> {
     let output = response(bytes)?;
     let mut stdout = std::io::stdout().lock();
     stdout.write_all(&output).and_then(|_| stdout.flush()).map_err(|_| "management_delivery_unknown")
+}
+
+pub fn stdio_with_reader<R: std::io::BufRead + Send + 'static>(bytes: &[u8], reader: R) -> Result<(), &'static str> {
+    if bytes.len() > FRAME_BYTES {
+        return Err("management_frame_rejected");
+    }
+    let parsed: Frame = serde_json::from_slice(bytes).map_err(|_| "management_frame_rejected")?;
+    if let Request::SessionInspect { request, output_directory, hold: Some(hold) } = parsed.request {
+        return held_session_inspect(
+            &parsed.kind,
+            parsed.version,
+            &parsed.id,
+            bytes,
+            request,
+            output_directory,
+            hold,
+            reader,
+        );
+    }
+    stdio(bytes)
+}
+
+fn write_management_line(value: &Value) -> Result<(), &'static str> {
+    let mut out = serde_json::to_vec(value).map_err(|_| "management_delivery_unknown")?;
+    if out.len() + 1 > FRAME_BYTES {
+        return Err("management_response_too_large");
+    }
+    out.push(b'\n');
+    let mut stdout = std::io::stdout().lock();
+    stdout.write_all(&out).and_then(|_| stdout.flush()).map_err(|_| "management_delivery_unknown")
+}
+
+#[allow(clippy::too_many_arguments)]
+fn held_session_inspect<R: std::io::BufRead + Send + 'static>(
+    kind: &str,
+    version: u32,
+    id: &str,
+    raw_bytes: &[u8],
+    request: morrow_agent_harness::core::session_inspect::InspectionRequest,
+    output_directory: PathBuf,
+    hold: InspectHold,
+    mut reader: R,
+) -> Result<(), &'static str> {
+    if kind != "manage"
+        || version != 1
+        || id.is_empty()
+        || id.len() > 256
+        || id.trim() != id
+        || id.chars().any(char::is_control)
+        || hold.version != 1
+        || hold.lease_id.is_empty()
+        || hold.lease_id.len() > 128
+        || !(1..=60_000).contains(&hold.timeout_ms)
+    {
+        return Err("management_frame_rejected");
+    }
+    let mut canonical_wire = raw_bytes.to_vec();
+    if canonical_wire.last() != Some(&b'\n') {
+        canonical_wire.push(b'\n');
+    }
+    let req_sha = evidence::hash(&canonical_wire);
+    let started = (|| -> Result<(host::HeldSessionInspection, Reference)> {
+        absolute(&request.session_path)?;
+        absolute(&request.cwd)?;
+        absolute(&output_directory)?;
+        let held = host::inspect_session_held(&request)?;
+        fs::create_dir_all(&output_directory)?;
+        let target = output_directory.join("session-inspection.json");
+        let record = json!({
+            "kind": "locked_session_inspection",
+            "version": 1,
+            "request_id": id,
+            "request_sha256": req_sha,
+            "snapshot": held.snapshot,
+        });
+        let result_ref = evidence::write_new(&target, &record)?;
+        Ok((held, result_ref))
+    })();
+    let (held, result_ref) = match started {
+        Ok(pair) => pair,
+        Err(error) => {
+            return write_management_line(&json!({
+                "kind": "management_result",
+                "version": 1,
+                "id": id,
+                "ok": false,
+                "error": error.to_string(),
+            }));
+        }
+    };
+    let initial = json!({
+        "kind": "management_result",
+        "version": 1,
+        "id": id,
+        "ok": true,
+        "value": {
+            "kind": "session_inspection_result",
+            "version": 1,
+            "request_id": id,
+            "request_sha256": req_sha,
+            "lease": {
+                "version": 1,
+                "lease_id": hold.lease_id,
+                "timeout_ms": hold.timeout_ms,
+                "snapshot_sha256": result_ref.sha256,
+            },
+            "result_ref": result_ref,
+        }
+    });
+    write_management_line(&initial)?;
+
+    let (frame_tx, frame_rx) = std::sync::mpsc::sync_channel::<Result<Option<Vec<u8>>, ()>>(4);
+    std::thread::spawn(move || loop {
+        let item = crate::transport::read_frame(&mut reader).map_err(|_| ());
+        let done = matches!(item, Ok(None) | Err(()));
+        if frame_tx.send(item).is_err() || done {
+            break;
+        }
+    });
+    let deadline = std::time::Instant::now() + std::time::Duration::from_millis(hold.timeout_ms);
+    loop {
+        let now = std::time::Instant::now();
+        if now >= deadline {
+            drop(held);
+            return Err("management_lease_expired");
+        }
+        let line = match frame_rx.recv_timeout(deadline.saturating_duration_since(now)) {
+            Ok(Ok(Some(line))) => line,
+            Ok(Ok(None)) | Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => {
+                drop(held);
+                return Err("management_lease_eof");
+            }
+            Ok(Err(())) => {
+                drop(held);
+                return Err("management_frame_rejected");
+            }
+            Err(std::sync::mpsc::RecvTimeoutError::Timeout) => {
+                drop(held);
+                return Err("management_lease_expired");
+            }
+        };
+        let follow: Frame = serde_json::from_slice(&line).map_err(|_| "management_frame_rejected")?;
+        if follow.kind != "manage"
+            || follow.version != 1
+            || follow.id.is_empty()
+            || follow.id.len() > 256
+            || follow.id.trim() != follow.id
+        {
+            drop(held);
+            return Err("management_frame_rejected");
+        }
+        match follow.request {
+            Request::SessionInspectSeal { lease_id, snapshot_sha256, commitment_sha256 } => {
+                let outcome = (|| -> Result<Value> {
+                    ensure!(
+                        lease_id == hold.lease_id
+                            && snapshot_sha256 == result_ref.sha256
+                            && morrow_agent_harness::core::png_image::is_lower_sha256(&commitment_sha256),
+                        "held inspection seal correlation or hash invalid"
+                    );
+                    let sealed = json!({
+                        "kind": "sealed_session_inspection",
+                        "version": 1,
+                        "request_id": id,
+                        "request_sha256": req_sha,
+                        "lease_id": hold.lease_id,
+                        "snapshot_sha256": result_ref.sha256,
+                        "commitment_sha256": commitment_sha256,
+                    });
+                    let seal_path = output_directory.join("seal.json");
+                    let seal_ref = if seal_path.exists() {
+                        evidence::checked_value(&seal_path, &sealed)?
+                    } else {
+                        let staging =
+                            output_directory.join(format!("seal.tmp.{}", morrow_agent_harness::core::fresh_id()));
+                        let _ = evidence::write_new(&staging, &sealed)?;
+                        let linked = fs::hard_link(&staging, &seal_path);
+                        let _ = fs::remove_file(&staging);
+                        linked?;
+                        evidence::checked_value(&seal_path, &sealed)?
+                    };
+                    Ok(json!({
+                        "kind": "session_inspection_sealed",
+                        "version": 1,
+                        "lease_id": hold.lease_id,
+                        "seal_ref": seal_ref,
+                    }))
+                })();
+                match outcome {
+                    Ok(val) => write_management_line(&json!({
+                        "kind": "management_result",
+                        "version": 1,
+                        "id": follow.id,
+                        "ok": true,
+                        "value": val,
+                    }))?,
+                    Err(err) => write_management_line(&json!({
+                        "kind": "management_result",
+                        "version": 1,
+                        "id": follow.id,
+                        "ok": false,
+                        "error": err.to_string(),
+                    }))?,
+                }
+            }
+            Request::SessionInspectRelease { lease_id, snapshot_sha256 } => {
+                if lease_id != hold.lease_id || snapshot_sha256 != result_ref.sha256 {
+                    write_management_line(&json!({
+                        "kind": "management_result",
+                        "version": 1,
+                        "id": follow.id,
+                        "ok": false,
+                        "error": "held inspection release correlation mismatch",
+                    }))?;
+                    continue;
+                }
+                drop(held);
+                return write_management_line(&json!({
+                    "kind": "management_result",
+                    "version": 1,
+                    "id": follow.id,
+                    "ok": true,
+                    "value": {
+                        "kind": "session_inspection_released",
+                        "version": 1,
+                        "lease_id": hold.lease_id,
+                        "snapshot_sha256": result_ref.sha256,
+                    }
+                }));
+            }
+            _ => {
+                drop(held);
+                return Err("management_frame_rejected");
+            }
+        }
+    }
 }
 
 #[cfg(test)]

@@ -1,24 +1,46 @@
 // Copyright (c) Ray Zhang. Host-owned evidence policy; Core observations are facts, not settlement.
 import { constants, copyFileSync, readFileSync, writeFileSync, mkdirSync, openSync, fsyncSync, closeSync, chmodSync, statSync, readdirSync, existsSync } from 'node:fs';
-import { join, resolve, relative, isAbsolute, parse } from 'node:path';
+import { join, resolve, relative, isAbsolute, parse, dirname } from 'node:path';
 import { createHash } from 'node:crypto';
 import { isDeepStrictEqual } from 'node:util';
 import type { CloseIntent, Turn } from './store.ts';
 import type {DeviceAudit} from './device-tools.ts';
+import { inspectSession, closeTask, readCloseOperation, queryProvenance } from '../../../../crates/morrow-agent-jsonl/clients/node/management.mjs';
+export { queryProvenance };
 import {deviceToolsFor,targetDescription,invalidDeviceArguments} from './device-tools.ts';
+import {memoryTools,invalidMemoryArguments} from './memory.ts';
+import {attachmentTools,invalidAttachmentArguments} from './attachments.ts';
 
-const SDK = new URL('../../../../crates/morrow-agent-jsonl/clients/node/client.mjs', import.meta.url).href;
-// Reviewed ordinary image: fixed local_tools=false, worker=None; no external capabilities.
-export const SESSION_ONLY_IMAGE = '2f858a77ba86bd8b201f7184b5afb7a10afc674ad8668cf49354c44174dc8353';
-export const IMAGE_INPUT_IMAGE = '0275185113786a971fad17307c4cefcd0de4d2c0666bcb857d9cc20b2e26a344';
-// Preserve the reviewed typed-image candidate for its original Tasks as well.
-const imageInputs=new Set([IMAGE_INPUT_IMAGE,'26d9e99368a1ab239dcd6fe703a4ecf7f1af44c94bf2e5b069354eb98136ddea']);
-export const isImageRuntime=(sha:string)=>imageInputs.has(sha);
-const supportedImage=(sha:string)=>sha===SESSION_ONLY_IMAGE||isImageRuntime(sha);
-export const toolsForRuntime=(target:unknown,sha:string)=>deviceToolsFor(target).filter(tool=>sha!==SESSION_ONLY_IMAGE||tool.name!=='reach_image');
-const tools = new Set(['task_update','history_read','history_search','reference_read','reference_search','session_memory_search','session_memory_read','memory_propose','experience_propose','experience_search']);
-function need(ok:unknown, message:string): asserts ok { if (!ok) throw Error(message); }
 export const hashBytes = (bytes:Buffer|string) => createHash('sha256').update(bytes).digest('hex');
+// Verified Morrow JSONL sidecar image (fixed local_tools=false, worker=None, typed PNG + manage inspect/close).
+export const IMAGE_INPUT_IMAGE = '7988f6450379115f659e0ade5cfae48db89cb8a56bda517e925c1ee247cc4a41';
+function configuredSidecarSha():string|null {
+  const configured=process.env.REACH_DESK_SIDECAR;
+  if(!configured||!existsSync(configured))return null;
+  const name=parse(configured).base.toLowerCase();
+  if(name!=='morrow-agent-jsonl'&&name!=='morrow-agent-jsonl.exe')return null;
+  try{const s=statSync(configured);return s.isFile()?hashBytes(readFileSync(configured)):null;}catch{return null;}
+}
+const configuredSha = configuredSidecarSha();
+const IMAGE_RUNTIMES: Record<string, true> = {
+  [IMAGE_INPUT_IMAGE]: true,
+  ...(configuredSha ? { [configuredSha]: true } : {}),
+};
+export const isImageRuntime=(sha:string)=>Boolean(IMAGE_RUNTIMES[sha]);
+export const toolsForRuntime=(target:unknown,_sha:string)=>deviceToolsFor(target);
+const CORE_SESSION_TOOLS: Record<string, true> = {
+  task_update: true,
+  history_read: true,
+  history_search: true,
+  reference_read: true,
+  reference_search: true,
+  session_memory_search: true,
+  session_memory_read: true,
+  memory_propose: true,
+  experience_propose: true,
+  experience_search: true,
+};
+function need(ok:unknown, message:string): asserts ok { if (!ok) throw Error(message); }
 const same = (a:unknown,b:unknown) => isDeepStrictEqual(a,b);
 const normalized = (p:string) => { const v=p.replace(/^\\\\\?\\UNC\\/i,'\\\\').replace(/^\\\\\?\\/,''); return process.platform==='win32'?resolve(v).toLowerCase():resolve(v); };
 const pathSame = (a:string,b:string) => typeof a==='string'&&typeof b==='string'&&normalized(a)===normalized(b);
@@ -36,49 +58,67 @@ export function pinRuntime(binary:string,state:string):RuntimeImage {
 }
 function request(start:any,from=0,prefix:string|null=null,runs:string[]=[],image?:RuntimeImage) { const modern=!!image&&isImageRuntime(image.sha256);return {session_path:start.run.session_path,cwd:start.run.cwd,from_raw:from,expected_prefix_proof:prefix,expected_runs:runs,require_context:runs.length>0,limits:{max_messages:100000,max_input_bytes:(modern?1024:64)*1024*1024,max_output_bytes:(modern?64:16)*1024*1024}}; }
 export async function baseline(image:RuntimeImage,start:any,root:string) {
-  if(!supportedImage(image.sha256))return null;
+  if(!isImageRuntime(image.sha256))return null;
   const p=parse(start.run.session_path),head=join(p.dir,p.name+'.journal','head.json'),from=existsSync(head)?json(head).head.raw_count:0;
-  const {inspectSession}=await import(SDK),value=await inspectSession({binary:image.path,request:request(start,from,null,[],image),operationDirectory:join(root,'baseline')});
+  const value=await inspectSession({binary:image.path,request:request(start,from,null,[],image),operationDirectory:join(root,'baseline')});
   need(value.delivery==='validated'&&!value.result.snapshot.fence&&!value.result.snapshot.closing_marker,'baseline unavailable or fenced');
   need(value.result.snapshot.inspection.transcript_closed&&!value.result.snapshot.inspection.pending_run,'baseline interrupted');
   return value;
 }
-function joined(result:any,turn:Turn) {
+function joined(result:any,expectedTaskId:string) {
   need(result.delivery==='validated'&&result.callbacks_finished===true&&result.process?.closed===true&&result.process.exit_code===0&&result.process.signal===null&&result.process.forced===false&&!result.fault,'original process not joined');
-  need(result.outcome?.task_id===turn.task_id&&['Cancelled','Informational'].includes(result.outcome.stop)&&result.outcome.task_accepted===false&&result.terminal?.local_callbacks_finished===true&&result.unknownEffects?.length===0,'original Task not a locally joined stop');
+  need(result.outcome?.task_id===expectedTaskId&&['Cancelled','Informational'].includes(result.outcome.stop)&&result.outcome.task_accepted===false&&result.terminal?.local_callbacks_finished===true&&result.unknownEffects?.length===0,'original Task not a locally joined stop');
 }
 function profile(start:any,image:RuntimeImage,turn:Turn,audit?:DeviceAudit) {
-  need(supportedImage(image.sha256)&&hashBytes(readFileSync(image.path))===image.sha256,'unsupported or changed runtime');
+  need(isImageRuntime(image.sha256)&&hashBytes(readFileSync(image.path))===image.sha256,'unsupported or changed runtime');
   const target=turn.target_json?JSON.parse(turn.target_json):null;
   const selected=target?toolsForRuntime(target,image.sha256):[];
-  need(start.kind==='start_task'&&start.task.kind==='Reasoning'&&start.task.max_runs===1&&start.run.mode==='execute'&&same(start.run.tools,selected)&&(!target||(audit&&same(audit.tools.filter(tool=>image.sha256!==SESSION_ONLY_IMAGE||tool.name!=='reach_image'),selected)&&audit.targetDescription===targetDescription(target))),'unsupported run profile');
+  // Supports optional host toolsets (memoryTools, attachmentTools) and legacy device runs without reach_agent_delegate.
+  const prefixes=[[...memoryTools,...attachmentTools],memoryTools,attachmentTools,[]];
+  const suffixes=target?[selected,selected.filter(tool=>tool.name!=='reach_agent_delegate')]:[[]];
+  let admitted:any[]|undefined;
+  for(const prefix of prefixes){
+    for(const suffix of suffixes){
+      const candidate=[...prefix,...suffix];
+      if(same(start.run.tools,candidate)){admitted=candidate;break;}
+    }
+    if(admitted)break;
+  }
+  need(admitted&&start.kind==='start_task'&&start.task.kind==='Reasoning'&&Number.isInteger(start.task.max_runs)&&start.task.max_runs>=1&&start.task.max_runs<=4&&start.run.mode==='execute'&&(!target||(audit&&same(audit.tools,selected)&&audit.targetDescription===targetDescription(target)))&&(!audit||audit.records.every(record=>admitted.some(tool=>tool.name===record.frame.tool_name))),'unsupported run profile');
   const allowed=['run_id','objective','cwd','session_path','environment_state','device_fp','session_key','mode','endpoint','model','max_calls','max_seconds','max_output','host_output_ceiling','model_resolution','tools'];
-  need(Object.keys(start.run).every(k=>allowed.includes(k))&&Object.keys(start).every(k=>['kind','version','task','run','cancel_grace_ms','emit_events'].includes(k)),'extra capabilities in original start');
+  need(Object.keys(start.run).every(k=>allowed.includes(k))&&Object.keys(start).every(k=>['kind','version','task','run','cancel_grace_ms','emit_events','artifact_review','guidance','continue_reviewed'].includes(k)),'extra capabilities in original start');
 }
 function originalEvents(root:string,start:any,result:any,audit?:DeviceAudit) {
   const evidence=start.task.evidence_dir,files=readdirSync(evidence),runs=result.outcome.runs;
-  need(Number.isInteger(runs)&&runs>=0&&runs<=1,'unsupported Run consumption');
-  const admissions=files.filter(n=>/^run-\d+-admission\.json$/.test(n));need(admissions.length===runs,'admission set mismatch');
+  need(Number.isInteger(runs)&&runs>=0&&runs<=start.task.max_runs,'unsupported Run consumption');
   const started=json(join(root,'client','client-started.json'));need(started.task_id===start.task.task_id&&started.start_sha256===hashBytes(JSON.stringify(start)),'SDK start mismatch');
   const finished=json(join(root,'client','client-finished.json'));need(finished.delivery==='validated'&&same(finished.process,result.process)&&finished.callbacks_finished===true&&finished.outcome_sha256===hashBytes(JSON.stringify(result.outcome)),'SDK join mismatch');
   const rpcFiles=readdirSync(join(root,'client')).filter(n=>n.startsWith('rpc-'));
-  need(rpcFiles.length===2*(audit?.records.length??0),'unexpected or incomplete Host callback');
+  const parsedRpc=rpcFiles.map(name=>({name,record:json(join(root,'client',name))}));
+  const toolRpc=parsedRpc.filter(item=>item.record.kind==='tool_call');
+  const extraRpc=parsedRpc.filter(item=>item.record.kind!=='tool_call');
+  need(toolRpc.length===2*(audit?.records.length??0)&&extraRpc.every(item=>item.record.kind==='review_artifacts_request')&&extraRpc.length%2===0,'unexpected or incomplete Host callback');
   for(const record of audit?.records??[]){
     const frame=record.frame,key='rpc-'+hashBytes(frame.rpc_id),startFile=join(root,'client',key+'-started.json'),endFile=join(root,'client',key+'-settled.json'),started=json(startFile),finished=json(endFile);
     const reply={kind:'tool_reply',version:1,rpc_id:frame.rpc_id,task_id:frame.task_id,run_id:frame.run_id,native_call_id:frame.native_call_id,tool_name:frame.tool_name,args_sha256:frame.args_sha256,result:record.reply};
     for(const item of [started,finished])need(item.kind==='tool_call'&&item.task_id===start.task.task_id&&item.run_id===start.run.run_id&&item.rpc_id===frame.rpc_id&&item.request_sha256===hashBytes(JSON.stringify(frame)),'original device RPC identity mismatch');
     need(finished.reply_sha256===hashBytes(JSON.stringify(reply)),'original device reply mismatch');
   }
-  if(runs===0){need(result.outcome.observed_calls===0,'zero Run charged calls');return {events:[] as any[],refs:[ref(join(root,'client','client-started.json')),ref(join(root,'client','client-finished.json'))]};}
-  const a=json(join(evidence,'run-1-admission.json')),o=json(join(evidence,'run-1-observation.json'));
-  need(a.task_id===start.task.task_id&&a.run_id===start.run.run_id&&a.run_number===1&&a.criteria_revision===start.task.criteria_revision&&a.authorization_revision===start.task.authorization_revision&&pathSame(a.session_path,start.run.session_path)&&a.remaining_calls===start.task.max_calls&&a.deadline_unix_ms===start.task.deadline_unix_ms,'original admission mismatch');
-  need(o.task_id===a.task_id&&o.run_id===a.run_id&&o.core_joined===true&&o.event_failure===false&&o.observed_calls===result.outcome.observed_calls&&o.total_calls===result.outcome.observed_calls,'Run join/consumption mismatch');
-  const bytes=bounded(join(evidence,'run-1-events.jsonl'),64*1024*1024);need(hashBytes(bytes)===o.events_sha256&&(!bytes.length||bytes.at(-1)===10),'event EOF/hash mismatch');
+  const admissions=files.filter(n=>/^run-\d+-admission\.json$/.test(n));
+  if(runs===0||admissions.length===0){need(start.continue_reviewed?admissions.length===0:result.outcome.observed_calls===0,'zero Run charged calls');return {events:[] as any[],refs:[ref(join(root,'client','client-started.json')),ref(join(root,'client','client-finished.json'))]};}
+  need(admissions.length===1,'admission set mismatch');
+  const runNum=runs;
+  const a=json(join(evidence,`run-${runNum}-admission.json`)),o=json(join(evidence,`run-${runNum}-observation.json`));
+  need(a.task_id===start.task.task_id&&a.run_id===start.run.run_id&&a.run_number===runNum&&a.criteria_revision===start.task.criteria_revision&&a.authorization_revision===start.task.authorization_revision&&pathSame(a.session_path,start.run.session_path)&&a.remaining_calls<=start.task.max_calls&&a.deadline_unix_ms===start.task.deadline_unix_ms,'original admission mismatch');
+  need(o.task_id===a.task_id&&o.run_id===a.run_id&&o.core_joined===true&&o.event_failure===false&&o.total_calls===result.outcome.observed_calls,'Run join/consumption mismatch');
+  const bytes=bounded(join(evidence,`run-${runNum}-events.jsonl`),64*1024*1024);need(hashBytes(bytes)===o.events_sha256&&(!bytes.length||bytes.at(-1)===10),'event EOF/hash mismatch');
   const lines=new TextDecoder('utf-8',{fatal:true}).decode(bytes).split('\n');lines.pop();
   const events=lines.map((line,n)=>{need(Buffer.byteLength(line)<=1048576,'event frame bound');const e=JSON.parse(line);need(e.task_id===a.task_id&&e.run_id===a.run_id&&e.seq===n+1,'event identity/sequence mismatch');return e.event;});
   need(events.length===o.event_count,'event count mismatch');
   const calls=events.filter(e=>e.type==='model_call');need(calls.length===o.observed_calls&&calls.every((e,n)=>e.call===n+1),'model consumption mismatch');
-  return {events,refs:['task.json','task-options.json','run-1-admission.json','run-1-observation.json','run-1-events.jsonl'].map(n=>ref(join(evidence,n))).concat([ref(join(root,'client','client-started.json')),ref(join(root,'client','client-finished.json')),...rpcFiles.map(n=>ref(join(root,'client',n))),...(audit?.evidencePaths??[]).map(p=>ref(p))])};
+  const guidanceFile=join(evidence,'jsonl-guidance.json');
+  const extraEvidence=existsSync(guidanceFile)?[ref(guidanceFile)]:[];
+  return {events,refs:['task.json','task-options.json',`run-${runNum}-admission.json`,`run-${runNum}-observation.json`,`run-${runNum}-events.jsonl`].map(n=>ref(join(evidence,n))).concat(extraEvidence,[ref(join(root,'client','client-started.json')),ref(join(root,'client','client-finished.json')),...rpcFiles.map(n=>ref(join(root,'client',n))),...(audit?.evidencePaths??[]).map(p=>ref(p))])};
 }
 const textResult = (call:any) => call.result?.content?.map((b:any)=>b.text??'').join('\n');
 const sourceMatches=(m:any,args:any,context:any) => same(m.source_ids,args.source_ids)&&same(m.sources,args.source_ids.map((id:string)=>({id,hash:context.references.find((r:any)=>r.id===id)?.hash})));
@@ -94,12 +134,17 @@ export function reviewEffects(before:any,after:any,start:any,events:any[],token:
   need(addedIndices.every((i:any)=>after.runs.some((r:any)=>r.id===run&&r.index&&pathSame(r.index.path,i.path))),'unadmitted Run appeared');
   if(!a){need(!b&&after.calls.length===0,'context disappeared');return {calls:[],context:'absent'};}
   need(a.cloud_stamp===null&&a.cloud_migrated===true&&(!b||(b.cloud_stamp===null&&b.cloud_migrated===true))&&a.version===1&&(!b||a.scope===b.scope),'unexpected or legacy context origin');
-  const objective=start.run.objective.replaceAll(token,'[redacted grant]'),command=objective.trim().match(/^\/(reference|memory)\s+(list|correct|revoke|accept)(?:\s+([\s\S]*))?$/u);
+  const rawObjective=start.continue_reviewed?.review?.verdict?.NeedsChanges?.feedback?`${start.run.objective}\n\nHost review feedback\n${start.continue_reviewed.review.verdict.NeedsChanges.feedback}`:start.run.objective;
+  const objective=rawObjective.replaceAll(token,'[redacted grant]'),command=objective.trim().match(/^\/(reference|memory)\s+(list|correct|revoke|accept)(?:\s+([\s\S]*))?$/u);
+  const appliedGuidance:string[]=(()=>{if(!start.guidance||!start.task?.evidence_dir)return [];const gp=join(start.task.evidence_dir,'jsonl-guidance.json'),sp=join(dirname(start.task.evidence_dir),'guidance-submitted.json');if(!existsSync(gp))return [];const gj=json(gp),submitted:Record<string,string>=existsSync(sp)?json(sp):{};return Array.isArray(gj.messages)?gj.messages.filter((m:any)=>m.status==='applied').map((m:any)=>{const rawTxt=typeof m.text==='string'?m.text:submitted[String(m.message_id??m.id??'')];need(typeof rawTxt==='string','applied guidance missing submitted text');return rawTxt.replaceAll(token,'[redacted grant]');}):[];})();
   const refs=b?.references??[],memories=b?.memories??[],newRefs=a.references.filter((r:any)=>!refs.some((old:any)=>old.id===r.id));
+  const steeringRefs=newRefs.filter((r:any)=>r.kind==='steering');
+  const nonSteeringRefs=newRefs.filter((r:any)=>r.kind!=='steering');
   const parts=command?.[3]?.trim()??'',cmdId=parts.split(/\s/u)[0],correction=parts.match(/^\S+\s([\s\S]*)$/u)?.[1];
-  need(newRefs.length===(command?(command[1]==='reference'&&command[2]==='correct'?1:0):after.runs.length?1:0),'reference effect count mismatch');
+  need(nonSteeringRefs.length===(command?(command[1]==='reference'&&command[2]==='correct'?1:0):after.runs.length?1:0),'reference effect count mismatch');
+  need(steeringRefs.every((r:any)=>r.run===run&&r.status==='active')&&same(steeringRefs.map((r:any)=>r.text),appliedGuidance),'steering reference mismatch');
   for(const old of refs){const current=a.references.find((r:any)=>r.id===old.id);need(current,'old reference missing');const expected={...old};if(command?.[1]==='reference'&&cmdId===old.id&&['correct','revoke'].includes(command[2]))expected.status=command[2]==='correct'?'superseded':'revoked';need(same(current,expected),'unexplained reference mutation');}
-  for(const r of newRefs){
+  for(const r of nonSteeringRefs){
     need(r.run===run&&r.status==='active','unowned reference');
     if(command?.[1]==='reference'&&command[2]==='correct'){const old=refs.find((x:any)=>x.id===cmdId);need(old&&r.text===correction&&r.kind===old.kind&&r.version===old.version+1&&r.supersedes===old.id,'correction mismatch');}
     else if(r.kind==='objective')need(!command&&r.text===objective,'objective source mismatch');
@@ -121,8 +166,8 @@ export function reviewEffects(before:any,after:any,start:any,events:any[],token:
   need(starts.length===after.calls.length&&ends.length===after.calls.length,'native/event tool set mismatch');
   for(const c of after.calls){
     const external=audit?.records.find(record=>record.frame.native_call_id===c.call.id&&record.frame.tool_name===c.call.name);
-    const rejected=!!audit&&!external&&c.result?.isError&&!c.effects_unknown&&invalidDeviceArguments(c.call.name,c.call.arguments);
-    need((tools.has(c.call.name)||external||rejected)&&c.result&&c.result_raw_index!==null,'unsupported or unfinished tool');
+    const rejected=!external&&c.result?.isError&&!c.effects_unknown&&((!!audit&&invalidDeviceArguments(c.call.name,c.call.arguments))||invalidMemoryArguments(c.call.name,c.call.arguments)||invalidAttachmentArguments(c.call.name,c.call.arguments));
+    need((Boolean(CORE_SESSION_TOOLS[c.call.name])||external||rejected)&&c.result&&c.result_raw_index!==null,'unsupported or unfinished tool');
     const s=starts.filter(e=>e.step_id===c.call.id),e=ends.filter(e=>e.step_id===c.call.id);
     need(s.length===1&&e.length===1&&s[0].title===c.call.name&&e[0].title===c.call.name&&e[0].status===(c.result.isError?'failed':'completed'),'tool event mismatch');
     if(rejected){reviews.push({id:c.call.id,name:c.call.name,effect:'core-schema-rejection-no-host-callback'});continue;}
@@ -148,13 +193,14 @@ export function reviewEffects(before:any,after:any,start:any,events:any[],token:
 }
 
 export async function prepareSettlement(image:RuntimeImage,start:any,base:any,result:any,turn:Turn,root:string,token:string,audit?:DeviceAudit):Promise<CloseIntent> {
-  profile(start,image,turn,audit);joined(result,turn);need(base?.delivery==='validated','original baseline absent');
-  const original=json(join(root,'request.json'));need(same(original,start)&&start.task.task_id===turn.task_id&&start.run.run_id===turn.run_id,'original request identity mismatch');
+  const expectedTaskId=start.task.task_id;
+  profile(start,image,turn,audit);joined(result,expectedTaskId);need(base?.delivery==='validated','original baseline absent');
+  const original=json(join(root,'request.json'));need(same(original,start)&&(start.continue_reviewed?typeof expectedTaskId==='string'&&expectedTaskId.length>0:expectedTaskId===turn.task_id)&&start.run.run_id===turn.run_id,'original request identity mismatch');
   const {events,refs}=originalEvents(root,start,result,audit),before=base.result.snapshot.inspection;
   if(result.outcome.stop==='Informational')need(/^\/(reference|memory)\s/u.test(start.run.objective.trim())&&result.outcome.observed_calls===0,'unsupported informational outcome');
-  const {inspectSession}=await import(SDK),observed=await inspectSession({binary:image.path,request:request(start,before.to_raw,before.full_proof,result.outcome.runs?[turn.run_id]:[],image),operationDirectory:join(root,'inspection')});
+  const observed=await inspectSession({binary:image.path,request:request(start,before.to_raw,before.full_proof,result.outcome.runs?[turn.run_id]:[],image),operationDirectory:join(root,'inspection')});
   need(observed.delivery==='validated','final inspection unavailable');const snapshot=observed.result.snapshot,after=snapshot.inspection,fence=snapshot.fence?.record;
-  need(!snapshot.closing_marker&&fence&&pathSame(snapshot.fence.path,result.outcome.reconciliation_fence)&&fence.task_id===turn.task_id&&pathSame(fence.session_path,start.run.session_path)&&pathSame(fence.evidence_dir,start.task.evidence_dir),'original fence mismatch');
+  need(!snapshot.closing_marker&&fence&&pathSame(snapshot.fence.path,result.outcome.reconciliation_fence)&&fence.task_id===expectedTaskId&&pathSame(fence.session_path,start.run.session_path)&&pathSame(fence.evidence_dir,start.task.evidence_dir),'original fence mismatch');
   need(pathSame(before.canonical_session_path,after.canonical_session_path)&&pathSame(before.canonical_cwd,after.canonical_cwd),'baseline path mismatch');
   if(result.outcome.runs===0)need(same(before.inputs,after.inputs)&&same(before.context,after.context),'zero-Run native state changed');
   const effects=reviewEffects(before,after,start,events,token,audit);
@@ -168,11 +214,10 @@ export async function prepareSettlement(image:RuntimeImage,start:any,base:any,re
 }
 export async function executeSettlement(intent:CloseIntent,root:string,attempt:number) {
   need(within(root,intent.declarationPath)&&within(join(resolve(root,'../..'),'runtime'),intent.binaryPath),'settlement path outside original roots');
-  need(hashBytes(readFileSync(intent.binaryPath))===intent.binarySha256&&supportedImage(intent.binarySha256)&&hashBytes(bounded(intent.declarationPath))===intent.declarationSha256,'immutable close inputs changed');
-  const {closeTask}=await import(SDK);return closeTask({binary:intent.binaryPath,declarationRef:{path:intent.declarationPath,sha256:intent.declarationSha256},operationDirectory:join(root,'close-'+attempt),timeoutMs:15000});
+  need(hashBytes(readFileSync(intent.binaryPath))===intent.binarySha256&&isImageRuntime(intent.binarySha256)&&hashBytes(bounded(intent.declarationPath))===intent.declarationSha256,'immutable close inputs changed');
+  return closeTask({binary:intent.binaryPath,declarationRef:{path:intent.declarationPath,sha256:intent.declarationSha256},operationDirectory:join(root,'close-'+attempt),timeoutMs:15000});
 }
 export async function recoverCloseOperation(intent:CloseIntent,root:string,attempt:number) {
   need(within(root,intent.declarationPath)&&hashBytes(bounded(intent.declarationPath))===intent.declarationSha256,'original declaration changed');
-  const {readCloseOperation}=await import(new URL('../../../../crates/morrow-agent-jsonl/clients/node/close.mjs',import.meta.url).href);
   return readCloseOperation({declarationRef:{path:intent.declarationPath,sha256:intent.declarationSha256},operationDirectory:join(root,'close-'+attempt)});
 }

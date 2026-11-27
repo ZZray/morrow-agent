@@ -14,7 +14,7 @@ test('built management assets have restrictive headers; arbitrary paths and prot
   const address = server.address(); assert.ok(address && typeof address !== 'string');
   const base = `http://127.0.0.1:${address.port}`;
   try {
-    for (const [path, type, marker] of [['/', 'text/html', 'lang="zh-CN"'], ['/assets/admin.js', 'text/javascript', 'createElement'], ['/assets/artifacts.js', 'text/javascript', 'ArtifactReader'], ['/assets/admin.css', 'text/css', 'focus-visible'], ['/assets/reach.svg', 'image/svg+xml', 'viewBox="0 0 512 512"']]) {
+    for (const [path, type, marker] of [['/', 'text/html', 'lang="zh-CN"'], ['/assets/admin.js', 'text/javascript', 'createElement'], ['/assets/artifacts.js', 'text/javascript', 'ArtifactReader'], ['/assets/admin.css', 'text/css', 'focus-visible'], ['/assets/tokens.css', 'text/css', '--accent-user'], ['/assets/controls.css', 'text/css', '.dd-list'], ['/assets/dropdown.js', 'text/javascript', 'Dropdown'], ['/assets/shell.js', 'text/javascript', 'consoleSections'], ['/assets/desk.js', 'text/javascript', 'mountDesk'], ['/assets/desk-settlement.js', 'text/javascript', 'mergeSettlement'], ['/assets/desk-images.js', 'text/javascript', 'ImageGallery'], ['/assets/desk-steps.js', 'text/javascript', 'paintSteps'], ['/assets/desk-agent.js', 'text/javascript', 'AgentPanel'], ['/assets/desk-files.js', 'text/javascript', 'openWorkspace'], ['/assets/desk-queue.js', 'text/javascript', 'paintQueue'], ['/assets/desk-skills.js', 'text/javascript', 'DeskSkills'], ['/assets/desk-markdown.js', 'text/javascript', 'renderMarkdown'], ['/assets/desk-memory.js', 'text/javascript', 'openMemory'], ['/assets/desk-attachments.js', 'text/javascript', 'DeskAttachments'], ['/assets/desk.css', 'text/css', '.desk'], ['/assets/reach.svg', 'image/svg+xml', 'viewBox="0 0 256 256"'], ['/assets/outfit.ttf', 'font/ttf', '']]) {
       const response = await fetch(base + path);
       assert.equal(response.status, 200); assert.ok(response.headers.get('content-type')?.startsWith(type));
       assert.match(response.headers.get('content-security-policy')!, /frame-ancestors 'none'/);
@@ -81,4 +81,21 @@ test('cookie management session restores, enforces CSRF, logs out and expires on
 test('controller accepts only canonical root or Reach mount addresses', () => {
   for (const value of ['https://118.25.103.226', 'https://118.25.103.226/reach', 'https://example.test:8443']) assert.equal(validateOrigin(value), value);
   for (const value of ['https://example.test/reach/', 'https://example.test/reach/../reach', 'https://example.test/%72each', 'https://example.test/other', 'https://user@example.test/reach', 'https://example.test/reach?q=1', 'https://example.test/reach#x', 'http://118.25.103.226/reach']) assert.throws(() => validateOrigin(value));
+});
+
+test('old /desk/ links land on the unified console conversation route without Desk runtime', async () => {
+  const store = new ReachStore(':memory:');
+  const server = reachServer({ store, publicOrigin: 'http://127.0.0.1', allowInsecureLoopback: true });
+  server.listen(0, '127.0.0.1'); await once(server, 'listening');
+  const address = server.address(); assert.ok(address && typeof address !== 'string');
+  const base = `http://127.0.0.1:${address.port}`;
+  try {
+    const id = randomUUID();
+    const withConversation = await fetch(`${base}/desk/?c=${id.toUpperCase()}`, { redirect: 'manual' });
+    assert.equal(withConversation.status, 308); assert.equal(withConversation.headers.get('location'), `../#/desk/${id}`);
+    const plain = await fetch(`${base}/desk`, { redirect: 'manual' });
+    assert.equal(plain.headers.get('location'), './#/desk');
+    const junk = await fetch(`${base}/desk/?c=../../etc`, { redirect: 'manual' });
+    assert.equal(junk.headers.get('location'), '../#/desk');
+  } finally { server.close(); server.closeAllConnections(); await once(server, 'close'); store.close(); }
 });

@@ -176,3 +176,40 @@ async fn without_the_policy_no_refresh_message_or_event_appears() {
     golden_support::check("p2d-no-refresh", "session.json", &normalizer.value(&journal));
     golden_support::check("p2d-no-refresh", "events.json", &golden_support::event_types(&case.events));
 }
+
+#[tokio::test]
+async fn failed_summary_save_leaves_the_previous_projection_reopenable() {
+    let case = compact(None).await;
+    let root = case.root.path();
+    let session = root.join("session.json");
+    let context_path = context_memory::path(&session);
+    let journal = Journal::for_session(&session);
+    let previous = journal.open().unwrap();
+    assert!(previous.active_base > 0, "fixture must have an archived summary");
+
+    let blocked_write = context_path.with_extension(format!("json.{}.tmp", std::process::id()));
+    let blocked = blocked_write.clone();
+    let provider = Provider::with(ProviderConfig {
+        context_window: CONTEXT_WINDOW,
+        on_request: Box::new(move |body| {
+            if is_summary(body) {
+                std::fs::create_dir(&blocked).unwrap();
+            }
+        }),
+        ..ProviderConfig::new(vec![text("the failed summary must stop the next call")])
+    });
+    let next = request(root, &provider, &[], 3, &format!("Continue again. {}", "z".repeat(16 * 1024)));
+    let (sender, _receiver) = tokio::sync::mpsc::channel(64);
+    let result = morrow_agent_core::agent::execute(next, tokio_util::sync::CancellationToken::new(), sender).await;
+    assert!(result.is_err() || result.unwrap().code != 0, "a failed context write must be reported");
+    assert_eq!(provider.bodies().iter().filter(|body| is_summary(body)).count(), 1);
+    std::fs::remove_dir(&blocked_write).unwrap();
+
+    let reopened = journal.open().unwrap();
+    let raw = journal.read(reopened.active_base, reopened.raw_count, 16 * 1024 * 1024).unwrap();
+    let scope = context_memory::hash(session.to_string_lossy().as_bytes());
+    let retained = context_memory::Store::load_window(&context_path, scope, &raw, reopened.active_base, journal)
+        .expect("the prior projection must still cover the archived prefix");
+    assert_eq!(reopened.active_base, previous.active_base);
+    assert_eq!(retained.covered_prefix(), previous.active_base);
+}

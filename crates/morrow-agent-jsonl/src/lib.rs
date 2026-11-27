@@ -55,7 +55,7 @@ fn stdio() -> Result<(), &'static str> {
     let bytes = read_frame(&mut reader).map_err(|_| "start_frame_rejected")?.ok_or("start_frame_required")?;
     let raw: Value = serde_json::from_slice(&bytes).map_err(|_| "start_config_rejected")?;
     if raw.get("kind").and_then(Value::as_str) == Some("manage") {
-        return management::stdio(&bytes);
+        return management::stdio_with_reader(&bytes, reader);
     }
     let start: Start = serde_json::from_slice(&bytes).map_err(|_| "start_config_rejected")?;
     let mcp = runtime::validate(&start).map_err(|error| {

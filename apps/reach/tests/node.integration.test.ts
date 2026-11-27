@@ -187,8 +187,8 @@ for (const prefix of ['', '/reach']) test(`CLI and MCP control the same real Nod
     const initialized = await mcp.call('initialize', { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'native-fixture', version: '1' } });
     assert.equal(initialized.result.serverInfo.name, 'ry-reach');
     const listed = await mcp.call('tools/list');
-    assert.deepEqual(listed.result.tools.map((tool:any)=>tool.name).sort(),
-      ['reach_nodes','reach_protocol','reach_submit','reach_operation','reach_events','reach_cancel','reach_reconcile','reach_artifacts','reach_artifact','reach_artifact_range','reach_desktop_call'].sort());
+    assert.deepEqual(listed.result.tools.map((tool: { name: string }) => tool.name).sort(),
+      ['reach_agent_continue','reach_agent_guidance','reach_agent_guide','reach_agent_model_stop','reach_agent_models','reach_agent_provenance','reach_agent_review','reach_agent_reviews','reach_agent_task','reach_artifact','reach_artifact_range','reach_artifacts','reach_cancel','reach_desktop_call','reach_events','reach_library_list','reach_library_propose','reach_library_read','reach_library_review','reach_library_source','reach_library_validate','reach_node_config','reach_node_runtime','reach_nodes','reach_operation','reach_protocol','reach_reconcile','reach_ssh_exec','reach_submit'].sort());
     const nodes = await mcp.call('tools/call', { name: 'reach_nodes', arguments: {} });
     assert.deepEqual(JSON.parse(nodes.result.content[0].text).nodes.map((n: any) => n.id), JSON.parse(cliNodes.stdout).nodes.map((n: any) => n.id));
     const path = join(f.root, 'mcp-effect.txt');

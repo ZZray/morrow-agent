@@ -11,7 +11,7 @@ use morrow_agent_harness::{
     self as harness,
     core::{
         model::{CatalogModelHost, GenerationPolicy, LengthRecoveryPolicy, ModelHost, ModelSelection, Route},
-        rpi_agent::{AgentError, AgentTool, AgentToolResult, ToolResultPartial},
+        rpi_agent::{AgentError, AgentTool, AgentToolResult, TextContentOrImage, ToolResultPartial},
         rpi_ai::{Schema, Tool},
         steering::SteeringBuffer,
         RunMode, RunRequest, RuntimePaths, ToolRegistration,
@@ -165,7 +165,10 @@ pub fn validate(start: &Start) -> Result<Option<McpConfig>> {
         validate_loopback(&run.endpoint)?;
         ensure!(
             capabilities.max_tokens > 0
-                && capabilities.input.as_ref().is_none_or(|items| items.iter().all(|item| item == "text")),
+                && capabilities
+                    .input
+                    .as_ref()
+                    .is_none_or(|items| items.iter().all(|item| item == "text" || item == "image")),
             "host_caps_text_only"
         );
     }
@@ -447,15 +450,37 @@ impl AgentTool for BusinessTool {
             "args_sha256":key.args_sha256,"arguments":arguments});
         let reply = self.bridge.call("tool_call", run_id.clone(), body, Some(key.clone()), cancellation.clone()).await;
         let (rpc_id, reason) = match reply {
-            Ok(Reply::Tool { result, .. }) if result.settlement == Settlement::Settled => {
+            Ok(Reply::Tool { result, rpc_id }) if result.settlement == Settlement::Settled => {
                 let text = serde_json::to_string(&result.value).unwrap_or_default();
                 if result.is_error {
                     return Err(AgentError::Tool(text));
                 }
-                let mut value = AgentToolResult::text(text);
-                value.details = json!({"host_operation_receipt":result.operation_receipt,
-                    "settlement":"host_declared_settled"});
-                return Ok(value);
+                let mut content = vec![TextContentOrImage::text(text)];
+                for item in &result.images {
+                    match item.load_verified(None) {
+                        Ok((image, _)) => content.push(TextContentOrImage::Image(image)),
+                        Err(_) => {
+                            cancellation.cancel();
+                            self.bridge.fail_with("invalid_tool_image");
+                            let receipt =
+                                self.bridge.unknown_tool_receipt(&rpc_id, &run_id, &key, "invalid_tool_image").ok();
+                            let mut value = AgentToolResult::text(
+                                "External tool image failed verification; inspect original Host operation receipt; do not replay.",
+                            );
+                            value.details = json!({"executed":"unknown","source":"jsonl_external_callback"});
+                            if let Some(reference) = receipt {
+                                value.details["receipt_ref"] = json!(reference);
+                            }
+                            return Ok(value);
+                        }
+                    }
+                }
+                return Ok(AgentToolResult {
+                    content,
+                    details: json!({"host_operation_receipt":result.operation_receipt,
+                        "settlement":"host_declared_settled"}),
+                    ..Default::default()
+                });
             }
             Ok(Reply::Tool { rpc_id, .. }) => (Some(rpc_id), "host_declared_unknown"),
             Ok(_) => (None, "callback_unknown"),
@@ -539,8 +564,14 @@ impl HarnessHost for ExternalHost {
         cancellation: CancellationToken,
     ) -> Result<ReviewReceipt> {
         let reference = evidence::checked_budget_snapshot(&snapshot).inspect_err(|_| self.bridge.fail())?;
+        let wire_basis = serde_json::to_value(&snapshot.basis)?;
+        let image_proof = evidence::write_tool_images_proof(&self.bridge.evidence_dir, &snapshot.basis, &wire_basis)
+            .inspect_err(|_| self.bridge.fail())?;
         let run_id = snapshot.basis.run_id.clone();
         let mut body = json!({"snapshot":snapshot});
+        if let Some((_, _, ref img_ref)) = image_proof {
+            body["tool_images_ref"] = json!(img_ref);
+        }
         if self
             .bridge
             .output
@@ -548,6 +579,9 @@ impl HarnessHost for ExternalHost {
             .inspect_err(|_| self.bridge.fail())?
         {
             body = json!({"snapshot_ref":reference});
+            if let Some((_, _, ref img_ref)) = image_proof {
+                body["tool_images_ref"] = json!(img_ref);
+            }
         }
         let reply = self.bridge.call("verify_budget_request", run_id, body, None, cancellation).await;
         let after = evidence::checked_budget_snapshot(&snapshot).inspect_err(|_| self.bridge.fail())?;
@@ -555,6 +589,10 @@ impl HarnessHost for ExternalHost {
             after.sha256 == reference.sha256 && after.path == reference.path,
             "budget_snapshot_changed_during_verify"
         );
+        if let Some((img_path, img_payload, img_ref)) = image_proof {
+            let after_img = evidence::checked_value(&img_path, &img_payload).inspect_err(|_| self.bridge.fail())?;
+            ensure!(after_img.sha256 == img_ref.sha256, "tool_images_proof_changed_during_verify");
+        }
         match reply? {
             Reply::Verify(receipt) => Ok(*receipt),
             _ => anyhow::bail!("verify_budget_reply_kind"),
@@ -596,6 +634,7 @@ impl HarnessHost for ExternalHost {
         match reply? {
             Reply::Prepare { run_id, objective } => {
                 *self.bridge.active_run.lock().unwrap() = run_id.clone();
+                self.bridge.reset_run_images();
                 Ok(self.template.request(run_id, objective))
             }
             _ => anyhow::bail!("prepare_budget_reply_kind"),
@@ -609,8 +648,14 @@ impl HarnessHost for ExternalHost {
         cancellation: CancellationToken,
     ) -> Result<ReviewReceipt> {
         let reference = evidence::checked_stop_snapshot(&snapshot).inspect_err(|_| self.bridge.fail())?;
+        let wire_basis = serde_json::to_value(&snapshot.basis)?;
+        let image_proof = evidence::write_tool_images_proof(&self.bridge.evidence_dir, &snapshot.basis, &wire_basis)
+            .inspect_err(|_| self.bridge.fail())?;
         let run_id = snapshot.basis.run_id.clone();
         let mut body = json!({"snapshot":snapshot});
+        if let Some((_, _, ref img_ref)) = image_proof {
+            body["tool_images_ref"] = json!(img_ref);
+        }
         if self
             .bridge
             .output
@@ -618,6 +663,9 @@ impl HarnessHost for ExternalHost {
             .inspect_err(|_| self.bridge.fail())?
         {
             body = json!({"snapshot_ref":reference});
+            if let Some((_, _, ref img_ref)) = image_proof {
+                body["tool_images_ref"] = json!(img_ref);
+            }
         }
         let reply = self.bridge.call("verify_stop_request", run_id, body, None, cancellation).await;
         let after = evidence::checked_stop_snapshot(&snapshot).inspect_err(|_| self.bridge.fail())?;
@@ -625,6 +673,10 @@ impl HarnessHost for ExternalHost {
             after.sha256 == reference.sha256 && after.path == reference.path,
             "stop_snapshot_changed_during_verify"
         );
+        if let Some((img_path, img_payload, img_ref)) = image_proof {
+            let after_img = evidence::checked_value(&img_path, &img_payload).inspect_err(|_| self.bridge.fail())?;
+            ensure!(after_img.sha256 == img_ref.sha256, "tool_images_proof_changed_during_verify");
+        }
         match reply? {
             Reply::Verify(receipt) => Ok(*receipt),
             _ => anyhow::bail!("verify_stop_reply_kind"),
@@ -666,6 +718,7 @@ impl HarnessHost for ExternalHost {
         match reply? {
             Reply::Prepare { run_id, objective } => {
                 *self.bridge.active_run.lock().unwrap() = run_id.clone();
+                self.bridge.reset_run_images();
                 Ok(self.template.request(run_id, objective))
             }
             _ => anyhow::bail!("prepare_stop_reply_kind"),
@@ -696,7 +749,13 @@ impl HarnessHost for ExternalHost {
             wire_candidate.basis.session_id.clear();
         }
         let payload = serde_json::to_value(&wire_candidate)?;
+        let image_proof =
+            evidence::write_tool_images_proof(&self.bridge.evidence_dir, &candidate.basis, &payload["basis"])
+                .inspect_err(|_| self.bridge.fail())?;
         let mut body = json!({"candidate":payload});
+        if let Some((_, _, ref img_ref)) = image_proof {
+            body["tool_images_ref"] = json!(img_ref);
+        }
         let mut projection = None;
         if self
             .bridge
@@ -714,6 +773,9 @@ impl HarnessHost for ExternalHost {
                 reference
             };
             body = json!({"candidate_ref":reference});
+            if let Some((_, _, ref img_ref)) = image_proof {
+                body["tool_images_ref"] = json!(img_ref);
+            }
         }
         let reply = self.bridge.call("verify_request", candidate.basis.run_id.clone(), body, None, cancellation).await;
         let after = evidence::checked_candidate(&candidate).inspect_err(|_| self.bridge.fail())?;
@@ -721,6 +783,10 @@ impl HarnessHost for ExternalHost {
         if let Some(reference) = projection {
             let after = evidence::checked_value(&reference.path, &payload).inspect_err(|_| self.bridge.fail())?;
             ensure!(after.sha256 == reference.sha256, "candidate_projection_changed_during_verify");
+        }
+        if let Some((img_path, img_payload, img_ref)) = image_proof {
+            let after_img = evidence::checked_value(&img_path, &img_payload).inspect_err(|_| self.bridge.fail())?;
+            ensure!(after_img.sha256 == img_ref.sha256, "tool_images_proof_changed_during_verify");
         }
         match reply? {
             Reply::Verify(receipt) => Ok(*receipt),
@@ -755,6 +821,7 @@ impl HarnessHost for ExternalHost {
         match self.bridge.call("prepare_request", run_id, body, None, cancellation).await? {
             Reply::Prepare { run_id, objective } => {
                 *self.bridge.active_run.lock().unwrap() = run_id.clone();
+                self.bridge.reset_run_images();
                 Ok(self.template.request(run_id, objective))
             }
             _ => anyhow::bail!("prepare_reply_kind"),

@@ -1,5 +1,5 @@
 # Copyright (c) Ray Zhang. Inventory original notices for all shipped Rust programs.
-param([Parameter(Mandatory=$true)][string]$Destination,[Parameter(Mandatory=$true)][string]$Runtime)
+param([Parameter(Mandatory=$true)][string]$Destination,[string]$Runtime)
 $ErrorActionPreference='Stop'
 $project=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../..'))
 if(Test-Path -LiteralPath $Destination){throw 'Use a new notices destination'}
@@ -7,7 +7,9 @@ $packages=@{}
 $supplements=Get-Content -LiteralPath (Join-Path $PSScriptRoot 'notices/sources.json') -Raw|ConvertFrom-Json
 Push-Location $project
 try {
-    foreach($manifest in @('Cargo.toml','desktop/Cargo.toml','packaging/windows/setup/Cargo.toml','../../crates/morrow-agent-jsonl/Cargo.toml')){
+    $manifests=@('Cargo.toml','packaging/windows/setup/Cargo.toml','../../crates/morrow-agent-jsonl/Cargo.toml')
+    if($Runtime){$manifests+='desktop/Cargo.toml'}
+    foreach($manifest in $manifests){
         $metadata=(& cargo metadata --manifest-path $manifest --locked --offline --format-version 1 --filter-platform x86_64-pc-windows-msvc | ConvertFrom-Json)
         if($LASTEXITCODE-ne0){throw "Dependency inventory failed: $manifest"}
         $reachable=@{};$queue=[Collections.Generic.Queue[string]]::new();$queue.Enqueue($metadata.resolve.root)
@@ -15,7 +17,7 @@ try {
         while($queue.Count){$id=$queue.Dequeue();if($reachable.ContainsKey($id)){continue};$reachable[$id]=$true;foreach($dependency in $nodes[$id].deps){$queue.Enqueue($dependency.pkg)}}
         foreach($package in $metadata.packages){if($reachable.ContainsKey($package.id) -and $null-ne$package.source){$packages[$package.id]=$package}}
     }
-    $notices=[Text.StringBuilder]::new();[void]$notices.AppendLine('Reach Node, Desktop, Agent and Setup - original third-party notices')
+    $notices=[Text.StringBuilder]::new();[void]$notices.AppendLine('Reach installer - original third-party notices')
     [void]$notices.AppendLine('Copyright (c) Ray Zhang. Dependency inventories include build-time packages; they are not a claim that every package is linked.')
     $sysroot=(& rustc --print sysroot | Out-String).Trim();if($LASTEXITCODE-ne0){throw 'Rust runtime provenance unavailable'}
     $runtimeDocs=Join-Path $sysroot 'share/doc/rust'
@@ -57,8 +59,10 @@ try {
         $inventory+=@{name=$package.name;version=$package.version;license=$package.license;source=$package.source;files=$originals;supplement=$source}
     }
     [void]$notices.AppendLine("`nSQLite bundled C library: dedicated to the public domain; see https://sqlite.org/copyright.html. No SQLCipher backend is enabled.")
-    [void]$notices.AppendLine("`n=== Bundled Python and desktop runtime ===")
-    [void]$notices.AppendLine([IO.File]::ReadAllText((Join-Path $Runtime 'reach-provenance/THIRD_PARTY_NOTICES.txt')))
+    if($Runtime){
+        [void]$notices.AppendLine("`n=== Bundled Python and desktop runtime ===")
+        [void]$notices.AppendLine([IO.File]::ReadAllText((Join-Path $Runtime 'reach-provenance/THIRD_PARTY_NOTICES.txt')))
+    }
     $target=[IO.Path]::GetFullPath($Destination);$null=[IO.Directory]::CreateDirectory((Split-Path $target))
     [IO.File]::WriteAllText($target,$notices.ToString(),[Text.UTF8Encoding]::new($false))
     [IO.File]::WriteAllText(($target+'.json'),($inventory|ConvertTo-Json -Depth 8),[Text.UTF8Encoding]::new($false))

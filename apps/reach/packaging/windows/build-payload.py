@@ -33,46 +33,59 @@ def x64(data, name):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    for name in ('node', 'node-sha', 'helper', 'helper-sha', 'agent', 'agent-sha', 'runtime', 'runtime-sha', 'notices', 'destination'):
+    for name in ('node', 'node-sha', 'agent', 'agent-sha', 'notices', 'openssh', 'destination'):
         parser.add_argument('--' + name, required=True)
+    for name in ('helper', 'helper-sha', 'runtime', 'runtime-sha'):
+        parser.add_argument('--' + name)
+    parser.add_argument('--version', default='0.1.0')
     args = parser.parse_args()
-    root = Path(args.runtime).resolve(strict=True)
+    if not re.fullmatch(r'(0|[1-9][0-9]{0,4})(\.(0|[1-9][0-9]{0,4})){2}', args.version) or any(int(part) > 65535 for part in args.version.split('.')):
+        raise ValueError('expected a canonical three-component Windows version')
+    desktop_args = (args.helper, args.helper_sha, args.runtime, args.runtime_sha)
+    desktop = all(desktop_args)
+    if any(desktop_args) and not desktop:
+        raise ValueError('Desktop helper and runtime must both be included and pinned')
     destination = Path(args.destination).absolute()
     if destination.exists():
         raise ValueError('preserve existing outputs; use a new payload destination')
-    for value in (args.node_sha, args.helper_sha, args.agent_sha, args.runtime_sha):
+    for value in (args.node_sha, args.agent_sha) + ((args.helper_sha, args.runtime_sha) if desktop else ()):
         if not re.fullmatch('[0-9a-f]{64}', value):
             raise ValueError('expected a full lowercase SHA256')
-    runtime_manifest = root / 'reach-provenance/files.json'
-    raw_manifest = runtime_manifest.read_bytes()
-    if digest(raw_manifest) != args.runtime_sha:
-        raise ValueError('runtime inventory changed')
-    expected = {safe_path(item['path']): item for item in json.loads(raw_manifest)}
-    paths = sorted(root.rglob('*'))
-    if any(path.is_symlink() or path.is_junction() for path in paths):
-        raise ValueError('runtime contains a link or junction')
-    actual = {path.relative_to(root).as_posix(): path for path in paths if path.is_file()}
-    if set(actual) != set(expected) | {'reach-provenance/files.json'}:
-        raise ValueError('runtime file set differs from its frozen inventory')
+    binaries = {'reach.exe': (args.node, args.node_sha), 'agent/morrow-agent-jsonl.exe': (args.agent, args.agent_sha)}
     items = {}
-    for name, path in actual.items():
-        data = path.read_bytes()
-        if name in expected and (len(data) != expected[name]['bytes'] or digest(data) != expected[name]['sha256']):
-            raise ValueError(f'runtime file changed: {name}')
-        if path.suffix.lower() in ('.dll', '.pyd', '.exe'):
-            x64(data, name)
-        items['desktop/python/' + name] = path
-    items['reach.exe'] = Path(args.node).resolve(strict=True)
-    items['desktop/reach-desktop.exe'] = Path(args.helper).resolve(strict=True)
-    items['agent/morrow-agent-jsonl.exe'] = Path(args.agent).resolve(strict=True)
-    for name, sha in (('reach.exe', args.node_sha), ('desktop/reach-desktop.exe', args.helper_sha), ('agent/morrow-agent-jsonl.exe', args.agent_sha)):
+    if desktop:
+        root = Path(args.runtime).resolve(strict=True)
+        raw_manifest = (root / 'reach-provenance/files.json').read_bytes()
+        if digest(raw_manifest) != args.runtime_sha:
+            raise ValueError('runtime inventory changed')
+        expected = {safe_path(item['path']): item for item in json.loads(raw_manifest)}
+        paths = sorted(root.rglob('*'))
+        if any(path.is_symlink() or path.is_junction() for path in paths):
+            raise ValueError('runtime contains a link or junction')
+        actual = {path.relative_to(root).as_posix(): path for path in paths if path.is_file()}
+        if set(actual) != set(expected) | {'reach-provenance/files.json'}:
+            raise ValueError('runtime file set differs from its frozen inventory')
+        for name, path in actual.items():
+            data = path.read_bytes()
+            if name in expected and (len(data) != expected[name]['bytes'] or digest(data) != expected[name]['sha256']):
+                raise ValueError(f'runtime file changed: {name}')
+            if path.suffix.lower() in ('.dll', '.pyd', '.exe'):
+                x64(data, name)
+            items['desktop/python/' + name] = path
+        binaries['desktop/reach-desktop.exe'] = (args.helper, args.helper_sha)
+        items['desktop/config.toml'] = root / 'reach-provenance/config.toml'
+        items['desktop-runtime.json'] = b'{"helper":"desktop/reach-desktop.exe","python":"desktop/python/python.exe","config":"desktop/config.toml"}\n'
+    for name, (path, sha) in binaries.items():
+        items[name] = Path(path).resolve(strict=True)
         data = items[name].read_bytes()
         x64(data, name)
         if digest(data) != sha:
             raise ValueError(f'reviewed binary changed: {name}')
-    items['desktop/config.toml'] = root / 'reach-provenance/config.toml'
     items['THIRD_PARTY_NOTICES.txt'] = Path(args.notices).resolve(strict=True)
-    items['desktop-runtime.json'] = b'{"helper":"desktop/reach-desktop.exe","python":"desktop/python/python.exe","config":"desktop/config.toml"}\n'
+    openssh = Path(args.openssh).read_bytes()
+    if digest(openssh) != '23f50f3458c4c5d0b12217c6a5ddfde0137210a30fa870e98b29827f7b43aba5':
+        raise ValueError('offline OpenSSH payload identity changed')
+    items['openssh-vendor.zip'] = openssh
     items['agent-runtime.json'] = (json.dumps(dict(sidecar='agent/morrow-agent-jsonl.exe', sha256=args.agent_sha, inspectionLeaseVersion=1), separators=(',', ':')) + '\n').encode('utf-8')
     names = set()
     files = []
@@ -83,9 +96,11 @@ def main():
         names.add(name.lower())
         data = item if isinstance(item, bytes) else item.read_bytes()
         files.append(dict(path=name, bytes=len(data), sha256=digest(data)))
-    manifest = dict(schema=2, product='Reach', version='0.1.0', architecture='x86_64-pc-windows-msvc',
-                    desktopBundled=True, nodeSha256=args.node_sha, helperSha256=args.helper_sha,
-                    agentBundled=True, agentSha256=args.agent_sha, runtimeManifestSha256=args.runtime_sha, files=files)
+    manifest = dict(schema=2, product='Reach', version=args.version, architecture='x86_64-pc-windows-msvc',
+                    desktopBundled=desktop, nodeSha256=args.node_sha,
+                    agentBundled=True, agentSha256=args.agent_sha, files=files)
+    if desktop:
+        manifest.update(helperSha256=args.helper_sha, runtimeManifestSha256=args.runtime_sha)
     manifest_bytes = json.dumps(manifest, ensure_ascii=False, separators=(',', ':')).encode('utf-8')
     records = {record['path']: record for record in files}
     items['payload-manifest.json'] = manifest_bytes
@@ -100,7 +115,7 @@ def main():
             info.create_system = 3
             info.external_attr = 0o100644 << 16
             archive.writestr(info, data, compresslevel=6)
-    receipt = dict(schema=2, kind='complete-payload-candidate', desktopBundled=True, agentBundled=True, installationTested=False,
+    receipt = dict(schema=2, kind='complete-payload-candidate', version=args.version, desktopBundled=desktop, agentBundled=True, installationTested=False,
                    packageSha256=digest(destination.read_bytes()), payloadManifestSha256=digest(manifest_bytes),
                    nodeSha256=args.node_sha, helperSha256=args.helper_sha, agentSha256=args.agent_sha, runtimeManifestSha256=args.runtime_sha,
                    files=len(files), bytes=sum(item['bytes'] for item in files), zipBytes=destination.stat().st_size)

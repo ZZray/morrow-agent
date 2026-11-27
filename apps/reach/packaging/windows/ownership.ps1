@@ -1,22 +1,26 @@
 # Copyright (c) Ray Zhang. Protected installation inventory; no effects on load.
 # Callers hold external then legacy locks and supply checked WriteJson/ReadJson.
 function ReachRetainedMetadata {
-    $names=@('install.lock','install.json','install-journal.json','deployment.json','last-install-result.json','last-uninstall-result.json')
+    $names=@('install.lock','install.json','install-journal.json','deployment.json','last-install-result.json','last-uninstall-result.json','last-ssh-preparation.json')
     return $names
 }
 function AssertReachGeneration([string]$Generation) {
     if($Generation-cnotmatch'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'){throw 'Invalid deployment generation'}
 }
+function TestReachVersion([string]$Version) {
+    return ($Version-cmatch'^(0|[1-9][0-9]{0,4})\.(0|[1-9][0-9]{0,4})\.(0|[1-9][0-9]{0,4})$' -and
+        -not (@($Version.Split('.') | Where-Object {[int]$_-gt65535}).Count))
+}
 function ReachRecordDirectory($Record,[string]$Root,[string]$State) {
-    if($Record.schema-notin@(1,2) -or $Record.version-cne'0.1.0' -or $Record.nodeStateSchema-ne1 -or
+    if($Record.schema-notin@(1,2) -or -not(TestReachVersion $Record.version) -or $Record.nodeStateSchema-ne1 -or
         $Record.sha256-cnotmatch'^[0-9a-f]{64}$' -or $Record.bindingOwner-cnotmatch'^S-1-[0-9-]+$'){throw 'Unsupported owned installation record'}
     $key=$Record.sha256.Substring(0,16)
     if($Record.schema-eq2){
         if($Record.packageSha256-cnotmatch'^[0-9a-f]{64}$' -or $Record.payloadManifestSha256-cnotmatch'^[0-9a-f]{64}$' -or
-            $Record.desktopBundled-isnot[bool] -or -not $Record.desktopBundled){throw 'Invalid owned complete installation record'}
+            $Record.desktopBundled-isnot[bool]){throw 'Invalid owned complete installation record'}
         $key=$Record.packageSha256
     }
-    $relative='versions/0.1.0-'+$key
+    $relative='versions/'+$Record.version+'-'+$key
     $node=Join-Path $Root ($relative+'/reach.exe')
     $service='"'+$node+'" --state-dir "'+$State+'" service --binding-owner '+$Record.bindingOwner
     if($Record.nodePath-cne$node -or $Record.servicePath-cne$service){throw 'Owned record paths differ from canonical installation'}
@@ -25,8 +29,13 @@ function ReachRecordDirectory($Record,[string]$Root,[string]$State) {
 function AssertReachOwnershipGroup($Group) {
     if($Group.kind-notin@('complete','node','stage') -or $Group.sourceSha256-cnotmatch'^[0-9a-f]{64}$' -or
         $Group.files-isnot[array] -or $Group.files.Count-lt1 -or $Group.files.Count-gt20001){throw 'Invalid ownership group'}
-    $expected=if($Group.kind-ceq'stage'){'^versions/s-[0-9a-f]{32}$'}elseif($Group.kind-ceq'complete'){'^versions/0\.1\.0-'+$Group.sourceSha256+'$'}else{'^versions/0\.1\.0-'+$Group.sourceSha256.Substring(0,16)+'$'}
-    if($Group.directory-cnotmatch$expected){throw 'Ownership directory differs from source identity'}
+    if($Group.kind-ceq'stage'){
+        if($Group.directory-cnotmatch'^versions/s-[0-9a-f]{32}$'){throw 'Invalid staging ownership directory'}
+    }else{
+        $key=if($Group.kind-ceq'complete'){$Group.sourceSha256}else{$Group.sourceSha256.Substring(0,16)}
+        if($Group.directory-cnotmatch('^versions/(?<version>[0-9.]+)-'+$key+'$') -or
+           -not(TestReachVersion $Matches['version'])){throw 'Ownership directory differs from source identity'}
+    }
     $seen=[Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
     foreach($relative in $Group.files){
         [void](ReachRelativePath $relative)
@@ -77,7 +86,7 @@ function AddReachOwnershipGroup($Deployment,[string]$Directory,[string]$Kind,[st
 function GetReachOwnedFiles($Deployment,[string]$Root,[string]$State) {
     AssertReachDeployment $Deployment $Root $State
     $files=[Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
-    if($Deployment.cliOwned){[void]$files.Add('bin/reach.exe')}
+    if($Deployment.cliOwned){[void]$files.Add('bin/reach.exe');[void]$files.Add('bin/ryreach.exe')}
     foreach($group in $Deployment.groups){foreach($relative in $group.files){if(-not $files.Add(($group.directory+'/'+$relative))){throw 'Overlapping owned program files'}}}
     return @($files|Sort-Object)
 }

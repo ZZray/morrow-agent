@@ -124,6 +124,14 @@ HandWave 专用消息分隔符仅由其宿主解析。
 2026-10-20 的真实模型测试未证明新会话读取已沉淀的知识正文。
 本次提取保留这个缺口；独立宿主的工具和进程验证不代表它已经关闭。
 
+## 压缩摘要与中断结算的落盘边界
+
+2026-11-27 发布候选 `deb40b53a` 的审查发现，压缩先更新 Journal 的 `active_base`，再保存新的 `.context.json`。两次写入之间发生中断或摘要保存失败时，冷启动读取到的旧摘要无法覆盖已归档的前缀。先保存新摘要，再推进归档。摘要先落盘时，旧窗口仍含相同的原始记录，按该窗口重开可校验摘要的前缀证明。回归使用本地模型夹具，在下一次摘要写盘前阻断临时文件，检查上一份摘要仍能覆盖冷启动读取的 Journal 窗口。
+
+中断结算先写关闭标记，再向原 Session 写入 Host 收据与原生结果，最后释放 fence。进程在原生写入完成后中断时，同一关闭声明可以续做发布回执和释放。重试核对关闭标记、原 inspection 前缀、原生结算记录和每条工具结果。缺少结算证据或收据冲突时保留 fence。关闭标记、释放结果和回执先写入同目录临时文件，完整落盘后发布，遇到已有文件就拒绝覆盖。对应回归检查匹配的重试只释放一次，原始记录数保持不变。
+
+同一候选在 CIQTEK 的 Windows 终端中断测试等待 12 秒后失败。本机用同一旧测试程序对照，普通启动能收到 Ctrl+C，使用 `CREATE_NEW_PROCESS_GROUP` 后出现相同的超时。测试子进程现在先清除继承的 Ctrl+C 忽略位，再安装 SIGINT 处理器。ConPTY 仍输入原 ETX，测试仍要求退出码 23。CIQTEK 复跑本项通过。
+
 ## 会话记忆的自动注入与按需检索
 
 2026-11-27，Ray Zhang（Ray）。
@@ -139,6 +147,32 @@ HandWave 专用消息分隔符仅由其宿主解析。
 候选由 `/memory accept` 显式采纳。笔记撤销、来源撤销或更正、依赖的外部快照切换后，自动注入与按需检索都会排除失效的笔记。两个检索工具可在 Plan 模式使用，宿主若固定校验原生工具名，应把它们登记为只读收据。Reach Desk 的应用级笔记继续由 Reach 宿主管理。
 
 本次采用文章中的分层召回和简短自动注入。离线整理仍是后续设计项，需由宿主确定触发条件、允许使用的原始证据和采纳流程。 [Anthropic《The components of agent memory》](https://www.anthropic.com/research/components-of-agent-memory)
+
+### Reach 的跨对话知识与会话输入
+
+同一 Reach 对话的普通续聊创建新 Task 和 Run，沿用该对话的 `session.json`。新建对话有独立的 Session，同一账号的新对话共享环境知识目录。旧对话沿用首次记录的环境路径，旧环境和 Ray 云端记忆尚未迁入。Reach 的「我的笔记」写入共享目录，`reach_memory_search` 和 `reach_memory_read` 按需读取 Markdown。关闭「记忆检索」只移除该条消息的共享知识工具。会话原文、压缩摘要和 `/memory accept` 的笔记归原 Session，采纳时不会写入共享知识库。见 [Reach 按用户共享环境决定](../../../../apps/reach/docs/knowledge/product-decisions.md#desk-shared-memory-20261126)。
+
+Reach 先校验对话归属和工具权限，再将当前消息及选中的文本附件、技能正文交给 Core。这些文本可成为会话原始来源。选中的 PNG 由该消息的只读工具取回，其他二进制附件只携带说明。已选设备的操作权限由 Host 校验，设备操作结果可以进入会话 Journal。旧轮次压缩后，模型仍可按来源 ID 和哈希回查当前可见范围内的原件。来源更正或撤销可能推进历史可见边界。审计原件仍保留，模型只能在更新后的范围内回查。
+
+验证基于 `4f25826` 的工作区。Core Clippy 和 44 项定向测试通过，覆盖记忆、Plan、压缩、宿主合同和公开 Run。首次离线编译缺少 `ppv-lite86`，补齐锁定依赖后完成同范围验证。
+
+### Reach 与 JSONL 联调结果
+
+联调使用上述工作区本机构建的 Windows 侧车，SHA-256 为 `0c4f5a30cdc2aee07cea8ebc7e74c221412a75473b4fb6e50f6b64054c61580d`。QBuild 在接收 Reach 旧版的中文文件名时失败，本机构建通过。测试使用隔离状态和合成笔记。
+
+- Reach 的实际取消结算记录了两条 `native-receipt`，关闭回执为 `validated`，会话锁已释放。现有云端用例一过一失败，失败项的固定清单漏列了默认启用的 `reach_memory_*`。专项夹具的显示时序断言和复跑超时另行保留，专项续聊未完成。
+- 2026-11-27 修正工具清单断言。首轮验证 Core 工具与 Reach 只读笔记工具，次轮关闭记忆检索后验证只有 Core 工具。Node 24.20.0 与实际 Linux 侧车通过 10 项回环模型集成。
+- JSONL SDK、当前侧车与本地 ACR ModelRelay 的受控回环测试通过。新笔记经原生管理接口采纳，Plan 召回的第三次请求携带两项工具结果，原文及来源哈希一致。预算回归也通过。单独使用 ACR `d833e554` 的原生工具清单发起新版工具请求时，Relay 返回 `relay_tool_denied`，上游请求为零。此结果适用于未来接入新版侧车的兼容性检查。
+- 真实 CAS `deepseek-v4.1-flash` 在同一预算下召回了 8,192 字节的普通文本笔记。隐藏校验码从第三次模型请求的完整读取结果才出现，模型精确回传。原始来源更正后，搜索结果为空，按旧 ID 读取返回找不到笔记，模型输出 `UNAVAILABLE`。两个场景共 6 次真实模型请求，均返回 HTTP 200。
+- 转义密集的 8,008 字节笔记在真实模型测试中触发预算失败。两项工具均已完成，读取结果嵌入工具消息后约为 28 KiB，超过本地 Reach 环回配置的 13,312 字节投影预算。第三次模型请求未发出，Reach 将该轮记为 `unknown`。两次真实模型证据目录均未检出 CAS 凭据。
+
+### 长任务的上下文成本与回查
+
+2026-11-27 调研建议。HySparse2 从模型侧减少预填充计算和 KV 缓存，并细化注意力选择。Morrow 通过 API 调用模型，可控制送入模型的内容及其排列。DeepSeek Harness 的 Spill 文档提供了宿主侧做法：完整结果保留原文，模型先获得定位符和读取提示。 [HySparse2 论文](https://arxiv.org/abs/2609.26368) · [DeepSeek Spill 文档](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/subsystems/spill.md)
+
+1. 优先为 `session_memory_read` 增加 UTF-8 窗口。搜索给出命中位置，读取保留来源 ID 和哈希，并按编码后工具消息的大小和当前 Run 的剩余预算返回下一页位置。用已复现的转义密集笔记、中文和普通短文本验收，核对末尾唯一值可找回、来源更正后无法取回、普通短文本继续可读。
+2. 实测重复输入的代价。在同一模型路由回放相同的多轮任务，记录请求字节、供应商上报的未缓存及缓存读取 token、首字延迟和完成时间，同时检查证据匹配和工具调用数。支持前缀缓存的路由可对照稳定的系统指令与工具声明，实际命中以当前路由回执为准。现有遥测提供请求字节和适配器用量，首字延迟需要独立计时。 [DeepSeek API 缓存规则](https://api-docs.deepseek.com/guides/kv_cache/)
+3. 有多任务需求时，以已有 Harness Task、Session 和回执承接独立执行。Reach 对话只接收状态、待决问题和结果来源，细节按 Task、Run 或原始来源回查。跨 Session 查证由宿主校验来源权限。 [DeepSeek Super-agent 原型架构](https://github.com/deepseek-ai/dsh-superagent-prototype/blob/main/docs/007-architecture.md) · [Morrow 持久任务编排](../../../../docs/design/orchestration.md)
 
 ### 会话笔记分页的 Reach 环回验收
 

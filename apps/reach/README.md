@@ -2,7 +2,7 @@
 
 作者：Ray Zhang（Ray）。命名空间：`RY`。
 
-组织通用的远程操作与协助工具。产品名为 **Reach**，命令名为 `reach`。
+组织通用的远程操作与协助工具。产品名为 **Reach**，配置与控制命令名为 `ryreach`（2026-11-13 更新；现有开发实现仍使用 `reach`，待按常驻计划切换）。
 
 当前阶段：**设计与实现进行中**。独立服务已部署到 Ray 的 `/reach/`，登录 Ray 后可直接进入 Reach；Rust 前台 Node、CLI/MCP 控制器和管理页已有真实进程、跨机及浏览器证据。Windows 服务宿主与本机 IPC 已实现；正式安装、桌面和 Agent 委托仍待完成。完整功能验收仍为 **0/52**。
 
@@ -11,6 +11,10 @@
 ## 阅读入口
 
 - [最新迁移与实现交接](docs/handoffs/2026-11-13-morrow-subproject.md)：Morrow 依赖、迁入范围、最新验证、R06 失败点与下一步。
+- [Morrow 接入与能力适配任务单](docs/tasks.md)：先接入适配 Morrow 新 Agent 能力、打通 R06 与本地真实模型验证的分步执行清单（M01–M10）。
+- [常驻服务架构与实施边界](docs/architecture.md)：既有首轮实现与 2026-11-13 Starferry 合并、默认 SSH、首次 `ryreach` 配置、心跳/退避及独立安装边界。
+- [Starferry 与 Reach 工作流程及合并计划](docs/starferry-reach-workflows.md)：当前 Starferry、Reach 常驻设计和合并后的独立安装流程图。
+- [常驻服务计划文档检查](docs/evidence/2026-11-13-resident-plan.md)：独立复核、任务/需求链接检查与同步记录。
 - [前轮本地实现交接](docs/handoffs/2026-11-04-source-library-local.md)：资料候选、验证、明确采用及复用的历史本地证据，完整 R04/R05 仍开放。
 - [Ray 部署交接](docs/handoffs/2026-11-02-admin-ray.md)：管理页、Ray 服务与 Reach Desk 迁入。
 - [Node/控制器验证](docs/evidence/node-controller-20261102.md)：最终源码与真实进程执行证据。
@@ -40,7 +44,7 @@ Reach 独立于 LabSlot、QSpin 和其他业务产品。首版作为独立应用
 
 配对后统一采用完全控制，不设计 Auto / Full Access 模式切换、工具权限分层或逐次操作审批。登录和配对用于识别身份、建立连接；完全控制的产品行为见[产品范围](docs/product-scope.md)。
 
-开发版已支持命令行首次配对和再次配对。目标安装体验仍待实现：双击安装、自动注册服务、加入 PATH、启动服务并退出安装器；安装版配对还需接通服务 IPC。
+开发版已支持命令行首次配对和再次配对。2026-11-13 最新目标体验：双击安装、自动注册独立常驻服务、默认启用 SSH、加入 `ryreach` PATH、启动服务并退出安装器；未预配置地址时首次运行 `ryreach` 输入服务器服务地址，后续用该命令修改配置和配对，分钟级心跳可远程调整、断网按退避规则重连，并将 Starferry 连接能力归入 Reach。QSpin 将来由自己的安装器默认安装 Reach 并配置服务器地址，具体接线归 QSpin 处理；本项目不建设 QSpin 网关、产品托管子进程或进程内嵌入。以上新增常驻与合并能力均待实施验收。
 
 ## 仓库状态
 

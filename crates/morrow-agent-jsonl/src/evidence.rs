@@ -62,6 +62,125 @@ pub fn checked_value(path: &Path, expected: &Value) -> Result<Reference> {
     Ok(reference)
 }
 
+pub fn write_tool_images_proof(
+    evidence_dir: &Path,
+    basis: &ReviewBasis,
+    wire_basis: &Value,
+) -> Result<Option<(PathBuf, Value, Reference)>> {
+    use morrow_agent_harness::core::{
+        png_image::decode_base64,
+        rpi_agent::AgentMessage,
+        rpi_ai::Content,
+        session_journal::{Journal, RECORD_BYTES},
+    };
+    use serde_json::json;
+
+    let journal = Journal::for_session(&basis.session_path);
+    let head = journal.open().context("image_proof_journal_unavailable")?;
+    ensure!(hash(&serde_json::to_vec(&head)?) == basis.journal_head_sha256, "image_proof_journal_head_mismatch");
+    ensure!(basis.raw_start <= basis.raw_end && basis.raw_end <= head.raw_count, "image_proof_range_invalid");
+    journal.verify_range(basis.raw_start, basis.raw_end)?;
+    ensure!(journal.proof(basis.raw_start, basis.raw_end)? == basis.raw_proof, "image_proof_range_proof_mismatch");
+    let messages = journal.read(basis.raw_start, basis.raw_end, 64 * 1024 * 1024)?;
+    let has_images = messages.iter().any(|msg| match msg {
+        AgentMessage::ToolResult(res) => res.content.iter().any(|c| matches!(c, Content::Image(_))),
+        _ => false,
+    });
+    if !has_images {
+        return Ok(None);
+    }
+
+    let mut call_map: std::collections::HashMap<String, (String, Value)> = std::collections::HashMap::new();
+    for msg in &messages {
+        if let AgentMessage::Assistant(assistant) = msg {
+            for block in &assistant.content {
+                if let Content::ToolCall(call) = block {
+                    call_map.insert(call.id.clone(), (call.name.clone(), call.arguments.clone()));
+                }
+            }
+        }
+    }
+    let mut missing_ids: std::collections::HashSet<String> = messages
+        .iter()
+        .filter_map(|m| match m {
+            AgentMessage::ToolResult(r) if !call_map.contains_key(&r.tool_call_id) => Some(r.tool_call_id.clone()),
+            _ => None,
+        })
+        .collect();
+    if basis.raw_start > 0 && !missing_ids.is_empty() {
+        let floor = basis.raw_start.saturating_sub(64);
+        for idx in (floor..basis.raw_start).rev() {
+            let prior = journal.read(idx, idx + 1, RECORD_BYTES)?;
+            if let Some(AgentMessage::Assistant(assistant)) = prior.first() {
+                for block in &assistant.content {
+                    if let Content::ToolCall(call) = block {
+                        if missing_ids.remove(&call.id) {
+                            call_map
+                                .entry(call.id.clone())
+                                .or_insert_with(|| (call.name.clone(), call.arguments.clone()));
+                        }
+                    }
+                }
+                if missing_ids.is_empty() {
+                    break;
+                }
+            }
+        }
+    }
+
+    let mut calls = Vec::new();
+    for (offset, msg) in messages.iter().enumerate() {
+        let AgentMessage::ToolResult(res) = msg else { continue };
+        let (_, arguments) =
+            call_map.get(&res.tool_call_id).cloned().context("image_proof_missing_tool_call_source")?;
+        let mut text = res
+            .content
+            .iter()
+            .find_map(|block| match block {
+                Content::Text(t) => Some(t.text.clone()),
+                _ => None,
+            })
+            .unwrap_or_default();
+        if res.is_error {
+            if let Some(stripped) = text.strip_prefix("tool error: ") {
+                text = stripped.to_owned();
+            }
+        }
+        let mut images = Vec::new();
+        for block in &res.content {
+            if let Content::Image(img) = block {
+                let raw = decode_base64(&img.data)?;
+                images.push(json!({
+                    "mime_type": img.mime_type,
+                    "bytes": raw.len(),
+                    "sha256": hash(&raw),
+                }));
+            }
+        }
+        calls.push(json!({
+            "id": res.tool_call_id,
+            "name": res.tool_name,
+            "arguments": arguments,
+            "result_raw_index": basis.raw_start + offset,
+            "is_error": res.is_error,
+            "text": text,
+            "images": images,
+        }));
+    }
+
+    let full_proof = journal.proof(0, basis.raw_end)?;
+    let payload = json!({
+        "kind": "jsonl-native-images-v1",
+        "basis": wire_basis,
+        "full_proof": full_proof,
+        "calls": calls,
+    });
+    let path = evidence_dir.join(format!("run-{}-tool-images.json", basis.run_number));
+    let reference = if path.exists() { checked_value(&path, &payload)? } else { write_new(&path, &payload)? };
+    checked_value(&path, &payload)?;
+    Ok(Some((path, payload, reference)))
+}
+
 /// Persist Host artifact declarations under the same review authority. An
 /// already-identical record is a reference, not another ledger transition.
 /// Earlier valid appends remain available if a later transition is refused.

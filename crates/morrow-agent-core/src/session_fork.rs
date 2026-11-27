@@ -62,9 +62,10 @@ pub fn fork_session(source: &Path, cwd: &Path, k: usize, targets: [&Path; 2]) ->
         session_journal::CHECKPOINT_MESSAGES
     );
     ensure!(
-        session_journal::checkpoint_size(&messages)? <= session_journal::CHECKPOINT_BYTES,
-        "fork refused: prefix exceeds the target checkpoint byte limit of {}",
-        session_journal::CHECKPOINT_BYTES
+        session_journal::checkpoint_within_bounds(&messages)?,
+        "fork refused: prefix exceeds the target checkpoint text/image byte limits ({}/{})",
+        session_journal::CHECKPOINT_BYTES,
+        crate::png_image::ACTIVE_IMAGE_BYTES
     );
 
     let source_absolute = std::path::absolute(source)?;

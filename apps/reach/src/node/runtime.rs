@@ -27,9 +27,15 @@ use tokio::{
     time::Instant,
 };
 
-async fn upload_forever(database: PathBuf, api: Api) -> Result<()> {
+async fn upload_forever(
+    database: PathBuf,
+    api: Api,
+    resident: Option<crate::resident::ResidentTracker>,
+    development: bool,
+) -> Result<()> {
     let mut db = Connection::open(database)?;
     db.busy_timeout(Duration::from_millis(250))?;
+    let mut retry_attempt = 0u32;
     loop {
         let raw: Option<String> = db
             .query_row("SELECT event_json FROM outbox WHERE acknowledged=0 ORDER BY rowid LIMIT 1", [], |row| {
@@ -41,13 +47,27 @@ async fn upload_forever(database: PathBuf, api: Api) -> Result<()> {
             match api.call(Method::POST, "/api/v1/node/events", Some(&serde_json::to_value(&event)?)).await {
                 Ok(reply) if reply["accepted"] == true && reply["sequence"] == event.sequence => {
                     persist_ack(&mut db, &event).await?;
+                    if retry_attempt > 0 {
+                        if let Some(tracker) = &resident {
+                            tracker.connected();
+                        }
+                    }
+                    retry_attempt = 0;
                 }
                 Ok(_) => anyhow::bail!("invalid receipt acknowledgement; original outbox retained"),
                 Err(error) if error.downcast_ref::<HttpError>().is_some_and(HttpError::permanent) => {
                     eprintln!("receipt upload requires reconciliation: {error}; original outbox retained");
                     return Err(error);
                 }
-                Err(_) => tokio::time::sleep(Duration::from_secs(1)).await,
+                Err(error) => {
+                    let delay = crate::resident::next_backoff_delay_ms(retry_attempt, development);
+                    retry_attempt = retry_attempt.saturating_add(1);
+                    if let Some(tracker) = &resident {
+                        tracker.offline_backoff(retry_attempt, delay, error.to_string());
+                    }
+                    eprintln!("receipt upload unavailable: {error}; original outbox retained");
+                    tokio::time::sleep(Duration::from_millis(delay)).await;
+                }
             }
         } else {
             tokio::time::sleep(Duration::from_millis(100)).await;
@@ -90,15 +110,20 @@ pub async fn run_managed(
     let api =
         Api::new(identity.server.as_deref().context("Node is not paired")?, &identity.secret, identity.development)?;
     ledger.recover()?;
+    if let Some(c) = control.as_ref() {
+        c.resident.connecting();
+    }
     let mut desktop =
         Desktop::new(identity.development, &ledger.root, control.as_ref().and_then(|c| c.desktop_owner.as_deref()))?;
     let upload_lost = Arc::new(AtomicBool::new(false));
     let agent = crate::agent::Runtime::load(identity.development, upload_lost.clone())?;
     let upload_database = ledger.root.join("node.sqlite");
     let upload_api = api.clone();
+    let upload_resident = control.as_ref().map(|c| c.resident.clone());
+    let development = identity.development;
     let uploader = tokio::spawn(async move {
         let _lifetime = UploadLifetime(upload_lost);
-        upload_forever(upload_database, upload_api).await
+        upload_forever(upload_database, upload_api, upload_resident, development).await
     });
     let outcome = run_loop(ledger, &identity, &api, once, &uploader, &mut control, &mut desktop, agent.as_ref()).await;
     // Pair/maintenance ACK is owned by our caller: no exit path may hand back
@@ -131,6 +156,7 @@ async fn run_loop(
 ) -> Result<Option<Request>> {
     let node_id = identity.node_id.as_deref().context("missing node ID")?;
     let mut recovered_pending = false;
+    let mut next_heartbeat = Instant::now();
     loop {
         if control::stopping(control) {
             return Ok(None);
@@ -150,6 +176,7 @@ async fn run_loop(
             let pending = match api.call(Method::GET, "/api/v1/node/pending", None).await {
                 Ok(value) => value,
                 Err(error) if error.downcast_ref::<HttpError>().is_some_and(HttpError::permanent) => return Err(error),
+                Err(error) if control.is_some() => return Err(error),
                 Err(error) => {
                     eprintln!("{error}");
                     tokio::time::sleep(Duration::from_secs(2)).await;
@@ -191,8 +218,10 @@ async fn run_loop(
             return Ok(None);
         }
         let mut capabilities = desktop.capabilities();
+        capabilities.extend_from_slice(crate::protocol::SSH_CAPABILITIES);
         if agent.is_some() {
             capabilities.push("agent.inspect");
+            capabilities.push("agent.provenance");
             #[cfg(windows)]
             if agent.as_ref().is_some_and(|r| r.inspection_lease) {
                 capabilities.push("agent.finalize");
@@ -202,19 +231,83 @@ async fn run_loop(
                     capabilities.push("agent.delegate");
                     capabilities.push(crate::agent_guidance::CAPABILITY);
                     capabilities.push("agent.resume");
+                    capabilities.push("agent.continue");
                 }
+            }
+        }
+        let mut node_cfg = crate::resident::load_config(ledger)?;
+        if Instant::now() >= next_heartbeat || node_cfg.pending_config_receipt.is_some() {
+            let ssh_status = crate::ssh::prepare_or_detect(&ledger.root, identity.development, false);
+            let hb_body = json!({
+                "version": env!("REACH_COMPILED_VERSION"),
+                "residentState": "connected",
+                "capabilities": capabilities,
+                "effectiveHeartbeatSeconds": node_cfg.effective_heartbeat_seconds,
+                "effectiveConfigVersion": node_cfg.effective_config_version,
+                "configReceipt": node_cfg.pending_config_receipt,
+                "sshStatus": ssh_status.heartbeat_value(),
+            });
+            match api.call(Method::POST, "/api/v1/node/heartbeat", Some(&hb_body)).await {
+                Ok(hb_reply) => {
+                    if let Some(c) = control.as_ref() {
+                        c.resident.connected();
+                        c.resident.record_heartbeat();
+                    }
+                    if let Some(ack_ver) = hb_reply["ackConfigVersion"].as_u64() {
+                        crate::resident::acknowledge_config_receipt(ledger, &mut node_cfg, ack_ver)?;
+                    }
+                    if crate::resident::apply_desired_config(ledger, &mut node_cfg, &hb_reply["desiredConfig"])? {
+                        next_heartbeat = Instant::now();
+                    } else {
+                        next_heartbeat =
+                            Instant::now() + Duration::from_secs(node_cfg.effective_heartbeat_seconds.max(30));
+                    }
+                }
+                Err(error) if error.downcast_ref::<HttpError>().is_some_and(|e| e.status == 404) => {
+                    next_heartbeat = Instant::now() + Duration::from_secs(node_cfg.effective_heartbeat_seconds.max(30));
+                }
+                Err(error)
+                    if error.downcast_ref::<HttpError>().is_some_and(HttpError::permanent) || control.is_some() =>
+                {
+                    return Err(error);
+                }
+                Err(error) => {
+                    eprintln!("{error}");
+                    recovered_pending = false;
+                    tokio::time::sleep(Duration::from_secs(2)).await;
+                    continue;
+                }
+            }
+            if control::stopping(control) {
+                return Ok(None);
+            }
+            if let Some(request) = control::idle(ledger, control)? {
+                return Ok(Some(request));
+            }
+            if control::stopping(control) {
+                return Ok(None);
+            }
+            if next_heartbeat <= Instant::now() {
+                continue;
             }
         }
         let reply = match api
             .call(
                 Method::POST,
                 "/api/v1/node/poll",
-                Some(&json!({"version":env!("CARGO_PKG_VERSION"),"capabilities":capabilities})),
+                Some(&json!({"version":env!("REACH_COMPILED_VERSION"),"capabilities":capabilities})),
             )
             .await
         {
-            Ok(value) => value,
-            Err(error) if error.downcast_ref::<HttpError>().is_some_and(HttpError::permanent) => return Err(error),
+            Ok(value) => {
+                if let Some(c) = control.as_ref() {
+                    c.resident.connected();
+                }
+                value
+            }
+            Err(error) if error.downcast_ref::<HttpError>().is_some_and(HttpError::permanent) || control.is_some() => {
+                return Err(error);
+            }
             Err(error) => {
                 eprintln!("{error}");
                 recovered_pending = false;
@@ -222,6 +315,9 @@ async fn run_loop(
                 continue;
             }
         };
+        if crate::resident::apply_desired_config(ledger, &mut node_cfg, &reply["desiredConfig"])? {
+            next_heartbeat = Instant::now();
+        }
         if !reply["operation"].is_null() {
             let dispatch: Dispatch = serde_json::from_value(reply["operation"].clone())?;
             dispatch.validate(node_id, identity.epoch)?;
@@ -238,6 +334,9 @@ async fn run_loop(
                 ensure!(ledger.next_event()?.is_none(), "result saved locally; upload still pending");
                 return Ok(None);
             }
+        }
+        if next_heartbeat <= Instant::now() {
+            continue;
         }
         tokio::time::sleep(Duration::from_millis(500)).await;
     }
@@ -291,7 +390,7 @@ async fn execute(
         )?;
         return Ok(());
     }
-    if matches!(dispatch.command["kind"].as_str(), Some("agent.delegate" | "agent.resume")) {
+    if matches!(dispatch.command["kind"].as_str(), Some("agent.delegate" | "agent.resume" | "agent.continue")) {
         if let Some(agent) = agent {
             match crate::agent::preflight(ledger, dispatch, desktop, agent) {
                 Ok(Some(result)) => {
@@ -311,35 +410,71 @@ async fn execute(
         }
     }
     ledger.event(dispatch, "running", json!({"executionIntentSaved":true}))?;
-    let result = if dispatch.command["kind"] == "agent.delegate" || dispatch.command["kind"] == "agent.resume" {
-        match agent {
-            Some(agent) => Box::pin(crate::agent::execute(ledger, api, dispatch, control, desktop, agent)).await,
-            None => Err(anyhow::anyhow!("Agent runtime unavailable")),
-        }
-    } else if dispatch.command["kind"] == "agent.finalize" {
-        #[cfg(windows)]
-        {
+    let result =
+        if matches!(dispatch.command["kind"].as_str(), Some("agent.delegate" | "agent.resume" | "agent.continue")) {
             match agent {
-                Some(agent) if agent.inspection_lease => {
-                    Box::pin(crate::agent_finalize::execute(ledger, api, dispatch, control, agent)).await
-                }
-                _ => Err(anyhow::anyhow!("read-only finalization runtime unavailable")),
+                Some(agent) => Box::pin(crate::agent::execute(ledger, api, dispatch, control, desktop, agent)).await,
+                None => Err(anyhow::anyhow!("Agent runtime unavailable")),
             }
-        }
-        #[cfg(not(windows))]
-        {
-            Err(anyhow::anyhow!("read-only process finalization is not supported on this host"))
-        }
-    } else if dispatch.command["kind"] == "agent.inspect" {
-        match agent {
-            Some(agent) => crate::agent_resume::inspect(ledger, dispatch, &agent.sidecar, &agent.sha),
-            None => Err(anyhow::anyhow!("Agent runtime unavailable")),
-        }
-    } else if is_desktop {
-        execute_desktop(ledger, api, dispatch, control, desktop, &mut parent_stop).await
-    } else {
-        execute_worker(ledger, api, dispatch, control, &mut parent_stop).await
-    };
+        } else if dispatch.command["kind"] == "agent.finalize" {
+            #[cfg(windows)]
+            {
+                match agent {
+                    Some(agent) if agent.inspection_lease => {
+                        Box::pin(crate::agent_finalize::execute(ledger, api, dispatch, control, agent)).await
+                    }
+                    _ => Err(anyhow::anyhow!("read-only finalization runtime unavailable")),
+                }
+            }
+            #[cfg(not(windows))]
+            {
+                Err(anyhow::anyhow!("read-only process finalization is not supported on this host"))
+            }
+        } else if dispatch.command["kind"] == "agent.inspect" {
+            match agent {
+                Some(agent) => crate::agent_resume::inspect(ledger, dispatch, &agent.sidecar, &agent.sha),
+                None => Err(anyhow::anyhow!("Agent runtime unavailable")),
+            }
+        } else if dispatch.command["kind"] == "agent.provenance" {
+            match agent {
+                Some(agent) => crate::agent_resume::provenance(ledger, dispatch, &agent.sidecar, &agent.sha),
+                None => Err(anyhow::anyhow!("Agent runtime unavailable")),
+            }
+        } else if dispatch.command["kind"] == "ssh.status" {
+            let identity = ledger.identity()?;
+            let st = crate::ssh::prepare_or_detect(&ledger.root, identity.development, false);
+            Ok(("succeeded".into(), serde_json::to_value(st)?))
+        } else if dispatch.command["kind"] == "ssh.authorize" {
+            let identity = ledger.identity()?;
+            let grant_id = dispatch.command["grantId"].as_str().context("missing grantId")?;
+            let public_key = dispatch.command["publicKey"].as_str().context("missing publicKey")?;
+            let nid = identity.node_id.as_deref().context("missing node_id")?;
+            match crate::ssh::authorize_paired_key(
+                &ledger.root,
+                nid,
+                identity.epoch,
+                grant_id,
+                public_key,
+                identity.development,
+            ) {
+                Ok(val) => Ok(("succeeded".into(), val)),
+                Err(err) => Ok(("failed".into(), json!({"error": err.to_string()}))),
+            }
+        } else if dispatch.command["kind"] == "ssh.revoke" {
+            let target_grant = dispatch.command["grantId"].as_str().map(str::to_owned);
+            match crate::ssh::revoke_grants_matching(&ledger.root, |g| {
+                target_grant.as_deref().is_none_or(|id| g.grant_id == id)
+            }) {
+                Ok(val) => Ok(("succeeded".into(), val)),
+                Err(err) => Ok(("failed".into(), json!({"error": err.to_string()}))),
+            }
+        } else if dispatch.command["kind"] == "starferry.session" {
+            crate::starferry::execute_session(ledger, api, dispatch, control).await
+        } else if is_desktop {
+            execute_desktop(ledger, api, dispatch, control, desktop, &mut parent_stop).await
+        } else {
+            execute_worker(ledger, api, dispatch, control, &mut parent_stop).await
+        };
     match result {
         Ok((state, data)) => {
             if dispatch.command["kind"] == "agent.finalize" {

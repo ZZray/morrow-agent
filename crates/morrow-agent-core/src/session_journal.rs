@@ -16,8 +16,10 @@ pub const HOT_MESSAGES: usize = 128;
 pub const HOT_BYTES: usize = 2 * 1024 * 1024;
 pub const CHECKPOINT_MESSAGES: usize = 512;
 pub const CHECKPOINT_BYTES: usize = 8 * 1024 * 1024;
+pub const CHECKPOINT_ACTIVE_BYTES: usize = 32 * 1024 * 1024;
 const SEGMENT_BYTES: u64 = 1024 * 1024;
-const RECORD_BYTES: usize = 4 * 1024 * 1024;
+pub const RECORD_TEXT_BYTES: usize = 4 * 1024 * 1024;
+pub const RECORD_BYTES: usize = 24 * 1024 * 1024;
 const HEAD_BYTES: u64 = 4 * 1024 * 1024;
 const ROOT: &str = "handwave-native-journal-v1";
 
@@ -86,11 +88,24 @@ fn chain(index: usize, previous: &str, hash: &str) -> String {
 pub fn directory(path: &Path) -> PathBuf {
     path.with_extension("journal")
 }
+pub fn empty_proof() -> String {
+    format!("journal-v1:{}", digest(format!("0:{ROOT}:0:{ROOT}").as_bytes()))
+}
 pub fn checkpoint_size(messages: &[AgentMessage]) -> Result<usize> {
     Ok(serde_json::to_vec(messages)?.len())
 }
+pub fn checkpoint_within_bounds(messages: &[AgentMessage]) -> Result<bool> {
+    let (text, image) = crate::png_image::split_messages_bytes(messages)?;
+    Ok(text <= CHECKPOINT_BYTES
+        && image <= crate::png_image::ACTIVE_IMAGE_BYTES
+        && text.saturating_add(image) <= CHECKPOINT_ACTIVE_BYTES)
+}
 pub fn hot_limit(messages: &[AgentMessage]) -> Result<bool> {
-    Ok(messages.len() >= HOT_MESSAGES || checkpoint_size(messages)? >= HOT_BYTES)
+    if messages.len() >= HOT_MESSAGES {
+        return Ok(true);
+    }
+    let (text, image) = crate::png_image::split_messages_bytes(messages)?;
+    Ok(text >= HOT_BYTES || image > crate::png_image::ACTIVE_IMAGE_BYTES)
 }
 
 /// Same file and parent durability boundary as the original checkpoint writer.
@@ -197,7 +212,7 @@ impl Journal {
             "legacy journal already exists or has invalid coverage"
         );
         ensure!(messages.len() - active_base <= CHECKPOINT_MESSAGES
-            && checkpoint_size(&messages[active_base..])? <= CHECKPOINT_BYTES,
+            && checkpoint_within_bounds(&messages[active_base..])?,
             "legacy active tail exceeds safety bounds; a valid sourced summary must cover more old messages before migration");
         std::fs::create_dir_all(&self.directory)?;
         let source_hash = digest(&serde_json::to_vec(messages)?);
@@ -238,7 +253,7 @@ impl Journal {
         completed: &[String],
     ) -> Result<Head> {
         ensure!(
-            messages.len() <= CHECKPOINT_MESSAGES && checkpoint_size(messages)? <= CHECKPOINT_BYTES,
+            messages.len() <= CHECKPOINT_MESSAGES && checkpoint_within_bounds(messages)?,
             "history_hot_limit_yield: active checkpoint reached its hard safety bound; raw receipts retained"
         );
         std::fs::create_dir_all(&self.directory)?;
@@ -285,7 +300,11 @@ impl Journal {
             };
             let mut bytes = serde_json::to_vec(&record)?;
             bytes.push(b'\n');
-            ensure!(bytes.len() <= RECORD_BYTES, "journal message exceeds 4 MiB; commit fenced");
+            let image_bytes = crate::png_image::message_image_bytes(message);
+            ensure!(
+                bytes.len() <= RECORD_BYTES && bytes.len().saturating_sub(image_bytes) <= RECORD_TEXT_BYTES,
+                "journal message exceeds record safety bound; commit fenced"
+            );
             if head.segments.last().is_none_or(|s| s.bytes + bytes.len() as u64 > SEGMENT_BYTES) {
                 ensure!(head.segments.len() < 8192, "journal reached segment index capacity");
                 head.segments.push(Segment {

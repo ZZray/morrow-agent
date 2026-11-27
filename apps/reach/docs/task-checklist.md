@@ -2,7 +2,7 @@
 
 作者：Ray Zhang（Ray）。命名空间：`RY`。
 
-2026-11-13 接续：Reach 已迁入 Morrow Agent 的 `apps/reach/`，当前入口为[迁移交接](handoffs/2026-11-13-morrow-subproject.md)。本次获准迁移、提交和推送，未恢复服务器访问、安装或部署。R06 最后真实截图崩溃恢复记录仍失败，完整验收继续保持 0/52、0/5。下文带日期的人员、部署、源码和验证记录保留历史范围，不作为 Morrow 版本通过证明。
+2026-11-13 接续：Reach 已迁入 Morrow Agent 的 `apps/reach/`，当前入口为[迁移交接](handoffs/2026-11-13-morrow-subproject.md)与[Morrow 接入及常驻改造执行单](tasks.md)。同日同步纳入[常驻服务与 Starferry 合并计划](architecture.md#2026-11-13-常驻服务与-starferry-合并架构草案待实施)（[REQ-01–REQ-06](product-scope.md#2026-11-13-新增需求与验收条件)：Starferry 合并、默认 SSH、独立常驻、`ryreach` 首次地址配置、分钟级远程可调心跳与断网退避；QSpin 默认安装和配置服务地址归 QSpin 处理，不在此实施）。本次获准迁移、提交和推送，未恢复服务器访问、安装或部署。R06 最后真实截图崩溃恢复记录仍失败，完整验收继续保持 0/52、0/5。下文带日期的人员、部署、源码和验证记录保留历史范围，不作为 Morrow 版本通过证明。
 计划日期：2026-11-01（Asia/Taipei）。进度更新：2026-11-04（Asia/Hong_Kong）。状态：设计、服务、Node/CLI/MCP、管理页及安装实施中；真实跨机、Ray 统一登录、输出收尾、便携桌面与 Desk 设备工具已有分项证据，完整任务验收仍为 **0/52**。
 
 当前目标：按完整清单实现 Reach 首版并部署到 Ray 工作台服务器，来源为本会话用户直接授权。首批 [架构](architecture.md)、[身份配对](identity-pairing.md)、[工具收据](tools-tasks.md)和[复用调查](reuse-map.md)已写；[服务基础记录](evidence/service-foundation-20261102.md)仅覆盖环回 HTTP/SQLite，不代替 Node、真实跨机或部署。当前实施者为本会话 Codex，作者 Ray Zhang；基线 `90f2b1c` 加工作区，独立复核 `/root/reach_plan_review`。前置设计与全部任务验收未完成，不提前勾选。
@@ -42,11 +42,15 @@
 
 - [ ] **D01 确定四组件架构与数据归属**
 
-  交付物：architecture.md：service、node、controller、admin，部署关系与数据所有者。
+  交付物：[architecture.md](architecture.md) 完整评审稿：service、node、controller、admin，部署关系、配置/身份/收据所有者和需求映射。
 
   前置：无。
 
   验收：不依赖 QSpin/LabSlot 私有状态；本地分析、远端执行、组织模型的职责可逐条对应。
+
+  Requirements：[REQ-01](product-scope.md#req-01)、[REQ-02](product-scope.md#req-02)、[REQ-03](product-scope.md#req-03)、[REQ-04](product-scope.md#req-04)、[REQ-05](product-scope.md#req-05)、[REQ-06](product-scope.md#req-06)。
+
+  本轮补充：架构草案覆盖 Node 常驻、数据所有者、SSH/连接/心跳/配置边界和第三方安装入口；不设计 QSpin 运行时集成。
 
 - [ ] **D02 完成复用调查与技术选型**
 
@@ -54,7 +58,11 @@
 
   前置：D01。
 
-  验收：比较 HandWave 提取成本；固定 Lite/Harness 依赖；确定语言、构建、发行命名与 RY 命名空间用法。
+  验收：核对 Starferry 和 HandWave 提取成本，固定 Morrow Core/Harness 依赖；确定语言、构建、发行命名、ryreach 和 RY 命名空间用法。
+
+  Requirements：[REQ-01](product-scope.md#req-01)、[REQ-02](product-scope.md#req-02)、[REQ-03](product-scope.md#req-03)。
+
+  本轮补充：固定 Starferry 来源、拆分点、直连/中转测试与许可；比较常驻改造成本，不把 package main 或 Morrow JSONL 单 Task 进程当现成 Node。
 
 - [ ] **D03 确定独立身份与配对流程**
 
@@ -64,6 +72,10 @@
 
   验收：未接 LabSlot 也能登录配对；已配对者完全控制；没有工具权限模式或逐次审批。
 
+  Requirements：[REQ-02](product-scope.md#req-02)、[REQ-03](product-scope.md#req-03)、[REQ-04](product-scope.md#req-04)、[REQ-05](product-scope.md#req-05)。
+
+  本轮补充：定义持久安装身份、配对/撤销与受管 SSH 授权；首次地址、换服务器不迁移旧凭据、远程心跳配置生效回执及认证失败恢复合同。
+
 - [ ] **D04 确定工具、任务与事件合同**
 
   交付物：tools-tasks.md 及版本化合同；首版能力矩阵、请求/操作/任务 ID、文本/图片/文件与错误语义。
@@ -71,6 +83,10 @@
   前置：D01,D02,D03。
 
   验收：明确单次工具和委托任务的输入输出；成功、失败、取消、未知可区分；能力矩阵用于实现验收，不是权限白名单。
+
+  Requirements：[REQ-01](product-scope.md#req-01)、[REQ-04](product-scope.md#req-04)、[REQ-05](product-scope.md#req-05)。
+
+  本轮补充：定义配置请求 ID、目标/生效版本、待应用/失败状态；心跳与即时控制分开，配置回执丢失后查询原记录。
 
 - [ ] **D05 确定安装、更新与卸载合同**
 
@@ -80,7 +96,11 @@
 
   前置：D01,D02,D03。
 
-  验收：双击安装后服务启动并退出安装器；共享基础包与产品卸载关系清楚；未把开机启动类型当作用户已定要求。
+  验收：安装后服务运行且退出安装器；未配置时等待初始化，配置终端退出不停止服务；共享基础包与产品卸载关系清楚，开机启动和恢复参数明确但不冒充实测。
+
+  Requirements：[REQ-02](product-scope.md#req-02)、[REQ-03](product-scope.md#req-03)、[REQ-04](product-scope.md#req-04)、[REQ-05](product-scope.md#req-05)、[REQ-06](product-scope.md#req-06)。
+
+  本轮补充：明确独立常驻服务、默认 SSH、首次 ryreach 输入或安装器预配置、PATH、单安装实例、CLI/服务配置边界和心跳退避参数。开机启动与崩溃恢复采用建议值前先形成可审合同。
 
 - [ ] **D06 选定首个 Windows Computer Use 后端**
 
@@ -100,6 +120,10 @@
 
   验收：首版不依赖 LabSlot；Reach 自持登录、数据和服务；工作台入口可明确定位；产品关联可为空，机器主数据只引用原系统，业务 API/MCP 仍由产品维护。
 
+  Requirements：[REQ-06](product-scope.md#req-06)。
+
+  本轮补充：仅定义通用安装与地址预配置合同及可选产品 API/MCP；QSpin 的安装器接线、地址选择及网关改造不在 Reach 任务内。
+
 - [ ] **D08 形成首版验收矩阵与实施估算**
 
   交付物：acceptance.md；场景、判据、环境、证据模板及选型后的工作量估算。
@@ -107,6 +131,10 @@
   前置：D01,D02,D03,D04,D05,D06,D07。
 
   验收：覆盖本计划 G1–G8；每个里程碑有实际可观察结果；仅据复用/选型证据估算工期。
+
+  Requirements：[REQ-01](product-scope.md#req-01)、[REQ-02](product-scope.md#req-02)、[REQ-03](product-scope.md#req-03)、[REQ-04](product-scope.md#req-04)、[REQ-05](product-scope.md#req-05)、[REQ-06](product-scope.md#req-06)。
+
+  本轮补充：为新增需求逐条映射近端验收，不等到 V01 才验证常驻、SSH、心跳配置、断网退避、恢复和重复安装。
 
 ## P1 · 独立远程调用闭环
 
@@ -132,11 +160,15 @@
 
   当前状态：进行中。Windows SCM 入口、常驻宿主及本机认证 IPC 已实现；[普通 host 的 22 项执行验证](evidence/node-service-20261102.md)与正式 SCM/SYSTEM 验收分开记录。
 
-  交付物：Node 连接、安装身份保存和原生进程工具最小接线。
+  交付物：独立常驻 Node、安装身份和配置保存、默认 SSH、目标机最小 ryreach 地址初始化入口与原生进程工具接线。
 
   前置：C01,D01,D03,D04。
 
   验收：运行真实子进程并取得真实退出状态；Node 重启后身份可识别，配对前不接受控制调用。
+
+  Requirements：[REQ-02](product-scope.md#req-02)、[REQ-03](product-scope.md#req-03)、[REQ-05](product-scope.md#req-05)。
+
+  本轮补充：交付 Node 常驻宿主、默认 SSH、最小 ryreach 首次地址输入/预配置读取及等待初始化/配对状态；C04 配对之前完成地址初始化验证。关闭 CLI 及业务产品后继续在线，Node 重启保持原身份。完整控制器在 C06 复用该配置边界。
 
 - [ ] **C04 实现首次配对、替换配对与解绑**
 
@@ -148,13 +180,21 @@
 
   验收：首次配对后直接可操作；再次配对无需重装；替换/解绑后旧连接按 D03 合同失效，无额外工具审批。
 
+  Requirements：[REQ-02](product-scope.md#req-02)、[REQ-03](product-scope.md#req-03)、[REQ-05](product-scope.md#req-05)。
+
+  本轮补充：验证可信配对后 SSH 访问和解绑后的受管授权撤销；短暂断网不清空安装身份，也不保留已撤销控制端访问。
+
 - [ ] **C05 实现中转、操作收据及重连查询**
 
-  交付物：出站连接、稳定操作 ID、事件/收据保存、断线重连。
+  交付物：出站控制连接、直连/中转数据流、心跳及配置回执、离线退避、稳定操作 ID 和原收据查询。
 
   前置：C04,D04。
 
   验收：断线后按原 ID 查回结果；未知效果明确保留；重连及重复投递不自动重放原动作。
+
+  Requirements：[REQ-01](product-scope.md#req-01)、[REQ-03](product-scope.md#req-03)、[REQ-04](product-scope.md#req-04)、[REQ-05](product-scope.md#req-05)。
+
+  本轮补充：接入 Starferry 直连/中转；单一重连调度器支持有上限退避，分钟级心跳可远程配置并查询生效版本；网络恢复后查询原操作，不重放。
 
 - [ ] **C06 实现本地 MCP 与 CLI 控制器**
 
@@ -163,6 +203,10 @@
   前置：C05,D04。
 
   验收：本地 Codex 可加载 MCP；CLI 与 MCP 对同一目标和操作得到一致结果。
+
+  Requirements：[REQ-01](product-scope.md#req-01)、[REQ-05](product-scope.md#req-05)。
+
+  本轮补充：在 C03 的最小目标机 ryreach 初始化入口上补齐完整 MCP/CLI 控制器、地址/心跳配置修改和有效值查询；复用同一配置边界，不将首次地址输入延后到本任务。具体子命令依 D03/D05。
 
 - [ ] **C07 验收首个独立跨机调用**
 
@@ -173,6 +217,10 @@
   前置：C06,C03,C05。
 
   验收：不装 QSpin、不接 LabSlot：Codex 调远端真实命令，独立核对一次文件变化；断线查询原操作，未知路径零自动重放。
+
+  Requirements：[REQ-01](product-scope.md#req-01)、[REQ-02](product-scope.md#req-02)、[REQ-03](product-scope.md#req-03)、[REQ-04](product-scope.md#req-04)、[REQ-05](product-scope.md#req-05)。
+
+  本轮补充：真实独立进程验证默认 SSH、direct/relay、关闭配置终端仍在线、远程改心跳生效、受控断网退避及恢复、配置/操作回执查询；无需安装 QSpin。
 
 ## P2 · 通用工具与 Windows 桌面
 
@@ -256,6 +304,10 @@
 
   验收：在干净机器不要求用户自行安装 Python、开发工具或配置模型；组件版本与许可清单可追溯。
 
+  Requirements：[REQ-01](product-scope.md#req-01)、[REQ-02](product-scope.md#req-02)、[REQ-03](product-scope.md#req-03)、[REQ-05](product-scope.md#req-05)。
+
+  本轮补充：包内包含选定连接实现、SSH 准备资源、常驻服务和 ryreach；旧 Starferry 安装包不代表 Reach 安装已通过。
+
 - [ ] **I02 实现无引导页安装与启动**
 
   当前状态：进行中。候选实现 UAC、可信目录、服务注册、PATH 与启动核验；本机非管理员，真实提权安装尚未执行。
@@ -264,7 +316,11 @@
 
   前置：I01。
 
-  验收：双击安装后服务运行；新终端可执行 reach；无下一步/完成按钮流程，系统自身 UAC 单独记录。
+  验收：双击安装后独立服务运行；新终端可执行 ryreach；无额外产品引导页，首次地址由 CLI 输入，系统自身 UAC 单独记录。
+
+  Requirements：[REQ-02](product-scope.md#req-02)、[REQ-03](product-scope.md#req-03)、[REQ-05](product-scope.md#req-05)。
+
+  本轮补充：干净机安装后 ryreach 在新终端可用；首次地址与预配置路径分别验证，服务与 SSH 状态如实显示，关闭终端服务不退出。
 
 - [ ] **I03 实现已安装检测与兼容更新**
 
@@ -275,6 +331,10 @@
   前置：I02,C05。
 
   验收：兼容安装不生成第二套身份/服务；更新后原配对有效；正在执行的任务按 D05 结算后切换。
+
+  Requirements：[REQ-02](product-scope.md#req-02)、[REQ-03](product-scope.md#req-03)、[REQ-05](product-scope.md#req-05)、[REQ-06](product-scope.md#req-06)。
+
+  本轮补充：保留身份、地址、有效配置及收据；重复安装和升级不产生第二套 Node、心跳或 SSH 授权。
 
 - [ ] **I04 验证更新失败后的恢复**
 
@@ -288,11 +348,15 @@
 
 - [ ] **I05 提供产品安装器接入方式**
 
-  交付物：公共安装包调用合同、产品关联登记/移除接口约定与受控示例。
+  交付物：公共安装包调用、服务地址预配置/查询、产品关联登记/移除合同与受控示例。
 
   前置：I02,D07。
 
   验收：受控安装器调用复用同一基础包并返回实际安装状态；重复调用不生成第二套服务；实际产品关联、解除及卸载共存效果在 P05 验收。
+
+  Requirements：[REQ-05](product-scope.md#req-05)、[REQ-06](product-scope.md#req-06)。
+
+  本轮补充：交付通用安装/预配置入口和实际结果查询；受控外部安装器复用同一 Reach，具体 QSpin 接线不实施。
 
 - [ ] **I06 完成干净机与升级路径验收**
 
@@ -301,6 +365,10 @@
   前置：I02,I03,I04,I05,T07。
 
   验收：从最终安装包完成 pair、MCP 调用和真实桌面操作；服务启动成功与桌面实际可操作分别验证。
+
+  Requirements：[REQ-01](product-scope.md#req-01)、[REQ-02](product-scope.md#req-02)、[REQ-03](product-scope.md#req-03)、[REQ-04](product-scope.md#req-04)、[REQ-05](product-scope.md#req-05)、[REQ-06](product-scope.md#req-06)。
+
+  本轮补充：最终包验证已有/缺失 SSH、首次/预配置、关闭终端、服务及机器重启、受控断网和配置回执；开机启动行为按 D05 已定合同验收。
 
 ## P4 · 独立管理与工作台入口
 
@@ -313,6 +381,10 @@
   前置：C02,C05,D07。
 
   验收：状态来自实际服务；展示最近更新时间；未安装、未配对、离线不会显示为可操作。
+
+  Requirements：[REQ-03](product-scope.md#req-03)、[REQ-04](product-scope.md#req-04)。
+
+  本轮补充：展示最近成功心跳、当前连接、有效间隔及配置版本；离线待应用配置不显示已生效，不把最近心跳等同于当前调用可达。
 
 - [ ] **A02 实现配对管理操作**
 
@@ -464,6 +536,10 @@
 
   验收：只在产品适配处引用 QSpin；卸下配置后 Reach 系统/桌面能力仍可使用；真实硬件行为另按现场任务验收。
 
+  Requirements：[REQ-06](product-scope.md#req-06)。
+
+  本轮补充：仅指可选 QSpin API/MCP 工具来源的参考配置；不包含向 QSpin 嵌入 Reach、网关/IPC/子进程方案，或 QSpin 安装器默认安装及地址接线。
+
 - [ ] **P05 验收多个产品共存与解除关联**
 
   交付物：无产品、QSpin 或其他真实产品、第二产品配置的对照记录。
@@ -471,6 +547,10 @@
   前置：P01,P02,P03,P04,I05。
 
   验收：同机可关联多个产品；解除或卸载其中一个产品后，共用服务、其他产品关联、通用连接及任务记录保留；测试替身与真实产品分别标注。
+
+  Requirements：[REQ-03](product-scope.md#req-03)、[REQ-06](product-scope.md#req-06)。
+
+  本轮补充：外部软件只复用独立安装；关闭或卸载一个产品后 Node 仍可服务其他使用者，不生成多份身份/连接/心跳。
 
 ## P7 · 完整验收与内测交付
 
@@ -491,6 +571,10 @@
   前置：V01,C05,I04,R06。
 
   验收：可查原操作和实际结果；未知状态保留；不存在把消息送达、取消请求或模型结束当作业务成功的路径。
+
+  Requirements：[REQ-01](product-scope.md#req-01)、[REQ-02](product-scope.md#req-02)、[REQ-03](product-scope.md#req-03)、[REQ-04](product-scope.md#req-04)、[REQ-05](product-scope.md#req-05)、[REQ-06](product-scope.md#req-06)。
+
+  本轮补充：复验持续断网退避及恢复、远程配置回执丢失、换服务器不泄露旧凭据、授权撤销失败、重复安装和未知操作零自动重放。
 
 - [ ] **V03 完成 Windows 桌面环境矩阵**
 

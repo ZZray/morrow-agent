@@ -1,22 +1,30 @@
 # Windows 安装、更新与卸载
 
-作者：Ray Zhang（Ray）。更新：2026-11-04。范围：D05、C03/C04、I01–I06。状态：服务宿主、桌面及Agent完整载荷、安装/卸载入口候选已实现；真实 UAC/SCM/SYSTEM、升级故障与干净机器安装尚未验收，不能代表 I01–I06 完成。
+作者：Ray Zhang（Ray）。更新：2026-11-24。范围：D05、C03/C04、I01–I06。状态：服务宿主、桌面及Agent完整载荷、安装/卸载入口候选已实现；真实 UAC/SCM/SYSTEM、升级故障与干净机器安装尚未验收，不能代表 I01–I06 完成。
 
 ## 用户动作与安装组成
 
-用户双击安装器，Windows 按需显示系统 UAC；确认后自动校验发行包、安装文件、注册服务、加入机器 PATH、启动服务并退出。产品不增加下一步或完成按钮。安装成功必须确认实际服务进入 running；写入服务注册表但未启动不算成功。未配对的服务保持运行，等待 `reach pair`，不要求模型密钥或业务产品。
+用户双击安装器，Windows 按需显示系统 UAC；确认后自动校验发行包、安装文件、注册服务、加入机器 PATH、启动服务并退出。产品不增加下一步或完成按钮。安装成功必须确认实际服务进入 running；写入服务注册表但未启动不算成功。未配对的服务保持运行，等待 `ryreach pair`，不要求模型密钥或业务产品。
 
 首版选择 Windows 自动延迟启动，服务名 `RYReach`，服务账户为 LocalSystem。该启动类型是实现选择，不改写成用户原话。桌面后端运行在明确的交互用户会话中，不能在 Session 0 伪造桌面可用；其打包和登录启动随 T05/I01 接入。
 
 | 内容 | 位置与所有者 |
 |---|---|
 | 程序与受保护安装记录 | `%ProgramFiles%/RY/Reach`；SYSTEM/Administrators 可修改，普通用户只读执行 |
-| CLI | 安装目录的 `bin/`，加入机器 PATH；新终端可直接执行 `reach` |
+| CLI | 安装目录的 `bin/`，加入机器 PATH；新终端使用 `ryreach`，保留 `reach` 兼容入口 |
 | 安装身份、账本、未上传收据 | `%ProgramData%/RY/Reach`；服务唯一持有，不随程序升级重建 |
 | 配对主体 | 首次安装明确的 Windows 用户 SID；受保护的服务/安装配置及 `%ProgramData%/RY/Reach.installation.json` 保留其归属，后者与账本目录并列 |
 | 桌面助手 | 与安装共用版本、许可及配置，运行会话单独记录；不拥有另一套 Node 身份 |
 
 最终发行包含所需桌面运行时，现场用户无需安装 Rust、Node、Python 或开发工具。Reach Desk 是另行选装的云端子项目，不进入默认 Windows 安装依赖。
+
+### Worker 与 Agent 先上线
+
+默认 Windows 包必须安装 `RYReach` 服务和 Morrow Agent。安装事务校验包内 Agent 及运行配置，启动 Worker 后进入地址设置和配对。首次安装可在离线环境完成。配对、心跳和远端 Agent 任务在设备连接 Reach 服务端后验收。
+
+离线 OpenSSH 随包提供。用户可在本机启用，也可在设备上线后通过 Agent 调用受管启用或排查流程。SSH 未启用和 SSH 故障分别显示在设备状态中，Worker 和 Agent 继续工作。升级时保留设备身份、现有 SSH 配置和已选择的启用状态。[产品决定](knowledge/product-decisions.md#worker-agent-desk-20261124)
+
+此顺序待实现。现有 Windows 完整包在暂存 Agent 之前执行 `EnsureReachSshd`，当前自更新只接受 Node-only 的 schema 1。默认包切换前需让完整包进入签名与更新验证，并实测从旧包迁移、失败回退，以及 GitHub 和 Gitee 更新后保留 Agent。
 
 ## 状态与本机身份
 
@@ -48,7 +56,7 @@ SCM stop/shutdown 立即设置停止信号。服务不再领取新任务，已�
 
 PATH 保留未展开文本与 RegistryValueKind。只有明确写入且当前值仍等于本次写入值时才撤销；若中断导致写入归属不明或其他程序已更改 PATH，保留现状，不凭相同路径文本删除他人条目。这种恢复可能留下一个待下次安装核对的 PATH 项。
 
-当前只接受已知程序版本 0.1.0 与 Node schema 1。跨 schema 迁移及一致性备份尚未实现，不允许把当前回滚流程套到新 schema。上述真实安装、升级、断电及故障恢复仍须由 I03/I04 验证。
+安装记录接受规范的三段程序版本，仍要求 Node schema 1。跨 schema 迁移及一致性备份尚未实现，不允许把当前回滚流程套到新 schema。上述真实安装、升级、断电及故障恢复仍须由 I03/I04 验证。
 
 安装记录另有 schema1（旧 Node-only）和 schema2（完整载荷），两者均保留 `sha256` 表示 Node。schema2 增加整包 SHA、逐文件清单 SHA 与桌面载荷标记，目录以完整包摘要区分；运行时单独更新也生成新目录。回滚先核目标事务身份，恢复旧版本前才要求旧包全部字节完整，避免坏候选本身阻断恢复。安装 schema 的变化不改变账本 schema。
 
@@ -58,13 +66,34 @@ PATH 保留未展开文本与 RegistryValueKind。只有明确写入且当前值
 
 维护操作先取得数据父目录的外部锁，再取得原程序根目录的永久 install.lock。后者附带临时原子写的归属意图：完整记录 Flush 后才创建随机临时文件，恢复只清确切登记路径，清理确认完成后在持锁状态退休这些记录。它不替代安装 journal，也不授权按 `.new-GUID` 后缀删除旧未知文件。完整包与 Node-only 均先登记 stage/final 名单，再写随机 stage，校验后发布。卸载 schema3 分派已接入候选，实际系统安装尚未验收。
 
+## Git 自更新与 Windows 服务恢复
+
+2026-11-24 用户将自动更新、Windows 服务安装及异常自动恢复列为首版交付要求。本地实现已接入 `RYReach` 延迟自启、SCM 失败重启、Git 发行标签查询、签名校验和安装事务。RyDev 真实安装及双源更新的结果以[本轮验收记录](evidence/2026-11-24-rydev-service-update.md)为准。
+
+1. 以 Morrow 仓库的 Reach Git 发行标签标定版本，建议采用 `reach-vX.Y.Z`。发布时针对同一提交构建一次，生成签名清单，写明标签、提交、版本、平台、架构、包大小、SHA-256 与兼容范围。将同一份清单及安装包发布到 GitHub 和 Gitee。Git 引用和发行附件分别同步和核验。安装收据记录实际版本，发布前核对 Node、Setup、清单和收据。 [GitHub Releases](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases) · [Gitee 发行版](https://help.gitee.com/repository/release/create)
+2. 建议客户端按 GitHub、Gitee、Reach 服务固定版本下载缓存的顺序查找同一版。第三处拟走 `https://nmrkit.ciqtek.com/reach/downloads/`，可提供离线安装包。连接失败、超时或附件缺失时切换来源；每处仍用同一发行信任验证签名和包摘要。来源均不可用时保留当前运行版本，展示上次检查时间和失败原因。
+3. 把查找与下载安排在常驻服务的低频检查中，交由独立受信维护进程完成安装，沿用本页的 `maintenance-stop`、SCM 退出核对、安装 journal 和程序回退。停领并检查既有操作收据，续用安装 ID、绑定 SID、配对及原账本。存在未结算状态时延后切换，重启后查询或上传原收据。
+4. 正式安装给 `RYReach` 配置 SCM 失败重启及有上限的分级退避。恢复覆盖进程崩溃和宿主以非零状态报告 `SERVICE_STOPPED`。正常停止、维护和卸载后保持停止。安装后在真实 Windows 用 `sc.exe qc`、`qfailure`、`qfailureflag` 核对注册，再故障注入并观察新 PID、原安装 ID、配对、上线和原收据。 [Microsoft SCM 失败动作](https://learn.microsoft.com/en-us/windows/win32/api/winsvc/ns-winsvc-service_failure_actionsw) · [Microsoft 非崩溃失败标志](https://learn.microsoft.com/en-us/windows/win32/api/winsvc/ns-winsvc-service_failure_actions_flag)
+
+Node-only 测试发行使用 `REACH_RELEASE_VERSION` 写入 Node 和 Setup，构建时由 `REACH_UPDATE_PUBLIC_KEY_HEX` 固定验签公钥。`packaging/windows/release-assets.ts` 对照构建记录和 Setup `--inspect` 核对实际版本、嵌入 Node 摘要，生成 `Reach-Node-Setup-x64.exe`、`reach-update.json` 和 `reach-update.sig`。Ed25519 签名覆盖清单的原始字节，清单绑定发行标签、Git 提交和安装包摘要。
+
+当前 Node 从公开 Git HTTPS 查询新标签，访问对应发行的附件。GitHub 请求不可用时查询 Gitee。签名、标签提交或安装包完整性错误会停止本次更新，保留当前安装。Reach HTTPS 第三下载源属于后续交付项。更新日志写入受保护的安装目录，记录来源和失败阶段。自动更新仅接收更高版本，隔离验收可手动安装兼容的旧版。
+
+I03/I04/I06 的新验收需覆盖 GitHub 不可达而改用 Gitee、两仓不可达而使用 Reach 下载缓存、所有来源不可达、清单或包损坏、中断恢复、SCM 异常恢复、正常停止及升级失败回退。实测以最终签名包、双端 Git 引用、下载记录、SCM 事件和原操作收据为证据。
+
 ## 安装候选的构建与证据
 
-[完整打包脚本](../packaging/windows/build-complete.ps1)接收已验证Node、静态helper、Agent侧车、固定便携Python及各自摘要。逐文件ZIP覆盖所有执行文件、配置、许可与provenance；版本不可原地混装。Node/helper/Agent/setup核系统运行库依赖，Python原生依赖使用固定来源的包内DLL。构建先调用[独立依赖审计](../packaging/windows/audit-dependencies.ps1)：Node/Setup用Reach策略，Desktop用自己的策略，JSONL用既有Lite策略；锁和策略不变，并核rpi三包固定来源。原始许可收集涵盖四个实际Rust依赖图和包内Python/桌面声明。旧[Node-only配方](../packaging/windows/build.ps1)保留为历史入口。
+2026-11-14 修复后的 Node-only 与完整构建脚本均要求 `-OpenSshArchive`。输入可为已核验的 Starferry 离线封装包（SHA-256 `a31831bc07c26b88c7d5bf2fda108f14add3d90faea51002ec1a62de56c1b234`），或其内原厂 ZIP（`23f50f3458c4c5d0b12217c6a5ddfde0137210a30fa870e98b29827f7b43aba5`）。构建仅嵌入原厂载荷及许可，排除封装包中的既有授权公钥。`--inspect` 同时输出 OpenSSH 和准备脚本摘要。
+
+缺少 sshd 时，安装器将该版本放入 `%ProgramFiles%/RY/OpenSSH-10.0.0.0p2`，生成缺失主机密钥、检查配置并注册自动启动服务。已有 sshd 使用其实际服务程序和 `-f` 配置。共享 OpenSSH 的安装、主机密钥和服务会在 Reach 安装失败、回滚及卸载后保留，`last-ssh-preparation.json` 记录准备中、成功或失败状态，便于按原现场恢复。
+
+SSH 登录用户取安装记录的 `bindingOwner` SID。服务通过该用户的 profile 和实际 `sshd -T` 结果选择授权文件，多个 `AuthorizedKeysFile` 使用第一项，其余文件保留。已有配置或权限不满足当前 SSH 连接合同会明确失败。常规身份探测随心跳执行，授权操作再现场核对。该改动已完成隔离和有效配置验证，真实 SCM 安装仍待验，见[修复记录](evidence/independent-validation-20261114.md#修复与复测2026-11-14)。
+
+[完整打包脚本](../packaging/windows/build-complete.ps1)接收已验证Node、静态helper、Agent侧车、固定便携Python及各自摘要。逐文件ZIP覆盖所有执行文件、配置、许可与provenance；版本不可原地混装。Node/helper/Agent/setup核系统运行库依赖，Python原生依赖使用固定来源的包内DLL。构建先调用[独立依赖审计](../packaging/windows/audit-dependencies.ps1)：Node/Setup用Reach策略，Desktop用自己的策略，JSONL用既有Lite策略；锁和策略不变，并核rpi三包固定来源。原始许可收集涵盖四个实际Rust依赖图和包内Python/桌面声明。[Node-only 配方](../packaging/windows/build.ps1)构建独立 Node 与离线 OpenSSH 候选。
 
 `--inspect`无需提权，返回包、Node、Agent、清单、检查脚本及声明摘要；`--verify-payload`通过实际私有stdin和系统WinPS5.1验证完整ZIP及必需Agent，仍不执行安装。新候选的原件与本地执行见[Agent完整包](evidence/agent-package-20261104.md)，历史桌面包证据仍保留在[完整载荷记录](evidence/full-installer-runtime-20261103.md)。
 
-setup 从当前 Windows token 获取绑定 SID，通过系统 UAC 提权，使用 Windows API 定位系统 PowerShell。完整脚本通过私有 stdin 一次解析，不执行用户临时目录中的脚本。具体错误由提权子进程显示一次。候选尚未签名，普通 host、事务函数测试及制品检查的范围见[安装候选证据](evidence/node-installer-20261102.md)。
+Setup 从当前 Windows token 获取绑定 SID，通过系统 UAC 提权，使用 Windows API 定位系统 PowerShell。双击安装完成并提交后，原启动用户在未配置时会看到服务端地址输入框。输入 HTTPS 地址后通过已安装的 `ryreach` 保存。也可以稍后用 `ryreach config set server-url <HTTPS 地址>` 修改。完整脚本通过私有 stdin 一次解析，不执行用户临时目录中的脚本。具体错误由提权子进程显示一次。初版候选未签名，普通 host、事务函数测试及制品检查的范围见[安装候选证据](evidence/node-installer-20261102.md)。
 
 ## 卸载与共存
 

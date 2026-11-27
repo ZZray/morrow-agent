@@ -1,5 +1,5 @@
 // Copyright (c) Ray Zhang. Original Task authority is separate from each dispatched execution.
-import {delegateSchema,resumeSchema,agentFinalizeSchema} from '../contracts/protocol.ts';
+import {delegateSchema,resumeSchema,agentContinueSchema,agentFinalizeSchema} from '../contracts/protocol.ts';
 import {digest,sha256} from './store.ts';
 import {requireCondition} from './errors.ts';
 import type {NodeRow,OperationRow,ReachStore} from './store.ts';
@@ -16,7 +16,7 @@ export class AgentExecutions {
   constructor(store:ReachStore){this.store=store;}
   private task(id:string){return this.store.db.prepare('SELECT * FROM agent_tasks WHERE root_id=?').get(id) as unknown as TaskRow|undefined;}
   private attempt(id:string){return this.store.db.prepare('SELECT * FROM agent_executions WHERE execution_id=?').get(id) as unknown as ExecutionRow|undefined;}
-  isAgent(op:OperationRow){return ['agent.delegate','agent.resume','agent.finalize'].includes(JSON.parse(op.command_json).kind);}
+  isAgent(op:OperationRow){return ['agent.delegate','agent.resume','agent.continue','agent.finalize'].includes(JSON.parse(op.command_json).kind);}
   addRoot(op:OperationRow){
     const command=delegateSchema.parse(JSON.parse(op.command_json));
     const deadline=op.claimed_at===null?null:op.claimed_at+command.maxSeconds*1000;
@@ -30,7 +30,7 @@ export class AgentExecutions {
         this.addRoot(row);
       }
     }
-    for(const row of this.store.db.prepare("SELECT * FROM operations WHERE json_extract(command_json,'$.kind') IN ('agent.delegate','agent.resume','agent.finalize')").all() as unknown as OperationRow[])this.resolve(row.user_id,row.id);
+    for(const row of this.store.db.prepare("SELECT * FROM operations WHERE json_extract(command_json,'$.kind') IN ('agent.delegate','agent.resume','agent.continue','agent.finalize')").all() as unknown as OperationRow[])this.resolve(row.user_id,row.id);
     // Historical children belong to the original execution. Do not fabricate native admission.
     for(const row of this.store.db.prepare('SELECT c.parent_id,c.child_id FROM agent_calls c LEFT JOIN agent_child_executions e ON e.child_id=c.child_id WHERE e.child_id IS NULL').all()){
       requireCondition(fromVersion<8,409,'agent_execution_migration','原子操作执行归属缺失');
@@ -59,6 +59,9 @@ export class AgentExecutions {
     else if(JSON.parse(execution.command_json).kind==='agent.finalize'){
       const input=agentFinalizeSchema.parse(JSON.parse(execution.command_json)),previous=this.attempt(input.previousExecutionId),row=this.store.db.prepare('SELECT * FROM agent_finalizers WHERE execution_id=?').get(execution.id);
       requireCondition(input.rootOperationId===op.id&&previous?.root_id===op.id&&previous.generation+1===attempt.generation&&attempt.previous_execution_id===previous.execution_id&&attempt.expected_fence_sha256===null&&attempt.instruction_sha256===null&&attempt.phase==='reconciling'&&row?.root_id===op.id&&row.source_execution_id===input.sourceExecutionId&&row.expected_released_sha256===input.releasedSha256,409,'agent_finalizer_binding','只读结算的代际或来源关系不符');
+    }else if(JSON.parse(execution.command_json).kind==='agent.continue'){
+      const cont=agentContinueSchema.parse(JSON.parse(execution.command_json)),previous=this.attempt(cont.previousExecutionId),row=this.store.guidance.continuation(execution.id);
+      requireCondition(cont.rootOperationId===op.id&&attempt.previous_execution_id===cont.previousExecutionId&&previous?.root_id===op.id&&previous.generation+1===attempt.generation&&attempt.expected_fence_sha256===null&&attempt.instruction_sha256===sha256(cont.feedback)&&attempt.phase==='active'&&row?.root_id===op.id&&row.expected_released_sha256===cont.releasedSha256,409,'agent_continue_binding','跨进程续作的代际或来源关系不符');
     }else{
       const resume=resumeSchema.parse(JSON.parse(execution.command_json)),previous=this.attempt(resume.previousExecutionId);
       requireCondition(resume.rootOperationId===op.id&&attempt.previous_execution_id===resume.previousExecutionId&&previous?.root_id===op.id&&previous.generation+1===attempt.generation&&attempt.expected_fence_sha256===resume.fenceSha256&&attempt.instruction_sha256===sha256(resume.instruction)&&['reconciling','active'].includes(attempt.phase),409,'agent_execution_binding','恢复执行关联或阶段不符');
@@ -66,7 +69,9 @@ export class AgentExecutions {
     const active=this.attempt(task!.active_execution_id);
     requireCondition(active?.root_id===op.id&&active.generation===task!.generation&&Number.isSafeInteger(task!.generation)&&task!.generation>=attempt.generation,409,'agent_execution_binding','原 Task 活跃代关系不符');
     const finished=this.store.db.prepare('SELECT * FROM agent_task_finishes WHERE root_id=?').get(op.id);
-    requireCondition(task!.requires_reconciliation===(task!.generation>1&&!finished?1:0)&&(!finished||(finished.execution_id===task!.active_execution_id&&finished.generation===task!.generation)),409,'agent_execution_binding','原 Task 恢复阶段缺失，不能推断已经核清');
+    const activeOp=this.store.operation(userId,task!.active_execution_id);
+    const isActiveContinuation=this.store.guidance.isContinuation(activeOp);
+    requireCondition((!finished||(finished.execution_id===task!.active_execution_id&&finished.generation===task!.generation))&&(isActiveContinuation?(task!.requires_reconciliation===(activeOp.execution==='unknown'&&!finished?1:0)):(task!.requires_reconciliation===(task!.generation>1&&!finished?1:0))),409,'agent_execution_binding','原 Task 恢复阶段缺失，不能推断已经核清');
     const deadline=op.claimed_at===null?null:op.claimed_at+command.maxSeconds*1000;
     requireCondition(task!.deadline_unix_ms===deadline,409,'agent_deadline_changed','原 Task 截止时间与首次派发不符');
     return {op,command,execution,task:task!,attempt,generation:attempt.generation};

@@ -1,0 +1,55 @@
+# Reach Web 控制台实现交接
+
+作者 Ray Zhang（Ray）。日期 2026-11-24。状态：本地实现完成，未提交、未部署。关联：[Web 设计交接](2026-11-24-web-control.md)。
+
+## 做了什么
+
+- 控制台前端（`src/admin/`）：在原有原生 TS 管理页上重做，没有引入新依赖。视觉按用户 2026-11-24 指定的参考图：网页灰色背景，中间一块大圆角面板；面板里是浅灰底、右下角一抹暖色，顶部有字标胶囊和胶囊导航（选中项为墨色），标题和数字用细体大字号，重点卡为墨色，强调色为黄色，余量用斜纹表示。亮色和深色两套配色；深色模式下墨色元素反转为浅色。强调色有预设和自定义两种，保存在本机。
+  - `model.ts`：hash 路由（刷新后仍停留在详情页）、设备与操作状态口径、筛选、时间文案、网页命令构造与校验、操作进度分段。
+  - `theme.ts`：主题、强调色，以及强调色上文字颜色的对比度计算。
+  - `admin.ts`：设备总览（分段比例条、大数字、设备磁贴、最近操作、在线率仪表、上线通知墨色卡）、设备详情（资料卡、心跳计时环与「已请求/已生效」、SSH、最近操作）、操作列表与详情（投递、接收、执行、结果分段，产物与原始回执）、网页发起操作、配对和重新配对、解绑、通知浮层、下载页、MCP 接入页、Microsoft 登录入口。
+- 服务端配套接口：
+  - 设备上线事件：`src/service/device-events.ts` 新增 `node_events` 表，在 `store.hello()` 里按状态变化记录首次上线（以首次上报非空能力为准，每个配对 epoch 只记一次）和断线恢复（在线窗口与 `enrichNodeSummary` 一致）。新建表时，已上线的旧设备会补一条已读记录，避免升级后批量误报。接口：`GET /api/v1/device-events?after=&limit=`、`POST /api/v1/device-events/read {upTo}|{sequences}`。
+  - 发行清单：`src/service/releases.ts`，`GET /api/v1/releases` 读取 `REACH_RELEASE_MANIFEST` 指向的 JSON（只接受 HTTPS 下载源）。未配置时返回 `configured:false`；清单损坏时返回 503，不会把这种情况显示成「尚无发布」。
+  - 静态路由新增 `assets/model.js`、`assets/theme.js`。
+
+## 统计、监控与易用性（第二轮）
+
+- 统计接口：`src/service/stats.ts`，`GET /api/v1/stats?days=7|14|30&tz=<分钟>&node=<可选>`。只从账本聚合：按本地自然日统计操作量与结果；流量分两项，设备回传取回执原始 JSON 的字节数，下发指令取命令 JSON 的字节数；耗时为终态操作从发起到最后更新的 P50/P90；另有操作类型分布、设备排行、断线恢复次数。可用性只依据已记录的断线区间和当前离线区间计算，首次上线前以及事件表建立前没有数据，显示为「无记录」。
+- 图表：`src/admin/charts.ts`，手写 SVG，没有引入依赖。包括平滑折线（单调插值，不会冲出数据范围；悬停十字线，读数浮层列出当天所有系列；可用方向键操作）、条形、可用性条带、环形占比，每张图都附「查看数据表」。图表色经 dataviz 校验脚本验证：亮色 `#b98300 / #7258d6`，暗色 `#b58a14 / #8a74ea`。
+- 页面：新增「统计」页（可选近 7/14/30 天：关键数字、操作量、结果构成、数据流量、操作类型、设备可用性、设备排行）。总览增加「近 7 天操作」折线；设备详情增加近 14 天可用性条带和该设备的操作折线。
+- 易用性：顶栏显示「N 前同步」，点击即可刷新；`/` 打开当前页搜索，`N` 发起操作；Node ID 和操作 ID 可一键复制；操作详情里有「以此为模板新建」，会预填原内容并使用新的请求 ID，不会重放原操作；进行中的操作详情每 5 秒自动重读。
+
+## 还原度、字体与图标（第三轮）
+
+- 字体：按用户同意下载 Outfit 可变字体（SIL OFL 1.1），自托管在 `assets/fonts/`，通过 `/assets/outfit.ttf` 提供，CSP 只增加 `font-src 'self'`；来源和摘要见 [字体说明](../../assets/fonts/README.md)。中文回退到微软雅黑。
+- 间距与字号：对照参考图（1024px 宽）重新量了一遍。面板内边距、卡片间距、标题、大数字、卡片标题和导航高度都改为随窗口宽度在参考尺寸与宽屏尺寸之间平滑变化；多栏布局的断点从 1180px 降到 960px，1024px 宽时仍保持多栏。账户菜单统一了内边距和分组间距，强调色色点不再折行。
+- 图标：`assets/brand/reach.svg` 改为与 Keel、Helm 同一规格的字母 R，已重新生成 PNG 与 ICO；说明见 [图标说明](../../assets/brand/README.md)。安装包重新构建后才会带上新图标。
+
+## PIN 登录与「复制给 Agent」（第四轮）
+
+- 按用户决定（见[知识库](../knowledge/product-decisions.md#console-pin-20261124)），登录页只留 PIN，Microsoft 登录与账号密码入口都已去掉。服务端新增 `src/service/pin-login.ts`、`POST /api/v1/auth/pin`、`POST /api/v1/auth/pin/change`，`/auth/me` 增加 `pinIsDefault` 字段；账户菜单新增「修改 PIN」。本机控制器新增 `login --pin`。原有的账号密码接口保留给已有 CLI 和测试，页面上不再展示。
+- MCP 页新增「交给 Agent 配置」：一键复制一段完整说明（登录、写入 Codex MCP 配置、自检、使用约定），粘贴给 Agent 即可让它自己完成接入。
+- 品牌字标去掉了外框。
+
+## 验证
+
+- `bun run check` 通过；`bun run test:admin` 22/22 通过（新增 `admin-model`、`admin-charts`、`device-events`、`stats` 四个测试文件，并把 `admin-artifacts` 加入该脚本）；`bun run test` 11/11 通过。
+- 已构建 Node 二进制并运行 `node.integration`、`heartbeat-m12`、`resident-m11`。与本次改动相关的配对、心跳、常驻用例全部通过。4 个失败全部卡在控制器登录的 `Cannot determine local credential owner`（`src/controller/client.ts`），本次没有改动该文件，属于本机环境或既有问题。
+- 统计页面目视检查时，夹具用可调时钟经真实 store API 回填了 14 天历史。这些数据只在本地内存库中，用来看图表形态，不代表任何真实设备。
+- 浏览器：用本地夹具（真实服务，加按真实 Node HTTP 协议配对、心跳、回执的模拟节点）在亮色和深色下看过总览、设备详情、网页发起操作（提交 → 投递 → 回执 → 成功）、操作列表、通知浮层（含服务端检测到的真实断线恢复事件）、账户菜单、下载页和 MCP 页。这只是目视检查，不算真实设备验收。
+
+## 服务端缺口（未伪造）
+
+| 能力 | 现状 |
+|---|---|
+| Microsoft 登录 | 用户 2026-11-24 决定不做，改用 PIN 登录。 |
+| MCP 与网页账户关联 | 已通过同一个 PIN 解决：本机控制器用 `login --pin` 登录同一账户。 |
+| 已签名发行包 | 没有发布清单，也没有签名包，下载页显示发布状态和安装路径。清单格式见 `releases.ts`，签名由清单声明，服务端不做 Authenticode 校验。 |
+| 外部推送 | 通知只在界面内显示，外部推送渠道待定。 |
+| 未配对新装设备可见 | 未实现（需要可信登记，见设计稿）。 |
+| `nmrkit.ciqtek.com/reach/` 部署 | 未部署，也未核对。 |
+
+## 待用户决定
+
+- 是否提交。涉及文件：`assets/brand/*`、`assets/fonts/*`、`tests/admin-http.test.ts`、`src/admin/*`、`src/service/{device-events,releases,stats,admin,server,store,main}.ts`、`tests/{admin-model,admin-charts,device-events,stats,pin-login}.test.ts`、`src/service/pin-login.ts`、`src/controller/main.ts`（只新增 `--pin` 分支，文件里还有他人改动）、`docs/knowledge/product-decisions.md`（只追加一节）、`package.json`、本文件。`server.ts`、`store.ts`、`main.ts`、`package.json` 里还有他人未提交的修改，提交前需要按 hunk 分开。

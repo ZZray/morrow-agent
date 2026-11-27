@@ -152,6 +152,14 @@ Node 启动把未结算原操作记 unknown，终态后不能追加运行事件�
 
 Harness 缺 observation 时按原 admission.remaining_calls 保守消费，服务仅见少量模型请求不能退款；root 的模型/Run/child/32 MiB 预算不随 attempt 重置。schema9 已区分 Run 注册与首次原生准入，使用准确消费前缀解释无 review 的崩溃空档，不补造 review 或重占未准入槽。旧 pending review 不变成新代授权，模型停止也不作通用豁免。完整故障矩阵仍开放，文本 ResumeReceipt 不能冒充 typed 图片恢复。
 
+
+## 结构化产物审查、跨进程续作与运行中引导（M07）
+
+Node Host 在 `start_task` 启用 `artifact_review: true` 与 `guidance: true`：
+
+- **结构化产物审查与来源查询（`artifact_review` + `agent.provenance`）**：每次 Run 结算验证前，侧车发出 `review_artifacts_request`，Node 按本代已落账子操作收据将成功且无错误的调用转移为 `verified` `ToolArtifact`（`host_receipt.verifier = "reach-node-host"`，`receipt_id` 绑定原 child `operationId`），将未知副作用标为 `unknown`，保存 `evidence/reach-artifacts-N.json`。调用方可通过只读操作 `agent.provenance`（CLI `agent-provenance INPUT.json`、MCP `reach_agent_provenance`）跨一个或多个同设备配对的 `rootOperationIds` 执行 `manage` `provenance_query`，读取原账本摘要与验证状态，不重执行任何业务工具，`taskAccepted` 保持 `false`。
+- **跨进程已审核续作（`continue_reviewed` / `agent.continue`）**：当委托设置 `reviewMode: "cross_process"`（或调用方在剩余 Run 预算未耗尽时释放当前结果），原侧车写出 `released.json` 并正常退出。调用方离线审查后可提交 `agent.continue`（CLI `agent-continue INPUT.json`、MCP `reach_agent_continue`），绑定 `rootOperationId`、`previousExecutionId`、`releasedSha256` 与非空修正 `feedback`。Node 在启动新侧车前核对 `released.json` 实际字节 SHA-256（篡改或缺失即拒绝准入且不发起模型请求），重绑原本地 relay 端口与凭据，通过 Morrow `continue_reviewed` 在新进程沿原 Session 与累计预算推进下一 Run。
+- **运行中幂等引导（`guidance`）**：活跃委托期间，调用方可通过 `POST /api/v1/operations/:id/agent-guidance`（CLI `agent-guide INPUT.json`、MCP `reach_agent_guide`）发送带 `messageId` 的补充引导，通过 `GET` 同路径（CLI `agent-guidance ID`、MCP `reach_agent_guidance`）查询状态。同一 `(parent, messageId)` 同文重试幂等返回原记录，异文返回 `409 agent_guidance_conflict`；非运行态拒绝且绝不启动新 Run、不增加预算、不充当工具权限审批。Node 将引导转发至侧车 `guide` 帧并按 `guidance_ack` 与终态 `jsonl-guidance.json` 回报 `applied/unapplied/unknown`；若进程中途强杀中断，已投递未收尾的引导保守记为 `unknown`，绝不跨进程自动重放或谎报 `applied`。
 ## 验证与剩余工作
 
 服务端分项包含事务回滚、并发去重、HTTP服务重新打开后的原Dispatch恢复、身份/预算/截止时间、取消/对账、两child的独立index0产物，以及v1→v2保存原操作和回执。其Node生命周期/PNG由夹具入账，不能代替真实委托Host或真实截图。

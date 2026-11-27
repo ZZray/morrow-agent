@@ -167,12 +167,20 @@ test('Desk streams actual native output, deduplicates POST and retains one Sessi
     assert.equal(one.at(-1).status,'completed',JSON.stringify(one));assert.equal(two.at(-1).output,firstDelta+'回答 1');
     assert.equal(f.desk.store.turn(f.session.user.id,id).cancel_requested,0,'normal stream completion must not cancel the Task');
     assert.equal((await f.request(path,'POST',{...input,content:'changed'})).status,409);
-    const secondId=randomUUID(),second=await consume(await f.request(path,'POST',{id:secondId,content:'Second native message'}),item=>{if(item.event==='delta'&&item.text===firstDelta){assert.ok(!f.finished.has(2));f.release(2);}});
+    const secondId=randomUUID();
+    const secondResponse=await f.request(path,'POST',{id:secondId,content:'Second native message',options:{memory:false}});
+    const second=await consume(secondResponse,item=>{if(item.event==='delta'&&item.text===firstDelta){assert.ok(!f.finished.has(2));f.release(2);}});
     assert.equal(second.at(-1).status,'completed',JSON.stringify(second));assert.equal(f.requests.length,2);
     const users=f.requests[1].messages.filter((m:any)=>m.role==='user');
     assert.ok(JSON.stringify(users).includes('First native message'));assert.ok(JSON.stringify(users).includes('Second native message'));
     assert.equal(users.filter((m:any)=>m.content==='First native message').length,1,'history must not be replayed as a new prompt');
-    for(const request of f.requests)assert.deepEqual(request.tools.map((tool:any)=>tool.function.name).sort(),['task_update','history_read','history_search','reference_read','reference_search','session_memory_search','session_memory_read','memory_propose','experience_propose','experience_search'].sort(),'only Core Session tools; no cloud local or device execution tools');
+    const sessionTools=['experience_propose','experience_search','history_read','history_search','memory_propose',
+      'reference_read','reference_search','session_memory_read','session_memory_search','task_update'];
+    assert.deepEqual(f.requests[0].tools.map((tool:any)=>tool.function.name).sort(),
+      [...sessionTools,'reach_memory_read','reach_memory_search'].sort(),
+      'default cloud turn exposes only Core Session tools and Reach read-only memory tools');
+    assert.deepEqual(f.requests[1].tools.map((tool:any)=>tool.function.name).sort(),sessionTools,
+      'disabling Reach memory for the next turn exposes only Core Session tools');
     const original=await (await f.request('/api/v1/desk/messages/'+id)).json();assert.equal((original as any).output,firstDelta+'回答 1');
     writeFileSync(join(f.root,'asserted.json'),JSON.stringify({first:one,second,liveDelta,providerCalls:f.requests.length},null,2));
   }finally{await f.close();}

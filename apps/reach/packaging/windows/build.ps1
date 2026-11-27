@@ -1,7 +1,9 @@
 # Copyright (c) Ray Zhang. Build a reviewable, self-contained Node installer candidate.
 param(
     [Parameter(Mandatory=$true)][string]$NodeBinary,
-    [Parameter(Mandatory=$true)][ValidatePattern('^[0-9a-fA-F]{64}$')][string]$ExpectedSha256
+    [Parameter(Mandatory=$true)][ValidatePattern('^[0-9a-fA-F]{64}$')][string]$ExpectedSha256,
+    [Parameter(Mandatory=$true)][string]$OpenSshArchive,
+    [ValidatePattern('^(0|[1-9][0-9]{0,4})\.(0|[1-9][0-9]{0,4})\.(0|[1-9][0-9]{0,4})$')][string]$Version='0.1.0'
 )
 $ErrorActionPreference='Stop'
 $project=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../..'))
@@ -14,10 +16,15 @@ if($bytes.Length-lt256 -or $bytes[0]-ne77 -or $bytes[1]-ne90){throw 'Node is not
 $pe=[BitConverter]::ToInt32($bytes,60)
 if($pe-lt64 -or $pe+6-ge$bytes.Length -or [BitConverter]::ToUInt16($bytes,$pe+4)-ne0x8664){throw 'This package requires a Windows x64 Node'}
 $nodeImports=@(GetReachPeImports $node);AssertReachRuntimeBundled $nodeImports
+$reportedVersion=(& $node --version | Out-String).Trim()
+if($LASTEXITCODE-ne0 -or $reportedVersion-cne"ryreach $Version"){throw 'Node and installer version differ'}
 $output=Join-Path $project ('outputs/windows-node-'+$sha.Substring(0,16))
 $null=[IO.Directory]::CreateDirectory($output)
+$openSshPayload=& (Join-Path $PSScriptRoot 'prepare-openssh.ps1') -Archive $OpenSshArchive -Destination (Join-Path $output 'openssh-vendor.zip')
 $packages=@{}
 $priorRustflags=$env:RUSTFLAGS;$priorEncodedRustflags=$env:CARGO_ENCODED_RUSTFLAGS
+$priorOpenSsh=$env:REACH_SETUP_OPENSSH
+$priorVersion=$env:REACH_RELEASE_VERSION
 Push-Location $project
 try {
     foreach($manifest in @('Cargo.toml','packaging/windows/setup/Cargo.toml')){
@@ -62,10 +69,14 @@ try {
     [IO.File]::WriteAllText($noticesPath,$notices.ToString(),[Text.UTF8Encoding]::new($false))
     $inventory|ConvertTo-Json -Depth 8|Set-Content -LiteralPath (Join-Path $output 'dependency-inventory.json') -Encoding utf8
     $env:REACH_SETUP_KIND='node'
+    $env:REACH_RELEASE_VERSION=$Version
+    $env:REACH_SETUP_OPENSSH=$openSshPayload
     $env:REACH_SETUP_NODE=$node;$env:REACH_SETUP_SHA=$sha;$env:REACH_SETUP_NOTICES=$noticesPath
     $env:CARGO_TARGET_DIR=if($env:REACH_SETUP_TARGET_DIR){[IO.Path]::GetFullPath($env:REACH_SETUP_TARGET_DIR)}else{Join-Path $project 'work/setup-target'}
     $scriptPath=Join-Path $PSScriptRoot 'install.ps1'
     $scriptSha=(Get-FileHash -LiteralPath $scriptPath -Algorithm SHA256).Hash.ToLowerInvariant()
+    $dialogPath=Join-Path $PSScriptRoot 'configure-address.ps1'
+    $dialogSha=(Get-FileHash -LiteralPath $dialogPath -Algorithm SHA256).Hash.ToLowerInvariant()
     $noticesSha=(Get-FileHash -LiteralPath $noticesPath -Algorithm SHA256).Hash.ToLowerInvariant()
     # Setup itself must start before any installed application/runtime exists.
     $env:RUSTFLAGS='-C target-feature=+crt-static';$env:CARGO_ENCODED_RUSTFLAGS=$null
@@ -74,14 +85,20 @@ try {
     $built=Join-Path $env:CARGO_TARGET_DIR 'x86_64-pc-windows-msvc/release/ry-reach-setup.exe'
     $setupImports=@(GetReachPeImports $built);AssertReachRuntimeBundled $setupImports
     $setupSha=(Get-FileHash -LiteralPath $built -Algorithm SHA256).Hash.ToLowerInvariant()
-    $installer=Join-Path $output ('Reach-Node-Setup-0.1.0-preview-'+$setupSha.Substring(0,16)+'.exe')
+    $installer=Join-Path $output ('Reach-Node-Setup-'+$Version+'-preview-'+$setupSha.Substring(0,16)+'.exe')
     Copy-Item -LiteralPath $built -Destination $installer -Force
     $inspect=(& $installer --inspect | Out-String)
     if($LASTEXITCODE-ne0 -or -not $inspect.Contains('node_sha256='+$sha) -or -not $inspect.Contains('script_sha256='+$scriptSha) -or -not $inspect.Contains('notices_sha256='+$noticesSha)){throw 'Embedded package inspection failed'}
+    if(-not $inspect.Contains('openssh_sha256=23f50f3458c4c5d0b12217c6a5ddfde0137210a30fa870e98b29827f7b43aba5') -or
+        -not $inspect.Contains('ssh_preparation_sha256='+(Get-FileHash -LiteralPath (Join-Path $PSScriptRoot 'ssh.ps1')).Hash.ToLowerInvariant())){throw 'Embedded OpenSSH inspection failed'}
+    if(-not $inspect.Contains('address_dialog_sha256='+$dialogSha)){throw 'Embedded address dialog inspection failed'}
+    if((Get-FileHash -LiteralPath $dialogPath -Algorithm SHA256).Hash.ToLowerInvariant()-cne$dialogSha){throw 'Address dialog source changed during build'}
     if((Get-FileHash -LiteralPath $scriptPath -Algorithm SHA256).Hash.ToLowerInvariant()-cne$scriptSha -or (Get-FileHash -LiteralPath $noticesPath -Algorithm SHA256).Hash.ToLowerInvariant()-cne$noticesSha){throw 'Embedded source changed during build'}
     [IO.File]::WriteAllText((Join-Path $output 'inspect.txt'),$inspect,[Text.UTF8Encoding]::new($false))
-    $record=@{schema=1;version='0.1.0';kind='node-installer-preview';architecture='x86_64-pc-windows-msvc';desktopBundled=$false;installationTested=$false;codeSigned=$false;nodeSha256=$sha;nodeImports=$nodeImports;setupImports=$setupImports;installerName=[IO.Path]::GetFileName($installer);installerSha256=$setupSha;scriptSha256=$scriptSha;noticesSha256=$noticesSha;dependencyCount=$inventory.Count}
+    $record=@{schema=1;version=$Version;kind='node-installer-preview';architecture='x86_64-pc-windows-msvc';desktopBundled=$false;installationTested=$false;codeSigned=$false;nodeSha256=$sha;nodeImports=$nodeImports;setupImports=$setupImports;installerName=[IO.Path]::GetFileName($installer);installerSha256=$setupSha;scriptSha256=$scriptSha;noticesSha256=$noticesSha;dependencyCount=$inventory.Count}
+    $record.addressDialogSha256=$dialogSha
+    $record.openSshSha256=(Get-FileHash -LiteralPath $openSshPayload -Algorithm SHA256).Hash.ToLowerInvariant()
     $record|ConvertTo-Json -Depth 6|Set-Content -LiteralPath (Join-Path $output 'package.json') -Encoding utf8
     Write-Output $installer
     Write-Output $inspect
-}finally{$env:RUSTFLAGS=$priorRustflags;$env:CARGO_ENCODED_RUSTFLAGS=$priorEncodedRustflags;Pop-Location}
+}finally{$env:RUSTFLAGS=$priorRustflags;$env:CARGO_ENCODED_RUSTFLAGS=$priorEncodedRustflags;$env:REACH_SETUP_OPENSSH=$priorOpenSsh;$env:REACH_RELEASE_VERSION=$priorVersion;Pop-Location}

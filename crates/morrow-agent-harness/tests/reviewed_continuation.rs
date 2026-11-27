@@ -107,7 +107,10 @@ impl HarnessHost for ReviewedHost {
                 .flat_map(|run| run.open_tool_calls)
                 .map(|call| ToolCallReconciliation {
                     call_id: call.id,
-                    settlement: ToolCallSettlement::Completed { output: "Host confirmed original effect once".into() },
+                    settlement: ToolCallSettlement::Completed {
+                        output: "Host confirmed original effect once".into(),
+                        images: vec![],
+                    },
                 })
                 .collect(),
             evidence: vec![self.inner.root.join("external-effect.txt").display().to_string()],
