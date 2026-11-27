@@ -332,4 +332,15 @@ RyDev 的 0.1.8 和 0.1.9 预览版已分别从 Codex 完成现场 Agent 委托�
 - **对话气泡与悬浮胶囊小工具栏（已实现并本地验收）。** 用户消息右对齐渲染为带柔和强调边线的 `.user-bubble-wrap` 圆角气泡（隐藏冗余文本标题、保留 `.sr-only`）与悬浮「复制」胶囊（有技能/目标/附件标签时保持 `+10px` 净距不压字）；助手回复正文渲染进柔和卡片（`:empty` 隐藏），将「复制回答 / 重新回答 / 查询原记录」收拢到 Reach 风格半透明圆角胶囊 `.message-actions`（点击仅高亮当前复制钮 `.is-copied`）。桌面精确指针（`> 720px`）默认隐藏且不占垂直空间，悬停气泡下缘、键盘聚焦或复制锁定时以 `140ms / 160ms` 平滑显现；**正常完成态（`completed`）隐藏「回答已保存」文字（`.message-status.is-settled` 视觉零高隐身）**，仅在进行中、已停止及失败/未确认/断连态内联显示状态文字并常驻操作胶囊；`<= 720px` / 触屏端操作胶囊保持右对齐内联常显（注：`platform/tests/` 内依赖 `.message-status('回答已保存')` 的 Playwright 集成用例因环境无 `REACH_PLAYWRIGHT_ENTRY` 尚待直接跑通确认）。
 - **多平台下载页与安装后具体指令直出（已实现并本地+隔离清单一览验收）。** `src/service/releases.ts` 与 `src/admin/model.ts`、`admin.ts`、`admin.css` 支持 `Windows / macOS / Linux` 切换（自动识别本机系统并允许切换，保留 macOS/Linux 仅便携 Worker 归档约束，且兼容省略 `os` 的旧清单），提供架构筛选、单/多包平衡版式、各系统原生 SHA-256 校验命令（`Get-FileHash` / `shasum -a 256` / `sha256sum`）、可按平台切换的历史版本及未发布平台的如实说明与源码构建路径。页面直接基于实时 `M.serverBase(location.href)` 与 `M.isDevelopmentServer(server)` 输出当前要填的服务地址与可一键复制的具体 CLI 命令：`config set server-url`（本地环回 HTTP 自动加 `--development`）、`pair <配对码> --server ...`、`ryreach status` / `./ryreach run`，并对 Windows `Agent` / `完整包` 按需补充 `ryreach ssh enable`、对 macOS/Linux 便携归档补充 `tar -xzf` / `unzip` 与 `./ryreach` 前缀、对未发布空态给源码编译二进制路径；`<= 640px` 使用自适应等高单行胶囊，避免「待发布」折行挤压。
 
+<a id="desk-ctxmenu-viewport-20261127"></a>
+## 侧栏右键与「⋯」菜单视口定位约束（2026-11-27）
+
+来源：用户 2026-11-27 晚间反馈（「右键位置不对，需要修复」），附截图显示在左侧「默认工作区」右键时菜单漂移到主对话欢迎区中部。
+
+- **根因**：`.desk` 容器同时声明 `backdrop-filter: blur(18px)` 与 `overflow: hidden`，使挂在其内部的 `position: fixed` 子节点（`.ctx-menu`、`.desk-scrim`、`.desk-aside`、`<= 960px` `.sidebar.sheet-open`）以 `.desk` 内框而非视口为包含块，`event.clientX`/`clientY` 与 `getBoundingClientRect()` 被叠加 `.desk` 的视口偏移量并在贴边时被裁切。
+- **当前约束**：
+  - `.desk` 的毛玻璃与卡片底色拆入 `.desk::before`（`backdrop-filter: blur(18px); z-index: -1; pointer-events: none`），容器本身保持 `isolation: isolate; background: transparent`，不得再在 `.desk` 或外层壳体上直接放置会创建 `position: fixed` 包含块的属性（`backdrop-filter`、`transform`、`filter`、`contain`）。
+  - `.ctx-menu` 挂入 `document.body` 并在 `desk.ts` `reset()` 销毁，定位逻辑抽至无 DOM 副作用的 `src/admin/desk-menu.ts`（并已在 `src/service/admin.ts` 注册 `/assets/desk-menu.js`）；贴近视口下/右边沿（`8px` 边距）时按触发源反向翻转并同步 `transform-origin`，键盘 `0,0` `contextmenu` 回退至行锚点，行内重命名 `<input>` 保留原生右键。
+- **验证与当前边界**：`npm run check`、`npm run build:admin`、管理端 12 份测试（54/54）及服务端测试（11/11）全部通过；本地 `127.0.0.1:18921` 无头浏览器验证桌面明暗主题（工作区右键、底边会话上翻、工作区 `⋯` 按钮、`.desk-aside` 抽屉）与 `390×844` 窄屏抽屉下坐标零偏移且无溢出/控制台报错。尚未提交 Git 或重新部署到 Ray / nmrkit 线上站点。
+
 

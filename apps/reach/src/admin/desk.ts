@@ -15,6 +15,7 @@ import {renderMarkdown} from './desk-markdown.js';
 import type {Step} from './desk-steps.js';
 import {AgentPanel,applyGuidance} from './desk-agent.js';
 import type {Guidance} from './desk-agent.js';
+import {contextMenuPoint,placeFloatingMenu} from './desk-menu.js';
 
 interface User {id:string;username:string;csrf:string}
 interface Workspace {id:string;name:string;node_id:string|null;cwd:string;created_at:number;updated_at:number}
@@ -65,7 +66,8 @@ let treeHandle:{refresh():void;dispose():void}|null=null,treeKey='';
 let asideMemoryBox:HTMLElement|null=null,asideToolsBox:HTMLElement|null=null,asideToolsCount:HTMLElement|null=null;
 let optMemCheck:HTMLInputElement|null=null,optToolCheck:HTMLInputElement|null=null;
 let attachMenu:HTMLElement|null=null,plusButton:HTMLButtonElement|null=null,attachSkillMeta:HTMLElement|null=null;
-let ctxMenu:HTMLElement|null=null,ctxTarget:{kind:'ws';ws:Workspace}|{kind:'sess';ws:Workspace;conv:Conversation}|null=null,cwdSaveTimer=0;
+type ContextMenuTarget={kind:'ws';ws:Workspace}|{kind:'sess';ws:Workspace;conv:Conversation};
+let ctxMenu:HTMLElement|null=null,ctxTarget:ContextMenuTarget|null=null,cwdSaveTimer=0,listenersBound=false;
 const queues=new Map<string,QueueItem[]>();let queueBox:HTMLElement|null=null,currentModelName='';
 let skills:DeskSkills|null=null,attachments:DeskAttachments|null=null;
 const suggestions=new Map<string,{basis:string;text:string;at:number}>(),suggestionAsked=new Set<string>();
@@ -104,7 +106,7 @@ function reset(){
   treeHandle?.dispose();treeHandle=null;treeKey='';
   states.clear();drafts.clear();targets.clear();devices=[];settlementReads.clear();conversations=[];workspaces=[];
   selected=null;selectedWorkspaceId=null;user=null;context=null;admitting=null;messageNodes.clear();currentModelName='';drawerOpen=false;railSheetOpen=false;railQuery='';modelSwitching=false;
-  ctxTarget=null;ctxMenu=null;deskRoot=null;sidePanel=null;railToggle=null;railSearchInput=null;modelMenu=null;optMemCheck=null;optToolCheck=null;
+  ctxMenu?.remove();ctxTarget=null;ctxMenu=null;deskRoot=null;sidePanel=null;railToggle=null;railSearchInput=null;modelMenu=null;optMemCheck=null;optToolCheck=null;
   transcript=null;sidebar=null;title=null;notice=null;input=null;sendButton=null;stopButton=null;latest=null;
   connPill=null;targetPill=null;modelPill=null;drawerToggle=null;asidePanel=null;asideScrim=null;
   devListBox=null;cwdInput=null;treeWrap=null;treeHint=null;treeCwdRow=null;asideMemoryBox=null;asideToolsBox=null;asideToolsCount=null;
@@ -293,7 +295,9 @@ function layout(root:HTMLElement){
 
   asidePanel.append(aHead,optBlock,devBlock,treeBlock,memBlock,toolBlock);
   ctxMenu=el('div','ctx-menu');ctxMenu.hidden=true;ctxMenu.setAttribute('role','menu');ctxMenu.setAttribute('aria-hidden','true');
-  root.append(sidePanel,workspace,asideScrim,asidePanel,ctxMenu);
+  document.body.append(ctxMenu);
+  bindGlobalListeners();
+  root.append(sidePanel,workspace,asideScrim,asidePanel);
   paint();void showModel();void refreshDevices().catch(error=>{if(!(error instanceof Stale))showError('设备列表暂时不可用，请刷新设备。');});
 }
 
@@ -562,8 +566,7 @@ function workspaceFolder(w:Workspace,items:Conversation[],forceExpand:boolean){
     selectWorkspace(w);
   });
   const more=el('button','row-more','⋯');more.type='button';more.title='工作区操作';more.setAttribute('aria-label',`「${w.name}」的操作`);more.setAttribute('aria-haspopup','menu');
-  more.addEventListener('click',event=>{event.stopPropagation();const rect=more.getBoundingClientRect();openCtxMenu(rect.right,rect.bottom+4,{kind:'ws',ws:w});});
-  frow.addEventListener('contextmenu',event=>{event.preventDefault();event.stopPropagation();openCtxMenu(event.clientX,event.clientY,{kind:'ws',ws:w});});
+  bindRowMenuTriggers(frow,more,{kind:'ws',ws:w});
   frow.append(main,more);
   folder.append(frow);
 
@@ -582,12 +585,20 @@ function conversationRow(w:Workspace,conversation:Conversation){
   if(conversation.pinned)main.append(svg('0 0 24 24',['M12 17v5','M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z'],12,'ic pin-ico'));
   main.addEventListener('click',()=>{void open(conversation.id,w.id);});
   const more=el('button','row-more','⋯');more.type='button';more.title='更多操作';more.setAttribute('aria-label',`「${conversation.title}」的更多操作`);more.setAttribute('aria-haspopup','menu');
-  more.addEventListener('click',event=>{event.stopPropagation();const rect=more.getBoundingClientRect();openCtxMenu(rect.right,rect.bottom+4,{kind:'sess',ws:w,conv:conversation});});
-  row.addEventListener('contextmenu',event=>{event.preventDefault();event.stopPropagation();openCtxMenu(event.clientX,event.clientY,{kind:'sess',ws:w,conv:conversation});});
+  bindRowMenuTriggers(row,more,{kind:'sess',ws:w,conv:conversation});
   row.append(main,more);return row;
 }
+function bindRowMenuTriggers(row:HTMLElement,more:HTMLButtonElement,target:ContextMenuTarget){
+  more.addEventListener('click',event=>{event.stopPropagation();const rect=more.getBoundingClientRect();openCtxMenu(rect.right,rect.bottom+4,target,{flipUpFrom:rect.top-4,flipLeftFrom:rect.right});});
+  row.addEventListener('contextmenu',event=>{
+    if((event.target as Element|null)?.closest('input, textarea'))return;
+    event.preventDefault();event.stopPropagation();
+    const point=contextMenuPoint(event,row.getBoundingClientRect());
+    openCtxMenu(point.x,point.y,target,point.flipUpFrom!==undefined?{flipUpFrom:point.flipUpFrom}:undefined);
+  });
+}
 function closeCtxMenu(){if(!ctxMenu)return;ctxMenu.hidden=true;ctxMenu.setAttribute('aria-hidden','true');ctxMenu.replaceChildren();ctxTarget=null;}
-function openCtxMenu(x:number,y:number,target:{kind:'ws';ws:Workspace}|{kind:'sess';ws:Workspace;conv:Conversation}){
+function openCtxMenu(x:number,y:number,target:ContextMenuTarget,flip?:{flipUpFrom?:number;flipLeftFrom?:number}){
   if(!ctxMenu)return;
   closeCtxMenu();ctxTarget=target;
   const items:HTMLElement[]=[];
@@ -626,41 +637,50 @@ function openCtxMenu(x:number,y:number,target:{kind:'ws';ws:Workspace}|{kind:'se
     items.push(del,el('p','ctx-note','删除只从列表移除，消息记录仍保留在服务器。'));
   }
   ctxMenu.replaceChildren(...items);ctxMenu.hidden=false;ctxMenu.setAttribute('aria-hidden','false');
-  const pad=8,mw=ctxMenu.offsetWidth||188,mh=ctxMenu.offsetHeight||160;
-  let left=x,top=y;
-  if(left+mw>window.innerWidth-pad)left=window.innerWidth-mw-pad;
-  if(top+mh>window.innerHeight-pad)top=window.innerHeight-mh-pad;
-  if(left<pad)left=pad;if(top<pad)top=pad;
-  ctxMenu.style.left=left+'px';ctxMenu.style.top=top+'px';
+  const pos=placeFloatingMenu({
+    x,y,
+    width:ctxMenu.offsetWidth||188,
+    height:ctxMenu.offsetHeight||160,
+    viewportWidth:window.innerWidth,
+    viewportHeight:window.innerHeight,
+    flipUpFrom:flip?.flipUpFrom,
+    flipLeftFrom:flip?.flipLeftFrom,
+  });
+  ctxMenu.style.left=pos.left+'px';ctxMenu.style.top=pos.top+'px';
+  ctxMenu.style.transformOrigin=`${pos.flipX?'right':'left'} ${pos.flipY?'bottom':'top'}`;
   (ctxMenu.querySelector('.ctx-item') as HTMLElement|null)?.focus();
 }
-document.addEventListener('pointerdown',event=>{
-  if(ctxMenu&&!ctxMenu.hidden&&!(event.target instanceof Node&&ctxMenu.contains(event.target)))closeCtxMenu();
-  if(attachMenu&&!attachMenu.hidden&&event.target instanceof Node&&!attachMenu.contains(event.target)&&!plusButton?.contains(event.target))closeAttachMenu();
-  if(modelMenu&&!modelMenu.hidden&&event.target instanceof Node&&!modelMenu.contains(event.target)&&!modelPill?.contains(event.target))closeModelMenu();
-});
-document.addEventListener('keydown',event=>{
-  if(!context)return;
-  if(event.key==='Escape'){
-    if(ctxMenu&&!ctxMenu.hidden){closeCtxMenu();return;}
-    if(attachMenu&&!attachMenu.hidden){closeAttachMenu();plusButton?.focus();return;}
-    if(modelMenu&&!modelMenu.hidden){closeModelMenu();modelPill?.focus();return;}
-    if(railSheetOpen){toggleRailSheet(false);railToggle?.focus();return;}
-    if(drawerOpen){toggleDrawer(false);drawerToggle?.focus();}
-    return;
-  }
-  if((event.ctrlKey||event.metaKey)&&!event.altKey&&(event.key==='n'||event.key==='N')){
-    if(document.querySelector('dialog[open]'))return;
-    event.preventDefault();newConversation();
-  }
-});
-window.addEventListener('resize',()=>{
-  closeCtxMenu();
-  if(!context)return;
-  if(window.innerWidth>960&&railSheetOpen)toggleRailSheet(false);
-  deskRoot?.classList.toggle('rail-collapsed',railCollapsed&&window.innerWidth>960);
-  if(railToggle)railToggle.setAttribute('aria-expanded',String(window.innerWidth>960?!railCollapsed:railSheetOpen));
-});
+function bindGlobalListeners(){
+  if(listenersBound||typeof document==='undefined'||typeof window==='undefined')return;
+  listenersBound=true;
+  document.addEventListener('pointerdown',event=>{
+    if(ctxMenu&&!ctxMenu.hidden&&!(event.target instanceof Node&&ctxMenu.contains(event.target)))closeCtxMenu();
+    if(attachMenu&&!attachMenu.hidden&&event.target instanceof Node&&!attachMenu.contains(event.target)&&!plusButton?.contains(event.target))closeAttachMenu();
+    if(modelMenu&&!modelMenu.hidden&&event.target instanceof Node&&!modelMenu.contains(event.target)&&!modelPill?.contains(event.target))closeModelMenu();
+  });
+  document.addEventListener('keydown',event=>{
+    if(!context)return;
+    if(event.key==='Escape'){
+      if(ctxMenu&&!ctxMenu.hidden){closeCtxMenu();return;}
+      if(attachMenu&&!attachMenu.hidden){closeAttachMenu();plusButton?.focus();return;}
+      if(modelMenu&&!modelMenu.hidden){closeModelMenu();modelPill?.focus();return;}
+      if(railSheetOpen){toggleRailSheet(false);railToggle?.focus();return;}
+      if(drawerOpen){toggleDrawer(false);drawerToggle?.focus();}
+      return;
+    }
+    if((event.ctrlKey||event.metaKey)&&!event.altKey&&(event.key==='n'||event.key==='N')){
+      if(document.querySelector('dialog[open]'))return;
+      event.preventDefault();newConversation();
+    }
+  });
+  window.addEventListener('resize',()=>{
+    closeCtxMenu();
+    if(!context)return;
+    if(window.innerWidth>960&&railSheetOpen)toggleRailSheet(false);
+    deskRoot?.classList.toggle('rail-collapsed',railCollapsed&&window.innerWidth>960);
+    if(railToggle)railToggle.setAttribute('aria-expanded',String(window.innerWidth>960?!railCollapsed:railSheetOpen));
+  });
+}
 
 function startRename(conversation:Conversation){
   const row=sidebar?.querySelector<HTMLElement>(`.ws-sess-row[data-conv-id="${conversation.id}"]`);

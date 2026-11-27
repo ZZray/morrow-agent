@@ -18,6 +18,7 @@ const assets = new Map([
   ['/assets/desk-skills.js', { path: new URL('../../dist/admin/desk-skills.js', import.meta.url), type: 'text/javascript; charset=utf-8' }],
   ['/assets/desk-markdown.js', { path: new URL('../../dist/admin/desk-markdown.js', import.meta.url), type: 'text/javascript; charset=utf-8' }],
   ['/assets/desk-memory.js', { path: new URL('../../dist/admin/desk-memory.js', import.meta.url), type: 'text/javascript; charset=utf-8' }],
+  ['/assets/desk-menu.js', { path: new URL('../../dist/admin/desk-menu.js', import.meta.url), type: 'text/javascript; charset=utf-8' }],
   ['/assets/desk-attachments.js', { path: new URL('../../dist/admin/desk-attachments.js', import.meta.url), type: 'text/javascript; charset=utf-8' }],
   ['/assets/desk.css', { path: new URL('../admin/desk.css', import.meta.url), type: 'text/css; charset=utf-8' }],
   ['/assets/admin.js', { path: new URL('../../dist/admin/admin.js', import.meta.url), type: 'text/javascript; charset=utf-8' }],

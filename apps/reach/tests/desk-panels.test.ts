@@ -116,3 +116,31 @@ test('renderMarkdown escapes HTML, protects inline code, renders codeblocks with
   assert.match(html, /<span class="code-linenums" aria-hidden="true">1\n2<\/span>/);
   assert.match(html, /const y = &quot;&lt;tag&gt;&quot;;/);
 });
+
+test('context menu positioning preserves cursor coordinates, flips cleanly near viewport edges, and falls back on keyboard contextmenu', async () => {
+  const { placeFloatingMenu, contextMenuPoint } = await import('../src/admin/desk-menu.ts');
+  assert.deepEqual(
+    placeFloatingMenu({ x: 180, y: 210, width: 200, height: 180, viewportWidth: 1280, viewportHeight: 860 }),
+    { left: 180, top: 210, flipX: false, flipY: false },
+  );
+  assert.deepEqual(
+    placeFloatingMenu({ x: 190, y: 810, width: 200, height: 180, viewportWidth: 1280, viewportHeight: 860 }),
+    { left: 190, top: 630, flipX: false, flipY: true },
+  );
+  assert.deepEqual(
+    placeFloatingMenu({ x: 300, y: 833, width: 200, height: 180, viewportWidth: 390, viewportHeight: 860, flipLeftFrom: 300, flipUpFrom: 801 }),
+    { left: 100, top: 621, flipX: true, flipY: true },
+  );
+  assert.deepEqual(
+    placeFloatingMenu({ x: -12, y: 40, width: 200, height: 180, viewportWidth: 180, viewportHeight: 160 }),
+    { left: 8, top: 8, flipX: false, flipY: false },
+  );
+  assert.deepEqual(
+    contextMenuPoint({ clientX: 165, clientY: 224 }, { left: 40, top: 200, bottom: 232 }),
+    { x: 165, y: 224 },
+  );
+  assert.deepEqual(
+    contextMenuPoint({ clientX: 0, clientY: 0 }, { left: 40, top: 200, bottom: 232 }),
+    { x: 64, y: 236, flipUpFrom: 196 },
+  );
+});
