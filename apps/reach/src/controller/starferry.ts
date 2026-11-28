@@ -5,7 +5,7 @@
 import { createSocket } from 'node:dgram';
 import type { Socket as UdpSocket } from 'node:dgram';
 import { lookup } from 'node:dns';
-import { createServer } from 'node:net';
+import { createServer, isIPv4, isIPv6 } from 'node:net';
 import type { Socket as TcpSocket } from 'node:net';
 import { once } from 'node:events';
 import { setTimeout as sleep } from 'node:timers/promises';
@@ -156,24 +156,49 @@ function decodePacket(key: Buffer, raw: Buffer): { pktType: number; streamId: nu
   return { pktType, streamId, seq, ack, payload: Buffer.from(raw.subarray(HEADER_LEN, bodyEnd)) };
 }
 
-function gatherLocalCandidates(port: number, includeLoopback: boolean) {
-  const out: { host: string; port: number; kind: 'host' | 'srflx' }[] = [];
+type Candidate = { host: string; port: number; kind: 'host' | 'srflx' };
+
+function isScopeFreeIpv6(host: string) {
+  return isIPv6(host) && host !== '::' && !host.includes('%') && !/^(fe[89ab]|ff|::ffff:)/i.test(host);
+}
+
+function gatherLocalCandidates(port: number, includeLoopback: boolean, dualStack: boolean): Candidate[] {
+  const ipv4: Candidate[] = [];
+  const ipv6: Candidate[] = [];
   const nets = networkInterfaces();
   for (const entries of Object.values(nets)) {
     if (!entries) continue;
     for (const net of entries) {
-      if (net.family === 'IPv4' && !net.internal) {
-        out.push({ host: net.address, port, kind: 'host' });
+      if (net.internal) continue;
+      const candidate = { host: net.address, port, kind: 'host' as const };
+      if (net.family === 'IPv4') {
+        ipv4.push(candidate);
+      } else if (dualStack && isScopeFreeIpv6(net.address)) {
+        ipv6.push(candidate);
       }
     }
   }
   if (includeLoopback) {
-    out.push({ host: '127.0.0.1', port, kind: 'host' });
+    ipv4.unshift({ host: '127.0.0.1', port, kind: 'host' });
+    if (dualStack) ipv6.unshift({ host: '::1', port, kind: 'host' });
   }
-  return out.slice(0, 8);
+  // Reserve space in the 16-candidate contract for both families and IPv4 STUN.
+  return [...ipv4.slice(0, 8), ...ipv6.slice(0, 7)];
 }
 
-function queryStunCandidate(udp: UdpSocket, server: string): Promise<{ host: string; port: number; kind: 'srflx' } | null> {
+async function bindDirectUdp(type: 'udp4' | 'udp6'): Promise<UdpSocket> {
+  const socket = createSocket({ type, ipv6Only: false });
+  try {
+    socket.bind(0, type === 'udp6' ? '::' : '0.0.0.0');
+    await once(socket, 'listening');
+    return socket;
+  } catch (error) {
+    try { socket.close(); } catch {}
+    throw error;
+  }
+}
+
+function queryStunCandidate(udp: UdpSocket, server: string, dualStack: boolean): Promise<Candidate | null> {
   return new Promise(resolve => {
     const match = /^(?:stun:)?([^:/\s]+):(\d+)$/.exec(server);
     const port = Number(match?.[2]);
@@ -213,9 +238,9 @@ function queryStunCandidate(udp: UdpSocket, server: string): Promise<{ host: str
     lookup(match[1]!, { family: 4 }, (error, address) => {
       if (settled) return;
       if (error) { finish(null); return; }
-      serverAddress = address;
+      serverAddress = dualStack ? `::ffff:${address}` : address;
       const request = Buffer.concat([Buffer.from('000100002112a442', 'hex'), transactionId]);
-      udp.send(request, port, address, error => { if (error) finish(null); });
+      udp.send(request, port, serverAddress, error => { if (error) finish(null); });
     });
   });
 }
@@ -249,6 +274,7 @@ const relayReplySchema = z.object({
 export interface StarferryExecResult {
   status: 'succeeded' | 'failed' | 'unknown';
   selectedPath: 'udp_direct' | 'cloud_relay';
+  directAddressFamily: 'IPv4' | 'IPv6' | null;
   replayed: false;
   exitCode: number | null;
   stdout: string;
@@ -275,7 +301,7 @@ export async function openStarferryTunnel(
     requestId?: string;
     allowDirect?: boolean;
     includeLoopbackCandidate?: boolean;
-    overrideCandidates?: { host: string; port: number; kind: 'host' | 'srflx' }[];
+    overrideCandidates?: Candidate[];
     directNegotiationTimeoutMs?: number;
     ttlSeconds?: number;
   },
@@ -288,19 +314,20 @@ export async function openStarferryTunnel(
   const { publicKeyLine, privateKeyPem } = generateOpenSshEd25519KeyPair();
 
   let udp: UdpSocket | null = null;
-  let controllerCandidates: { host: string; port: number; kind: 'host' | 'srflx' }[] = [];
+  let dualStack = false;
+  let controllerCandidates: Candidate[] = [];
   if (allowDirect) {
-    udp = createSocket('udp4');
-    udp.bind(0, '0.0.0.0');
-    await once(udp, 'listening');
+    udp = await bindDirectUdp('udp6').catch(() => bindDirectUdp('udp4'));
+    dualStack = udp.address().family === 'IPv6';
     const port = udp.address().port;
-    controllerCandidates = options.overrideCandidates
-      ?? gatherLocalCandidates(port, options.includeLoopbackCandidate ?? client.config.development);
+    controllerCandidates = options.overrideCandidates?.filter(cand =>
+      isIPv4(cand.host) || (dualStack && isScopeFreeIpv6(cand.host)),
+    ) ?? gatherLocalCandidates(port, options.includeLoopbackCandidate ?? client.config.development, dualStack);
     if (!options.overrideCandidates) {
       const servers = process.env.REACH_STUN_SERVER === undefined
         ? DEFAULT_STUN_SERVERS : [process.env.REACH_STUN_SERVER.trim()];
       for (const server of servers) {
-        const candidate = await queryStunCandidate(udp, server);
+        const candidate = await queryStunCandidate(udp, server, dualStack);
         if (candidate) { controllerCandidates.push(candidate); break; }
       }
     }
@@ -347,6 +374,10 @@ export async function openStarferryTunnel(
     let directHealthy = false;
     let directPeer: { host: string; port: number } | null = null;
     let directSeveredForTest = false;
+    const sendDirect = (packet: Buffer, peer: { host: string; port: number }) => {
+      // A send error is a lost datagram. The ACK deadlines handle path failure.
+      udp?.send(packet, peer.port, peer.host, () => {});
+    };
 
     interface DirectClientStream {
       opened: boolean;
@@ -359,28 +390,31 @@ export async function openStarferryTunnel(
     }
     const directStreams = new Map<number, DirectClientStream>();
 
-    if (udp && allowDirect && readyInfo.directEnabled && readyInfo.nodeCandidates.length > 0) {
+    const nodePeers = readyInfo.nodeCandidates.flatMap(({ host, port }) => {
+      if (isIPv4(host)) return [{ host: dualStack ? `::ffff:${host}` : host, port }];
+      return dualStack && isScopeFreeIpv6(host) ? [{ host, port }] : [];
+    });
+    if (udp && allowDirect && readyInfo.directEnabled && nodePeers.length > 0) {
+      let negotiating = true;
       udp.on('message', (msg: Buffer, rinfo) => {
         if (directSeveredForTest) return;
         const decoded = decodePacket(n2cKey, msg);
         if (!decoded) return;
         // Node HELLO opens NAT mappings. Only its ACK of our HELLO confirms
         // the nominated path; simultaneous HELLOs may use different NICs.
-        if (decoded.pktType === PKT_HELLO && !directPeer) {
-          const hello = encodePacket(c2nKey, PKT_HELLO, 0, 0, 0, Buffer.from('ctrl-hello'));
-          udp?.send(hello, rinfo.port, rinfo.address);
-          return;
-        }
         if (!directPeer) {
+          if (!negotiating) return;
+          if (decoded.pktType === PKT_HELLO) {
+            const hello = encodePacket(c2nKey, PKT_HELLO, 0, 0, 0, Buffer.from('ctrl-hello'));
+            sendDirect(hello, { host: rinfo.address, port: rinfo.port });
+            return;
+          }
           if (decoded.pktType !== PKT_HELLO_ACK) return;
           directPeer = { host: rinfo.address, port: rinfo.port };
-        } else if (directPeer.host !== rinfo.address || directPeer.port !== rinfo.port) {
-          return;
-        }
-        if (decoded.pktType === PKT_HELLO_ACK) {
           directHealthy = true;
           return;
         }
+        if (directPeer.host !== rinfo.address || directPeer.port !== rinfo.port) return;
         const st = directStreams.get(decoded.streamId);
         if (!st) return;
         if (decoded.pktType === PKT_OPEN_ACK) {
@@ -395,7 +429,7 @@ export async function openStarferryTunnel(
           }
           if (decoded.seq < st.expectedInSeq && directPeer) {
             const ackPkt = encodePacket(c2nKey, PKT_ACK, decoded.streamId, 0, st.expectedInSeq - 1, Buffer.alloc(0));
-            udp?.send(ackPkt, directPeer.port, directPeer.host);
+            sendDirect(ackPkt, directPeer);
           }
         } else if (decoded.pktType === PKT_EOF) {
           if (decoded.seq === st.expectedInSeq) {
@@ -409,12 +443,13 @@ export async function openStarferryTunnel(
 
       const negDeadline = Date.now() + (options.directNegotiationTimeoutMs ?? 2500);
       while (!directHealthy && Date.now() < negDeadline) {
-        for (const cand of readyInfo.nodeCandidates) {
+        for (const peer of nodePeers) {
           const hello = encodePacket(c2nKey, PKT_HELLO, 0, 0, 0, Buffer.from('ctrl-hello'));
-          udp.send(hello, cand.port, cand.host);
+          sendDirect(hello, peer);
         }
         await sleep(80);
       }
+      negotiating = false;
     }
 
     const initialPath: 'udp_direct' | 'cloud_relay' = directHealthy ? 'udp_direct' : 'cloud_relay';
@@ -449,7 +484,7 @@ export async function openStarferryTunnel(
 
       for (let i = 0; i < 15 && !openResolved && !directSeveredForTest; i++) {
         const openPkt = encodePacket(c2nKey, PKT_OPEN, streamId, 0, 0, Buffer.alloc(0));
-        udp.send(openPkt, directPeer.port, directPeer.host);
+        sendDirect(openPkt, directPeer);
         await sleep(60);
       }
       if (!openResolved) {
@@ -474,7 +509,7 @@ export async function openStarferryTunnel(
             let acked = false;
             for (let attempt = 0; attempt < 15; attempt++) {
               if (!directSeveredForTest && directPeer && udp) {
-                udp.send(pkt, directPeer.port, directPeer.host);
+                sendDirect(pkt, directPeer);
               }
               const waitEnd = Date.now() + 80;
               while (Date.now() < waitEnd) {
@@ -502,14 +537,14 @@ export async function openStarferryTunnel(
       sock.on('end', () => {
         pumpChain = pumpChain.then(async () => {
           if (!directSeveredForTest && directPeer && udp) {
-            udp.send(encodePacket(c2nKey, PKT_EOF, streamId, outSeq, 0, Buffer.alloc(0)), directPeer.port, directPeer.host);
+            sendDirect(encodePacket(c2nKey, PKT_EOF, streamId, outSeq, 0, Buffer.alloc(0)), directPeer);
           }
         });
       });
       await once(sock, 'close').catch(() => {});
       await pumpChain;
       if (!directSeveredForTest && directPeer && udp && directStreams.has(streamId)) {
-        udp.send(encodePacket(c2nKey, PKT_CLOSE, streamId, outSeq, 0, Buffer.alloc(0)), directPeer.port, directPeer.host);
+        sendDirect(encodePacket(c2nKey, PKT_CLOSE, streamId, outSeq, 0, Buffer.alloc(0)), directPeer);
       }
       directStreams.delete(streamId);
       return { interrupted: streamBrokenMidFlight };
@@ -579,6 +614,10 @@ export async function openStarferryTunnel(
       async execSsh(command: string, timeoutMs = 20_000): Promise<StarferryExecResult> {
         const streamId = nextStreamId++;
         const chosenPath: 'udp_direct' | 'cloud_relay' = directHealthy ? 'udp_direct' : 'cloud_relay';
+        const host = chosenPath === 'udp_direct' ? directPeer?.host : undefined;
+        const directAddressFamily = host
+          ? (isIPv4(host) || host.startsWith('::ffff:') ? 'IPv4' : 'IPv6')
+          : null;
         let streamInterrupted = false;
         let bridgeDone = Promise.resolve();
         let acceptedOnce = false;
@@ -669,6 +708,7 @@ export async function openStarferryTunnel(
             return {
               status: 'unknown',
               selectedPath: chosenPath,
+              directAddressFamily,
               replayed: false,
               exitCode: numCode,
               stdout: stdout.trim(),
@@ -682,6 +722,7 @@ export async function openStarferryTunnel(
           return {
             status: numCode === 0 ? 'succeeded' : 'failed',
             selectedPath: chosenPath,
+            directAddressFamily,
             replayed: false,
             exitCode: numCode,
             stdout: stdout.trim(),

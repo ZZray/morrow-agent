@@ -182,6 +182,38 @@ try{
             Refused {RunInstall $f -Maintenance {EnableReachInstalledSsh}} 'size mismatch|digest mismatch'
             Assert ($script:sshPreparationCalls-eq($before+1)) 'Modified installed SSH archive reached preparation'
         }
+        Case 'automatic Worker and Agent upgrade rolls back a failed candidate and then replaces both components' {
+            $f=Fixture
+            $oldPackage=WorkerAgentFixture $sshArchiveBytes
+            RunInstall $f -ZipBytes (Zip $oldPackage) -Version '0.1.8'
+            $old=Installed $f
+
+            $nextPackage=WorkerAgentFixture $sshArchiveBytes
+            $nextPackage.manifest.version='0.1.9'
+            $nextPackage.items['reach.exe']=Bytes 'MZ-updated-worker'
+            $nextPackage.items['agent/morrow-agent-jsonl.exe']=Bytes 'MZ-updated-agent'
+            $nextPackage.manifest.nodeSha256=Digest $nextPackage.items['reach.exe']
+            $nextPackage.manifest.agentSha256=Digest $nextPackage.items['agent/morrow-agent-jsonl.exe']
+            $nextPackage.items['agent-runtime.json']=Bytes ('{"sidecar":"agent/morrow-agent-jsonl.exe","sha256":"'+$nextPackage.manifest.agentSha256+'","inspectionLeaseVersion":1}')
+            foreach($entry in $nextPackage.manifest.files){
+                $entry.bytes=$nextPackage.items[$entry.path].Length
+                $entry.sha256=Digest $nextPackage.items[$entry.path]
+            }
+            $zip=Zip $nextPackage
+            $script:fault='status'
+            Refused {RunInstall $f -ZipBytes $zip -Version '0.1.9' -Automatic $true} 'previous program restored'
+            Assert ((ReadJson (Join-Path $f.root 'install.json')).nodePath-ceq$old.record.nodePath) 'Failed update replaced the original Worker'
+
+            RunInstall $f -ZipBytes $zip -Version '0.1.9' -Automatic $true
+            $new=Installed $f
+            $receipt=ReadJson (Join-Path $f.root 'last-install-result.json')
+            $sidecar=Join-Path (Split-Path $new.record.nodePath) 'agent/morrow-agent-jsonl.exe'
+            Assert ($receipt.automatic -and $new.record.version-ceq'0.1.9' -and
+                $new.catalog.installationId-ceq$old.catalog.installationId -and $new.catalog.bindingOwner-ceq$old.catalog.bindingOwner -and
+                (Digest ([IO.File]::ReadAllBytes($new.record.nodePath)))-ceq$nextPackage.manifest.nodeSha256 -and
+                (Digest ([IO.File]::ReadAllBytes($sidecar)))-ceq$nextPackage.manifest.agentSha256) 'Update did not preserve identity and install the new components'
+            Refused {RunInstall $f -ZipBytes $zip -Version '0.1.9' -Automatic $true} 'newer version'
+        }
     }
     Case 'fresh install publishes catalog and schema4 with actual atomic metadata writes' {
         $f=Fixture;RunInstall $f;$result=Installed $f

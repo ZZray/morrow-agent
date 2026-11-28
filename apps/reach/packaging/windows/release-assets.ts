@@ -1,4 +1,4 @@
-// Copyright (c) Ray Zhang. Create the assets shared by GitHub and Gitee.
+// Copyright (c) Ray Zhang. Create signed Reach update assets from a verified Windows Setup.
 import { execFileSync } from 'node:child_process';
 import { createHash, createPrivateKey, createPublicKey, sign, verify } from 'node:crypto';
 import { mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
@@ -12,26 +12,31 @@ if (!setup || !directory || !expectedPublicKey || process.argv.length !== 7
     || !/^[0-9a-f]{64}$/.test(expectedPublicKey)) {
   throw new Error('Usage: release-assets SETUP.exe VERSION COMMIT OUTPUT_DIR PUBLIC_KEY_HEX. Supply the base64 PKCS#8 Ed25519 key on stdin.');
 }
-if (!basename(setup).startsWith('Reach-Node-Setup-') || !setup.endsWith('.exe')) {
-  throw new Error('Expected a Reach Node Setup executable built by packaging/windows/build.ps1');
-}
-const installer = 'Reach-Node-Setup-x64.exe';
+if (!setup.endsWith('.exe')) throw new Error('Expected a Reach Setup executable');
 const bytes = readFileSync(setup);
 const sha256 = createHash('sha256').update(bytes).digest('hex');
 const build = JSON.parse(readFileSync(join(dirname(setup), 'package.json'), 'utf8'));
-if (build.kind !== 'node-installer-preview' || build.version !== version
-    || build.installerName !== basename(setup) || build.installerSha256 !== sha256) {
-  throw new Error('Setup must match its Node installer build record and requested release version');
+const workerAgent = build.schema === 2 && build.kind === 'complete-installer-preview'
+  && build.agentBundled === true && build.desktopBundled === false;
+const legacy = build.kind === 'node-installer-preview' && basename(setup).startsWith('Reach-Node-Setup-');
+const nodeSha256 = workerAgent ? build.payload?.nodeSha256 : build.nodeSha256;
+if ((!workerAgent && !legacy) || build.version !== version || build.installerName !== basename(setup)
+    || build.installerSha256 !== sha256 || !/^[0-9a-f]{64}$/.test(nodeSha256)
+    || (workerAgent && (!/^[0-9a-f]{64}$/.test(build.agentSha256) || !Number.isSafeInteger(build.payload?.files)
+      || build.updateChannel?.giteeProject !== 'https://gitee.com/rzjw/morrow-agent' || build.updateChannel.publicKey !== expectedPublicKey))) {
+  throw new Error('Setup must match its installer build record and requested release version');
 }
+const installer = workerAgent ? 'Reach-Worker-Agent-Setup-x64.exe' : 'Reach-Node-Setup-x64.exe';
 const manifest = Buffer.from(JSON.stringify({
-  schema: 1,
-  tag: 'reach-v' + version,
+  schema: workerAgent ? 2 : 1,
+  tag: (workerAgent ? 'reach-worker-agent-v' : 'reach-v') + version,
   version,
   commit,
   platform: 'windows-x64',
   installer,
   size: bytes.length,
   sha256,
+  ...(workerAgent ? { agent_sha256: build.agentSha256 } : {}),
 }) + '\n');
 const encodedKey = readFileSync(0);
 const keyBytes = Buffer.from(encodedKey.toString('ascii').trim(), 'base64');
@@ -56,9 +61,16 @@ try {
   writeFileSync(stagedInstaller, bytes);
   const inspection = execFileSync(stagedInstaller, ['--inspect'], { encoding: 'utf8', timeout: 15000, windowsHide: true });
   const report = inspection.split(/\r?\n/);
-  if (!report.includes('Reach setup ' + version) || !report.includes('node_sha256=' + build.nodeSha256)
-      || !report.includes('desktop_bundled=false')) {
-    throw new Error('Setup inspection did not confirm the release version and expected Node payload');
+  if (!report.includes('Reach setup ' + version) || !report.includes('node_sha256=' + nodeSha256)
+      || !report.includes('desktop_bundled=false') || !report.includes('agent_bundled=' + workerAgent)
+      || (workerAgent && (!report.includes('agent_sha256=' + build.agentSha256) || !report.includes('auto_update_worker_agent=true')))) {
+    throw new Error('Setup inspection did not confirm the expected Worker and Agent payload');
+  }
+  if (workerAgent) {
+    const verification = execFileSync(stagedInstaller, ['--verify-payload'], { encoding: 'utf8', timeout: 120000, windowsHide: true });
+    if (!verification.split(/\r?\n/).some(line => line.startsWith(`verified_files=${build.payload.files};`))) {
+      throw new Error('Setup did not verify the expected Worker + Agent archive inventory');
+    }
   }
   writeFileSync(join(staging, 'reach-update.json'), manifest, { flag: 'wx' });
   writeFileSync(join(staging, 'reach-update.sig'), signature, { flag: 'wx' });

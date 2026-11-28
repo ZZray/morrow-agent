@@ -18,6 +18,7 @@ use std::{
 };
 
 const INSTALLER: &str = "Reach-Node-Setup-x64.exe";
+const WORKER_AGENT_INSTALLER: &str = "Reach-Worker-Agent-Setup-x64.exe";
 const MANIFEST: &str = "reach-update.json";
 const SIGNATURE: &str = "reach-update.sig";
 const INITIAL_DELAY: Duration = Duration::from_secs(30);
@@ -81,6 +82,20 @@ impl Source {
     }
 }
 
+#[derive(Clone, Copy)]
+enum Package {
+    Node,
+    WorkerAgent,
+}
+impl Package {
+    fn tag_prefix(self) -> &'static str {
+        match self {
+            Self::Node => "reach-v",
+            Self::WorkerAgent => "reach-worker-agent-v",
+        }
+    }
+}
+
 #[derive(Debug)]
 enum ProbeError {
     Unavailable(String),
@@ -112,6 +127,7 @@ struct Manifest {
     installer: String,
     size: u64,
     sha256: String,
+    agent_sha256: Option<String>,
 }
 
 fn version(text: &str) -> Option<[u16; 3]> {
@@ -149,7 +165,7 @@ fn lowercase_digest(text: &str, length: usize) -> bool {
 
 // An annotated tag's ^{} line identifies the tagged object, while the direct
 // reference identifies the tag object. A lightweight tag has only a direct reference.
-fn newest_tag(mut advertisement: &[u8], current: [u16; 3]) -> ProbeResult<Option<(String, String)>> {
+fn newest_tag(mut advertisement: &[u8], current: [u16; 3], package: Package) -> ProbeResult<Option<(String, String)>> {
     const SERVICE_HEADER: &[u8] = b"001e# service=git-upload-pack\n0000";
     advertisement = advertisement.strip_prefix(SERVICE_HEADER).ok_or_else(|| {
         ProbeError::Unavailable("repository did not return a smart Git reference advertisement".into())
@@ -160,7 +176,9 @@ fn newest_tag(mut advertisement: &[u8], current: [u16; 3]) -> ProbeResult<Option
         let Some(separator) = line.iter().position(|byte| *byte == b' ') else {
             return Err(invalid("invalid Git reference line"));
         };
-        let Some(reference) = line[separator + 1..].strip_prefix(b"refs/tags/reach-v") else {
+        let Some(reference) = line[separator + 1..].strip_prefix(b"refs/tags/")
+            .and_then(|reference| reference.strip_prefix(package.tag_prefix().as_bytes()))
+        else {
             continue;
         };
         let Ok(reference) = str::from_utf8(reference) else { continue };
@@ -184,24 +202,32 @@ fn newest_tag(mut advertisement: &[u8], current: [u16; 3]) -> ProbeResult<Option
     tags.pop_last()
         .map(|([major, minor, patch], (direct, peeled))| {
             let direct = direct.ok_or_else(|| invalid("dereferenced release tag has no Git reference"))?;
-            Ok((format!("reach-v{major}.{minor}.{patch}"), peeled.unwrap_or(direct).to_owned()))
+            Ok((format!("{}{major}.{minor}.{patch}", package.tag_prefix()), peeled.unwrap_or(direct).to_owned()))
         })
         .transpose()
 }
 
-fn verify_manifest(key: &[u8], bytes: &[u8], signature: &[u8], tag: &str, commit: &str) -> ProbeResult<Manifest> {
+fn verify_manifest(
+    key: &[u8], bytes: &[u8], signature: &[u8], tag: &str, commit: &str, package: Package,
+) -> ProbeResult<Manifest> {
     UnparsedPublicKey::new(&ED25519, key)
         .verify(bytes, signature)
         .map_err(|_| invalid("release manifest Ed25519 signature is invalid"))?;
     let manifest: Manifest = serde_json::from_slice(bytes).map_err(invalid)?;
-    if manifest.schema != 1
+    let package_matches = if matches!(package, Package::WorkerAgent) {
+        manifest.schema == 2
+            && manifest.installer == WORKER_AGENT_INSTALLER
+            && manifest.agent_sha256.as_deref().is_some_and(|sha| lowercase_digest(sha, 64))
+    } else {
+        manifest.schema == 1 && manifest.installer == INSTALLER && manifest.agent_sha256.is_none()
+    };
+    if !package_matches
         || manifest.tag != tag
-        || tag.strip_prefix("reach-v") != Some(&manifest.version)
+        || tag.strip_prefix(package.tag_prefix()) != Some(&manifest.version)
         || version(&manifest.version).is_none()
         || manifest.commit != commit
         || !lowercase_digest(&manifest.commit, 40)
         || manifest.platform != "windows-x64"
-        || manifest.installer != INSTALLER
         || !(256..=MAX_INSTALLER).contains(&manifest.size)
         || !lowercase_digest(&manifest.sha256, 64)
     {
@@ -239,19 +265,21 @@ struct Candidate {
     path: PathBuf,
 }
 
-async fn fetch(source: Source, current: [u16; 3], signer: &[u8], installer: &Path) -> ProbeResult<Option<Candidate>> {
+async fn fetch(
+    source: Source, package: Package, current: [u16; 3], signer: &[u8], installer: &Path,
+) -> ProbeResult<Option<Candidate>> {
     let repository = source.repository();
     let client = source.client().map_err(invalid)?;
     let advertisement =
         metadata(&client, source, &format!("{repository}.git/info/refs?service=git-upload-pack"), MAX_METADATA).await?;
-    let Some((tag, commit)) = newest_tag(&advertisement, current)? else {
+    let Some((tag, commit)) = newest_tag(&advertisement, current, package)? else {
         return Ok(None);
     };
     let release = format!("{repository}/releases/download/{tag}");
     let bytes = metadata(&client, source, &format!("{release}/{MANIFEST}"), 16 * 1024).await?;
     let signature = metadata(&client, source, &format!("{release}/{SIGNATURE}"), 64).await?;
-    let manifest = verify_manifest(signer, &bytes, &signature, &tag, &commit)?;
-    let mut response = response(&client, source, &format!("{release}/{INSTALLER}")).await?;
+    let manifest = verify_manifest(signer, &bytes, &signature, &tag, &commit, package)?;
+    let mut response = response(&client, source, &format!("{release}/{}", manifest.installer)).await?;
     if response.content_length().is_some_and(|length| length != manifest.size) {
         return Err(invalid("installer Content-Length differs from the signed size"));
     }
@@ -281,21 +309,27 @@ struct Installation {
     node_state_schema: u32,
     node_path: PathBuf,
     binding_owner: String,
+    #[serde(default)]
+    desktop_bundled: bool,
 }
 
-fn inspect_installation(owner: &str) -> Result<()> {
+fn inspect_installation(owner: &str) -> Result<Option<Package>> {
     let binary = std::env::current_exe()?;
     let installation = binary.ancestors().nth(3).context("installed version directory missing")?;
     let record: Installation = serde_json::from_slice(&fs::read(installation.join("install.json"))?)?;
     ensure!(
-        record.schema == 1
-            && record.node_state_schema == 1
+        record.node_state_schema == 1
             && record.version == VERSION
             && record.binding_owner == owner
             && record.node_path.canonicalize()? == binary.canonicalize()?,
-        "the running service is not the current supported Node installation"
+        "the running service is not an installation supported by this update channel"
     );
-    Ok(())
+    match record.schema {
+        1 => Ok(Some(Package::Node)),
+        2 if record.desktop_bundled => Ok(None),
+        2 => Ok(Some(Package::WorkerAgent)),
+        _ => anyhow::bail!("unsupported Reach installation record"),
+    }
 }
 
 fn write_record(directory: &Path, name: &str, record: &Value) -> Result<()> {
@@ -333,7 +367,7 @@ fn clean_old_installers(directory: &Path) {
 }
 
 async fn check(directory: &Path, owner: &str, signer: &[u8], current: [u16; 3]) -> Result<()> {
-    inspect_installation(owner)?;
+    let package = inspect_installation(owner)?;
     clean_old_installers(directory);
     let attempt_id = uuid::Uuid::new_v4();
     let installer = directory.join(format!("setup-{attempt_id}.exe"));
@@ -344,8 +378,16 @@ async fn check(directory: &Path, owner: &str, signer: &[u8], current: [u16; 3]) 
         "attempts": [],
     });
 
-    for source in [Source::Github, Source::Gitee] {
-        let result = fetch(source, current, signer, &installer).await;
+    let Some(package) = package else {
+        status["result"] = json!("desktop_package_not_supported");
+        return write_record(directory, "last-check.json", &status);
+    };
+    let sources: &[Source] = match package {
+        Package::Node => &[Source::Github, Source::Gitee],
+        Package::WorkerAgent => &[Source::Gitee],
+    };
+    for &source in sources {
+        let result = fetch(source, package, current, signer, &installer).await;
         let (outcome, reason) = match &result {
             Ok(Some(_)) => ("verified", None),
             Ok(None) => ("current", None),
@@ -361,6 +403,7 @@ async fn check(directory: &Path, owner: &str, signer: &[u8], current: [u16; 3]) 
                 status["candidate"] = json!({
                     "source": source.name(), "version": manifest.version, "tag": manifest.tag,
                     "commit": manifest.commit, "installerSha256": manifest.sha256, "size": manifest.size,
+                    "agentSha256": manifest.agent_sha256,
                 });
                 status["result"] = json!("verified");
                 write_record(directory, &receipt, &status)?;
@@ -369,16 +412,12 @@ async fn check(directory: &Path, owner: &str, signer: &[u8], current: [u16; 3]) 
                     let stdout = File::create(log)?;
                     let stderr = stdout.try_clone()?;
                     // Do not wait here. Setup asks this service to stop through the normal maintenance pipe.
-                    Ok(Command::new(&candidate.path)
-                        .args([
-                            "--silent",
-                            "--elevated",
-                            "--owner",
-                            owner,
-                            "--auto-update",
-                            "--expected-version",
-                            &manifest.version,
-                        ])
+                    let mut process = Command::new(&candidate.path);
+                    process.args(["--silent", "--elevated", "--owner", owner, "--auto-update", "--expected-version", &manifest.version]);
+                    if let Some(sha) = &manifest.agent_sha256 {
+                        process.args(["--expected-agent-sha256", sha]);
+                    }
+                    Ok(process
                         .current_dir(directory)
                         .stdin(Stdio::null())
                         .stdout(Stdio::from(stdout))
@@ -429,6 +468,14 @@ fn decode_signer(pin: &str) -> Result<[u8; 32]> {
     Ok(key)
 }
 
+pub fn channel_info() -> Value {
+    let public_key = option_env!("REACH_UPDATE_PUBLIC_KEY_HEX");
+    json!({
+        "giteeProject": Source::Gitee.repository(),
+        "publicKey": public_key.map(str::to_ascii_lowercase),
+    })
+}
+
 pub async fn run(root: PathBuf, owner: String) {
     let Some(pin) = option_env!("REACH_UPDATE_PUBLIC_KEY_HEX") else { return };
     let result: Result<()> = async {
@@ -466,7 +513,7 @@ mod tests {
         for source in [Source::Github, Source::Gitee] {
             let url = format!("{}.git/info/refs?service=git-upload-pack", source.repository());
             let bytes = metadata(&source.client().unwrap(), source, &url, MAX_METADATA).await.unwrap();
-            let _ = newest_tag(&bytes, [0, 0, 0]).unwrap();
+            let _ = newest_tag(&bytes, [0, 0, 0], Package::Node).unwrap();
         }
     }
 
@@ -482,15 +529,18 @@ mod tests {
             ('f', "refs/tags/reach-v00.3.0"),
             ('0', "refs/tags/reach-v0.3.0-preview"),
             ('1', "refs/tags/v0.5.0"),
+            ('2', "refs/tags/reach-worker-agent-v0.3.1"),
+            ('3', "refs/tags/reach-worker-agent-v0.3.2-preview"),
         ] {
             let line = format!("{} {reference}\n", sha.to_string().repeat(40));
             refs.extend_from_slice(format!("{:04x}{line}", line.len() + 4).as_bytes());
         }
         refs.extend_from_slice(b"0000");
-        assert_eq!(newest_tag(&refs, [0, 1, 0]).unwrap(), Some(("reach-v0.2.11".into(), "e".repeat(40))),);
-        assert_eq!(newest_tag(&refs, [0, 2, 11]).unwrap(), None);
-        assert!(matches!(newest_tag(&refs[..refs.len() - 1], [0, 1, 0]), Err(ProbeError::Invalid(_))));
-        assert!(matches!(newest_tag(b"proxy unavailable", [0, 1, 0]), Err(ProbeError::Unavailable(_))));
+        assert_eq!(newest_tag(&refs, [0, 1, 0], Package::Node).unwrap(), Some(("reach-v0.2.11".into(), "e".repeat(40))));
+        assert_eq!(newest_tag(&refs, [0, 2, 11], Package::Node).unwrap(), None);
+        assert_eq!(newest_tag(&refs, [0, 1, 0], Package::WorkerAgent).unwrap(), Some(("reach-worker-agent-v0.3.1".into(), "2".repeat(40))));
+        assert!(matches!(newest_tag(&refs[..refs.len() - 1], [0, 1, 0], Package::Node), Err(ProbeError::Invalid(_))));
+        assert!(matches!(newest_tag(b"proxy unavailable", [0, 1, 0], Package::Node), Err(ProbeError::Unavailable(_))));
     }
 
     #[test]
@@ -506,16 +556,42 @@ mod tests {
         });
         let bytes = serde_json::to_vec(&manifest).unwrap();
         let signature = signer.sign(&bytes);
-        assert!(verify_manifest(key, &bytes, signature.as_ref(), tag, &commit).is_ok());
-        assert!(verify_manifest(key, &bytes, signature.as_ref(), tag, &"c".repeat(40)).is_err());
-        assert!(verify_manifest(key, &bytes, signature.as_ref(), "reach-v0.1.2", &commit).is_err());
-        assert!(verify_manifest(&[0; 32], &bytes, signature.as_ref(), tag, &commit).is_err());
+        let package = Package::Node;
+        assert!(verify_manifest(key, &bytes, signature.as_ref(), tag, &commit, package).is_ok());
+        assert!(verify_manifest(key, &bytes, signature.as_ref(), tag, &"c".repeat(40), package).is_err());
+        assert!(verify_manifest(key, &bytes, signature.as_ref(), "reach-v0.1.2", &commit, package).is_err());
+        assert!(verify_manifest(&[0; 32], &bytes, signature.as_ref(), tag, &commit, package).is_err());
 
         manifest["installer"] = json!("subdirectory/setup.exe");
         let wrong_installer = serde_json::to_vec(&manifest).unwrap();
-        assert!(verify_manifest(key, &wrong_installer, signature.as_ref(), tag, &commit).is_err());
+        assert!(verify_manifest(key, &wrong_installer, signature.as_ref(), tag, &commit, package).is_err());
         let signature = signer.sign(&wrong_installer);
-        assert!(verify_manifest(key, &wrong_installer, signature.as_ref(), tag, &commit).is_err());
+        assert!(verify_manifest(key, &wrong_installer, signature.as_ref(), tag, &commit, package).is_err());
+    }
+
+    #[test]
+    fn worker_agent_channel_requires_the_signed_full_package() {
+        let signer = Ed25519KeyPair::from_seed_unchecked(&[6; 32]).unwrap();
+        let key = signer.public_key().as_ref();
+        let commit = "a".repeat(40);
+        let tag = "reach-worker-agent-v0.2.0";
+        let package = Package::WorkerAgent;
+        let mut manifest = json!({
+            "schema": 2, "tag": tag, "version": "0.2.0", "commit": commit, "platform": "windows-x64",
+            "installer": WORKER_AGENT_INSTALLER, "size": 1024, "sha256": "b".repeat(64), "agent_sha256": "c".repeat(64),
+        });
+        let verify = |manifest: &Value, package| {
+            let bytes = serde_json::to_vec(manifest).unwrap();
+            let signature = signer.sign(&bytes);
+            verify_manifest(key, &bytes, signature.as_ref(), tag, &commit, package)
+        };
+        assert!(verify(&manifest, package).is_ok());
+        assert!(verify(&manifest, Package::Node).is_err());
+        manifest["installer"] = json!(INSTALLER);
+        assert!(verify(&manifest, package).is_err());
+        manifest["installer"] = json!(WORKER_AGENT_INSTALLER);
+        manifest.as_object_mut().unwrap().remove("agent_sha256");
+        assert!(verify(&manifest, package).is_err());
     }
 
     #[test]

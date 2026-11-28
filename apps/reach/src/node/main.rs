@@ -98,6 +98,9 @@ enum Action {
     },
     Status,
     #[cfg(windows)]
+    #[command(hide = true)]
+    UpdateChannel,
+    #[cfg(windows)]
     Ssh {
         #[command(subcommand)]
         action: SshAction,
@@ -176,6 +179,11 @@ async fn main() -> Result<()> {
     let cli = Cli::parse();
     if matches!(cli.command, Some(Action::Worker)) {
         return worker::run();
+    }
+    #[cfg(windows)]
+    if matches!(cli.command, Some(Action::UpdateChannel)) {
+        println!("{}", updater::channel_info());
+        return Ok(());
     }
     #[cfg(windows)]
     if matches!(cli.command, Some(Action::Ssh { action: SshAction::Enable })) {
@@ -341,6 +349,8 @@ async fn main() -> Result<()> {
             println!("{}", pairing::pair(&mut ledger, input).await?);
         }
         Some(Action::Worker) => unreachable!(),
+        #[cfg(windows)]
+        Some(Action::UpdateChannel) => unreachable!(),
         #[cfg(windows)]
         Some(Action::Ssh { .. }) => unreachable!(),
         #[cfg(windows)]

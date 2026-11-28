@@ -201,3 +201,55 @@ Windows PowerShell 5.1 回归覆盖延迟监听、其他进程占用、端口不
 RyDev 使用 `--silent` 从 0.1.8 升级，安装事务为 `committed`、验证通过，原安装 ID、Ray 节点和 epoch 1 保留。服务和既有 SSH 保持运行，实际 Worker 与 Agent 摘要匹配。Codex 新提交的操作 `05524317-b916-4dbe-81db-a8fb3a3a8763` 为 `acknowledged/succeeded`，真实模型调用返回 HTTP 200，输出与指定标记一致。Ray 与 RyDev 的 13 条事件在序号、事件 ID、类型和原始数据摘要上逐条一致，全部 ACK；原生结算为 `Verified/Settled`，业务任务仍为 `awaiting_review`。
 
 首次打包因离线缓存缺少锁定依赖失败；补齐后第三方许可原文因 Windows Git 归档换行转换导致摘要不符。已用 Git 属性保持原始字节，默认归档六份原文的摘要均通过。QBuild 本次因远端沙箱权限错误未进入编译，本机使用固定源码和锁文件完成 Windows 构建。完整包的自动更新和双源发行附件仍待实现或核验。
+
+<a id="rydev-ssh-readiness-20261128"></a>
+## 2026-11-28 RyDev SSH 就绪核验
+
+用户在 Codex 会话 `01a21fb9-d0e6-7681-aae2-4aab0ff6edd6` 指定 RyDev 进行后台测试。约 09:47（Asia/Taipei），使用已登记的 RyDev 别名和严格主机校验登录，目标返回计算机名 `CAN00`。设备端 `RYReach` 和 `sshd` 都在运行。`ryreach status` 显示绑定 Ray Reach，配对 epoch 为 1，心跳间隔 60 秒，SSH 端口 22 就绪，查询时无运行中或已接收待执行的操作。
+
+Ray 控制台显示同一设备在线，版本为 0.1.9。通过网页提交一次只读 `ssh.status`，投递为设备已确认，执行成功，原回执返回 `ready: true`。[设备](https://bigrayzhang.cn/reach/#/devices/716322c7-de35-4a4a-8c7d-d28b6087870a) · [原操作](https://bigrayzhang.cn/reach/#/operations/f26f3a0a-fcab-46a6-9768-7ad3ac610cce)
+
+局域网的 SSH 登录和 Ray 平台的 Worker 状态查询均通过。原生 MCP 的设备列表查询返回 `401 authentication_required`。默认 UDP 选路和强制平台中转仍待原生 Controller 登录后分别执行，届时以 SSH 命令输出、选路结果和目标机回执为准。
+
+<a id="rydev-starferry-20261128"></a>
+### 生产 Ray 的 UDP 与 SSH 中转实测（2026-11-28）
+
+用户完成 Ray 原生 Controller 登录后，从本机经正式入口 `https://bigrayzhang.cn/reach` 对 RyDev（`CAN00`、Worker 0.1.9、配对 epoch 1）发起两次独立的 `hostname` SSH 命令。两次均返回 `CAN00`、退出码 0，控制器回执均为 `replayed=false`。
+
+| 测试 | 发起时间（Asia/Taipei） | 实际路径 | UDP 直连流 | 平台中转流 | Ray 回执 |
+|---|---|---|---:|---:|---|
+| 默认自动选路（`allowDirect=true`） | 09:55:56 | `udp_direct` | 1 | 0 | [原操作](https://bigrayzhang.cn/reach/#/operations/a8e00120-506d-4a3d-9a79-814e344d14ba) |
+| 强制平台中转（`allowDirect=false`） | 09:56:16 | `cloud_relay` | 0 | 1 | [原操作](https://bigrayzhang.cn/reach/#/operations/bba178ef-fa34-4bd3-b525-bc5ff152d37d) |
+
+两次操作均为投递已确认、执行成功。回读原操作各有四条事件（`received`、`running`、`output`、`succeeded`），服务端记录的路径与控制器一致，隧道状态为 `closed`，Worker 回执确认临时公钥已撤销。收尾通过 RyDev 已登记的 SSH 查询 `ryreach status`，确认仍连接 Ray、配对 epoch 为 1、受管授权数和待处理操作均为 0。
+
+本轮覆盖当前本机与 RyDev 之间的生产直连和平台中转。跨公网双 NAT 仍待实测。
+
+<a id="rydev-starferry-auto-relay-20261128"></a>
+### UDP 握手失败后自动中转（2026-11-28）
+
+10:02（Asia/Taipei），在生产 Ray 为 RyDev（`CAN00`、Worker 0.1.9、配对 epoch 1）另开一个 `allowDirect=true` 的隧道。Worker 声明 `directEnabled=true`，提供两个候选地址。故障限制在本机测试进程，静默丢弃出站 Starferry `HELLO` 包。生产 Worker 和平台继续使用已有配置。
+
+控制器收到一个 Worker `HELLO`，丢弃 56 次本机 `HELLO` 发送，未收到 `HELLO_ACK`。从第一次丢包到首次选择路径为 2.572 秒，选中 `cloud_relay`。`hostname` 返回 `CAN00`，退出码 0，`replayed=false`。Ray 回查仍为 `allowDirect=true`，原操作投递已确认、执行成功，共四条事件。Worker 记录 0 条直连流、1 条中转流，确认撤销临时 SSH 公钥。隧道已关闭。RyDev 复查绑定 Ray、配对 epoch 1，受管授权数和待处理操作均为 0。[原操作回执](https://bigrayzhang.cn/reach/#/operations/a5b0f57e-8f3f-463a-afa0-925b775dffec)
+
+当时本机办公网和 RyDev 的 STUN 反射公网 IPv4 相同。第二块网卡绑定 IPv4 后，两台 STUN 和公网 HTTPS 探测均超时。这一结果覆盖生产 Ray 和真机在受控 UDP 握手失败下的自动回退。不同公网出口的试验见下节。
+
+<a id="rydev-dual-nat-20261128"></a>
+### 手机热点到办公网的跨公网实测（2026-11-28）
+
+10:15（Asia/Taipei），RAYWORK 使用手机热点，RyDev 保持办公网和原有 Ray 配对。控制器测试进程把 UDP 套接字绑定到热点的私网 IPv4，两端会话各用自己的 UDP 套接字从 STUN 得到不同公网 IPv4。测试限定双方的 STUN 公网候选，排除了办公网内的私网直通。HTTPS 信令和中转使用本机系统路由。
+
+这次会话保留 `allowDirect=true`，Worker 上报直连可用。控制器对 RyDev 的公网候选发起 27 次 `HELLO`，没有注入丢包，未收到 `HELLO_ACK`。2.505 秒后首次选路为 `cloud_relay`，握手期间没有建立直连流。经 Ray 中转执行 `hostname`，返回 `CAN00`，退出码 0，`replayed=false`。
+
+原操作为投递已确认、执行成功，四条事件依次为 `received`、`running`、`output`、`succeeded`。隧道已关闭，Worker 回执为 0 条直连流、1 条中转流，临时 SSH 公钥已撤销。复查 RyDev 仍在线、配对 epoch 1，受管授权数和待处理操作均为 0。[公网试验原操作](https://bigrayzhang.cn/reach/#/operations/61663ced-a332-40c3-8e7e-64d74bebf9ae)
+
+这组手机热点和办公网之间的 UDP 握手未打通。其余 NAT 组合和本次握手丢失位置尚未验证。
+
+<a id="rydev-ipv6-hotspot-recheck-20261128"></a>
+### 手机热点与 RyDev 的 IPv6 复查（2026-11-28）
+
+14:13–14:16（Asia/Taipei），用户确认 RAYWORK 已连接手机热点。Windows 的 `WLAN`（接口 11）有 2 个可选源的全局 IPv6 地址和 1 条 IPv6 默认路由。绑定该接口的源地址向阿里云和 Cloudflare 的 IPv6 公共 DNS 发起两次 UDP 查询，均未收到回包，分别在 2.55 秒和 2.51 秒超时。禁用代理后，以同一源地址连接 Cloudflare 的 IPv6 HTTPS 入口也在 5.01 秒超时。Windows 路由查询确认这条路径经接口 11。探测仅覆盖所选目的地，丢包位置未定位。[阿里云公共 DNS](https://help.aliyun.com/zh/dns/free-service-disclaimer) · [Cloudflare 公共 DNS](https://developers.cloudflare.com/1.1.1.1/infrastructure/network-operators/)
+
+通过已登记的局域网 SSH 严格验证目标为 `CAN00`。RyDev 唯一活动的物理网卡只有链路本地 IPv6，系统无 IPv6 默认路由。`RYReach` 正在运行，实际 `reach.exe` 的 SHA-256 与 0.1.9 预览包的 Worker 完整匹配。运行镜像的 Windows 文件资源版本显示 `0.1.0`，此处按实际载荷摘要确认发布版本。[0.1.9 载荷](#rydev-019-preview-20261127)
+
+这组网络缺少 RyDev 的公网 IPv6 端点，运行中的 Worker 也只支持 IPv4。本轮完成前置探测，跨公网 IPv6 SSH 直连及回执待验。

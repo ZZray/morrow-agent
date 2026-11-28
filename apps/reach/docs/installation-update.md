@@ -68,6 +68,16 @@ PATH 保留未展开文本与 RegistryValueKind。只有明确写入且当前值
 
 ## Git 自更新与 Windows 服务恢复
 
+<a id="gitee-worker-agent-update"></a>
+
+### Gitee Worker + Agent 整包更新
+
+2026-11-27 确定 Windows Worker + Agent 从 Gitee 的 `rzjw/morrow-agent` 自动更新。构建 Worker 时设置 `REACH_UPDATE_PUBLIC_KEY_HEX`，设备需能通过 HTTPS 读取该仓库的标签和发行附件。
+
+用 `build-complete.ps1 -AgentWorkerOnly` 装配整包时沿用同一个公钥。打包会检查 Worker 内嵌的仓库和公钥。再用 `release-assets.ts` 生成 `Reach-Worker-Agent-Setup-x64.exe`、`reach-update.json` 和 `reach-update.sig`，将三个文件附到 `reach-worker-agent-v<版本>`。旧 Node-only 使用 `reach-v<版本>`。更新器核对标签对应的提交、Ed25519 签名、整包大小和 SHA-256，安装器再核对内嵌 Agent 摘要。
+
+已安装的 0.1.9 预览版需先手动安装一个带 Gitee 更新器的 Worker + Agent 包。带 Desktop 的安装需包含 Desktop 的匹配升级包。升级启动收据记在 `update/last-check.json`，安装结果以已提交的安装事务与 `last-install-result.json` 为准。正式发行附件与 Windows 服务真机升级待验证。 [Gitee 发行页](https://gitee.com/rzjw/morrow-agent/releases)
+
 2026-11-24 用户将自动更新、Windows 服务安装及异常自动恢复列为首版交付要求。本地实现已接入 `RYReach` 延迟自启、SCM 失败重启、Git 发行标签查询、签名校验和安装事务。RyDev 真实安装及双源更新的结果以[本轮验收记录](evidence/2026-11-24-rydev-service-update.md)为准。
 
 1. 以 Morrow 仓库的 Reach Git 发行标签标定版本，建议采用 `reach-vX.Y.Z`。发布时针对同一提交构建一次，生成签名清单，写明标签、提交、版本、平台、架构、包大小、SHA-256 与兼容范围。将同一份清单及安装包发布到 GitHub 和 Gitee。Git 引用和发行附件分别同步和核验。安装收据记录实际版本，发布前核对 Node、Setup、清单和收据。 [GitHub Releases](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases) · [Gitee 发行版](https://help.gitee.com/repository/release/create)

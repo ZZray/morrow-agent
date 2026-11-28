@@ -36,6 +36,16 @@ foreach($binary in $binaries){
 }
 $reportedVersion=(& (Resolve-Path -LiteralPath $NodeBinary).Path --version | Out-String).Trim()
 if($LASTEXITCODE-ne0 -or $reportedVersion-cne"ryreach $Version"){throw 'Node and installer version differ'}
+$updateChannel=$null
+if($AgentWorkerOnly -and $env:REACH_UPDATE_PUBLIC_KEY_HEX){
+    if($env:REACH_UPDATE_PUBLIC_KEY_HEX-cnotmatch'^[0-9a-fA-F]{64}$'){throw 'Invalid pinned update public key'}
+    $updateChannel=& (Resolve-Path -LiteralPath $NodeBinary).Path update-channel
+    if($LASTEXITCODE-ne0){throw 'Node update channel inspection failed'}
+    $updateChannel=$updateChannel|ConvertFrom-Json
+    if($updateChannel.giteeProject-cne'https://gitee.com/rzjw/morrow-agent' -or $updateChannel.publicKey-cne$env:REACH_UPDATE_PUBLIC_KEY_HEX.ToLowerInvariant()){
+        throw 'Node was not built for the Reach Gitee update channel and signing key'
+    }
+}
 $work=Join-Path $project ('work/full-package-'+[Guid]::NewGuid().ToString('N'));$null=[IO.Directory]::CreateDirectory($work)
 $openSshPayload=& (Join-Path $PSScriptRoot 'prepare-openssh.ps1') -Archive $OpenSshArchive -Destination (Join-Path $work 'openssh-vendor.zip')
 & (Join-Path $PSScriptRoot 'audit-dependencies.ps1') -Destination (Join-Path $work 'dependency-audit') -AgentWorkerOnly:$AgentWorkerOnly
@@ -94,6 +104,7 @@ try {
     foreach($item in $audit.workspaces){if((Hash $item.manifest)-cne$item.manifestSha256 -or (Hash $item.lock)-cne$item.lockSha256 -or (Hash $item.policy)-cne$item.policySha256){throw 'Audited dependency inputs changed during assembly'}}
     $record=@{schema=2;kind='complete-installer-preview';version=$Version;desktopBundled=$desktopBundled;agentBundled=$true;agentSha256=$AgentSha256;installationTested=$false;codeSigned=$false;installerName=[IO.Path]::GetFileName($installer);installerSha256=$setupSha;payload=$receipt;scriptSha256=$scriptSha;payloadChecksSha256=$checksSha;noticesSha256=$noticesSha;dependencyAuditSha256=(Hash (Join-Path $work 'dependency-audit/audit.json'));setupImports=$imports;buildDirectory=$work;sourceIdentity=$sourceIdentity;sourceInputs=$sourceInputs}
     $record.openSshSha256=Hash $openSshPayload
+    if($null-ne$updateChannel){$record.updateChannel=$updateChannel}
     [IO.File]::WriteAllText((Join-Path $output 'package.json'),($record|ConvertTo-Json -Depth 8),[Text.UTF8Encoding]::new($false))
     Write-Output $installer;Write-Output $verified
 }finally{foreach($name in $prior.Keys){[Environment]::SetEnvironmentVariable($name,$prior[$name],'Process')};Pop-Location}

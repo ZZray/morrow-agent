@@ -24,6 +24,7 @@ const systemSsh = process.platform === 'win32'
 const mcpExecResultSchema = z.object({
   status: z.enum(['succeeded', 'failed', 'unknown']),
   selectedPath: z.enum(['udp_direct', 'cloud_relay']),
+  directAddressFamily: z.enum(['IPv4', 'IPv6']).nullable(),
   replayed: z.literal(false),
   exitCode: z.number().nullable(),
   stdout: z.string(),
@@ -116,6 +117,7 @@ test('M14: Starferry real ssh.exe over UDP Direct, explicit Cloud Relay, unreach
     const directRes = mcpExecResultSchema.parse(JSON.parse(directCall.result.content[0].text));
     assert.equal(directRes.status, 'succeeded');
     assert.equal(directRes.selectedPath, 'udp_direct');
+    assert.notEqual(directRes.directAddressFamily, null);
     assert.equal(directRes.exitCode, 0);
     assert.equal(directRes.stdout, 'SF_OUT:uname-direct-check');
     assert.equal(directRes.targetHostKey, sshServer.hostPublicKeyLine);
@@ -144,6 +146,7 @@ test('M14: Starferry real ssh.exe over UDP Direct, explicit Cloud Relay, unreach
     const relayRes = mcpExecResultSchema.parse(JSON.parse(relayCall.result.content[0].text));
     assert.equal(relayRes.status, 'succeeded');
     assert.equal(relayRes.selectedPath, 'cloud_relay');
+    assert.equal(relayRes.directAddressFamily, null);
     assert.equal(relayRes.exitCode, 0);
     assert.equal(relayRes.stdout, 'SF_OUT:uname-relay-check');
 
@@ -181,6 +184,7 @@ test('M14: Starferry real ssh.exe over UDP Direct, explicit Cloud Relay, unreach
       const broken = await tunnel.execSsh('slow-midstream-op', 6000);
       assert.equal(broken.status, 'unknown');
       assert.equal(broken.selectedPath, 'udp_direct');
+      assert.equal(broken.directAddressFamily, s0.directAddressFamily);
       assert.equal(broken.replayed, false);
       const countAfter = executedCommands.filter(c => c === 'slow-midstream-op').length;
       assert.equal(countAfter, countBefore + 1, 'executed command must NEVER auto-replay on cloud_relay');
@@ -224,6 +228,7 @@ test('M14: Starferry real ssh.exe over UDP Direct, explicit Cloud Relay, unreach
         const result = await unavailable.execSsh('unreachable-udp-relay');
         assert.equal(result.status, 'succeeded', JSON.stringify(result));
         assert.equal(result.selectedPath, 'cloud_relay');
+        assert.equal(result.directAddressFamily, null);
         assert.equal(result.stdout, 'SF_OUT:unreachable-udp-relay');
       } finally { await unavailable.close(); }
       const receipt = sessionReceiptSchema.parse(JSON.parse((await f.settled(unavailable.operationId)).result_json));

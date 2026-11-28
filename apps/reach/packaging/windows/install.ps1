@@ -507,7 +507,7 @@ public static class ReachSetupNative {
     elseif($null-ne$existingService){throw 'Existing service has no trusted installation record'}
     if($null-ne$previous -and $previous.schema-eq2 -and -not $CompletePackage){throw 'Node-only Setup cannot replace a complete Reach installation'}
     if($null-ne$previous -and $previous.schema-eq2 -and $previous.desktopBundled -and -not $package.manifest.desktopBundled){throw 'This installation requires a Reach Setup that includes Desktop'}
-    if($ReachAutoUpdate -and ($null-eq$previous -or $previous.schema-ne1 -or [version]$ReachInstallVersion -le [version]$previous.version)){
+    if($ReachAutoUpdate -and ($null-eq$previous -or [version]$ReachInstallVersion -le [version]$previous.version)){
         throw 'Automatic update requires a supported existing installation and a newer version'
     }
     $ownerPath=Join-Path $dataParent 'Reach.installation.json'

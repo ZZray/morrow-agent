@@ -8,9 +8,11 @@ use reqwest::Method;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
+use socket2::{Domain, Protocol, Socket, Type};
 use std::{
     collections::HashMap,
-    net::{IpAddr, Ipv4Addr, SocketAddr},
+    io,
+    net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr},
     path::PathBuf,
     sync::{
         atomic::{AtomicU32, AtomicUsize, Ordering},
@@ -21,7 +23,7 @@ use std::{
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::{TcpStream, UdpSocket},
-    sync::{mpsc, watch, Mutex, Notify},
+    sync::{mpsc, watch, Notify},
     time::Instant,
 };
 
@@ -39,6 +41,7 @@ const HEADER_LEN: usize = 19;
 const MAC_LEN: usize = 16;
 const MAX_PAYLOAD: usize = 1200;
 const MAX_STREAMS: usize = 16;
+const MAX_DIRECT_HELLO_PEERS: usize = 16;
 const MAX_RELAY_B64_CHARS: usize = 88_000;
 const DEFAULT_STUN_SERVERS: [&str; 2] = ["stun.cloudflare.com:3478", "stun.l.google.com:19302"];
 
@@ -132,9 +135,30 @@ fn decode_packet(key: &[u8; 32], raw: &[u8]) -> Option<(u8, u32, u32, u32, Vec<u
     Some((pkt_type, stream_id, seq, ack, raw[HEADER_LEN..body_end].to_vec()))
 }
 
+fn bind_dual_stack_udp() -> io::Result<UdpSocket> {
+    let socket = Socket::new(Domain::IPV6, Type::DGRAM, Some(Protocol::UDP))?;
+    socket.set_only_v6(false)?;
+    socket.bind(&SocketAddr::from((Ipv6Addr::UNSPECIFIED, 0)).into())?;
+    socket.set_nonblocking(true)?;
+    UdpSocket::from_std(socket.into())
+}
+
+fn endpoint_on_socket(peer: SocketAddr, dual_stack: bool) -> Option<SocketAddr> {
+    match (peer, dual_stack) {
+        (SocketAddr::V4(addr), true) => Some(SocketAddr::from((addr.ip().to_ipv6_mapped(), addr.port()))),
+        (SocketAddr::V6(_), false) => None,
+        _ => Some(peer),
+    }
+}
+
+fn scope_free_ipv6(ip: Ipv6Addr) -> bool {
+    !ip.is_unspecified() && !ip.is_unicast_link_local() && !ip.is_multicast() && ip.to_ipv4_mapped().is_none()
+}
+
 async fn query_stun_srflx(sock: &UdpSocket, stun_addr: &str) -> Option<Candidate> {
     let stun_addr = stun_addr.strip_prefix("stun:").unwrap_or(stun_addr);
     let target: SocketAddr = tokio::net::lookup_host(stun_addr).await.ok()?.find(SocketAddr::is_ipv4)?;
+    let target = endpoint_on_socket(target, sock.local_addr().ok()?.is_ipv6())?;
     let mut tx_id = [0u8; 12];
     getrandom::fill(&mut tx_id).ok()?;
     let mut req = Vec::with_capacity(20);
@@ -182,23 +206,39 @@ async fn query_stun_srflx(sock: &UdpSocket, stun_addr: &str) -> Option<Candidate
     None
 }
 
-async fn gather_candidates(sock: &UdpSocket, development: bool) -> Vec<Candidate> {
+fn host_candidate_for_route(peer: SocketAddr, session_port: u16) -> Option<Candidate> {
+    let probe = std::net::UdpSocket::bind(if peer.is_ipv6() { "[::]:0" } else { "0.0.0.0:0" }).ok()?;
+    probe.connect(peer).ok()?;
+    let ip = probe.local_addr().ok()?.ip();
+    if ip.is_unspecified() || ip.is_loopback() || matches!(ip, IpAddr::V6(v6) if !scope_free_ipv6(v6)) {
+        return None;
+    }
+    Some(Candidate { host: ip.to_string(), port: session_port, kind: "host".into() })
+}
+
+async fn gather_candidates(sock: &UdpSocket, development: bool, controller_peers: &[SocketAddr]) -> Vec<Candidate> {
     let mut out = Vec::new();
     let Ok(local_addr) = sock.local_addr() else {
         return out;
     };
     let port = local_addr.port();
-    if let Ok(probe) = std::net::UdpSocket::bind("0.0.0.0:0") {
-        if probe.connect("198.51.100.1:80").is_ok() {
-            if let Ok(addr) = probe.local_addr() {
-                if !addr.ip().is_unspecified() && !addr.ip().is_loopback() {
-                    out.push(Candidate { host: addr.ip().to_string(), port, kind: "host".into() });
+    out.extend(host_candidate_for_route(SocketAddr::from(([198, 51, 100, 1], 80)), port));
+    if local_addr.is_ipv6() {
+        // Ask the OS for the source address it would use to reach each IPv6 peer.
+        // UDP connect on the probe socket selects a route without sending a packet.
+        for peer in controller_peers.iter().copied().filter(SocketAddr::is_ipv6).take(7) {
+            if let Some(candidate) = host_candidate_for_route(peer, port) {
+                if !out.iter().any(|existing| existing.host == candidate.host) {
+                    out.push(candidate);
                 }
             }
         }
     }
     if development || std::env::var_os("REACH_DEV_STARFERRY_LOOPBACK").is_some() {
         out.push(Candidate { host: "127.0.0.1".into(), port, kind: "host".into() });
+        if local_addr.is_ipv6() {
+            out.push(Candidate { host: "::1".into(), port, kind: "host".into() });
+        }
     }
     let servers = std::env::var("REACH_STUN_SERVER")
         .map(|server| vec![server])
@@ -240,7 +280,8 @@ async fn serve_direct_udp(
     mut shutdown: watch::Receiver<bool>,
     direct_streams_counter: Arc<AtomicUsize>,
 ) {
-    let peer_holder: Arc<Mutex<Option<SocketAddr>>> = Arc::new(Mutex::new(None));
+    let mut hello_peers = Vec::new();
+    let mut pinned_peer = None;
     let mut streams: HashMap<u32, DirectStreamControl> = HashMap::new();
     let mut highest_opened_stream_id = 0u32;
 
@@ -266,17 +307,17 @@ async fn serve_direct_udp(
                 let Some((pkt_type, stream_id, seq, ack, payload)) = decode_packet(&c2n_key, &recv_buf[..n]) else {
                     continue;
                 };
-                {
-                    let mut pinned = peer_holder.lock().await;
-                    match *pinned {
-                        None if pkt_type == PKT_HELLO => *pinned = Some(src),
-                        None => continue,
-                        Some(existing) if existing != src => {
-                            // Anti-hijack: ignore replayed packets from any other source endpoint once pinned.
+                match pinned_peer {
+                    Some(existing) if existing != src => continue,
+                    None if !hello_peers.contains(&src) => {
+                        // A HELLO may have reached us over a one-way path. Keep
+                        // other candidates eligible until the controller opens a stream.
+                        if pkt_type != PKT_HELLO || hello_peers.len() >= MAX_DIRECT_HELLO_PEERS {
                             continue;
                         }
-                        Some(_) => {}
+                        hello_peers.push(src);
                     }
+                    _ => {}
                 }
                 match pkt_type {
                     PKT_HELLO => {
@@ -300,6 +341,7 @@ async fn serve_direct_udp(
                             let _ = udp.send_to(&rej, src).await;
                             continue;
                         }
+                        pinned_peer.get_or_insert(src);
                         highest_opened_stream_id = stream_id;
                         let (tx, mut rx) = mpsc::channel::<DirectInbound>(128);
                         let highest_acked = Arc::new(AtomicU32::new(0));
@@ -487,17 +529,36 @@ pub async fn execute_session(
         let _ = write!(node_key_hex, "{b:02x}");
     }
 
+    let controller_peers: Vec<_> = dispatch.command["controllerCandidates"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(|item| {
+            let ip: IpAddr = item["host"].as_str()?.parse().ok()?;
+            let port = u16::try_from(item["port"].as_u64()?).ok()?;
+            if matches!(ip, IpAddr::V6(v6) if !scope_free_ipv6(v6)) {
+                return None;
+            }
+            Some(SocketAddr::new(ip, port))
+        })
+        .collect();
     let mut direct_socket: Option<Arc<UdpSocket>> = None;
     let mut node_candidates: Vec<Candidate> = Vec::new();
     if allow_direct {
-        if let Ok(sock) = UdpSocket::bind("0.0.0.0:0").await {
-            node_candidates = gather_candidates(&sock, identity.development).await;
+        // Old controllers only send IPv4 candidates and must only receive IPv4 candidates.
+        let dual_stack = controller_peers.iter().any(SocketAddr::is_ipv6);
+        let socket = match dual_stack.then(bind_dual_stack_udp).and_then(|result| result.ok()) {
+            Some(socket) => Some(socket),
+            None => UdpSocket::bind("0.0.0.0:0").await.ok(),
+        };
+        if let Some(sock) = socket {
+            node_candidates = gather_candidates(&sock, identity.development, &controller_peers).await;
             direct_socket = Some(Arc::new(sock));
         }
     }
     let direct_enabled = direct_socket.is_some() && !node_candidates.is_empty();
 
-    let ready_reply = match api
+    if let Err(err) = api
         .call(
             Method::POST,
             &format!("/api/v1/node/tunnels/{tunnel_session_id}/ready"),
@@ -512,11 +573,8 @@ pub async fn execute_session(
         )
         .await
     {
-        Ok(val) => val,
-        Err(err) => {
-            return Ok(("failed".into(), json!({"error": err.to_string()})));
-        }
-    };
+        return Ok(("failed".into(), json!({"error": err.to_string()})));
+    }
 
     ledger.event(
         dispatch,
@@ -545,18 +603,9 @@ pub async fn execute_session(
     if let Some(udp) = direct_socket {
         let c2n_key = derive_dir_key(tunnel_session_id, controller_key_hex, &node_key_hex, "c2n");
         let n2c_key = derive_dir_key(tunnel_session_id, controller_key_hex, &node_key_hex, "n2c");
-        let mut initial_peers = Vec::new();
-        if let Some(arr) = ready_reply["controllerCandidates"].as_array() {
-            for item in arr {
-                if let (Some(h), Some(p)) = (item["host"].as_str(), item["port"].as_u64()) {
-                    if let Ok(ip) = h.parse::<IpAddr>() {
-                        if let Ok(port_u16) = u16::try_from(p) {
-                            initial_peers.push(SocketAddr::new(ip, port_u16));
-                        }
-                    }
-                }
-            }
-        }
+        let dual_stack = udp.local_addr().is_ok_and(|addr| addr.is_ipv6());
+        let initial_peers =
+            controller_peers.into_iter().filter_map(|peer| endpoint_on_socket(peer, dual_stack)).collect();
         let counter_clone = direct_streams_counter.clone();
         let rx_clone = shutdown_rx.clone();
         direct_handle = Some(tokio::spawn(async move {
@@ -760,56 +809,92 @@ mod tests {
     use super::*;
 
     #[tokio::test]
-    async fn only_controller_hello_nominates_the_direct_peer() {
-        let node = Arc::new(UdpSocket::bind("127.0.0.1:0").await.unwrap());
-        let node_addr = node.local_addr().unwrap();
-        let first_path = UdpSocket::bind("127.0.0.1:0").await.unwrap();
+    async fn first_open_on_a_handshaken_path_pins_the_peer() {
+        let (node, first_ip) = match bind_dual_stack_udp() {
+            Ok(socket) => (socket, IpAddr::V6(Ipv6Addr::LOCALHOST)),
+            Err(_) => (UdpSocket::bind("127.0.0.1:0").await.unwrap(), IpAddr::V4(Ipv4Addr::LOCALHOST)),
+        };
+        let node_port = node.local_addr().unwrap().port();
+        let first_addr = SocketAddr::new(first_ip, node_port);
+        let nominated_addr = SocketAddr::from((Ipv4Addr::LOCALHOST, node_port));
+        let first_path = UdpSocket::bind(SocketAddr::new(first_ip, 0)).await.unwrap();
         let nominated_path = UdpSocket::bind("127.0.0.1:0").await.unwrap();
+        let ssh = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
         let (stop, shutdown) = watch::channel(false);
         let c2n = [1; 32];
         let n2c = [2; 32];
-        let serving =
-            tokio::spawn(serve_direct_udp(node, 22, c2n, n2c, vec![], shutdown, Arc::new(AtomicUsize::new(0))));
-        first_path.send_to(&encode_packet(&c2n, PKT_HELLO_ACK, 0, 0, 0, &[]), node_addr).await.unwrap();
-        tokio::time::sleep(Duration::from_millis(20)).await;
-        nominated_path.send_to(&encode_packet(&c2n, PKT_HELLO, 0, 0, 0, &[]), node_addr).await.unwrap();
+        let streams = Arc::new(AtomicUsize::new(0));
+        let serving = tokio::spawn(serve_direct_udp(
+            Arc::new(node),
+            ssh.local_addr().unwrap().port(),
+            c2n,
+            n2c,
+            vec![],
+            shutdown,
+            streams.clone(),
+        ));
+        let hello = encode_packet(&c2n, PKT_HELLO, 0, 0, 0, &[]);
+        let open = encode_packet(&c2n, PKT_OPEN, 1, 0, 0, &[]);
         let mut buffer = [0; 128];
-        let received = tokio::time::timeout(Duration::from_millis(500), nominated_path.recv_from(&mut buffer)).await;
+        let ack_deadline = Duration::from_millis(500);
+        let quiet_window = Duration::from_millis(50);
+        // Receive the first ACK to make the packet order deterministic, but never use that path for an OPEN.
+        first_path.send_to(&hello, first_addr).await.unwrap();
+        let (length, _) = tokio::time::timeout(ack_deadline, first_path.recv_from(&mut buffer)).await.unwrap().unwrap();
+        assert_eq!(decode_packet(&n2c, &buffer[..length]).unwrap().0, PKT_HELLO_ACK);
+
+        nominated_path.send_to(&encode_packet(&c2n, PKT_HELLO_ACK, 0, 0, 0, &[]), nominated_addr).await.unwrap();
+        nominated_path.send_to(&open, nominated_addr).await.unwrap();
+        assert!(tokio::time::timeout(quiet_window, nominated_path.recv_from(&mut buffer)).await.is_err());
+        nominated_path.send_to(&hello, nominated_addr).await.unwrap();
+        let (length, _) = tokio::time::timeout(ack_deadline, nominated_path.recv_from(&mut buffer))
+            .await
+            .expect("both paths must be able to complete the UDP handshake")
+            .unwrap();
+        assert_eq!(decode_packet(&n2c, &buffer[..length]).unwrap().0, PKT_HELLO_ACK);
+
+        nominated_path.send_to(&open, nominated_addr).await.unwrap();
+        let (length, _) =
+            tokio::time::timeout(ack_deadline, nominated_path.recv_from(&mut buffer)).await.unwrap().unwrap();
+        assert_eq!(decode_packet(&n2c, &buffer[..length]).unwrap().0, PKT_OPEN_ACK);
+        first_path.send_to(&open, first_addr).await.unwrap();
+        assert!(tokio::time::timeout(quiet_window, first_path.recv_from(&mut buffer)).await.is_err());
+        assert_eq!(streams.load(Ordering::SeqCst), 1);
         stop.send(true).unwrap();
         serving.await.unwrap();
-        let (length, _) = received.expect("ACK must return on the nominated path").unwrap();
-        assert_eq!(decode_packet(&n2c, &buffer[..length]).unwrap().0, PKT_HELLO_ACK);
     }
 
     #[tokio::test]
     async fn stun_candidate_uses_transport_socket_and_ignores_wrong_transaction() {
-        let server = UdpSocket::bind("127.0.0.1:0").await.unwrap();
-        let server_addr = server.local_addr().unwrap();
-        let node = UdpSocket::bind("127.0.0.1:0").await.unwrap();
-        let node_port = node.local_addr().unwrap().port();
-        let responding = tokio::spawn(async move {
-            let mut request = [0; 32];
-            let (_, client) = server.recv_from(&mut request).await.unwrap();
-            let mut reply = request[..20].to_vec();
-            reply[..4].copy_from_slice(&[1, 1, 0, 12]);
-            reply.extend_from_slice(&[0, 0x20, 0, 8, 0, 1]);
-            reply.extend_from_slice(&(client.port() ^ 0x2112).to_be_bytes());
-            reply.extend_from_slice(&(u32::from(Ipv4Addr::LOCALHOST) ^ 0x2112A442).to_be_bytes());
-            reply[8] ^= 1;
-            server.send_to(&reply, client).await.unwrap();
-            reply[8] ^= 1;
-            server.send_to(&reply, client).await.unwrap();
-        });
-        let candidate =
-            tokio::time::timeout(Duration::from_millis(500), query_stun_srflx(&node, &server_addr.to_string()))
-                .await
-                .unwrap()
-                .unwrap();
-        responding.await.unwrap();
-        assert_eq!(
-            (candidate.host.as_str(), candidate.port, candidate.kind.as_str()),
-            ("127.0.0.1", node_port, "srflx")
-        );
+        let ipv4_node = UdpSocket::bind("127.0.0.1:0").await.unwrap();
+        for node in std::iter::once(ipv4_node).chain(bind_dual_stack_udp().ok()) {
+            let server = UdpSocket::bind("127.0.0.1:0").await.unwrap();
+            let server_addr = server.local_addr().unwrap();
+            let node_port = node.local_addr().unwrap().port();
+            let responding = tokio::spawn(async move {
+                let mut request = [0; 32];
+                let (_, client) = server.recv_from(&mut request).await.unwrap();
+                let mut reply = request[..20].to_vec();
+                reply[..4].copy_from_slice(&[1, 1, 0, 12]);
+                reply.extend_from_slice(&[0, 0x20, 0, 8, 0, 1]);
+                reply.extend_from_slice(&(client.port() ^ 0x2112).to_be_bytes());
+                reply.extend_from_slice(&(u32::from(Ipv4Addr::LOCALHOST) ^ 0x2112A442).to_be_bytes());
+                reply[8] ^= 1;
+                server.send_to(&reply, client).await.unwrap();
+                reply[8] ^= 1;
+                server.send_to(&reply, client).await.unwrap();
+            });
+            let candidate =
+                tokio::time::timeout(Duration::from_millis(500), query_stun_srflx(&node, &server_addr.to_string()))
+                    .await
+                    .unwrap()
+                    .unwrap();
+            responding.await.unwrap();
+            assert_eq!(
+                (candidate.host.as_str(), candidate.port, candidate.kind.as_str()),
+                ("127.0.0.1", node_port, "srflx")
+            );
+        }
     }
 
     #[test]

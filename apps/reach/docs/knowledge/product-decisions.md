@@ -324,6 +324,8 @@ RyDev 的 0.1.8 和 0.1.9 预览版已分别从 Codex 完成现场 Agent 委托�
 
 **后续需确认。** 选定 OSS 存储位置与访问方式、版本化文件名及下载链接有效期；发布时核对清单中的版本和 SHA-256 与 OSS 下载的实际文件一致，并检查页面缓存和旧版本链接。GitHub/Gitee 同提交、标签及发行附件的既有要求仍适用；OSS 作为下载分发方向，不代替双端发行核验。
 
+2026-11-28 用户确认正式包从 Git 发行提交构建，Ray 和 nmrkit 的手动下载使用 `ciqtek-update-dev` 桶下的独立 `reach/` 前缀。Windows Worker + Agent 通过 Gitee 的发行标签和签名附件检查自动更新。两个入口使用同一安装包字节，以实际下载的 SHA-256 为验收依据。[Windows 整包更新](../installation-update.md#gitee-worker-agent-update)
+
 <a id="desk-bubble-multidownload-20261127"></a>
 ## 对话气泡悬浮操作栏与多平台下载页（2026-11-27）
 
@@ -342,6 +344,40 @@ RyDev 的 0.1.8 和 0.1.9 预览版已分别从 Codex 完成现场 Agent 委托�
   - `.desk` 的毛玻璃与卡片底色拆入 `.desk::before`（`backdrop-filter: blur(18px); z-index: -1; pointer-events: none`），容器本身保持 `isolation: isolate; background: transparent`，不得再在 `.desk` 或外层壳体上直接放置会创建 `position: fixed` 包含块的属性（`backdrop-filter`、`transform`、`filter`、`contain`）。
   - `.ctx-menu` 挂入 `document.body` 并在 `desk.ts` `reset()` 销毁，定位逻辑抽至无 DOM 副作用的 `src/admin/desk-menu.ts`（并已在 `src/service/admin.ts` 注册 `/assets/desk-menu.js`）；贴近视口下/右边沿（`8px` 边距）时按触发源反向翻转并同步 `transform-origin`，键盘 `0,0` `contextmenu` 回退至行锚点，行内重命名 `<input>` 保留原生右键。
 - **验证与当前边界**：`npm run check`、`npm run build:admin`、管理端 12 份测试（54/54）、服务端测试（11/11）及平台单元测试（55/55）全部通过；本地 `127.0.0.1:18921` 无头浏览器验证桌面明暗主题（工作区右键、底边会话上翻、工作区 `⋯` 按钮、`.desk-aside` 抽屉）与 `390×844` 窄屏抽屉下坐标零偏移且无溢出/控制台报错。改动已通过提交 `40bd8a6` 同步至 `origin/main` 与 `gitee/main` 并切换上线至 Ray（`531052`）与 nmrkit（`3121422`），两站服务端静态资源哈希已核对；真实触屏长按、`prefers-reduced-motion` 及生产站登录态后交互待用户实机刷新确认。
+
+<a id="ssh-transport-20261128"></a>
+## SSH 中转、UDP 打洞和连接方式查询（2026-11-28）
+
+用户在 Codex 会话 `01a21fb9-d0e6-7681-aae2-4aab0ff6edd6` 确认，Reach 要支持本机经平台连接目标机的 SSH 中转和 UDP 打洞，管理后台要显示连接方式，MCP 要能查询连接信息。
+
+**安装包和密钥。** 核验的 Windows Worker + Agent 包为 `0.1.9-preview`，SHA-256 为 `41fc956066c8dff4b385649ecf9e8c00ac716afe11b9cac54e074be9c2f4cea5`。包内 6 个载荷条目包括原厂 OpenSSH，其 ZIP 有 34 项，无预置平台 SSH 登录密钥或 `authorized_keys`。Windows 上可用 `ryreach ssh enable` 按需准备 sshd，目标机沿用已有的主机密钥，首次安装随包 sshd 时在目标机生成缺少的主机密钥。每次开隧道时，本机控制器生成临时 Ed25519 密钥对，私钥留在本机，已配对 Worker 为目标账户临时授权公钥。控制器校验目标主机公钥，正常收尾时清理这次授权和临时私钥。[打包规则](../../packaging/windows/prepare-openssh.ps1) · [控制器](../../src/controller/starferry.ts) · [目标机](../../src/node/starferry.rs)
+
+**SSH 数据路径。** 控制器 CLI 的 `ssh-exec` 和 MCP 的 `reach_ssh_exec` 执行单条 SSH 命令。默认先尝试本机与 Worker 的 UDP 直连，握手成功后由两端直接传 SSH 数据。直连协商失败或指定 `allowDirect=false` 时，数据经本机 → Reach 平台 → Worker → 该机 sshd。已开始的命令中途断线，返回 `unknown`，同一隧道中后续新开的流可以走中转。每次独立的 CLI 或 MCP 调用都会按本次参数重新选路。普通命令、文件操作和 Agent 委托另走 Worker 与平台的控制通道。当前 SSH 入口的目标固定为 Worker 本机的 sshd，公开入口只提供单命令，交互登录和 SFTP 尚无入口。[控制端入口](../../src/controller/main.ts) · [平台中转](../../src/service/starferry-store.ts) · [Worker 控制通道](../../src/node/runtime.rs)
+
+**后台与 MCP。** 设备页显示在线状态、心跳和 SSH 就绪情况。服务端可按隧道 ID 读取最近选择的 `selectedPath`，单次 SSH 结果返回该命令所选路径，Worker 收尾回执另有直连与中转的流数。隧道记录的路径可能已经为下一条流切换。设备页与 `reach_node_runtime` 尚缺按设备查询的当前或最近 SSH 路径。[设备详情](../../src/admin/admin.ts) · [设备运行状态](../../src/service/node-runtime-store.ts) · [隧道接口](../../src/service/server.ts)
+
+建议后台与 MCP 共用一份设备连接摘要，分别列出 Worker 最近心跳、sshd 就绪状态、进行中的 SSH 隧道。对已结束的连接标明时间、本次命令所选路径及操作 ID。设备在线但从未开过 SSH 时显示“无 SSH 会话”。下一条流准备走中转时，上一条中断的命令仍保留原路径和结果。展示字段单独选取，握手材料留在控制器协议中。
+
+**Agent 调用与验证。** 本次独立 Codex 子代理发现了 29 个 Reach MCP 工具。主、子会话对当前配置的 `reach_protocol` 均收到 HTTP 401。另在已登录的本机隔离服务上，`reach_protocol`、`reach_nodes`、`reach_node_runtime` 三项只读查询均成功。目标机安装并上报 `agent.delegate` 时，控制器可通过 `reach_submit` 委托设备端 Morrow Agent。设备 Agent 可用命令、文件和已提供的桌面工具，运行时拒绝递归委托。11 月 27 日的 RyDev 0.1.9 真机委托执行成功，平台与设备的 13 条原始事件一致。[MCP 工具](../../src/controller/mcp.ts) · [设备 Agent](../../src/node/agent.rs) · [RyDev 回执](../evidence/2026-11-24-rydev-service-update.md#rydev-019-preview-20261127)
+
+本次使用 Morrow 工作树（HEAD `446c8eb1a811`）的控制器和服务端、上述预览包对应的 Worker、Node.js 24.22.3 及系统 `ssh.exe`。本机 SSH 协议夹具下，受管公钥、直连和中转、握手选路、STUN 回退共 4 项通过，覆盖传输中断后效果只发生一次。正式验收还需在两个独立公网出口核对实际直连，再强制中转，按同一操作对照控制器结果、后台、MCP 与目标机回执，并检查隧道结束后的显示。[SSH 公钥测试](../../tests/ssh-m13.integration.test.ts) · [SSH 数据通路测试](../../tests/starferry-m14.integration.test.ts) · [握手与 STUN 测试](../../tests/starferry-transport.test.ts)
+
+11 月 28 日，RyDev 0.1.9 在生产 Ray 通过两次 `hostname` SSH 实测。默认选中 `udp_direct`，禁用直连时选中 `cloud_relay`。两条路径均有原操作和 Worker 回执，跨公网双 NAT 待验。[RyDev 双路径实测](../evidence/2026-11-24-rydev-service-update.md#rydev-starferry-20261128)
+
+同日，保留 `allowDirect=true`，在控制器进程内丢弃 Starferry `HELLO`，RyDev 的 `hostname` 自动走 `cloud_relay` 成功。Worker 确认 1 条中转流并完成清钥。[握手失败自动中转](../evidence/2026-11-24-rydev-service-update.md#rydev-starferry-auto-relay-20261128)
+
+11 月 28 日另用手机热点连接 RyDev 的办公网出口。两端实际会话的 STUN 公网 IPv4 不同，UDP 握手超时后在 `allowDirect=true` 下自动选择 `cloud_relay`，原 SSH 命令成功。这组出口的 UDP 直连未打通。[跨公网实测](../evidence/2026-11-24-rydev-service-update.md#rydev-dual-nat-20261128)
+
+<a id="starferry-ipv6-20261128"></a>
+### SSH 的 IPv6 直连（2026-11-28）
+
+用户确认 Reach 要支持 IPv6。前述现场测试使用的 0.1.9 Worker 只支持 IPv4 直连。本机手机热点已有全局 IPv6，RyDev 的活动以太网未获得全局 IPv6 或 IPv6 默认路由。[手机热点 IPv6 现场复查](../evidence/2026-11-24-rydev-service-update.md#rydev-ipv6-hotspot-recheck-20261128)
+
+新版控制器和 Worker 各用一个双栈 UDP 套接字探测两族候选。IPv6 使用两端可路由的本机地址，IPv4 公网候选仍通过 STUN 获取。Worker 会响应多个来源发来的已认证 `HELLO`，到首个有效 `OPEN` 才固定对端，避免单向可达的候选抢占路径。所有候选都未完成握手时自动走平台中转，也可显式强制中转。CLI `ssh-exec` 与 MCP `reach_ssh_exec` 的单命令结果用 `directAddressFamily` 记录 `IPv4`、`IPv6` 或 `null`（中转）。传输中断后保留原路径和地址族，命令结果为 `unknown`，不会自动重放。[控制器选路与结果](../../src/controller/starferry.ts) · [Worker 握手](../../src/node/starferry.rs)
+
+在 `446c8eb1a811` 工作树上用 Windows OpenSSH 和本机 SSH 夹具验证。实际 `::1` 与 `127.0.0.1` 直连分别返回 `IPv6` 与 `IPv4`，每次 Worker 收尾均为 1 条直连流、0 条中转流，临时公钥已撤销。强制中转、直连握手失败后的自动中转和传输中断不重放也通过。双栈竞争用例先复现第二候选收不到应答，修正后同一用例确认第二候选可开流，原候选的后续 `OPEN` 被拒。[单地址族 SSH](../../tests/starferry-ipv6.integration.test.ts) · [直连和中转回归](../../tests/starferry-m14.integration.test.ts)
+
+新版控制器配合 0.1.9 Worker，以及 `446c8eb1a811` 的 IPv4 控制器配合新版 Worker，两组混合版本均通过本机 SSH 与中转回归。新版 Worker 的 Debug 编译与 `cargo-test` 通过，QBuild 任务为 `0148ab3467c04ef2907ccc885d4f1723`。新版尚未部署，两个独立公网 IPv6 出口之间的直连待验。
 
 <a id="operations-search-pagination-cleanup-20261128"></a>
 ## 操作记录搜索聚焦、服务端分页与安全清理（2026-11-28）

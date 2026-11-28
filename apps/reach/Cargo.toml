@@ -30,6 +30,7 @@ rusqlite = { version = "0.37", features = ["bundled"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["raw_value"] }
 sha2 = "0.10"
+socket2 = "0.6"
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "process", "time", "io-util", "signal", "sync", "net"] }
 uuid = { version = "1", features = ["v4"] }
 

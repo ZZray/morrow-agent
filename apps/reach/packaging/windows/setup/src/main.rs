@@ -142,6 +142,7 @@ fn run() -> Result<()> {
             println!("{name}_sha256={:x}", Sha256::digest(source.as_bytes()));
         }
         println!("agent_bundled={complete}\nagent_sha256={}", env!("REACH_SETUP_AGENT_SHA"));
+        println!("auto_update_worker_agent={}", complete && !desktop_bundled);
         println!("address_dialog_sha256={:x}", Sha256::digest(ADDRESS_DIALOG));
         return Ok(());
     }
@@ -158,6 +159,7 @@ fn run() -> Result<()> {
     let mut silent = false;
     let mut auto_update = false;
     let mut expected_version: Option<&str> = None;
+    let mut expected_agent_sha256: Option<&str> = None;
     let mut explicit_owner: Option<String> = None;
     let mut preconfigured_server_url: Option<String> = None;
     let mut idx = 0;
@@ -171,6 +173,11 @@ fn run() -> Result<()> {
                 ensure!(expected_version.is_none(), "duplicate expected update version");
                 idx += 1;
                 expected_version = Some(args.get(idx).context("missing expected update version")?);
+            }
+            "--expected-agent-sha256" => {
+                ensure!(expected_agent_sha256.is_none(), "duplicate expected Agent digest");
+                idx += 1;
+                expected_agent_sha256 = Some(args.get(idx).context("missing expected Agent digest")?);
             }
             "--owner" => {
                 idx += 1;
@@ -196,13 +203,18 @@ fn run() -> Result<()> {
     ensure!(
         if auto_update {
             expected_version == Some(env!("REACH_SETUP_VERSION"))
+                && if complete {
+                    expected_agent_sha256 == Some(env!("REACH_SETUP_AGENT_SHA"))
+                } else {
+                    expected_agent_sha256.is_none()
+                }
         } else {
-            expected_version.is_none()
+            expected_version.is_none() && expected_agent_sha256.is_none()
         },
-        "Setup version differs from the verified update manifest"
+        "Setup version or Agent digest differs from the verified update manifest"
     );
     ensure!(
-        !auto_update || (!complete && silent && elevated && !uninstall && preconfigured_server_url.is_none()
+        !auto_update || (silent && elevated && !uninstall && preconfigured_server_url.is_none()
             && windows_identity::current_sid()? == "S-1-5-18"),
         "automatic update requires the LocalSystem installation service"
     );

@@ -7,6 +7,8 @@
 | 条目 | 内容 | 来源与状态 |
 |---|---|---|
 | [操作记录搜索聚焦、分页与 7 天滚动清理](product-decisions.md#operations-search-pagination-cleanup-20261128) | 修复 `.find` 聚焦竖线与窄屏折行、真服务端 `20/50` 分页、去小字备注右键删除、4 范围物理清理与默认 7 天自动滚动保留 | 2026-11-28 用户确认；124/124 单测通过，4bbc977 已同步并双端部署（Ray 733752、nmrkit 956058） |
+| [SSH 中转、UDP 打洞和连接方式查询](product-decisions.md#ssh-transport-20261128) | Windows 包的密钥归属、两条 SSH 数据路径、后台和 MCP 所需的设备连接信息 | 2026-11-28 用户确认。RyDev 办公网直连和生产 Ray 中转通过。手机热点到办公网的 UDP 握手超时，自动回退成功。设备连接摘要待验收 |
+| [SSH 的 IPv6 直连](product-decisions.md#starferry-ipv6-20261128) | IPv4 和 IPv6 共用 UDP 端口，命令结果记录实际地址族，握手失败自动中转 | 2026-11-28 用户确认。Windows 环回、两组混合版本和中转回归通过，公网 IPv6 直连待验 |
 | [侧栏右键与「⋯」菜单视口定位约束](product-decisions.md#desk-ctxmenu-viewport-20261127) | `.desk::before` 隔离 `backdrop-filter` 包含块、`.ctx-menu` 挂至 `body` 及 `desk-menu.ts` 视口翻转算法 | 2026-11-27 用户报错；120/120 单测与 18921 浏览器通过，40bd8a6 已同步并双端部署 |
 | [Reach Desk 布局、悬浮气泡与多平台下载](product-decisions.md#desk-bubble-multidownload-20261127) | HandWave 布局与 Codex 队列、顶栏与窄屏断点、悬浮胶囊操作栏与状态精简，以及多平台下载 UI 与指令直出 | 2026-11-26/27 用户要求；Service 11/11、Admin 53/53、Platform 55/55 单测与浏览器核验通过 |
 | [安装包通过阿里云 OSS 下载](product-decisions.md#installer-download-oss-20261127) | 安装包上传 OSS，下载页使用 OSS 地址的发布方向 | 2026-11-27 用户提出并要求记录；尚未实施、切换或验证 |
