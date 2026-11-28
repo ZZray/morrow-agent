@@ -101,3 +101,17 @@ nmrkit 与 Ray 均切换到发行目录 `20261127-87af0a7-download-0ca9c51c`。�
 - **nmrkit（`labslot-prod-root`，`101.37.76.80:31565`）**：状态 `updated-ledger-preserved`，`reach` PID `956058`，备份 `/root/reach-deploy-backup-20261128-141958`，`/etc/reach/service.env` 保持 `REACH_PIN_ONLY=1` 与 `REACH_PUBLIC_ORIGIN=https://nmrkit.ciqtek.com` 未变。`reach` 与 `nginx` 运行正常，账本保持 1 位用户、1 台设备、17 个操作、375 条事件（0 条超 7 天）及 Desk 1 对话/1 回合/6 事件。公网 HTTPS `/reach/assets/{admin.js,model.js,desk.js,desk-menu.js,admin.css,desk.css}` 均返回 `200` 且 SHA-256 与发布包一致；`/reach/healthz` 与 `/reach/` 返回 `200`，`/` 返回 `307`，匿名 API 返回 `401`。
 
 两站在登录态（Ray SSO / nmrkit PIN）浏览器中去掉小字备注后的右键菜单与 `#/operations` 分页清理需由已登录用户实机刷新核对。
+
+<a id="reach-worker-agent-0110-git-oss-20261128"></a>
+
+## 2026-11-28 Windows Worker + Agent 0.1.10 下载发布
+
+Windows x64 Worker、Agent 和 Setup 由 `reach-worker-agent-v0.1.10` 对应的 Git 提交 `4786bd65183db38cc9a127c12f29e04d7bb9d1bb` 构建。GitHub 和 Gitee 的标签均解析到该提交。安装器 `Reach-Worker-Agent-Setup-x64.exe` 为 24,843,776 字节，SHA-256 为 `8005da6c941a2ba6024be599fb8b4bb1564fd70de92ae2b1f8febedbd92f1d7d`。
+
+`reach-update.json` 和 `reach-update.sig` 分别为更新清单和对应的 Ed25519 签名。清单绑定发行标签、源码提交、版本和安装包摘要。EXE 未加 Windows Authenticode 签名。GitHub 的三个发行附件已重新下载并核对摘要。Gitee 的源码和标签已推送，三个自动更新附件待有发行权限的账号登录后发布。 [GitHub 发行版](https://github.com/ZZray/morrow-agent/releases/tag/reach-worker-agent-v0.1.10) · [Gitee 发行页](https://gitee.com/rzjw/morrow-agent/releases)
+
+手动安装包已上传到阿里云 `ciqtek-update-dev/reach/releases/` 下的 `reach-worker-agent-v0.1.10` 目录。nmrkit 使用公网 HTTPS 地址完整下载，响应为 HTTP 200，文件大小和 SHA-256 与 Git 构建产物一致。 [OSS 安装包](https://ciqtek-update-dev.oss-cn-hangzhou.aliyuncs.com/reach/releases/reach-worker-agent-v0.1.10/Reach-Worker-Agent-Setup-x64.exe)
+
+Ray 和 nmrkit 的下载清单均已切换到 `0.1.10`，共用上述 OSS 地址。清单 SHA-256 由 `72be31701b3249fc0793d17e070138542c8d871a639af941db2f74a21b696052` 更新为 `e102fdb587c41813f8e4fccabb689ec2363028f343f0afaab9685e5bb5c9ecd3`。两站按实际运行服务的用户和读取入口复核，Reach PID 分别为 `733752` 与 `956058`，公网健康检查均返回 HTTP 200。Ray 的已登录 `/api/v1/releases` 返回 `0.1.10`、正确摘要和 OSS 地址。两站分别将旧清单备份到 `/root/reach-git-0.1.10-4786bd6/manifest-original.json`。
+
+从 `0.1.9-preview` 迁移到该更新通道需先手动安装 0.1.10。Windows 安装事务 26 项和 OpenSSH 7 项回归通过。nmrkit 登录态页面、Windows 服务跨版本自动更新和公网 IPv6 SSH 仍待实测。
