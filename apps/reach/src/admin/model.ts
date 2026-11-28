@@ -6,7 +6,17 @@ export interface Device {
   id: string; name: string; platform: string; version: string; epoch: number; last_seen: number | null; revoked: number; capabilities: string[]; online: boolean;
   lastHeartbeatAt?: number | null; residentState?: string; effectiveHeartbeatSeconds?: number; effectiveConfigVersion?: number; desiredConfig?: DesiredConfig | null; sshStatus?: SshStatus | null;
 }
-export interface OperationSummary { id: string; node_id: string; request_id: string; kind: string; delivery: string; execution: string; cancel_requested: number; created_at: number; updated_at: number }
+export interface OperationSummary { id: string; node_id: string; request_id: string; kind: string; delivery: string; execution: string; cancel_requested: number; created_at: number; updated_at: number; protected?: boolean }
+export type CleanupScope = 'failed_cancelled' | 'older_7d' | 'older_30d' | 'done';
+export interface OperationPageResponse {
+  operations: OperationSummary[];
+  total: number;
+  limit: number;
+  offset: number;
+  counts: Record<OperationFilter, number>;
+  summary: { succeeded: number; activeOnly: number; failedCancelled: number; attention: number };
+}
+export interface CleanupPreviewResponse { scope: CleanupScope; matched: number; deletable: number; skippedProtected: number; alwaysKept: number }
 export interface DeviceEvent { sequence: number; nodeId: string; nodeName: string; epoch: number; kind: 'first_online' | 'reconnected'; offlineSince: number | null; at: number; read: boolean }
 
 // ---------- 路由：hash 路由，刷新详情仍能回到原处，不依赖服务端回退 ----------
@@ -83,6 +93,19 @@ export function filterOperations(operations: OperationSummary[], filter: Operati
       || (filter === 'attention' && needsAttention(op))
       || (filter === 'done' && terminalStates.has(op.execution) && !needsAttention(op)))
     && (!needle || [op.id, op.request_id, op.kind, kindLabel(op.kind), deviceName(op.node_id)].some(value => value.toLowerCase().includes(needle))));
+}
+export function paginationModel(total: number, page: number, pageSize: number): { current: number; totalPages: number; items: (number | 'ellipsis')[] } {
+  const size = Math.max(1, Math.floor(pageSize));
+  const totalPages = Math.max(1, Math.ceil(Math.max(0, total) / size));
+  const current = Math.min(totalPages, Math.max(1, Math.floor(page)));
+  if (totalPages <= 7) return { current, totalPages, items: Array.from({ length: totalPages }, (_, i) => i + 1) };
+  const items: (number | 'ellipsis')[] = [1];
+  const start = Math.max(2, current - 1), end = Math.min(totalPages - 1, current + 1);
+  if (start > 2) items.push('ellipsis');
+  for (let p = start; p <= end; p++) items.push(p);
+  if (end < totalPages - 1) items.push('ellipsis');
+  items.push(totalPages);
+  return { current, totalPages, items };
 }
 
 // ---------- 时间文案：今天 14:00 / 昨天 09:12 / 11月3日 14:00 ----------

@@ -4,8 +4,9 @@ import { availabilityStrip, barList, donut, lineChart } from './charts.js';
 import { Dropdown } from './dropdown.js';
 import { consoleSections } from './shell.js';
 import { mountDesk } from './desk.js';
+import { contextMenuPoint, placeFloatingMenu } from './desk-menu.js';
 import * as M from './model.js';
-import type { Device, DeviceEvent, Json, OperationSummary, Release, ReleaseArch, ReleaseAsset, ReleaseOs, Route, Tone, WebKind } from './model.js';
+import type { CleanupPreviewResponse, CleanupScope, Device, DeviceEvent, Json, OperationPageResponse, OperationSummary, Release, ReleaseArch, ReleaseAsset, ReleaseOs, Route, Tone, WebKind } from './model.js';
 import { accentPresets, currentAccent, currentTheme, defaultAccent, restoreAppearance, setAccent, setTheme } from './theme.js';
 import type { ThemeChoice } from './theme.js';
 
@@ -42,6 +43,11 @@ let deviceFilter: M.DeviceFilter = 'all';
 let deviceQuery = '';
 let operationFilter: M.OperationFilter = 'all';
 let operationQuery = '';
+let operationPage = 1;
+let operationPageSize: 20 | 50 = 20;
+let operationPageData: OperationPageResponse | null = null;
+let operationPageSequence = 0;
+let opCtxMenu: HTMLElement | null = null;
 let downloadOs: ReleaseOs | null = null;
 let downloadArch: 'all' | ReleaseArch = 'all';
 let downloadHistoryAll = false;
@@ -92,6 +98,7 @@ const iconPaths: Record<string, string[]> = {
   win: ['M4 5.5L10.5 4.6v6.7H4z', 'M12.5 4.3L20 3.2v8.1h-7.5z', 'M4 13h6.5v6.4L4 18.5z', 'M12.5 13H20v7.8l-7.5-1.1z'],
   mac: ['M4 6.5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8.5H4z', 'M2 17h20', 'M9 17v1.5h6V17'],
   linux: ['M4 5.5a1.5 1.5 0 0 1 1.5-1.5h13A1.5 1.5 0 0 1 20 5.5v13a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18.5z', 'M8 9.5l3 2.5-3 2.5', 'M12.5 15.5h4'],
+  trash: ['M3 6h18', 'M8 6V4h8v2', 'M19 6l-1 14H6L5 6'],
 };
 function icon(name: string) {
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); svg.setAttribute('viewBox', '0 0 24 24'); svg.setAttribute('class', 'ic'); svg.setAttribute('aria-hidden', 'true');
@@ -149,7 +156,7 @@ class HttpError extends Error { status: number; code: string; constructor(status
 async function api<T>(path: string, method = 'GET', input?: unknown): Promise<T> {
   const epoch = generation;
   let response: Response;
-  try { response = await fetch(new URL(`../api/v1${path}`, import.meta.url), { method, credentials: 'same-origin', redirect: 'error', cache: 'no-store', signal: AbortSignal.timeout(20000), headers: { ...(method === 'GET' ? {} : { 'content-type': 'application/json', 'x-reach-csrf': user?.csrf ?? '' }) }, body: method === 'GET' ? undefined : JSON.stringify(input ?? {}) }); }
+  try { response = await fetch(new URL(`../api/v1${path}`, import.meta.url), { method, credentials: 'same-origin', redirect: 'error', cache: 'no-store', signal: AbortSignal.timeout(20000), headers: { ...(method === 'GET' ? {} : { 'content-type': 'application/json', 'x-reach-csrf': user?.csrf ?? '' }) }, body: method === 'GET' || (method === 'DELETE' && input === undefined) ? undefined : JSON.stringify(input ?? {}) }); }
   catch { if (epoch !== generation) throw new StaleRequest(); throw new Error(method === 'GET' ? '连接未完成。已显示的记录可能已过时，请刷新。' : '没有收到确认。请先刷新核对状态；已发生的操作不会自动重试。'); }
   let result: { error?: { code?: string; message?: string } } & Record<string, unknown>;
   try { result = await response.json(); } catch { if (epoch !== generation) throw new StaleRequest(); throw new HttpError(response.status, 'invalid_response', `服务返回了无法识别的内容（${response.status}）`); }
@@ -171,9 +178,10 @@ function dismiss(node: HTMLElement) {
   if (reducedMotion()) { node.remove(); return; }
   node.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(-4px) scale(0.98)' }], { duration: 140, easing: easeOut, fill: 'forwards' }).onfinish = () => node.remove();
 }
-function closePopovers() { document.querySelectorAll<HTMLElement>('.popover:not([data-leaving])').forEach(dismiss); }
+function closeOpCtxMenu() { if (!opCtxMenu) return; opCtxMenu.remove(); opCtxMenu = null; }
+function closePopovers() { closeOpCtxMenu(); document.querySelectorAll<HTMLElement>('.popover:not([data-leaving])').forEach(dismiss); }
 function clearSession() {
-  generation++; viewGeneration++; refreshSequence++; user = null; devices = []; operations = []; unresolvedCount = 0; updatedAt = 0; pairing = null;
+  generation++; viewGeneration++; refreshSequence++; operationPageSequence++; user = null; devices = []; operations = []; operationPageData = null; unresolvedCount = 0; updatedAt = 0; pairing = null;
   deviceEvents = []; eventCursor = null; unreadCount = 0; eventsAvailable = true; top = null; main = null; notice = null;
   clearInterval(refreshTimer); refreshTimer = 0; closePopovers();
   document.querySelectorAll('dialog').forEach(dialog => { dialog.close(); dialog.remove(); });
@@ -236,8 +244,14 @@ async function backgroundRefresh() {
   const before = JSON.stringify([devices, operations, unresolvedCount, deviceEvents.length, unreadCount]);
   try { await refresh(false); } catch { return; }
   await pollEvents();
+  if (document.querySelector('dialog[open]') || document.querySelector('.popover') || (opCtxMenu && !opCtxMenu.hidden)) return;
+  if (route.page === 'operations') {
+    if (document.activeElement?.closest('.find')) return;
+    if (before !== JSON.stringify([devices, operations, unresolvedCount, deviceEvents.length, unreadCount])) void reloadLiveOperations();
+    return;
+  }
   // 只在列表页且数据有变时重绘，避免打断详情页里的输入。
-  if ((route.page === 'devices' || route.page === 'operations') && before !== JSON.stringify([devices, operations, unresolvedCount, deviceEvents.length, unreadCount]) && !document.querySelector('dialog[open]') && !document.querySelector('.popover')) render();
+  if (route.page === 'devices' && before !== JSON.stringify([devices, operations, unresolvedCount, deviceEvents.length, unreadCount])) render();
 }
 function showShell() {
   app.replaceChildren(); closePopovers();
@@ -335,7 +349,7 @@ async function drawPage() {
   switch (route.page) {
     case 'devices': drawDevices(); break;
     case 'device': drawDevice(route.id); break;
-    case 'operations': drawOperations(); break;
+    case 'operations': await drawOperations(); break;
     case 'operation': await drawOperation(route.id); break;
     case 'stats': drawStats(); break;
     case 'downloads': await drawDownloads(); break;
@@ -424,7 +438,7 @@ function drawDevices() {
   const grid = el('div', 'grid');
   const recent = el('section', 'card flush s8'); recent.append(cardHead('最近操作', '', arrowLink({ page: 'operations' }, '查看全部操作')));
   if (!operations.length) { const empty = el('div', 'empty'); empty.append(el('p', '', '从设备详情或本机 MCP 发起操作后，状态和原始回执会出现在这里。')); recent.append(empty); }
-  else recent.append(operationRows(operations.slice(0, 6)));
+  else recent.append(operationRows(operations.slice(0, 6), true, openOperationMenu));
   const side = el('div', 'stack s4'); side.append(notificationCard());
   grid.append(recent, side); page.append(grid);
 }
@@ -642,12 +656,13 @@ function drawHeartbeat(card: HTMLElement, device: Device, history: ConfigHistory
 
 // ---------- 操作 ----------
 function deviceName(id: string) { return devices.find(d => d.id === id)?.name ?? id.slice(0, 8); }
-function operationRows(list: OperationSummary[], withDevice = true) {
+function operationRows(list: OperationSummary[], withDevice = true, onMenu?: (event: MouseEvent, op: OperationSummary, row: HTMLElement) => void) {
   const rows = el('div', `rows ${withDevice ? 'ops' : 'ops-own'}`); const head = el('div', 'rows-h');
   (withDevice ? ['操作', '设备', '执行状态', '投递', '发起时间'] : ['操作', '执行状态', '投递', '发起时间']).forEach((label, i) => head.append(el('span', (withDevice ? i === 1 || i === 3 : i === 2) ? 'hide-sm' : i === (withDevice ? 4 : 3) ? 'end' : '', label)));
   rows.append(head);
   for (const op of list) {
     const row = el('a', 'row'); row.href = M.routeHash({ page: 'operation', id: op.id });
+    if (onMenu) row.addEventListener('contextmenu', event => onMenu(event, op, row));
     const name = el('span', 'cell2'); const copyBox = el('span'); copyBox.append(el('b', '', M.kindLabel(op.kind)), el('small', 'mono', op.id));
     name.append(avatar(M.kindIcon(op.kind), M.stateTone(op.execution)), copyBox);
     const state = el('span', 'cell'); state.append(pill(M.stateNames[op.execution] ?? op.execution, M.stateTone(op.execution), op.execution === 'running'));
@@ -659,54 +674,293 @@ function operationRows(list: OperationSummary[], withDevice = true) {
   }
   return rows;
 }
-function drawOperations() {
-  const search = finder('搜索操作、设备或原操作 ID', operationQuery, value => { operationQuery = value; drawOperationRows(); });
-  const launch = button('发起操作', () => openSubmit(null), 'btn primary', 'play');
-  if (!devices.some(d => !d.revoked && M.availableKinds(d.capabilities).length)) { launch.disabled = true; launch.title = '还没有可从网页发起操作的设备'; }
-  const page = header('操作', null, iconButton('refresh', '刷新', () => refresh()), launch);
-  if (!updatedAt) { page.append(el('p', 'muted', '正在读取操作…')); return; }
-  const count = (filter: M.OperationFilter) => M.filterOperations(operations, filter, '', deviceName).length;
-  const failed = operations.filter(op => op.execution === 'failed' || op.execution === 'cancelled').length;
-  const succeeded = operations.filter(op => op.execution === 'succeeded').length;
-  const hero = el('div', 'hero');
-  if (operations.length) hero.append(segbar([['已成功', succeeded, 'ink'], ['进行中', count('active') - operations.filter(op => M.isActive(op) && M.needsAttention(op)).length, 'accent'], ['失败或取消', failed, 'hatch-part'], ['待核对', count('attention'), 'line']]));
-  else hero.append(el('div', 'grow'));
-  hero.append(bignums([['最近记录', operations.length, 'ops'], ['进行中', count('active'), 'play'], ['待核对', count('attention'), 'alert']]));
-  page.append(hero);
-  if (unresolvedCount) message(`${unresolvedCount} 项操作的实际结果尚未确定，请打开原记录核对；Reach 不会重新执行它们。`, 'warn');
-  const card = el('section', 'card flush'); card.setAttribute('aria-label', '操作列表');
-  const head = cardHead('操作记录');
-  head.append(chips<M.OperationFilter>([['all', '全部', operations.length], ['active', '进行中', count('active')], ['attention', '待核对', count('attention')], ['done', '已结束', count('done')]], operationFilter, value => { operationFilter = value; render(); }), search.box);
-  const body = el('div', 'op-body');
-  card.append(head, body); page.append(card);
-  drawOperationRows();
-  if (operations.length >= 200) page.append(el('p', 'hint', '这里显示最近 200 条；更早的记录可在搜索里输入完整的原操作 ID 打开。'));
-  if (operationQuery) requestAnimationFrame(() => { search.input.focus(); search.input.setSelectionRange(operationQuery.length, operationQuery.length); });
+function operationsApiQuery(page: number) {
+  const params = new URLSearchParams({
+    limit: String(operationPageSize),
+    offset: String((page - 1) * operationPageSize),
+    filter: operationFilter,
+  });
+  if (operationQuery.trim()) params.set('q', operationQuery.trim());
+  return `/operations?${params.toString()}`;
 }
-function drawOperationRows() {
-  const body = main?.querySelector<HTMLElement>('.op-body'); if (!body) return;
+async function fetchOperationsPageData(): Promise<OperationPageResponse> {
+  const epoch = generation, seq = ++operationPageSequence;
+  let data = await api<OperationPageResponse>(operationsApiQuery(operationPage));
+  if (epoch !== generation || seq !== operationPageSequence) throw new StaleRequest();
+  const totalPages = Math.max(1, Math.ceil(data.total / operationPageSize));
+  if (operationPage > totalPages) {
+    operationPage = totalPages;
+    data = await api<OperationPageResponse>(operationsApiQuery(operationPage));
+    if (epoch !== generation || seq !== operationPageSequence) throw new StaleRequest();
+  }
+  operationPageData = data;
+  return data;
+}
+function renderOperationsHero(hero: HTMLElement, data: OperationPageResponse) {
+  hero.replaceChildren();
+  if (data.counts.all) hero.append(segbar([['已成功', data.summary.succeeded, 'ink'], ['进行中', data.summary.activeOnly, 'accent'], ['失败或取消', data.summary.failedCancelled, 'hatch-part'], ['待核对', data.summary.attention, 'line']]));
+  else hero.append(el('div', 'grow'));
+  hero.append(bignums([['全部记录', data.counts.all, 'ops'], ['进行中', data.counts.active, 'play'], ['待核对', data.counts.attention, 'alert']]));
+}
+function renderOperationPager(data: OperationPageResponse) {
+  const pager = el('div', 'pager');
+  const left = el('div', 'pager-left');
+  const model = M.paginationModel(data.total, operationPage, operationPageSize);
+  operationPage = model.current;
+  const from = data.total === 0 ? 0 : data.offset + 1;
+  const to = Math.min(data.total, data.offset + data.operations.length);
+  left.append(el('span', '', data.total ? `第 ${from}–${to} 条 · 共 ${data.total} 条（第 ${model.current} / ${model.totalPages} 页）` : '共 0 条'));
+  const sizes = el('div', 'pager-sizes'); sizes.setAttribute('role', 'group'); sizes.setAttribute('aria-label', '每页显示条数');
+  for (const size of [20, 50] as const) {
+    const b = el('button', '', `${size} 条/页`); b.type = 'button'; b.setAttribute('aria-pressed', String(operationPageSize === size));
+    b.addEventListener('click', () => { if (operationPageSize === size) return; operationPageSize = size; operationPage = 1; void reloadLiveOperations(); });
+    sizes.append(b);
+  }
+  left.append(sizes);
+  const nav = el('nav', 'pager-nav'); nav.setAttribute('aria-label', '操作列表分页');
+  const go = (next: number) => { if (next < 1 || next > model.totalPages || next === model.current) return; operationPage = next; void reloadLiveOperations(); };
+  const prev = el('button', 'btn sm', '上一页'); prev.type = 'button'; prev.disabled = model.current <= 1; prev.addEventListener('click', () => go(model.current - 1));
+  nav.append(prev);
+  for (const item of model.items) {
+    if (item === 'ellipsis') { nav.append(el('span', 'pager-gap', '…')); continue; }
+    const p = el('button', 'btn sm', String(item)); p.type = 'button';
+    if (item === model.current) p.setAttribute('aria-current', 'page');
+    p.addEventListener('click', () => go(item));
+    nav.append(p);
+  }
+  const next = el('button', 'btn sm', '下一页'); next.type = 'button'; next.disabled = model.current >= model.totalPages; next.addEventListener('click', () => go(model.current + 1));
+  nav.append(next);
+  pager.append(left, nav);
+  return pager;
+}
+function paintOperationsInto(hero: HTMLElement, chipsSlot: HTMLElement, body: HTMLElement, data: OperationPageResponse) {
+  renderOperationsHero(hero, data);
+  chipsSlot.replaceChildren(chips<M.OperationFilter>([
+    ['all', '全部', data.counts.all],
+    ['active', '进行中', data.counts.active],
+    ['attention', '待核对', data.counts.attention],
+    ['done', '已结束', data.counts.done],
+  ], operationFilter, value => { operationFilter = value; operationPage = 1; void reloadLiveOperations(); }));
   body.replaceChildren();
   const query = operationQuery.trim();
-  if (M.uuidPattern.test(query) && !operations.some(op => op.id === query.toLowerCase())) {
-    const empty = el('div', 'empty'); empty.append(el('h2', '', '不在最近 200 条里'), el('p', '', '可以直接按原操作 ID 打开它的记录。'), button('打开这条记录', () => navigate({ page: 'operation', id: query.toLowerCase() }), 'btn primary'));
+  if (!data.total && M.uuidPattern.test(query)) {
+    const empty = el('div', 'empty'); empty.append(el('h2', '', '列表里没有这条记录'), el('p', '', '你可以按原操作 ID 直接尝试打开详情页。'), button('打开这条记录', () => navigate({ page: 'operation', id: query.toLowerCase() }), 'btn primary'));
     body.append(empty); return;
   }
-  const shown = M.filterOperations(operations, operationFilter, operationQuery, deviceName);
-  if (!operations.length) { const empty = el('div', 'empty'); empty.append(el('h2', '', '还没有操作记录'), el('p', '', '从设备详情或本机 MCP 发起操作后，可以在这里查看状态、原始回执和产物。')); body.append(empty); return; }
-  if (!shown.length) { const empty = el('div', 'empty'); empty.append(el('h2', '', '没有符合条件的操作'), el('p', '', '换个筛选条件或搜索词试试。')); body.append(empty); return; }
-  body.append(operationRows(shown));
+  if (!data.counts.all) {
+    const empty = el('div', 'empty'); empty.append(el('h2', '', '还没有操作记录'), el('p', '', '从设备详情或本机 MCP 发起操作后，可以在这里查看状态、原始回执和产物。'));
+    body.append(empty); return;
+  }
+  if (!data.operations.length) {
+    const empty = el('div', 'empty'); empty.append(el('h2', '', '没有符合条件的操作'), el('p', '', '换个筛选条件或搜索词试试。'));
+    body.append(empty); return;
+  }
+  body.append(operationRows(data.operations, true, openOperationMenu), renderOperationPager(data));
+}
+async function reloadLiveOperations(syncOverview = false) {
+  const live = document.getElementById('main') ?? main;
+  const hero = live?.querySelector<HTMLElement>('.op-hero'), chipsSlot = live?.querySelector<HTMLElement>('.op-chips'), body = live?.querySelector<HTMLElement>('.op-body');
+  if (!hero || !chipsSlot || !body) { render(); return; }
+  const targetView = viewGeneration;
+  try {
+    if (syncOverview) await refresh(false);
+    const data = await fetchOperationsPageData();
+    if (targetView !== viewGeneration || !body.isConnected) return;
+    paintOperationsInto(hero, chipsSlot, body, data);
+  } catch (error) {
+    if (!(error instanceof StaleRequest) && targetView === viewGeneration) message(error instanceof Error ? error.message : '操作列表读取失败', 'error');
+  }
+}
+async function drawOperations() {
+  const search = finder('搜索操作、设备或原操作 ID', operationQuery, value => { operationQuery = value; operationPage = 1; void reloadLiveOperations(); }, 220);
+  const launch = button('发起操作', () => openSubmit(null), 'btn primary', 'play');
+  if (!devices.some(d => !d.revoked && M.availableKinds(d.capabilities).length)) { launch.disabled = true; launch.title = '还没有可从网页发起操作的设备'; }
+  const cleanupBtn = button('清理记录', openCleanupOperationsDialog, 'btn', 'trash');
+  const page = header('操作', null, iconButton('refresh', '刷新', async () => { await refresh(false); await reloadLiveOperations(); }), cleanupBtn, launch);
+  if (!updatedAt) { page.append(el('p', 'muted', '正在读取操作…')); return; }
+  const hero = el('div', 'hero op-hero');
+  const chipsSlot = el('div', 'op-chips');
+  const card = el('section', 'card flush'); card.setAttribute('aria-label', '操作列表');
+  const head = cardHead('操作记录');
+  head.append(chipsSlot, search.box);
+  const body = el('div', 'op-body');
+  card.append(head, body);
+  page.append(hero);
+  if (unresolvedCount) message(`${unresolvedCount} 项操作的实际结果尚未确定，请打开原记录核对；Reach 不会重新执行它们。`, 'warn');
+  page.append(card);
+  const targetView = viewGeneration;
+  try {
+    const data = await fetchOperationsPageData();
+    if (targetView !== viewGeneration) return;
+    paintOperationsInto(hero, chipsSlot, body, data);
+  } catch (error) {
+    if (error instanceof StaleRequest || targetView !== viewGeneration) return;
+    if (operationPageData) paintOperationsInto(hero, chipsSlot, body, operationPageData);
+    else body.append(el('p', 'notice error', error instanceof Error ? error.message : '读取操作记录失败'));
+  }
+}
+function openOperationMenu(event: MouseEvent, op: OperationSummary, row: HTMLElement) {
+  event.preventDefault(); event.stopPropagation(); closeOpCtxMenu();
+  const menu = el('div', 'ctx-menu'); menu.setAttribute('role', 'menu'); menu.setAttribute('aria-label', '操作记录菜单');
+  const mkItem = (label: string, ico: string, action: () => void, cls = '') => {
+    const b = el('button', `ctx-item${cls ? ` ${cls}` : ''}`); b.type = 'button'; b.setAttribute('role', 'menuitem');
+    b.append(icon(ico), el('span', '', label));
+    b.addEventListener('click', () => { closeOpCtxMenu(); action(); });
+    return b;
+  };
+  menu.append(
+    mkItem('打开详情', 'arrow', () => navigate({ page: 'operation', id: op.id })),
+    mkItem('复制原操作 ID', 'copy', () => copy(op.id, ok => message(ok ? '已复制原操作 ID' : '未能访问剪贴板，请进入详情复制。', ok ? 'ok' : 'warn'))),
+    el('div', 'ctx-sep'),
+  );
+  const isProtected = op.protected ?? (!['succeeded', 'failed', 'cancelled'].includes(op.execution) || op.delivery === 'uncertain');
+  const del = mkItem('删除记录', 'trash', () => openDeleteOperationDialog(op), 'danger');
+  if (isProtected) {
+    del.disabled = true;
+    del.title = '进行中、结果未知或关联了 Agent / 资料库 / 通道的记录受保护，不能删除';
+  }
+  menu.append(del);
+  document.body.append(menu); opCtxMenu = menu;
+  const pt = contextMenuPoint(event, row.getBoundingClientRect());
+  const pos = placeFloatingMenu({ x: pt.x, y: pt.y, width: menu.offsetWidth || 196, height: menu.offsetHeight || 168, viewportWidth: window.innerWidth, viewportHeight: window.innerHeight, flipUpFrom: pt.flipUpFrom });
+  menu.style.left = `${pos.left}px`; menu.style.top = `${pos.top}px`;
+  menu.style.transformOrigin = `${pos.flipX ? 'right' : 'left'} ${pos.flipY ? 'bottom' : 'top'}`;
+  menu.querySelector<HTMLElement>('.ctx-item:not(:disabled)')?.focus();
+}
+function openDeleteOperationDialog(op: OperationSummary) {
+  if (document.querySelector('dialog[open]')) return;
+  const dialog = modal('确认删除操作记录');
+  dialog.append(el('p', '', '确定从数据库永久删除这条操作记录？其原始回执、产物以及对应统计计数都会一并删除，且不可恢复。'));
+  dialog.append(kvList([
+    ['操作', M.kindLabel(op.kind)],
+    ['设备', deviceName(op.node_id)],
+    ['状态', M.stateNames[op.execution] ?? op.execution],
+    ['发起时间', time(op.created_at)],
+    ['原操作 ID', op.id, true],
+  ]));
+  const status = el('p', 'notice'); status.setAttribute('role', 'alert'); status.style.marginTop = '12px'; dialog.append(status);
+  const actions = el('div', 'actions');
+  actions.append(
+    button('取消', () => dialog.close(), 'btn ghost'),
+    button('确认永久删除', async () => {
+      const epoch = generation;
+      try {
+        await api<{ deleted: boolean }>(`/operations/${encodeURIComponent(op.id)}`, 'DELETE');
+        dialog.close();
+        if (epoch === generation) {
+          await reloadLiveOperations(true);
+          message('已永久删除该条操作记录。', 'ok');
+        }
+      } catch (error) {
+        if (dialog.open && !(error instanceof StaleRequest)) {
+          status.className = 'notice error';
+          status.textContent = error instanceof Error ? error.message : '删除未完成';
+        }
+      }
+    }, 'btn danger solid'),
+  );
+  dialog.append(actions); dialog.showModal();
+}
+function openCleanupOperationsDialog() {
+  if (document.querySelector('dialog[open]')) return;
+  const dialog = modal('清理操作记录');
+  dialog.append(el('p', '', '系统会自动滚动保留最近 7 天的记录（超期独立已结束记录会定期删除）；你也可以在这里按需立即手动清理。进行中、待核对以及关联了 Agent 任务、资料库或 Starferry 通道的记录会自动跳过保护。'));
+  const scopes: [CleanupScope, string, string][] = [
+    ['failed_cancelled', '仅已失败与已取消', '清理所有执行失败或已取消的独立记录'],
+    ['older_7d', '7 天前已结束', '清理发起时间早于 7 天的已结束独立记录'],
+    ['older_30d', '30 天前已结束', '清理发起时间早于 30 天的已结束独立记录'],
+    ['done', '全部已结束记录', '清理所有已成功、已失败及已取消的独立记录'],
+  ];
+  let chosen: CleanupScope = 'failed_cancelled';
+  let previewSeq = 0;
+  let lastPreview: CleanupPreviewResponse | null = null;
+  const scopeGrid = el('div', 'cleanup-scopes'); scopeGrid.setAttribute('role', 'radiogroup'); scopeGrid.setAttribute('aria-label', '选择清理范围');
+  const previewBox = el('p', 'notice'); previewBox.setAttribute('role', 'status'); previewBox.style.marginTop = '14px';
+  let busyCleaning = false;
+  const confirmBtn = button('确认清理', async () => {
+    if (!lastPreview || !lastPreview.deletable || busyCleaning) return;
+    const epoch = generation;
+    const scope = chosen;
+    busyCleaning = true;
+    try {
+      const result = await api<{ deleted: number; skippedProtected: number }>('/operations/cleanup', 'POST', { scope });
+      dialog.close();
+      if (epoch === generation) {
+        operationPage = 1;
+        await reloadLiveOperations(true);
+        message(`已清理 ${result.deleted} 条操作记录${result.skippedProtected ? `（跳过 ${result.skippedProtected} 条受保护记录）` : ''}。`, 'ok');
+      }
+    } catch (error) {
+      if (dialog.open && !(error instanceof StaleRequest)) {
+        previewBox.className = 'notice error';
+        previewBox.textContent = error instanceof Error ? error.message : '清理未完成，请刷新列表后重试';
+      }
+    } finally {
+      busyCleaning = false;
+    }
+  }, 'btn danger solid');
+  confirmBtn.disabled = true;
+  const loadPreview = async () => {
+    const seq = ++previewSeq;
+    lastPreview = null;
+    confirmBtn.disabled = true;
+    (confirmBtn.querySelector('span') ?? confirmBtn).textContent = '确认清理';
+    previewBox.className = 'notice'; previewBox.textContent = '正在统计可清理条数…';
+    try {
+      const p = await api<CleanupPreviewResponse>(`/operations/cleanup?scope=${encodeURIComponent(chosen)}`);
+      if (!dialog.open || seq !== previewSeq) return;
+      lastPreview = p;
+      confirmBtn.disabled = p.deletable === 0;
+      (confirmBtn.querySelector('span') ?? confirmBtn).textContent = p.deletable ? `确认清理 ${p.deletable} 条` : '没有可清理的记录';
+      previewBox.className = p.deletable ? 'notice warn' : 'notice';
+      const keptNote = p.alwaysKept ? `；另保留 ${p.alwaysKept} 条进行中/待核对记录` : '';
+      previewBox.textContent = p.deletable
+        ? `匹配 ${p.matched} 条：将永久删除 ${p.deletable} 条独立已结束记录，跳过 ${p.skippedProtected} 条受保护关联记录${keptNote}。此操作不可恢复。`
+        : `当前范围内没有可删除的独立已结束记录（跳过 ${p.skippedProtected} 条受保护关联记录${keptNote}）。`;
+    } catch (error) {
+      if (dialog.open && !(error instanceof StaleRequest) && seq === previewSeq) {
+        previewBox.className = 'notice error';
+        previewBox.textContent = error instanceof Error ? error.message : '统计失败';
+      }
+    }
+  };
+  const buttons: HTMLButtonElement[] = [];
+  for (const [value, title, desc] of scopes) {
+    const opt = el('button', 'cleanup-opt'); opt.type = 'button'; opt.setAttribute('role', 'radio'); opt.setAttribute('aria-checked', String(value === chosen));
+    const copyBox = el('span', 'cleanup-opt-copy'); copyBox.append(el('b', '', title), el('small', '', desc));
+    opt.append(el('span', 'cleanup-opt-dot'), copyBox);
+    opt.addEventListener('click', () => {
+      if (busyCleaning || chosen === value) return;
+      chosen = value;
+      buttons.forEach((b, idx) => b.setAttribute('aria-checked', String(scopes[idx][0] === chosen)));
+      void loadPreview();
+    });
+    buttons.push(opt); scopeGrid.append(opt);
+  }
+  const actions = el('div', 'actions'); actions.append(button('取消', () => dialog.close(), 'btn ghost'), confirmBtn);
+  dialog.append(scopeGrid, previewBox, actions); dialog.showModal();
+  void loadPreview();
 }
 // ---------- 搜索：从图标原地伸出 ----------
-function finder(placeholder: string, value: string, onInput: (value: string) => void) {
+function finder(placeholder: string, value: string, onInput: (value: string) => void, debounceMs = 0) {
   const box = el('div', `find${value ? ' open' : ''}`); const slot = el('span', 'find-slot'); const input = el('input'); input.type = 'search'; input.placeholder = placeholder; input.value = value; input.setAttribute('aria-label', placeholder);
   slot.append(input);
+  let timer = 0;
+  const emit = (next: string, immediate = false) => {
+    window.clearTimeout(timer);
+    if (immediate || !debounceMs) { onInput(next); return; }
+    timer = window.setTimeout(() => onInput(next), debounceMs);
+  };
   const toggle = iconButton('search', '搜索', () => {
     if (!box.classList.contains('open')) { box.classList.add('open'); input.focus(); return; }
-    if (input.value) { input.value = ''; onInput(''); }
+    if (input.value) { input.value = ''; emit('', true); }
     box.classList.remove('open');
   }, 'btn icon');
-  input.addEventListener('input', () => onInput(input.value));
-  input.addEventListener('keydown', event => { if (event.key === 'Escape') { input.value = ''; onInput(''); box.classList.remove('open'); toggle.focus(); } });
+  input.addEventListener('input', () => emit(input.value));
+  input.addEventListener('keydown', event => {
+    if (event.key === 'Enter' && debounceMs) { window.clearTimeout(timer); onInput(input.value); }
+    else if (event.key === 'Escape') { input.value = ''; emit('', true); box.classList.remove('open'); toggle.focus(); }
+  });
   input.addEventListener('blur', () => { if (!input.value) box.classList.remove('open'); });
   box.append(toggle, slot); return { box, input };
 }
@@ -1883,13 +2137,18 @@ function updateFreshness() {
   (item.querySelector('span') ?? item).textContent = text; item.title = `每 ${REFRESH_MS / 1000} 秒自动同步，点击立即刷新`;
 }
 setInterval(updateFreshness, 5000);
+document.addEventListener('pointerdown', event => {
+  if (opCtxMenu && !(event.target instanceof Node && opCtxMenu.contains(event.target))) closeOpCtxMenu();
+});
 document.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && opCtxMenu) { event.preventDefault(); closeOpCtxMenu(); return; }
   if (!user || event.ctrlKey || event.metaKey || event.altKey || document.querySelector('dialog[open]')) return;
   const target = event.target as HTMLElement | null;
   if (target && (target.closest('input, textarea, select, [contenteditable="true"]'))) return;
   if (event.key === '/') { const toggle = main?.querySelector<HTMLButtonElement>('.find > .btn'); if (toggle) { event.preventDefault(); if (!toggle.parentElement!.classList.contains('open')) toggle.click(); else toggle.parentElement!.querySelector('input')?.focus(); } }
   if (event.key === 'n' || event.key === 'N') { event.preventDefault(); openSubmit(route.page === 'device' ? route.id : null); }
 });
+window.addEventListener('resize', closeOpCtxMenu);
 
 // ---------- 启动 ----------
 async function start() {

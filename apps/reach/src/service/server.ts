@@ -6,7 +6,7 @@ import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import { pairingSchema, nodeHelloSchema, operationEventSchema, protocolDocument, reconciliationSchema, submitSchema, identifier } from '../contracts/protocol.ts';
 import { ReachError, requireCondition } from './errors.ts';
-import { ReachStore, extractRawJsonMember } from './store.ts';
+import { ReachStore, extractRawJsonMember, DEFAULT_OPERATION_RETENTION_DAYS } from './store.ts';
 import { serveAdmin } from './admin.ts';
 import type { RayLoginBridge } from './ray-login.ts';
 import type { DeskExtension } from './desk-extension.ts';
@@ -19,8 +19,15 @@ import { ModelSettings, purposeSchema } from './model-settings.ts';
 import type { ModelConfig, ModelPurpose, RunningModel } from './model-settings.ts';
 import { PinLogin, DEFAULT_PIN } from './pin-login.ts';
 
-interface Options { store: ReachStore; publicOrigin: string; releaseManifest?: string; pin?: { initial?: string; reset?: boolean }; pinOnly?: boolean; cookiePath?: string; rayLogin?: RayLoginBridge; desk?: DeskExtension; agentModel?:AgentModelBroker; modelSettings?: ModelSettings; modelRuntime?: Partial<Record<ModelPurpose, RunningModel>>; deskAvailable?: boolean; deskUnavailable?: string; modelLoopback?: boolean; createDesk?: (model: ModelConfig) => DeskExtension; allowInsecureLoopback?: boolean; trustedProxyAddresses?: string[] }
+interface Options { store: ReachStore; publicOrigin: string; releaseManifest?: string; pin?: { initial?: string; reset?: boolean }; pinOnly?: boolean; cookiePath?: string; rayLogin?: RayLoginBridge; desk?: DeskExtension; agentModel?:AgentModelBroker; modelSettings?: ModelSettings; modelRuntime?: Partial<Record<ModelPurpose, RunningModel>>; deskAvailable?: boolean; deskUnavailable?: string; modelLoopback?: boolean; createDesk?: (model: ModelConfig) => DeskExtension; allowInsecureLoopback?: boolean; trustedProxyAddresses?: string[]; operationRetentionDays?: number | null; operationPruneIntervalMs?: number }
 const loginSchema = z.strictObject({ username: z.string().min(1).max(128), password: z.string().min(1).max(1024) });
+const cleanupSchema = z.strictObject({ scope: z.enum(['failed_cancelled', 'older_7d', 'older_30d', 'done']) });
+const operationsQuerySchema = z.strictObject({
+  limit: z.coerce.number().int().min(1).max(200).optional(),
+  offset: z.coerce.number().int().min(0).max(1_000_000).default(0),
+  filter: z.enum(['all', 'active', 'attention', 'done']).default('all'),
+  q: z.string().max(200).default(''),
+});
 const jsonHeaders = { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff', 'referrer-policy': 'no-referrer', 'content-security-policy': "default-src 'none'; frame-ancestors 'none'" };
 function send(response: ServerResponse, status: number, data: unknown, headers: Record<string, string | string[]> = {}) {
   response.writeHead(status, { ...jsonHeaders, ...headers });
@@ -116,6 +123,21 @@ export function reachServer(options: Options) {
   }
   agentModel?.bind(store);
   let stopping=false,extensionsClosed=!desk,shutdownPromise:Promise<void>|undefined,listenPending=false,listenDone:Promise<void>|undefined;
+  const retentionDays = options.operationRetentionDays === undefined ? DEFAULT_OPERATION_RETENTION_DAYS : options.operationRetentionDays;
+  const runOperationRetention = () => {
+    if (!retentionDays || retentionDays <= 0 || stopping || !store.isOpen) return;
+    try {
+      const result = store.pruneExpiredOperations(retentionDays);
+      if (result.deleted) console.log(JSON.stringify({ event: 'reach_operations_pruned', ...result }));
+    } catch (error) {
+      console.error(JSON.stringify({ event: 'reach_operations_prune_failed', type: error instanceof Error ? error.name : 'UnknownError' }));
+    }
+  };
+  runOperationRetention();
+  const pruneTimer = retentionDays && retentionDays > 0
+    ? setInterval(runOperationRetention, Math.max(10, Math.floor(options.operationPruneIntervalMs ?? 3_600_000)))
+    : undefined;
+  pruneTimer?.unref();
   const active=new Set<Promise<void>>();
   const server = createServer(async (request, response) => {
     let finished!:()=>void;const done=new Promise<void>(resolve=>finished=resolve);active.add(done);
@@ -288,7 +310,23 @@ export function reachServer(options: Options) {
         const input = submitSchema.parse(await body(request));
         return send(response, 201, store.submit(user.id, input.requestId, input.nodeId, input.command));
       }
-      if (method === 'GET' && route === '/api/v1/operations') return send(response, 200, { operations: store.operations(actor(request).id) });
+      if (method === 'GET' && route === '/api/v1/operations') {
+        const user = actor(request);
+        const query = operationsQuerySchema.parse(Object.fromEntries(url.searchParams));
+        return send(response, 200, store.operationsPage(user.id, query));
+      }
+      if (route === '/api/v1/operations/cleanup') {
+        if (method === 'GET') {
+          const user = actor(request);
+          const { scope } = cleanupSchema.parse({ scope: url.searchParams.get('scope') ?? 'failed_cancelled' });
+          return send(response, 200, store.previewCleanupOperations(user.id, scope));
+        }
+        if (method === 'POST') {
+          const user = actor(request, true);
+          const { scope } = cleanupSchema.parse(await body(request));
+          return send(response, 200, store.cleanupOperations(user.id, scope));
+        }
+      }
       const artifact = route.match(/^\/api\/v1\/operations\/([^/]+)\/artifacts(?:\/([^/]+))?$/);
       if (method === 'GET' && artifact) {
         const user = actor(request), op = identifier.parse(artifact[1]);
@@ -299,9 +337,10 @@ export function reachServer(options: Options) {
       }
       const operation = route.match(/^\/api\/v1\/operations\/([^/]+)(?:\/(events|cancel|reconcile|reconciliations))?$/);
       if (operation) {
-        const user = actor(request, method === 'POST');
+        const user = actor(request, method === 'POST' || method === 'DELETE');
         const id = identifier.parse(operation[1]);
         if (method === 'GET' && !operation[2]) return send(response, 200, store.operation(user.id, id));
+        if (method === 'DELETE' && !operation[2]) return send(response, 200, store.deleteOperation(user.id, id));
         if (method === 'GET' && operation[2] === 'events') {
           const after = z.coerce.number().int().min(0).max(Number.MAX_SAFE_INTEGER).parse(url.searchParams.get('after') ?? 0);
           const limit = z.coerce.number().int().min(1).max(200).parse(url.searchParams.get('limit') ?? 64);
@@ -347,7 +386,7 @@ export function reachServer(options: Options) {
   }as typeof server.listen;
   store.bindHttpOwner(server,()=>!server.listening&&!listenPending&&active.size===0&&extensionsClosed);
   const shutdown=()=>{
-    if(shutdownPromise)return shutdownPromise;stopping=true;let complete!:()=>void,failed!:(error:unknown)=>void;
+    if(shutdownPromise)return shutdownPromise;stopping=true;if(pruneTimer)clearInterval(pruneTimer);let complete!:()=>void,failed!:(error:unknown)=>void;
     shutdownPromise=new Promise<void>((resolve,reject)=>{complete=resolve;failed=reject;});
     void(async()=>{const startClose=(close:()=>Promise<void>|undefined)=>{try{return close();}catch(error){return Promise.reject(error);}};
       const modelClosed=startClose(()=>agentModel?.close()),deskClosed=startClose(()=>desk?.close());

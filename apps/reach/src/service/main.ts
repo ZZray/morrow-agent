@@ -19,6 +19,11 @@ export function startReach(composition?: DeskExtension | DeskComposition, deskUn
   const host=process.env.REACH_LISTEN_HOST??'127.0.0.1',port=Number(process.env.REACH_PORT??'18910');
   if(!Number.isInteger(port)||port<(process.env.REACH_DEVELOPMENT==='1'?0:1)||port>65535)throw Error('Invalid REACH_PORT');
   const pinOnly=process.env.REACH_PIN_ONLY==='1';
+  const rawRetention = process.env.REACH_OPERATION_RETENTION_DAYS?.trim();
+  const operationRetentionDays = rawRetention === undefined || rawRetention === '' ? undefined : Number(rawRetention);
+  if (operationRetentionDays !== undefined && (!Number.isInteger(operationRetentionDays) || operationRetentionDays < 0 || operationRetentionDays > 3650)) {
+    throw Error('Invalid REACH_OPERATION_RETENTION_DAYS');
+  }
   const publicOrigin=process.env.REACH_PUBLIC_ORIGIN??`http://127.0.0.1:${port}`,agentEnvironment=agentModelConfigFromEnvironment(process.env),development=process.env.REACH_DEVELOPMENT==='1';
   const deskComposition=composition&&'create' in composition?composition:undefined;
   let desk=deskComposition?undefined:composition as DeskExtension|undefined,agentModel:AgentModelBroker|undefined;
@@ -38,7 +43,7 @@ export function startReach(composition?: DeskExtension | DeskComposition, deskUn
     agentModel=resolveModel('agent',agentEnvironment,config=>new AgentModelBroker({endpoint:config.endpoint,token:config.token,model:config.model,contextWindow:config.contextWindow!,maxOutput:config.maxOutput!,imageInput:!!config.imageInput,development:development||process.env.REACH_MODEL_LOOPBACK==='1'}));
     if(deskComposition)desk=resolveModel('desk',deskComposition.environment,config=>deskComposition.create(config));
     rayLogin=!pinOnly&&process.env.REACH_RAY_SSO_KEY_FILE?new RayLoginBridge(readFileSync(process.env.REACH_RAY_SSO_KEY_FILE),process.env.REACH_RAY_USERNAME??'ray',resolve(process.env.REACH_DATA_DIR??'work/service','ray-auth.sqlite')):undefined;
-    server=reachServer({store,publicOrigin,pinOnly,releaseManifest:process.env.REACH_RELEASE_MANIFEST,pin:{initial:process.env.REACH_PIN||undefined,reset:process.env.REACH_PIN_RESET==='1'},cookiePath:process.env.REACH_COOKIE_PATH,rayLogin,desk,agentModel,modelSettings:settings,modelRuntime,deskAvailable:!!composition,deskUnavailable,createDesk:deskComposition?.create,allowInsecureLoopback:process.env.REACH_DEVELOPMENT==='1',modelLoopback,trustedProxyAddresses:process.env.REACH_TRUSTED_PROXY_ADDRESSES?.split(',').map(v=>v.trim()).filter(Boolean)});
+    server=reachServer({store,publicOrigin,pinOnly,releaseManifest:process.env.REACH_RELEASE_MANIFEST,pin:{initial:process.env.REACH_PIN||undefined,reset:process.env.REACH_PIN_RESET==='1'},cookiePath:process.env.REACH_COOKIE_PATH,rayLogin,desk,agentModel,modelSettings:settings,modelRuntime,deskAvailable:!!composition,deskUnavailable,createDesk:deskComposition?.create,allowInsecureLoopback:process.env.REACH_DEVELOPMENT==='1',modelLoopback,trustedProxyAddresses:process.env.REACH_TRUSTED_PROXY_ADDRESSES?.split(',').map(v=>v.trim()).filter(Boolean),operationRetentionDays});
     const runtime=server;
     const signalStop=()=>{void runtime.shutdown().then(()=>process.exit(0),()=>process.exit(1));};
     for(const signal of ['SIGINT','SIGTERM']as const)process.once(signal,signalStop);

@@ -179,3 +179,173 @@ test('a newer persistent schema is rejected without silently downgrading its ver
     const {DatabaseSync}=await import('node:sqlite');const db=new DatabaseSync(f.database,{readOnly:true});try{assert.equal((db.prepare('PRAGMA user_version').get() as any).user_version,12);}finally{db.close();}
   } finally { await f.cleanup(); }
 });
+
+test('operations pagination supports limit, offset, filters, Chinese/UUID search, and protects linked or non-terminal operations on delete', async () => {
+  const f = await fixture();
+  try {
+    const baseTime = Date.now() - 60_000;
+    const createOp = async (command: Record<string, unknown>, at: number) => {
+      const res = await f.api('/api/v1/operations', 'POST', { requestId: randomUUID(), nodeId: f.nodeId, command }, f.token);
+      assert.equal(res.status, 201);
+      f.store.db.prepare('UPDATE operations SET created_at=? WHERE id=?').run(at, res.data.id);
+      return res.data;
+    };
+
+    const dirOp = await createOp({ kind: 'file.read', path: 'C:\\test.txt', offset: 0, length: 64 }, baseTime);
+    f.store.db.prepare("UPDATE operations SET delivery='acknowledged', execution='failed' WHERE id=?").run(dirOp.id);
+
+    const unknownTarget = await createOp({ kind: 'command.run', command: 'cmd-unknown', timeoutMs: 1000 }, baseTime + 1000);
+    const claimUnknown = (await f.api('/api/v1/node/poll', 'POST', { version: 'test', capabilities: ['command.run'] }, f.installationSecret)).data.operation;
+    assert.equal(claimUnknown.operationId, unknownTarget.id);
+    assert.equal((await f.api('/api/v1/node/events', 'POST', { eventId: randomUUID(), operationId: unknownTarget.id, dispatchId: claimUnknown.dispatchId, payloadHash: claimUnknown.payloadHash, sequence: 1, kind: 'unknown', data: { reason: 'interrupted' } }, f.installationSecret)).status, 200);
+
+    const cancelTarget = await createOp({ kind: 'command.run', command: 'cmd-cancel', timeoutMs: 1000 }, baseTime + 2000);
+    const claimCancel = (await f.api('/api/v1/node/poll', 'POST', { version: 'test', capabilities: ['command.run'] }, f.installationSecret)).data.operation;
+    assert.equal(claimCancel.operationId, cancelTarget.id);
+    assert.equal((await f.api('/api/v1/node/events', 'POST', { eventId: randomUUID(), operationId: cancelTarget.id, dispatchId: claimCancel.dispatchId, payloadHash: claimCancel.payloadHash, sequence: 1, kind: 'unknown', data: { reason: 'lost' } }, f.installationSecret)).status, 200);
+    assert.equal((await f.api(`/api/v1/operations/${cancelTarget.id}/reconcile`, 'POST', { reconciliationId: randomUUID(), dispatchId: claimCancel.dispatchId, payloadHash: claimCancel.payloadHash, decision: 'not_executed', evidence: 'verified stopped', result: { started: false } }, f.token)).status, 200);
+
+    const protectedOp = await createOp({ kind: 'command.run', command: 'cmd-protected', timeoutMs: 1000 }, baseTime + 3000);
+    f.store.db.prepare("UPDATE operations SET delivery='acknowledged', execution='succeeded' WHERE id=?").run(protectedOp.id);
+    f.store.db.prepare('INSERT INTO agent_runs(parent_id, run_id) VALUES (?, ?)').run(protectedOp.id, 'run-protect-1');
+
+    const unknownOp = await createOp({ kind: 'command.run', command: 'cmd-running', timeoutMs: 1000 }, baseTime + 4000);
+    f.store.db.prepare("UPDATE operations SET delivery='claimed', execution='running' WHERE id=?").run(unknownOp.id);
+
+    for (let i = 0; i < 19; i++) {
+      const doneOp = await createOp({ kind: 'command.run', command: `cmd-done-${i}`, timeoutMs: 1000 }, baseTime + (5 + i) * 1000);
+      f.store.db.prepare("UPDATE operations SET delivery='acknowledged', execution='succeeded' WHERE id=?").run(doneOp.id);
+    }
+
+    const page1 = await f.api('/api/v1/operations?limit=20&offset=0', 'GET', undefined, f.token);
+    assert.equal(page1.status, 200);
+    assert.equal(page1.data.total, 24);
+    assert.equal(page1.data.operations.length, 20);
+    assert.deepEqual(page1.data.counts, { all: 24, active: 1, attention: 1, done: 22 });
+    assert.deepEqual(page1.data.summary, { succeeded: 20, activeOnly: 1, failedCancelled: 2, attention: 1 });
+    assert.equal(page1.data.operations.find((o: any) => o.id === unknownOp.id)?.protected, true);
+
+    const page2 = await f.api('/api/v1/operations?limit=20&offset=20', 'GET', undefined, f.token);
+    assert.equal(page2.status, 200);
+    assert.equal(page2.data.operations.length, 4);
+    const page1Ids = new Set(page1.data.operations.map((o: any) => o.id));
+    for (const o of page2.data.operations) assert.equal(page1Ids.has(o.id), false);
+
+    const cnSearch = await f.api(`/api/v1/operations?filter=done&q=${encodeURIComponent('读取文件')}`, 'GET', undefined, f.token);
+    assert.equal(cnSearch.data.total, 1);
+    assert.equal(cnSearch.data.operations[0].id, dirOp.id);
+    assert.equal((await f.api('/api/v1/operations?q=test-node', 'GET', undefined, f.token)).data.total, 24);
+    assert.equal((await f.api(`/api/v1/operations?q=${encodeURIComponent(dirOp.id.slice(0, 8))}`, 'GET', undefined, f.token)).data.total, 1);
+    assert.equal((await f.api(`/api/v1/operations?q=${encodeURIComponent('test%_none')}`, 'GET', undefined, f.token)).data.total, 0);
+
+    // CSRF rejection on cookie-authenticated DELETE.
+    assert.equal((await f.api(`/api/v1/operations/${cancelTarget.id}`, 'DELETE', undefined, undefined, { cookie: `reach_session=${f.token}`, origin: 'https://evil.example' })).status, 403);
+    // Active / unknown / Agent-linked operations remain protected (409).
+    const activeDel = await f.api(`/api/v1/operations/${unknownOp.id}`, 'DELETE', undefined, f.token);
+    assert.equal(activeDel.status, 409);
+    assert.equal(activeDel.data.error.code, 'operation_protected');
+    assert.equal((await f.api(`/api/v1/operations/${unknownTarget.id}`, 'DELETE', undefined, f.token)).status, 409);
+    assert.equal((await f.api(`/api/v1/operations/${protectedOp.id}`, 'DELETE', undefined, f.token)).status, 409);
+
+    // Deleting a reconciled standalone operation succeeds, removes children & deducts counts + stats.
+    const statsBefore = (await f.api('/api/v1/stats', 'GET', undefined, f.token)).data.totals.operations;
+    const deleted = await f.api(`/api/v1/operations/${cancelTarget.id}`, 'DELETE', undefined, f.token);
+    assert.equal(deleted.status, 200);
+    assert.equal(deleted.data.deleted, true);
+    assert.equal((await f.api(`/api/v1/operations/${cancelTarget.id}`, 'GET', undefined, f.token)).status, 404);
+    assert.equal((await f.api('/api/v1/operations?limit=20&offset=0', 'GET', undefined, f.token)).data.total, 23);
+    assert.equal((await f.api('/api/v1/stats', 'GET', undefined, f.token)).data.totals.operations, statsBefore - 1);
+
+    // Separate user must see 404, not delete.
+    const uid = randomUUID();
+    f.store.db.prepare('INSERT INTO users SELECT ?,?,?,password_hash FROM users LIMIT 1').run(uid, 'other-op-user', 'salt');
+    f.store.db.prepare('UPDATE sessions SET user_id=? WHERE user_id=?').run(uid, f.store.session(f.token).id);
+    assert.equal((await f.api(`/api/v1/operations/${dirOp.id}`, 'DELETE', undefined, f.token)).status, 404);
+  } finally { await f.cleanup(); }
+});
+
+test('operations cleanup previews and removes matching standalone terminal operations while skipping protected rows', async () => {
+  const f = await fixture();
+  try {
+    const DAY = 86_400_000;
+    const now = Date.now();
+    const created: any[] = [];
+    for (let i = 0; i < 5; i++) created.push((await f.enqueue()).operation);
+    const [failedRecent, cancelledOld, succeededOld, protectedVeryOld, uncertainOld] = created;
+    f.store.db.prepare("UPDATE operations SET delivery='acknowledged', execution='failed', created_at=? WHERE id=?").run(now - 2 * DAY, failedRecent.id);
+    f.store.db.prepare("UPDATE operations SET delivery='cancelled', execution='cancelled', created_at=? WHERE id=?").run(now - 10 * DAY, cancelledOld.id);
+    f.store.db.prepare("UPDATE operations SET delivery='acknowledged', execution='succeeded', created_at=? WHERE id=?").run(now - 10 * DAY, succeededOld.id);
+    f.store.db.prepare("UPDATE operations SET delivery='acknowledged', execution='succeeded', created_at=? WHERE id=?").run(now - 40 * DAY, protectedVeryOld.id);
+    f.store.db.prepare("UPDATE operations SET delivery='uncertain', execution='not_observed', created_at=? WHERE id=?").run(now - 40 * DAY, uncertainOld.id);
+    f.store.db.prepare('INSERT INTO agent_runs(parent_id, run_id) VALUES (?, ?)').run(protectedVeryOld.id, 'run-protect-cleanup');
+
+    const pFail = await f.api('/api/v1/operations/cleanup?scope=failed_cancelled', 'GET', undefined, f.token);
+    assert.equal(pFail.status, 200);
+    assert.deepEqual(pFail.data, { scope: 'failed_cancelled', matched: 2, deletable: 2, skippedProtected: 0, alwaysKept: 1 });
+
+    const p7 = await f.api('/api/v1/operations/cleanup?scope=older_7d', 'GET', undefined, f.token);
+    assert.deepEqual(p7.data, { scope: 'older_7d', matched: 3, deletable: 2, skippedProtected: 1, alwaysKept: 1 });
+
+    const p30 = await f.api('/api/v1/operations/cleanup?scope=older_30d', 'GET', undefined, f.token);
+    assert.deepEqual(p30.data, { scope: 'older_30d', matched: 1, deletable: 0, skippedProtected: 1, alwaysKept: 1 });
+
+    assert.equal((await f.api('/api/v1/operations/cleanup', 'POST', { scope: 'failed_cancelled' }, undefined, { cookie: `reach_session=${f.token}`, origin: 'https://evil.example' })).status, 403);
+
+    const cleanFail = await f.api('/api/v1/operations/cleanup', 'POST', { scope: 'failed_cancelled' }, f.token);
+    assert.equal(cleanFail.status, 200);
+    assert.deepEqual(cleanFail.data, { scope: 'failed_cancelled', matched: 2, deleted: 2, skippedProtected: 0 });
+
+    const cleanDone = await f.api('/api/v1/operations/cleanup', 'POST', { scope: 'done' }, f.token);
+    assert.equal(cleanDone.status, 200);
+    assert.deepEqual(cleanDone.data, { scope: 'done', matched: 2, deleted: 1, skippedProtected: 1 });
+
+    const remaining = await f.api('/api/v1/operations', 'GET', undefined, f.token);
+    assert.deepEqual(remaining.data.operations.map((o: any) => o.id).sort(), [protectedVeryOld.id, uncertainOld.id].sort());
+  } finally { await f.cleanup(); }
+});
+
+test('7-day rolling retention prunes expired standalone terminal records on startup and timer while keeping recent and protected rows', async () => {
+  const f = await fixture();
+  let extraServer: ReturnType<typeof reachServer> | undefined;
+  try {
+    const DAY = 86_400_000;
+    const now = Date.now();
+    const created: any[] = [];
+    for (let i = 0; i < 6; i++) created.push((await f.enqueue()).operation);
+    const [expiredOk, expiredFail, expiredLinked, expiredUncertain, expiredUnknown, recentOk] = created;
+    f.store.db.prepare("UPDATE operations SET delivery='acknowledged', execution='succeeded', created_at=?, updated_at=? WHERE id=?").run(now - 8 * DAY, now - 8 * DAY, expiredOk.id);
+    f.store.db.prepare("UPDATE operations SET delivery='acknowledged', execution='failed', created_at=?, updated_at=? WHERE id=?").run(now - 9 * DAY, now - 9 * DAY, expiredFail.id);
+    f.store.db.prepare("UPDATE operations SET delivery='acknowledged', execution='succeeded', created_at=?, updated_at=? WHERE id=?").run(now - 10 * DAY, now - 10 * DAY, expiredLinked.id);
+    f.store.db.prepare(
+      'INSERT INTO starferry_tunnels(tunnel_session_id,user_id,node_id,epoch,operation_id,grant_id,allow_direct,status,created_at,expires_at) VALUES (?,?,?,?,?,?,?,?,?,?)',
+    ).run(randomUUID(), f.store.session(f.token).id, f.nodeId, 1, expiredLinked.id, randomUUID(), 1, 'closed', now - 10 * DAY, now + 60_000);
+    f.store.db.prepare("UPDATE operations SET delivery='uncertain', execution='succeeded', created_at=?, updated_at=? WHERE id=?").run(now - 10 * DAY, now - 10 * DAY, expiredUncertain.id);
+    f.store.db.prepare("UPDATE operations SET delivery='acknowledged', execution='unknown', created_at=?, updated_at=? WHERE id=?").run(now - 10 * DAY, now - 10 * DAY, expiredUnknown.id);
+    f.store.db.prepare("UPDATE operations SET delivery='acknowledged', execution='succeeded', created_at=?, updated_at=? WHERE id=?").run(now - 6 * DAY, now - 6 * DAY, recentOk.id);
+
+    // Stop initial server and reopen the same database so startup + rolling timer run against pre-existing data.
+    await f.stop();
+    const store2 = new ReachStore(f.database);
+    let currentTime = now;
+    store2.now = () => currentTime;
+    extraServer = reachServer({
+      store: store2,
+      publicOrigin: 'http://127.0.0.1',
+      allowInsecureLoopback: true,
+      operationRetentionDays: 7,
+      operationPruneIntervalMs: 20,
+    });
+
+    const idsAfterStart = (store2.db.prepare('SELECT id FROM operations').all() as { id: string }[]).map(r => r.id).sort();
+    assert.deepEqual(idsAfterStart, [expiredLinked.id, expiredUncertain.id, expiredUnknown.id, recentOk.id].sort());
+
+    // Advance virtual clock past 7 days for recentOk and wait for rolling interval execution.
+    currentTime = now + 2 * DAY;
+    await new Promise(resolve => setTimeout(resolve, 90));
+    const idsAfterTick = (store2.db.prepare('SELECT id FROM operations').all() as { id: string }[]).map(r => r.id).sort();
+    assert.deepEqual(idsAfterTick, [expiredLinked.id, expiredUncertain.id, expiredUnknown.id].sort());
+  } finally {
+    await extraServer?.shutdown();
+    await f.cleanup();
+  }
+});

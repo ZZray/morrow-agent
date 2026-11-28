@@ -191,3 +191,12 @@ test('multi-platform download helpers detect client OS, classify legacy assets a
   assert.equal(M.pickRecommendedAsset([macNodeX64, macArm], 'arm64')?.name, 'reach-worker-arm64.tar.gz');
   assert.equal(M.pickRecommendedAsset([winNodeX64, winAgentX64], 'x64')?.name, 'Reach-Setup.exe');
 });
+
+test('paginationModel computes totalPages, clamps bounds, and collapses middle ranges', () => {
+  assert.deepEqual(M.paginationModel(0, 1, 20), { current: 1, totalPages: 1, items: [1] });
+  assert.deepEqual(M.paginationModel(120, 0, 20), { current: 1, totalPages: 6, items: [1, 2, 3, 4, 5, 6] });
+  assert.deepEqual(M.paginationModel(120, 99, 20), { current: 6, totalPages: 6, items: [1, 2, 3, 4, 5, 6] });
+  assert.deepEqual(M.paginationModel(250, 1, 20), { current: 1, totalPages: 13, items: [1, 2, 'ellipsis', 13] });
+  assert.deepEqual(M.paginationModel(250, 6, 20), { current: 6, totalPages: 13, items: [1, 'ellipsis', 5, 6, 7, 'ellipsis', 13] });
+  assert.deepEqual(M.paginationModel(250, 12, 20), { current: 12, totalPages: 13, items: [1, 'ellipsis', 11, 12, 13] });
+});

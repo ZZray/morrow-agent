@@ -114,6 +114,37 @@ export function extractRawJsonMember(jsonText: string, memberName: string): stri
   return matched!;
 }
 const secret = () => randomBytes(32).toString('base64url');
+export type OperationFilter = 'all' | 'active' | 'attention' | 'done';
+export type CleanupScope = 'failed_cancelled' | 'older_7d' | 'older_30d' | 'done';
+export const DEFAULT_OPERATION_RETENTION_DAYS = 7;
+const OPERATION_KIND_LABELS: Record<string, string> = {
+  'command.run': '运行命令', 'directory.list': '列出目录', 'file.read': '读取文件', 'file.write': '写入文件',
+  'desktop.describe': '查看桌面', 'desktop.call': '桌面操作',
+  'ssh.status': 'SSH 状态', 'ssh.authorize': '授权 SSH 公钥', 'ssh.revoke': '撤销 SSH 公钥', 'starferry.session': 'Starferry 通道',
+  'agent.delegate': '委托现场 Agent', 'agent.resume': '恢复 Agent', 'agent.continue': '继续 Agent', 'agent.inspect': '检查 Agent', 'agent.provenance': '查询 Agent 来源', 'agent.finalize': '结算 Agent',
+};
+const PROTECTED_OPERATION_TABLES: readonly [string, string][] = [
+  ['agent_calls', 'parent_id'],
+  ['agent_calls', 'child_id'],
+  ['agent_runs', 'parent_id'],
+  ['agent_task_models', 'parent_id'],
+  ['agent_model_calls', 'parent_id'],
+  ['agent_run_reviews', 'parent_id'],
+  ['agent_budget_reconciliations', 'parent_id'],
+  ['agent_model_owners', 'execution_id'],
+  ['agent_tasks', 'root_id'],
+  ['agent_tasks', 'active_execution_id'],
+  ['agent_executions', 'execution_id'],
+  ['agent_child_executions', 'child_id'],
+  ['source_library', 'source_task_id'],
+  ['source_library_validations', 'task_id'],
+  ['agent_native_closures', 'operation_id'],
+  ['starferry_tunnels', 'operation_id'],
+];
+const PROTECTED_EXISTS_SQL = PROTECTED_OPERATION_TABLES.map(([table, col]) => `EXISTS(SELECT 1 FROM ${table} p WHERE p.${col}=o.id)`).join(' OR ');
+const PROTECTED_STATE_SQL = "(o.execution NOT IN ('succeeded','failed','cancelled') OR o.delivery='uncertain')";
+const PROTECTED_OP_SQL = `(${PROTECTED_STATE_SQL} OR ${PROTECTED_EXISTS_SQL})`;
+const escapeLike = (value: string) => value.replace(/[\\%_]/g, '\\$&');
 interface UserRow { id: string; username: string; salt: string; password_hash: string }
 export interface User { id: string; username: string }
 export interface NodeRow { id: string; user_id: string; installation_id: string; name: string; platform: string; version: string; epoch: number; token_hash: string | null; capabilities: string; last_seen: number | null; revoked: number }
@@ -401,7 +432,159 @@ export class ReachStore {
     requireCondition(row, 404, 'operation_not_found', '未找到这次操作');
     return row;
   }
-  operations(userId: string) { return this.db.prepare('SELECT * FROM operations WHERE user_id=? ORDER BY created_at DESC LIMIT 200').all(userId); }
+  operations(userId: string) { return this.db.prepare('SELECT * FROM operations WHERE user_id=? ORDER BY created_at DESC,id DESC LIMIT 200').all(userId); }
+  operationsPage(userId: string, opts: { limit?: number; offset?: number; filter?: OperationFilter; q?: string } = {}) {
+    const filter = opts.filter ?? 'all';
+    const limit = Math.min(200, Math.max(1, Math.floor(opts.limit ?? 200)));
+    const offset = Math.max(0, Math.floor(opts.offset ?? 0));
+    const counts = { all: 0, active: 0, attention: 0, done: 0 };
+    const summary = { succeeded: 0, activeOnly: 0, failedCancelled: 0, attention: 0 };
+    for (const row of this.db.prepare('SELECT execution, delivery, COUNT(*) AS n FROM operations WHERE user_id=? GROUP BY execution, delivery').all(userId) as { execution: ExecutionState; delivery: DeliveryState; n: number }[]) {
+      const n = Number(row.n);
+      const terminal = finalStates.has(row.execution);
+      const attention = row.execution === 'unknown' || (row.delivery === 'uncertain' && !terminal);
+      const active = !terminal && row.delivery !== 'cancelled';
+      const done = terminal && !attention;
+      counts.all += n;
+      if (active) counts.active += n;
+      if (attention) counts.attention += n;
+      if (done) counts.done += n;
+      if (row.execution === 'succeeded') summary.succeeded += n;
+      if (row.execution === 'failed' || row.execution === 'cancelled') summary.failedCancelled += n;
+      if (active && !attention) summary.activeOnly += n;
+      if (attention) summary.attention += n;
+    }
+    const where = ['o.user_id=?'];
+    const params: (string | number)[] = [userId];
+    if (filter === 'active') where.push("o.execution NOT IN ('succeeded','failed','cancelled','unknown') AND o.delivery<>'cancelled'");
+    else if (filter === 'attention') where.push("(o.execution='unknown' OR (o.delivery='uncertain' AND o.execution NOT IN ('succeeded','failed','cancelled','unknown')))");
+    else if (filter === 'done') where.push("o.execution IN ('succeeded','failed','cancelled')");
+    const q = (opts.q ?? '').trim().toLowerCase();
+    if (q) {
+      const like = `%${escapeLike(q)}%`;
+      const matchedKinds = Object.entries(OPERATION_KIND_LABELS).filter(([, label]) => label.toLowerCase().includes(q)).map(([k]) => k);
+      const clauses = [
+        "LOWER(o.id) LIKE ? ESCAPE '\\'",
+        "LOWER(o.request_id) LIKE ? ESCAPE '\\'",
+        "LOWER(COALESCE(json_extract(o.command_json,'$.kind'),'')) LIKE ? ESCAPE '\\'",
+        "LOWER(COALESCE(n.name,'')) LIKE ? ESCAPE '\\'",
+      ];
+      params.push(like, like, like, like);
+      if (matchedKinds.length) {
+        clauses.push(`json_extract(o.command_json,'$.kind') IN (${matchedKinds.map(() => '?').join(',')})`);
+        params.push(...matchedKinds);
+      }
+      where.push(`(${clauses.join(' OR ')})`);
+    }
+    const whereSql = where.join(' AND ');
+    const total = Number((this.db.prepare(`SELECT COUNT(*) AS count FROM operations o LEFT JOIN nodes n ON n.id=o.node_id WHERE ${whereSql}`).get(...params) as { count: number }).count);
+    const rows = this.db.prepare(
+      `SELECT o.id,o.node_id,o.request_id,json_extract(o.command_json,'$.kind') AS kind,o.delivery,o.execution,o.cancel_requested,o.created_at,o.updated_at,CASE WHEN ${PROTECTED_OP_SQL} THEN 1 ELSE 0 END AS is_protected ` +
+      `FROM operations o LEFT JOIN nodes n ON n.id=o.node_id WHERE ${whereSql} ORDER BY o.created_at DESC,o.id DESC LIMIT ? OFFSET ?`,
+    ).all(...params, limit, offset) as Record<string, unknown>[];
+    const operations = rows.map(row => ({
+      id: String(row.id),
+      node_id: String(row.node_id),
+      request_id: String(row.request_id),
+      kind: String(row.kind ?? ''),
+      delivery: String(row.delivery),
+      execution: String(row.execution),
+      cancel_requested: Number(row.cancel_requested),
+      created_at: Number(row.created_at),
+      updated_at: Number(row.updated_at),
+      protected: Boolean(row.is_protected),
+    }));
+    return { operations, total, limit, offset, counts, summary };
+  }
+  private operationProtectionReason(op: OperationRow): string | null {
+    if (!['succeeded', 'failed', 'cancelled'].includes(op.execution) || op.delivery === 'uncertain') {
+      return '进行中、结果未知或待核对的操作受保护，不能删除';
+    }
+    for (const [table, column] of PROTECTED_OPERATION_TABLES) {
+      if (this.db.prepare(`SELECT 1 FROM ${table} WHERE ${column}=? LIMIT 1`).get(op.id)) {
+        return '关联了 Agent 任务、资料库或 Starferry 通道的操作受保护，不能删除';
+      }
+    }
+    return null;
+  }
+  private cleanupCondition(userId: string, scope: CleanupScope): { whereSql: string; params: (string | number)[] } {
+    const DAY = 86_400_000;
+    const where = ['o.user_id=?'];
+    const params: (string | number)[] = [userId];
+    if (scope === 'failed_cancelled') where.push("o.execution IN ('failed','cancelled')");
+    else {
+      where.push("o.execution IN ('succeeded','failed','cancelled')");
+      if (scope === 'older_7d') { where.push('o.created_at<?'); params.push(this.now() - 7 * DAY); }
+      else if (scope === 'older_30d') { where.push('o.created_at<?'); params.push(this.now() - 30 * DAY); }
+    }
+    return { whereSql: where.join(' AND '), params };
+  }
+  private purgeOperationRows(ids: string[], userId: string) {
+    for (let i = 0; i < ids.length; i += 200) {
+      const chunk = ids.slice(i, i + 200);
+      const ph = chunk.map(() => '?').join(',');
+      this.db.prepare(`DELETE FROM operation_reconciliations WHERE operation_id IN (${ph})`).run(...chunk);
+      this.db.prepare(`DELETE FROM operation_events WHERE operation_id IN (${ph})`).run(...chunk);
+      this.db.prepare(`DELETE FROM operations WHERE user_id=? AND id IN (${ph})`).run(userId, ...chunk);
+    }
+  }
+  deleteOperation(userId: string, id: string) {
+    return this.transaction(() => {
+      const op = this.operation(userId, id);
+      const reason = this.operationProtectionReason(op);
+      requireCondition(!reason, 409, 'operation_protected', reason ?? '该操作受保护，不能删除');
+      this.purgeOperationRows([op.id], userId);
+      this.audit(userId, 'operation.deleted', op.id);
+      return { deleted: true, id: op.id };
+    });
+  }
+  previewCleanupOperations(userId: string, scope: CleanupScope) {
+    const { whereSql, params } = this.cleanupCondition(userId, scope);
+    const counts = this.db.prepare(
+      `SELECT COALESCE(SUM(CASE WHEN NOT ${PROTECTED_OP_SQL} THEN 1 ELSE 0 END), 0) AS deletable, COALESCE(SUM(CASE WHEN ${PROTECTED_OP_SQL} THEN 1 ELSE 0 END), 0) AS skippedProtected FROM operations o WHERE ${whereSql}`,
+    ).get(...params) as { deletable: number; skippedProtected: number };
+    const deletable = Number(counts.deletable);
+    const skippedProtected = Number(counts.skippedProtected);
+    const alwaysKept = Number((this.db.prepare("SELECT COUNT(*) AS n FROM operations o WHERE o.user_id=? AND o.execution NOT IN ('succeeded','failed','cancelled')").get(userId) as { n: number }).n);
+    return { scope, matched: deletable + skippedProtected, deletable, skippedProtected, alwaysKept };
+  }
+  cleanupOperations(userId: string, scope: CleanupScope) {
+    return this.transaction(() => {
+      const { whereSql, params } = this.cleanupCondition(userId, scope);
+      const ids = (this.db.prepare(`SELECT o.id FROM operations o WHERE ${whereSql} AND NOT ${PROTECTED_OP_SQL} ORDER BY o.created_at ASC`).all(...params) as { id: string }[]).map(r => r.id);
+      const skippedProtected = Number((this.db.prepare(`SELECT COUNT(*) AS n FROM operations o WHERE ${whereSql} AND ${PROTECTED_OP_SQL}`).get(...params) as { n: number }).n);
+      if (ids.length) {
+        this.purgeOperationRows(ids, userId);
+        this.audit(userId, 'operations.cleaned', JSON.stringify({ scope, deleted: ids.length, skippedProtected }));
+      }
+      return { scope, matched: ids.length + skippedProtected, deleted: ids.length, skippedProtected };
+    });
+  }
+  pruneExpiredOperations(retentionDays = DEFAULT_OPERATION_RETENTION_DAYS) {
+    const days = Math.max(1, Math.floor(retentionDays));
+    return this.transaction(() => {
+      const cutoff = this.now() - days * 86_400_000;
+      const whereSql = "o.execution IN ('succeeded','failed','cancelled') AND o.updated_at<?";
+      const rows = this.db.prepare(
+        `SELECT o.id, o.user_id FROM operations o WHERE ${whereSql} AND NOT ${PROTECTED_OP_SQL} ORDER BY o.updated_at ASC`,
+      ).all(cutoff) as { id: string; user_id: string }[];
+      const skippedProtected = Number(
+        (this.db.prepare(`SELECT COUNT(*) AS n FROM operations o WHERE ${whereSql} AND ${PROTECTED_OP_SQL}`).get(cutoff) as { n: number }).n,
+      );
+      if (!rows.length) return { retentionDays: days, deleted: 0, skippedProtected };
+      const byUser = new Map<string, string[]>();
+      for (const row of rows) {
+        const list = byUser.get(row.user_id) ?? [];
+        list.push(row.id);
+        byUser.set(row.user_id, list);
+      }
+      for (const [userId, ids] of byUser) {
+        this.purgeOperationRows(ids, userId);
+        this.audit(userId, 'operations.pruned', JSON.stringify({ retentionDays: days, deleted: ids.length }));
+      }
+      return { retentionDays: days, deleted: rows.length, skippedProtected };
+    });
+  }
   overview(userId: string) {
     const operations = this.db.prepare("SELECT id,node_id,request_id,json_extract(command_json,'$.kind') AS kind,delivery,execution,cancel_requested,created_at,updated_at FROM operations WHERE user_id=? ORDER BY created_at DESC,id DESC LIMIT 200").all(userId);
     const count = this.db.prepare("SELECT COUNT(*) AS count FROM operations WHERE user_id=? AND (execution='unknown' OR (delivery='uncertain' AND execution NOT IN ('succeeded','failed','cancelled','unknown')))").get(userId)!;
