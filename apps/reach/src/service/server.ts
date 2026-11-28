@@ -13,13 +13,13 @@ import type { DeskExtension } from './desk-extension.ts';
 import { deskDevices } from './desk-devices.ts';
 import {AgentModelBroker} from './agent-model.ts';
 import {modelBindingSchema} from './agent-model-store.ts';
-import { readReleases } from './releases.ts';
+import { readReleases, serveReleaseFile } from './releases.ts';
 import { computeStats } from './stats.ts';
 import { ModelSettings, purposeSchema } from './model-settings.ts';
 import type { ModelConfig, ModelPurpose, RunningModel } from './model-settings.ts';
 import { PinLogin, DEFAULT_PIN } from './pin-login.ts';
 
-interface Options { store: ReachStore; publicOrigin: string; releaseManifest?: string; pin?: { initial?: string; reset?: boolean }; pinOnly?: boolean; cookiePath?: string; rayLogin?: RayLoginBridge; desk?: DeskExtension; agentModel?:AgentModelBroker; modelSettings?: ModelSettings; modelRuntime?: Partial<Record<ModelPurpose, RunningModel>>; deskAvailable?: boolean; deskUnavailable?: string; modelLoopback?: boolean; createDesk?: (model: ModelConfig) => DeskExtension; allowInsecureLoopback?: boolean; trustedProxyAddresses?: string[]; operationRetentionDays?: number | null; operationPruneIntervalMs?: number }
+interface Options { store: ReachStore; publicOrigin: string; releaseManifest?: string; releaseAssetDir?: string; pin?: { initial?: string; reset?: boolean }; pinOnly?: boolean; cookiePath?: string; rayLogin?: RayLoginBridge; desk?: DeskExtension; agentModel?:AgentModelBroker; modelSettings?: ModelSettings; modelRuntime?: Partial<Record<ModelPurpose, RunningModel>>; deskAvailable?: boolean; deskUnavailable?: string; modelLoopback?: boolean; createDesk?: (model: ModelConfig) => DeskExtension; allowInsecureLoopback?: boolean; trustedProxyAddresses?: string[]; operationRetentionDays?: number | null; operationPruneIntervalMs?: number }
 const loginSchema = z.strictObject({ username: z.string().min(1).max(128), password: z.string().min(1).max(1024) });
 const cleanupSchema = z.strictObject({ scope: z.enum(['failed_cancelled', 'older_7d', 'older_30d', 'done']) });
 const operationsQuerySchema = z.strictObject({
@@ -210,6 +210,9 @@ export function reachServer(options: Options) {
         requireCondition(credential, 401, 'node_authentication_required', '需要节点身份');
         const receiptOnly = route === '/api/v1/node/events' || route === '/api/v1/node/pending' || route.startsWith('/api/v1/node/control/') || route.startsWith('/api/v1/node/agents/');
         const node = store.node(credential, receiptOnly);
+        if (method === 'GET' && route === '/api/v1/node/update') return send(response, 200, await readReleases(options.releaseManifest));
+        const updateFile = route.match(/^\/api\/v1\/node\/update\/files\/([^/]+)\/([^/]+)$/);
+        if (method === 'GET' && updateFile) return await serveReleaseFile(options.releaseManifest, options.releaseAssetDir, updateFile[1], updateFile[2], response);
         if(method==='GET'&&route==='/api/v1/node/agent-model')return send(response,200,agentModel?{configured:true,descriptor:agentModel.descriptor()}:{configured:false});
         const agentContext=route.match(/^\/api\/v1\/node\/agents\/([^/]+)\/context$/);
         if(method==='POST'&&agentContext){const binding=modelBindingSchema.parse(await body(request));return send(response,200,store.executions.context(node,identifier.parse(agentContext[1]),binding.dispatchId,binding.payloadHash));}
@@ -282,6 +285,8 @@ export function reachServer(options: Options) {
         if (method === 'POST' && modelSetting[2] === 'enable') { const user = actor(request, true); return send(response, 200, modelSettings.enable(user.id, purpose, await body(request), applyModel)); }
       }
       if (method === 'GET' && route === '/api/v1/releases') { actor(request); return send(response, 200, await readReleases(options.releaseManifest)); }
+      const releaseFile = route.match(/^\/api\/v1\/releases\/files\/([^/]+)\/([^/]+)$/);
+      if (method === 'GET' && releaseFile) { actor(request); return await serveReleaseFile(options.releaseManifest, options.releaseAssetDir, releaseFile[1], releaseFile[2], response); }
       const revoke = route.match(/^\/api\/v1\/nodes\/([^/]+)\/unpair$/);
       if (method === 'POST' && revoke) { store.revoke(actor(request, true).id, identifier.parse(revoke[1])); return send(response, 200, { unpaired: true }); }
       const nodeRuntimeRoute = route.match(/^\/api\/v1\/nodes\/([^/]+)\/(runtime|config)$/);

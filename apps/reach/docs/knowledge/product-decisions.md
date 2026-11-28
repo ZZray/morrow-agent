@@ -388,3 +388,13 @@ RyDev 的 0.1.8 和 0.1.9 预览版已分别从 Codex 完成现场 Agent 委托�
 - **真服务端分页与检索**：`GET /api/v1/operations` 由固定 `LIMIT 200` 改为接收 `limit`（默认 200，前端切 `20`/`50`）、`offset`、`filter`（`all`/`active`/`attention`/`done`）与 `q`（转义 `LIKE` 通配符并支持中文类型名匹配），返回 `{ operations, total, limit, offset, counts, summary }`，使状态统计与分页全集突破 200 条限制；前端 `finder` 增加 `220ms` 防抖且保持焦点状态（背景自动刷新在 `.find` 聚焦或右键菜单打开时不抢焦点）。
 - **物理清理、7 天滚动保留与外键/活跃保护边界**：为避免破坏 Agent 多阶段执行上下文、资料库来源证据链与 Starferry 隧道记录，`ReachStore` 对非独立终态（`execution` 不在 `succeeded/failed/cancelled` 或 `delivery='uncertain'`）以及被 16 个关联表引用的操作禁止删除——列表接口附带 `protected` 字段，右键菜单直接禁用并通过 `title` 提示原因（按用户要求不渲染菜单底部的 `.ctx-note` 小字备注），`DELETE /api/v1/operations/:id` 返回 `409 operation_protected`。仅独立已结束记录允许单删或通过 `GET/POST /api/v1/operations/cleanup` 按四种范围（`failed_cancelled` / `older_7d` / `older_30d` / `done`）经实时预览计数与二次确认后事务级联清理（`operation_reconciliations`、`operation_events`、`operations`）；同时在 `reachServer` 启动时与每小时 `unref` 定时器自动执行 `ReachStore.pruneExpiredOperations(7)`（可通过 `REACH_OPERATION_RETENTION_DAYS` 调整）滚动清理 `updated_at` 早于 7 天的独立已结束记录，清理后同步反映至 `#/stats`。
 - **当前验证与边界**：最终改动后 `npm run check`、`npm run build:admin`、服务端 `14/14`（含 7 天启动剪除与滚动定时器用例）、管理端 12 份 `55/55`、平台单元测试 `55/55` 共 `124/124` 全部通过；此前在本地隔离测试服务（`18931`）实测通过暗/亮主题搜索聚焦、`20/50` 分页切换、受保护行禁用、单删（`28 -> 27`）、批量清理 4 范围实时预览与执行（`27 -> 24`）、`#/stats` 同步、`#/devices` 最近操作右键菜单与 `390×844` 移动端布局。改动已通过提交 `4bbc977` 同步至 `origin/main` 与 `gitee/main` 并部署上线至 Ray（`733752`，启动时已将超 7 天记录从 9 条剪除至 7 条）与 nmrkit（`956058`，17 条保留），回环/公网 6 项前端资源 SHA-256 核对一致；真实触屏、`prefers-reduced-motion` 与移除操作右键 `.ctx-note` 后的在线交互待实机核对。
+
+<a id="site-worker-updates-20261128"></a>
+
+## 2026-11-28 Worker 从绑定站点更新
+
+用户要求每台 Worker 自行向其绑定的服务器查询更新，由服务器提供下载地址。nmrkit 使用阿里云 OSS；Ray 工作台使用自身服务器提供安装包。Windows Worker + Agent 仍从 Git 指定提交构建，使用已固定的 Ed25519 公钥校验发行清单和安装包，再交给既有安装事务。站点切换、解绑和签名失败时不得把旧站点的更新当作当前站点的结果。
+
+0.1.10 的 Worker + Agent 更新器查询 Gitee，不能自行发现新站点通道；切换时需先手动安装支持站点更新的版本。后续自动升级应核对站点、下载来源、版本、服务重启、安装事务和原配对。Desktop 载荷与其他操作系统按各自已支持的更新能力验收，不由 Windows 整包替代。
+
+状态：用户已决定；实现、两站部署及 RyDev 自动升级正在进行，现场结果以验收记录为准。

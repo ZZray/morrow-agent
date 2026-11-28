@@ -1,8 +1,8 @@
 // Copyright (c) Ray Zhang. Exercise the HTTP boundary and persistent ledger.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { randomBytes, randomUUID } from 'node:crypto';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve, dirname, basename } from 'node:path';
 import { once } from 'node:events';
@@ -11,6 +11,116 @@ import { reachServer } from '../src/service/server.ts';
 import type { OperationEvent } from '../src/contracts/protocol.ts';
 
 import { fixture, password } from './service-fixture.ts';
+
+test('paired devices query release updates and authenticated devices or browsers download listed files', async () => {
+  const directory = mkdtempSync(join(tmpdir(), 'reach-release-update-'));
+  const manifestPath = join(directory, 'releases.json');
+  const assetDir = join(directory, 'assets');
+  const tag = 'reach-worker-agent-v0.1.12', name = 'Reach-Worker-Agent-Setup-x64.exe';
+  const payload = Buffer.from('test release bytes');
+  const asset = { name, kind: 'agent', os: 'windows', arch: 'x64', bytes: payload.length,
+    sha256: createHash('sha256').update(payload).digest('hex'), signed: true,
+    sources: [{ kind: 'reach', url: `https://example.test/reach/api/v1/releases/files/${tag}/${name}` }] };
+  const release = { version: '0.1.12', tag, publishedAt: 1, assets: [asset] };
+  const catalog = (entry: unknown) => writeFileSync(manifestPath, JSON.stringify({ releases: [entry] }));
+  catalog(release);
+  mkdirSync(join(assetDir, tag), { recursive: true });
+  writeFileSync(join(assetDir, tag, name), payload);
+
+  const store = new ReachStore(':memory:');
+  store.bootstrap('release-test', password);
+  const session = store.login('release-test', password);
+  const nodeToken = randomBytes(32).toString('base64url');
+  const node = store.pair({ attemptId: randomUUID(), code: store.createPairing(session.user.id).code,
+    installationId: randomUUID(), installationSecret: nodeToken, name: 'release-node', platform: 'windows', version: '0.1.10' });
+  const server = reachServer({ store, publicOrigin: 'http://127.0.0.1', allowInsecureLoopback: true,
+    releaseManifest: manifestPath, releaseAssetDir: assetDir });
+  server.listen(0, '127.0.0.1'); await once(server, 'listening');
+  const address = server.address(); assert.ok(address && typeof address !== 'string');
+  const base = `http://127.0.0.1:${address.port}`;
+  const nodeAuth = { authorization: `Bearer ${nodeToken}` };
+  const actorAuth = { authorization: `Bearer ${session.token}` };
+  const cookieAuth = { cookie: `reach_session=${session.token}` };
+  const nodeFile = `/api/v1/node/update/files/${tag}/${name}`;
+  const browserFile = `/api/v1/releases/files/${tag}/${name}`;
+  try {
+    assert.equal((await fetch(base + '/api/v1/node/update')).status, 401);
+    assert.equal((await fetch(base + '/api/v1/node/update', { headers: actorAuth })).status, 401);
+    assert.deepEqual(await (await fetch(base + '/api/v1/node/update', { headers: nodeAuth })).json(), { configured: true, releases: [release] });
+    assert.equal((await fetch(base + '/api/v1/releases', { headers: nodeAuth })).status, 401);
+    assert.equal((await fetch(base + nodeFile)).status, 401);
+    assert.equal((await fetch(base + browserFile)).status, 401);
+    assert.equal((await fetch(base + nodeFile, { headers: actorAuth })).status, 401);
+    assert.equal((await fetch(base + browserFile, { headers: nodeAuth })).status, 401);
+
+    const update = { manifest: Buffer.from('{"schema":2}').toString('base64'), signature: Buffer.alloc(64, 7).toString('base64'),
+      url: `https://example.test/reach/api/v1/node/update/files/${tag}/${name}` };
+    const updated = { ...release, assets: [{ ...asset, update }] };
+    catalog(updated);
+    assert.deepEqual(await (await fetch(base + '/api/v1/node/update', { headers: nodeAuth })).json(), { configured: true, releases: [updated] });
+    assert.deepEqual(await (await fetch(base + '/api/v1/releases', { headers: cookieAuth })).json(), { configured: true, releases: [updated] });
+    const browserRelative = `api/v1/releases/files/${tag}/${name}`;
+    const nodeRelative = `api/v1/node/update/files/${tag}/${name}`;
+    const localAsset = { ...asset, sources: [{ kind: 'reach', url: browserRelative }], update: { ...update, url: nodeRelative } };
+    const localRelease = { ...release, assets: [localAsset] };
+    catalog(localRelease);
+    assert.deepEqual(await (await fetch(base + '/api/v1/node/update', { headers: nodeAuth })).json(), { configured: true, releases: [localRelease] });
+    for (const host of ['bigrayzhang.cn', 'www.bigrayzhang.cn', '192.0.2.1']) {
+      assert.equal(new URL(browserRelative, `https://${host}/reach/#/downloads`).href, `https://${host}/reach/${browserRelative}`);
+    }
+    const invalidSourceUrls = [
+      `/api/v1/releases/files/${tag}/${name}`, `../${browserRelative}`, `//example.test/${browserRelative}`,
+      `api/v1/releases/files/../${name}`, `api/v1/releases/files/${tag}/../${name}`,
+      `api/v1/releases/files/${tag}/%2e%2e`, `${browserRelative}?x=1`, `api/v1/releases/files/other/${name}`, nodeRelative,
+    ];
+    for (const url of invalidSourceUrls) {
+      catalog({ ...release, assets: [{ ...localAsset, sources: [{ kind: 'reach', url }] }] });
+      assert.equal((await fetch(base + '/api/v1/node/update', { headers: nodeAuth })).status, 503, `source must reject ${url}`);
+    }
+    catalog({ ...release, assets: [{ ...localAsset, sources: [{ kind: 'gitee', url: browserRelative }] }] });
+    assert.equal((await fetch(base + '/api/v1/node/update', { headers: nodeAuth })).status, 503, 'external source must be HTTPS');
+    const invalidUpdateUrls = [
+      `/${nodeRelative}`, `../${nodeRelative}`, `//example.test/${nodeRelative}`,
+      `api/v1/node/update/files/../${name}`, `api/v1/node/update/files/${tag}/../${name}`,
+      `${nodeRelative}#fragment`, `api/v1/node/update/files/other/${name}`, browserRelative,
+    ];
+    for (const url of invalidUpdateUrls) {
+      catalog({ ...release, assets: [{ ...localAsset, update: { ...update, url } }] });
+      assert.equal((await fetch(base + '/api/v1/node/update', { headers: nodeAuth })).status, 503, `update must reject ${url}`);
+    }
+    catalog(localRelease);
+    for (const [path, headers] of [[nodeFile, nodeAuth], [browserFile, cookieAuth]] as const) {
+      const response = await fetch(base + path, { headers });
+      assert.equal(response.status, 200);
+      assert.equal(response.headers.get('content-length'), String(payload.length));
+      assert.deepEqual(Buffer.from(await response.arrayBuffer()), payload);
+    }
+    assert.equal((await fetch(base + `/api/v1/node/update/files/${tag}/unknown.exe`, { headers: nodeAuth })).status, 404);
+    assert.equal((await fetch(base + `/api/v1/releases/files/${tag}/..%2f${name}`, { headers: cookieAuth })).status, 404);
+    writeFileSync(join(assetDir, tag, name), 'wrong size');
+    const invalidFile = await fetch(base + browserFile, { headers: cookieAuth });
+    assert.equal(invalidFile.status, 503); assert.equal((await invalidFile.json()).error.code, 'release_asset_invalid');
+    rmSync(join(assetDir, tag, name));
+    const missing = await fetch(base + nodeFile, { headers: nodeAuth });
+    assert.equal(missing.status, 503); assert.equal((await missing.json()).error.code, 'release_asset_unavailable');
+    for (const invalid of [
+      { ...update, signature: Buffer.alloc(63).toString('base64') },
+      { ...update, manifest: 'not base64!' },
+      { ...update, url: 'http://example.test/setup.exe' },
+      { ...update, unexpected: true },
+    ]) {
+      catalog({ ...release, assets: [{ ...asset, update: invalid }] });
+      const response = await fetch(base + '/api/v1/node/update', { headers: nodeAuth });
+      assert.equal(response.status, 503); assert.equal((await response.json()).error.code, 'release_manifest_invalid');
+    }
+    catalog(updated);
+    store.revoke(session.user.id, node.nodeId);
+    assert.equal((await fetch(base + '/api/v1/node/update', { headers: nodeAuth })).status, 401);
+    assert.equal((await fetch(base + nodeFile, { headers: nodeAuth })).status, 401);
+  } finally {
+    await server.shutdown(); rmSync(directory, { recursive: true, force: true });
+  }
+});
 test('pairing retry survives a lost response; consumed code and changed attempt cannot create a second identity', async () => {
   const f = await fixture();
   try {
@@ -83,6 +193,7 @@ test('cancel is a request after claim; unpair rejects new work but lets original
 test('ownership, auth kinds, CSRF, and schema reject untrusted requests', async () => {
   const f = await fixture();
   try {
+    assert.deepEqual((await f.api('/api/v1/node/update', 'GET', undefined, f.installationSecret)).data, { configured: false, releases: [] });
     const { operation } = await f.enqueue();
     assert.equal((await f.api('/api/v1/nodes', 'GET', undefined, f.installationSecret)).status, 401);
     assert.equal((await f.api('/api/v1/node/pending', 'GET', undefined, f.token)).status, 401);

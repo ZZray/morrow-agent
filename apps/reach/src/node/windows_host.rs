@@ -6,6 +6,7 @@ use crate::{
     pairing,
     resident::{self, ResidentTracker},
     runtime,
+    updater::{self, UpdateBinding},
 };
 use anyhow::{bail, ensure, Context, Result};
 use serde::{Deserialize, Serialize};
@@ -24,7 +25,7 @@ use std::{
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::windows::named_pipe::{NamedPipeClient, NamedPipeServer, ServerOptions},
-    sync::{mpsc, oneshot},
+    sync::{mpsc, oneshot, watch},
     task::JoinSet,
 };
 use windows_sys::Win32::{
@@ -291,9 +292,10 @@ pub async fn serve(root: PathBuf, owner_sid: String, stop: Arc<AtomicBool>, fore
         while connections.join_next().await.is_some() {}
         Ok::<_, anyhow::Error>(())
     });
+    let (update_binding, binding_changes) = watch::channel(None);
     let updater = if !foreground {
         report_status(SERVICE_RUNNING, 0)?;
-        Some(tokio::spawn(crate::updater::run(ledger.root.clone(), update_owner)))
+        Some(tokio::spawn(updater::run(ledger.root.clone(), update_owner, binding_changes)))
     } else {
         None
     };
@@ -314,6 +316,7 @@ pub async fn serve(root: PathBuf, owner_sid: String, stop: Arc<AtomicBool>, fore
             }
             ensure!(!transport.is_finished() || control.stopping(), "Windows control transport stopped");
             let mut identity = ledger.identity()?;
+            update_binding.send_replace(UpdateBinding::from_identity(&identity));
             let cfg = resident::load_config(&ledger)?;
             let request = if identity.server.is_none() {
                 resident.awaiting_initialization();
@@ -343,6 +346,7 @@ pub async fn serve(root: PathBuf, owner_sid: String, stop: Arc<AtomicBool>, fore
                     Err(error) => {
                         if let Some(http_err) = error.downcast_ref::<HttpError>() {
                             if http_err.status == 401 && http_err.code == "node_unpaired" {
+                                update_binding.send_replace(None);
                                 identity.revoked = true;
                                 ledger.save_identity(&identity)?;
                                 let _ = crate::ssh::revoke_all_managed_keys(&ledger.root);
@@ -398,6 +402,15 @@ pub async fn serve(root: PathBuf, owner_sid: String, stop: Arc<AtomicBool>, fore
                 let result = if control.stopping() {
                     Err(anyhow::anyhow!("Node is stopping; request was not applied"))
                 } else {
+                    if matches!(
+                        &request.command,
+                        Command::Pair(_)
+                            | Command::ConfigSetServer { .. }
+                            | Command::Preconfigure { .. }
+                            | Command::Unpair
+                    ) {
+                        update_binding.send_replace(None);
+                    }
                     match request.command {
                         Command::Pair(input) => {
                             let res = pairing::pair(&mut ledger, input).await;
@@ -430,6 +443,7 @@ pub async fn serve(root: PathBuf, owner_sid: String, stop: Arc<AtomicBool>, fore
     .await;
     stop.store(true, Ordering::SeqCst);
     control.set_phase(control::STOPPING);
+    update_binding.send_replace(None);
     if let Some(updater) = updater {
         updater.abort();
         let _ = updater.await;

@@ -66,30 +66,17 @@ PATH 保留未展开文本与 RegistryValueKind。只有明确写入且当前值
 
 维护操作先取得数据父目录的外部锁，再取得原程序根目录的永久 install.lock。后者附带临时原子写的归属意图：完整记录 Flush 后才创建随机临时文件，恢复只清确切登记路径，清理确认完成后在持锁状态退休这些记录。它不替代安装 journal，也不授权按 `.new-GUID` 后缀删除旧未知文件。完整包与 Node-only 均先登记 stage/final 名单，再写随机 stage，校验后发布。卸载 schema3 分派已接入候选，实际系统安装尚未验收。
 
-## Git 自更新与 Windows 服务恢复
+## 站点自动更新与 Windows 服务恢复
 
-<a id="gitee-worker-agent-update"></a>
+2026-11-28 用户确定：Worker 定期向当前绑定的 Reach 站点查询更新，由站点返回下载地址。nmrkit 使用阿里云 OSS，Ray 工作台由自身服务器提供文件。此前的 0.1.10 Worker + Agent 只查询 Gitee，切换到站点更新需要先手动安装支持新通道的版本；这不会改变原配对和安装 ID。
 
-### Gitee Worker + Agent 整包更新
+站点发行清单保留原有下载条目，并可为适用的安装包提供更新元数据：原始签名清单、Ed25519 签名及 HTTPS 下载地址。Windows Worker 按安装包类型选择匹配的 `windows/x64` 发行，使用构建时固定的公钥验签，核对版本、标签、提交、包大小和 SHA-256。Worker + Agent 整包还核对 Agent 摘要；带 Desktop 的安装不能用该整包自动覆盖。版本必须高于当前运行版本，无法查询或校验失败时保留当前安装。
 
-2026-11-27 确定 Windows Worker + Agent 从 Gitee 的 `rzjw/morrow-agent` 自动更新。构建 Worker 时设置 `REACH_UPDATE_PUBLIC_KEY_HEX`，设备需能通过 HTTPS 读取该仓库的标签和发行附件。
+发行从 Git 指定提交构建，标签与签名清单中的提交须一致。`build-complete.ps1 -AgentWorkerOnly` 装配 Worker + Agent 包，`release-assets.ts` 生成安装器、签名清单与分离签名。将文件上传并核对字节后，再发布站点清单，避免设备看到无法下载的版本。Ray 本地文件目录由 `REACH_RELEASE_ASSET_DIR` 配置，按 `<目录>/<标签>/<文件名>` 保存；nmrkit 的地址指向 OSS。设备凭据仅用于绑定站点，外部下载不携带设备凭据。
 
-用 `build-complete.ps1 -AgentWorkerOnly` 装配整包时沿用同一个公钥。打包会检查 Worker 内嵌的仓库和公钥。再用 `release-assets.ts` 生成 `Reach-Worker-Agent-Setup-x64.exe`、`reach-update.json` 和 `reach-update.sig`，将三个文件附到 `reach-worker-agent-v<版本>`。旧 Node-only 使用 `reach-v<版本>`。更新器核对标签对应的提交、Ed25519 签名、整包大小和 SHA-256，安装器再核对内嵌 Agent 摘要。
+服务启动后低频检查，独立维护进程沿用 `maintenance-stop`、SCM 退出核对和安装 journal。`update/last-check.json` 及 `attempt-*.json` 记录查询、来源与启动结果；是否安装成功以 `last-install-result.json`、已提交的安装事务、重启后服务版本和同一配对的心跳共同核对。已有未结算操作沿原收据处理。
 
-已安装的 0.1.9 预览版需先手动安装一个带 Gitee 更新器的 Worker + Agent 包。带 Desktop 的安装需包含 Desktop 的匹配升级包。升级启动收据记在 `update/last-check.json`，安装结果以已提交的安装事务与 `last-install-result.json` 为准。正式发行附件与 Windows 服务真机升级待验证。 [Gitee 发行页](https://gitee.com/rzjw/morrow-agent/releases)
-
-2026-11-24 用户将自动更新、Windows 服务安装及异常自动恢复列为首版交付要求。本地实现已接入 `RYReach` 延迟自启、SCM 失败重启、Git 发行标签查询、签名校验和安装事务。RyDev 真实安装及双源更新的结果以[本轮验收记录](evidence/2026-11-24-rydev-service-update.md)为准。
-
-1. 以 Morrow 仓库的 Reach Git 发行标签标定版本，建议采用 `reach-vX.Y.Z`。发布时针对同一提交构建一次，生成签名清单，写明标签、提交、版本、平台、架构、包大小、SHA-256 与兼容范围。将同一份清单及安装包发布到 GitHub 和 Gitee。Git 引用和发行附件分别同步和核验。安装收据记录实际版本，发布前核对 Node、Setup、清单和收据。 [GitHub Releases](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases) · [Gitee 发行版](https://help.gitee.com/repository/release/create)
-2. 建议客户端按 GitHub、Gitee、Reach 服务固定版本下载缓存的顺序查找同一版。第三处拟走 `https://nmrkit.ciqtek.com/reach/downloads/`，可提供离线安装包。连接失败、超时或附件缺失时切换来源；每处仍用同一发行信任验证签名和包摘要。来源均不可用时保留当前运行版本，展示上次检查时间和失败原因。
-3. 把查找与下载安排在常驻服务的低频检查中，交由独立受信维护进程完成安装，沿用本页的 `maintenance-stop`、SCM 退出核对、安装 journal 和程序回退。停领并检查既有操作收据，续用安装 ID、绑定 SID、配对及原账本。存在未结算状态时延后切换，重启后查询或上传原收据。
-4. 正式安装给 `RYReach` 配置 SCM 失败重启及有上限的分级退避。恢复覆盖进程崩溃和宿主以非零状态报告 `SERVICE_STOPPED`。正常停止、维护和卸载后保持停止。安装后在真实 Windows 用 `sc.exe qc`、`qfailure`、`qfailureflag` 核对注册，再故障注入并观察新 PID、原安装 ID、配对、上线和原收据。 [Microsoft SCM 失败动作](https://learn.microsoft.com/en-us/windows/win32/api/winsvc/ns-winsvc-service_failure_actionsw) · [Microsoft 非崩溃失败标志](https://learn.microsoft.com/en-us/windows/win32/api/winsvc/ns-winsvc-service_failure_actions_flag)
-
-Node-only 测试发行使用 `REACH_RELEASE_VERSION` 写入 Node 和 Setup，构建时由 `REACH_UPDATE_PUBLIC_KEY_HEX` 固定验签公钥。`packaging/windows/release-assets.ts` 对照构建记录和 Setup `--inspect` 核对实际版本、嵌入 Node 摘要，生成 `Reach-Node-Setup-x64.exe`、`reach-update.json` 和 `reach-update.sig`。Ed25519 签名覆盖清单的原始字节，清单绑定发行标签、Git 提交和安装包摘要。
-
-当前 Node 从公开 Git HTTPS 查询新标签，访问对应发行的附件。GitHub 请求不可用时查询 Gitee。签名、标签提交或安装包完整性错误会停止本次更新，保留当前安装。Reach HTTPS 第三下载源属于后续交付项。更新日志写入受保护的安装目录，记录来源和失败阶段。自动更新仅接收更高版本，隔离验收可手动安装兼容的旧版。
-
-I03/I04/I06 的新验收需覆盖 GitHub 不可达而改用 Gitee、两仓不可达而使用 Reach 下载缓存、所有来源不可达、清单或包损坏、中断恢复、SCM 异常恢复、正常停止及升级失败回退。实测以最终签名包、双端 Git 引用、下载记录、SCM 事件和原操作收据为证据。
+`RYReach` 沿用 SCM 失败重启与有上限的退避；正常停止、维护和卸载后保持停止。真实系统安装、恢复和自动升级以[现场验收记录](evidence/2026-11-24-rydev-service-update.md)为准。macOS、Linux 及带 Desktop 的更新覆盖按各自实现单独确认。 [SCM 失败动作](https://learn.microsoft.com/en-us/windows/win32/api/winsvc/ns-winsvc-service_failure_actionsw) · [非崩溃失败标志](https://learn.microsoft.com/en-us/windows/win32/api/winsvc/ns-winsvc-service_failure_actions_flag)
 
 ## 安装候选的构建与证据
 

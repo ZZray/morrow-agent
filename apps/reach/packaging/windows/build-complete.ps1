@@ -42,8 +42,8 @@ if($AgentWorkerOnly -and $env:REACH_UPDATE_PUBLIC_KEY_HEX){
     $updateChannel=& (Resolve-Path -LiteralPath $NodeBinary).Path update-channel
     if($LASTEXITCODE-ne0){throw 'Node update channel inspection failed'}
     $updateChannel=$updateChannel|ConvertFrom-Json
-    if($updateChannel.giteeProject-cne'https://gitee.com/rzjw/morrow-agent' -or $updateChannel.publicKey-cne$env:REACH_UPDATE_PUBLIC_KEY_HEX.ToLowerInvariant()){
-        throw 'Node was not built for the Reach Gitee update channel and signing key'
+    if($updateChannel.source-cne'bound-reach' -or $updateChannel.publicKey-cne$env:REACH_UPDATE_PUBLIC_KEY_HEX.ToLowerInvariant()){
+        throw 'Node was not built for the bound Reach update source and signing key'
     }
 }
 $work=Join-Path $project ('work/full-package-'+[Guid]::NewGuid().ToString('N'));$null=[IO.Directory]::CreateDirectory($work)

@@ -23,7 +23,7 @@ const nodeSha256 = workerAgent ? build.payload?.nodeSha256 : build.nodeSha256;
 if ((!workerAgent && !legacy) || build.version !== version || build.installerName !== basename(setup)
     || build.installerSha256 !== sha256 || !/^[0-9a-f]{64}$/.test(nodeSha256)
     || (workerAgent && (!/^[0-9a-f]{64}$/.test(build.agentSha256) || !Number.isSafeInteger(build.payload?.files)
-      || build.updateChannel?.giteeProject !== 'https://gitee.com/rzjw/morrow-agent' || build.updateChannel.publicKey !== expectedPublicKey))) {
+      || build.updateChannel?.source !== 'bound-reach' || build.updateChannel.publicKey !== expectedPublicKey))) {
   throw new Error('Setup must match its installer build record and requested release version');
 }
 const installer = workerAgent ? 'Reach-Worker-Agent-Setup-x64.exe' : 'Reach-Node-Setup-x64.exe';
