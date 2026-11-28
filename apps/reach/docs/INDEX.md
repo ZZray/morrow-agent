@@ -12,7 +12,7 @@
 | [Reach 设置与 Desk 前端交接](handoffs/2026-11-24-reach-desk-settings-frontend.md) | PIN 后台设置、生产模型配置、Desk 对话、设备 Agent 与 SSH 回执 | 2026-11-24，供前端实施及联调 |
 | [Reach Web 正式部署与 PIN 验收](evidence/2026-11-24-nmrkit-web-pin.md) | nmrkit 独立部署、PIN 与 Cookie、公网页面和 API、双仓发布 SHA | 2026-11-27 两站下载清单更新为 0.1.9 预览版；nmrkit 首轮模型回复通过，设备验收待完成 |
 | [Reach 正式上线交接](handoffs/2026-11-24-reach-production.md) | Worker 安装、正式地址、发行摘要和接手待办 | 2026-11-24 |
-| [RyDev Windows 服务与 Git 双源更新验收](evidence/2026-11-24-rydev-service-update.md) | SCM 恢复、设备配对、Codex Agent 委托与原始回执、GitHub 与 Gitee 的签名更新 | RyDev 已手动升级至 0.1.9 预览版并验证 Agent 和原始回执；整包自动更新待实现 |
+| [RyDev Windows 服务与站点更新验收](evidence/2026-11-24-rydev-service-update.md) | SCM 恢复、设备配对、Codex Agent 委托与站点更新回执 | 两站已发布 0.1.13；RyDev 仍为 0.1.10，站点更新引导版安装和自动升级待验 |
 | [Morrow 接入与常驻改造任务单](tasks.md) | 接入 Morrow 新 Agent 能力、修复 R06、实施独立常驻/Starferry/`ryreach`/心跳退避计划与本地真实模型验证执行单（M01–M14） | 2026-11-14；M14 本地修复回归通过，正式网络及安装验收开放 |
 | [会话交接](handoffs/2026-11-02-ara-subproject.md) | 迁入 ARA、当前状态、验证与新会话入口 | 2026-11-02 |
 | [项目计划](project-plan.md) | 目标、组件、阶段、依赖、里程碑和文档流程 | 实施中；已纳入独立工作台应用修正 |

@@ -320,11 +320,11 @@ RyDev 的 0.1.8 和 0.1.9 预览版已分别从 Codex 完成现场 Agent 委托�
 
 用户在 Codex 会话 `01a21ae3-af6c-7183-b296-c8aff7265e7a` 提出：「下载传递到阿里云，从阿里云地址下ok？」并要求记录到知识库。方向是发布时将 Reach 安装包上传到阿里云 OSS，由下载页提供对应的 OSS 下载地址。
 
-**当前状态。** 这一方向尚未实施或验证。目前两站的 `0.1.9-preview` 清单指向站点服务器上的安装包，实际下载和 SHA-256 见[站点发布记录](../evidence/2026-11-24-nmrkit-web-pin.md#nmrkit-model-download-20261127)。完整 Worker + Agent 自动更新尚未实现，不能把切换下载地址当作自动更新已完成。
+**2026-11-27 状态。** 这一方向当时尚未实施或验证。两站的 `0.1.9-preview` 清单指向站点服务器上的安装包，实际下载和 SHA-256 见[站点发布记录](../evidence/2026-11-24-nmrkit-web-pin.md#nmrkit-model-download-20261127)。完整 Worker + Agent 自动更新当时尚未实现。
 
-**后续需确认。** 选定 OSS 存储位置与访问方式、版本化文件名及下载链接有效期；发布时核对清单中的版本和 SHA-256 与 OSS 下载的实际文件一致，并检查页面缓存和旧版本链接。GitHub/Gitee 同提交、标签及发行附件的既有要求仍适用；OSS 作为下载分发方向，不代替双端发行核验。
+**当时待确认。** 选定 OSS 存储位置与访问方式、版本化文件名及下载链接有效期；发布时核对清单中的版本和 SHA-256 与 OSS 下载的实际文件一致，并检查页面缓存和旧版本链接。
 
-2026-11-28 用户确认正式包从 Git 发行提交构建，Ray 和 nmrkit 的手动下载使用 `ciqtek-update-dev` 桶下的独立 `reach/` 前缀。Windows Worker + Agent 通过 Gitee 的发行标签和签名附件检查自动更新。两个入口使用同一安装包字节，以实际下载的 SHA-256 为验收依据。[Windows 整包更新](../installation-update.md#gitee-worker-agent-update)
+2026-11-28 用户确认正式包从 Git 发行提交构建，先使用 `ciqtek-update-dev` 桶下的独立 `reach/` 前缀和 Gitee 更新；随后改为设备向绑定站点查询更新：nmrkit 返回 OSS 地址，Ray 返回本站文件。两站的 0.1.13 安装包字节和 SHA-256 一致，旧设备首次切换需手动安装。[站点更新决定](#site-worker-updates-20261128) · [Windows 整包更新](../installation-update.md#site-worker-update)
 
 <a id="desk-bubble-multidownload-20261127"></a>
 ## 对话气泡悬浮操作栏与多平台下载页（2026-11-27）

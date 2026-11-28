@@ -124,4 +124,8 @@ Ray 和 nmrkit 的下载清单均已切换到 `0.1.10`，共用上述 OSS 地址
 
 两站从原 `4bbc977` 服务组装更新包：先核对原服务文件和已运行的 Linux sidecar 摘要，仅替换该 Git 提交的三个服务文件，再在各站隔离启动。nmrkit 与 Ray 正式服务分别于 18:43（Asia/Taipei）切换，PID 为 `1241666` 和 `795074`；用户、设备、操作与对话账本计数保持，公网健康检查均为 HTTP 200。旧 0.1.10 下载清单继续生效。
 
-0.1.13 的 Worker、Agent 和安装器按同一 Git 提交构建，安装器为 25,267,200 字节，SHA-256 为 `b08ce64eec7336ded578007e4019a4957b6ca49479dc2651b4e323b7bdbf8fef`。nmrkit 从 OSS 完整回读安装器、签名清单及签名，摘要均匹配；Ray 已下载同一组文件到本机发行目录并核对摘要。两个站点的新清单已准备并独立验签，尚未切换，等待 RyDev 完成 0.1.12 引导安装后进行自动升级实测。
+0.1.13 的 Worker、Agent 和安装器按同一 Git 提交构建，安装器为 25,267,200 字节，SHA-256 为 `b08ce64eec7336ded578007e4019a4957b6ca49479dc2651b4e323b7bdbf8fef`。nmrkit 从 OSS 完整回读安装器、签名清单及签名，摘要均匹配；Ray 已下载同一组文件到本机发行目录并核对摘要。0.1.12 和 0.1.13 标签在 GitHub、Gitee 均解析至 `5a4f1895fbeca5b57cedefafbf095da441034511`。
+
+用户随后要求更新所有线上端。18:53（Asia/Taipei），nmrkit 与 Ray 的正式清单分别切到 0.1.13；两站以服务身份读取的版本、大小和摘要一致。nmrkit 返回 OSS 地址，Ray 返回本站的浏览器与设备下载接口。RyDev 使用原设备身份请求 Ray 更新接口并完整读取本站安装包，两个请求均为 HTTP 200，字节数和 SHA-256 与发行包一致。这是设备认证与下载链路验证，不是更新器自行安装。浏览器自动化入口超时，登录后的下载页本轮未验证。
+
+GitHub 主仓 [checks](https://github.com/ZZray/morrow-agent/actions/runs/46136827291) 的 Rust Clippy 在 Morrow Core 的既有代码报错，退出码 101；[变更前基线](https://github.com/ZZray/morrow-agent/actions/runs/46120536122)已有相同的 `fetch_update` 弃用和 Clippy 报错。本次未修改该 Core 或将 CI 失败记为通过。

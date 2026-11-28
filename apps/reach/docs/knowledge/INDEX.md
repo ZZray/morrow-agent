@@ -12,7 +12,7 @@
 | [SSH 的 IPv6 直连](product-decisions.md#starferry-ipv6-20261128) | IPv4 和 IPv6 共用 UDP 端口，命令结果记录实际地址族，握手失败自动中转 | 2026-11-28 用户确认。Windows 环回、两组混合版本和中转回归通过，公网 IPv6 直连待验 |
 | [侧栏右键与「⋯」菜单视口定位约束](product-decisions.md#desk-ctxmenu-viewport-20261127) | `.desk::before` 隔离 `backdrop-filter` 包含块、`.ctx-menu` 挂至 `body` 及 `desk-menu.ts` 视口翻转算法 | 2026-11-27 用户报错；120/120 单测与 18921 浏览器通过，40bd8a6 已同步并双端部署 |
 | [Reach Desk 布局、悬浮气泡与多平台下载](product-decisions.md#desk-bubble-multidownload-20261127) | HandWave 布局与 Codex 队列、顶栏与窄屏断点、悬浮胶囊操作栏与状态精简，以及多平台下载 UI 与指令直出 | 2026-11-26/27 用户要求；Service 11/11、Admin 53/53、Platform 55/55 单测与浏览器核验通过 |
-| [安装包通过阿里云 OSS 下载](product-decisions.md#installer-download-oss-20261127) | 安装包上传 OSS，下载页使用 OSS 地址的发布方向 | 2026-11-27 用户提出并要求记录；尚未实施、切换或验证 |
+| [安装包通过阿里云 OSS 下载](product-decisions.md#installer-download-oss-20261127) | nmrkit 使用 OSS，Ray 提供本站文件，下载包字节一致 | 2026-11-28 两站发布 0.1.13；设备自动升级待验 |
 | [Codex 直接调用远端 Agent 验收](product-decisions.md#codex-remote-agent-test-20261127) | 后续远端 Agent 验收入口及 Ray Desk 线上证据 | 2026-11-27 用户决定。RyDev 远端实测和原始回执已核对；工具面板发送现象暂缓处理 |
 | [Windows 必装 Agent、SSH 按需启用及 nmrkit 对话](product-decisions.md#worker-agent-desk-20261124) | Worker 与 Agent 独立上线，离线 OpenSSH 随包，启用现有 Reach Desk 与 PIN 会话 | 2026-11-24 用户决定。首装行为与 Desk 上线待实施和验收 |
 | [Windows 双击安装后配置地址](product-decisions.md#windows-双击安装后配置地址2026-11-24) | 安装后弹窗、原启动身份及现有配置入口 | 2026-11-24 用户决定；隔离验证通过，RyDev 待重试 |

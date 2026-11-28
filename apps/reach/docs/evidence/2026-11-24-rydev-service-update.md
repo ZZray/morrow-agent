@@ -272,6 +272,6 @@ RyDev（`CAN00`）通过官方 OSS 链接完整下载 Windows x64 Worker + Agent
 
 按用户调整的方案，先手动安装站点更新引导版 0.1.12，再发布 0.1.13 观察自动升级。两版均由 Git 提交 `5a4f1895fbeca5b57cedefafbf095da441034511` 的源码归档构建，并使用原设备信任的 Ed25519 公钥验签。0.1.12 安装器的 SHA-256 为 `cd1b8150d70f5cf150dd7f1e1c1991f47105984b98a534cd4bac63c10fdac8b5`；0.1.13 为 `b08ce64eec7336ded578007e4019a4957b6ca49479dc2651b4e323b7bdbf8fef`。两份文件已传至 CAN00，并在目标机核对大小与摘要。
 
-远程启动 0.1.12 安装器的调用被自动审批以 `blocked by policy` 拒绝，命令未进入目标机。18:46（Asia/Taipei）只读复查时，RyDev 仍为 0.1.10、服务 PID `11384`，原安装 ID、Ray 节点 ID 和配对 epoch `1` 保留，状态 connected、SSH 就绪、无待结算操作。0.1.12 的真实安装和 0.1.13 的自动升级尚未执行。
+远程启动 0.1.12 安装器的调用被自动审批以 `blocked by policy` 拒绝，命令未进入目标机。18:51（Asia/Taipei）只读复查时，RyDev 仍为 0.1.10、服务 PID `11384`，原安装 ID、Ray 节点 ID 和配对 epoch `1` 保留，状态 connected、SSH 就绪、无待结算操作。0.1.12 的真实安装和 0.1.13 的自动升级尚未执行。
 
-构建与待发布清单保留在 `outputs/reach-site-autoupdate-20261128/`。0.1.13 在 OSS 与 Ray 本地存储的三个发行文件已核对，站点清单尚未切换。
+构建与清单记录保留在 `outputs/reach-site-autoupdate-20261128/`。0.1.13 在 OSS 与 Ray 本地存储的三个发行文件已核对，两站正式清单已切换。RyDev 使用现有设备身份读取 Ray 的新清单及完整安装包，HTTP 200，25,267,200 字节和 SHA-256 均匹配；该只读检查没有启动安装器，也不能证明自动更新已成功。新 Git 标签推送后，RyDev 0.1.10 仍访问 Gitee，最新检查回执为 `all_sources_unavailable`、HTTP 404，未安装新版本。

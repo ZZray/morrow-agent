@@ -66,6 +66,9 @@ PATH 保留未展开文本与 RegistryValueKind。只有明确写入且当前值
 
 维护操作先取得数据父目录的外部锁，再取得原程序根目录的永久 install.lock。后者附带临时原子写的归属意图：完整记录 Flush 后才创建随机临时文件，恢复只清确切登记路径，清理确认完成后在持锁状态退休这些记录。它不替代安装 journal，也不授权按 `.new-GUID` 后缀删除旧未知文件。完整包与 Node-only 均先登记 stage/final 名单，再写随机 stage，校验后发布。卸载 schema3 分派已接入候选，实际系统安装尚未验收。
 
+<a id="gitee-worker-agent-update"></a>
+<a id="site-worker-update"></a>
+
 ## 站点自动更新与 Windows 服务恢复
 
 2026-11-28 用户确定：Worker 定期向当前绑定的 Reach 站点查询更新，由站点返回下载地址。nmrkit 使用阿里云 OSS，Ray 工作台由自身服务器提供文件。此前的 0.1.10 Worker + Agent 只查询 Gitee，切换到站点更新需要先手动安装支持新通道的版本；这不会改变原配对和安装 ID。
