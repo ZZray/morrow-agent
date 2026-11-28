@@ -1,0 +1,84 @@
+name: Reach portable Worker
+
+on:
+  pull_request:
+    paths:
+      - 'apps/reach/**'
+      - '.github/workflows/reach-portable.yml'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Worker version (major.minor.patch, defaults to Cargo.toml)
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-22.04
+            platform: linux-x64
+          - runner: ubuntu-22.04-arm
+            platform: linux-arm64
+          - runner: macos-15-intel
+            platform: macos-x64
+          - runner: macos-15
+            platform: macos-arm64
+    runs-on: ${{ matrix.runner }}
+    defaults:
+      run:
+        working-directory: apps/reach
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rust-docs
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.20.0'
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile --ignore-scripts
+      - name: Build portable archive
+        env:
+          REQUESTED_VERSION: ${{ inputs.version }}
+        run: |
+          if [ -n "$REQUESTED_VERSION" ]; then export REACH_RELEASE_VERSION="$REQUESTED_VERSION"; fi
+          python3 packaging/portable/build.py --out dist/portable
+      - name: Verify portable packaging safeguards
+        run: python3 tests/portable_packaging_test.py -v
+      - name: Verify packaged Worker on the native runner
+        run: |
+          cd dist/portable
+          archive=(Reach-Worker-*-${{ matrix.platform }}-preview.tar.gz)
+          shasum -a 256 -c "${archive[0]}.sha256"
+          python3 - "${archive[0]}" <<'PY'
+          import sys, tarfile
+          from pathlib import Path
+
+          stem = Path(sys.argv[1]).name.removesuffix('.tar.gz')
+          with tarfile.open(sys.argv[1], 'r:gz') as package:
+              members = package.getmembers()
+          if not any(member.isfile() and member.name == f'{stem}/ryreach' for member in members):
+              raise SystemExit('archive does not contain ryreach')
+          for member in members:
+              if not (member.isdir() or member.isfile()):
+                  raise SystemExit(f'unexpected archive member: {member.name}')
+              mode = 0o755 if member.isdir() or member.name == f'{stem}/ryreach' else 0o644
+              if member.mode != mode:
+                  raise SystemExit(f'unexpected archive mode: {member.name} {member.mode:o}')
+          print(f'verified {len(members)} archive member permissions')
+          PY
+          tar -xzf "${archive[0]}"
+          export REACH_NODE_BINARY="$PWD/${archive[0]%.tar.gz}/ryreach"
+          cd ../..
+          node --test tests/portable-worker.test.ts
+        shell: bash
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reach-worker-${{ matrix.platform }}
+          path: apps/reach/dist/portable/*.tar.gz*
+          if-no-files-found: error

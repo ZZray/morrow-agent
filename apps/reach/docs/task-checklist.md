@@ -294,6 +294,12 @@
 
 阶段退出条件：干净 Windows 机器无需开发环境即可安装、配对和完成桌面操作。
 
+<a id="desktop-delivery-goals-20261127"></a>
+
+### 2026-11-27 交付目标
+
+- [ ] **I01 补齐 macOS 和 Linux 的 Reach Worker 预览版。** 各提供 x64、ARM64 归档及 SHA-256。解压后的程序应能在对应系统配对、上线、执行命令并返回文件回执。下载页按系统和架构显示已登记的包。便携预览版在终端运行。
+
 - [ ] **I01 制作独立 Windows 安装包**
 
   当前状态：进行中。已生成[完整 Windows x64 载荷](evidence/full-installer-runtime-20261103.md)，内嵌 Node、静态 helper、Python、桌面后端、配置、图标和原文声明；真实只读桌面六项通过。[维护入口固定点](evidence/maintenance-integration-20261103.md)已接入系统应用列表、同源卸载、归属与代次、原子写及卸载后重装恢复，22 组接线、16 项文件/PATH 与 40 项卸载恢复测试通过。历史[60a6 安装候选](evidence/error-artifacts-20261103.md)加入长错误正文的 helper，实际私有传输校验 6,327 文件与十档图标通过。新版[Agent完整候选](evidence/agent-package-20261104.md)含侧车、相对配置和262项原许可，4组独立workspace审计及6329文件内嵌校验、包外实跑6/6通过。真实 UAC/SCM 安装、卸载和干净机未验收。

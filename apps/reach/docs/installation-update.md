@@ -1,5 +1,9 @@
 # Windows 安装、更新与卸载
 
+macOS 和 Linux 的终端用法见[Worker 便携预览版](../packaging/portable/README.md)。在相应系统和架构上安装 Rust、`rust-docs`、本机 C 编译工具链及 Python 3，再运行 `python3 packaging/portable/build.py --out dist/portable`，或手动运行[原生构建工作流](../../../.github/workflows/reach-portable.yml)。登记下载清单时使用 `kind: node`、`os: macos` 或 `linux`、对应 `arch` 和 `format: tar.gz`。下载地址、文件大小和 SHA-256 以实际制品为准。
+
+输出目录需要支持硬链接。打包不会覆盖同名归档或校验文件；若进程中断后只留下归档，先核对现场并更换输出目录或人工处理残留文件，再重新打包。发布前应核对归档和 `.sha256` 文件成对存在且摘要一致。
+
 作者：Ray Zhang（Ray）。更新：2026-11-24。范围：D05、C03/C04、I01–I06。状态：服务宿主、桌面及Agent完整载荷、安装/卸载入口候选已实现；真实 UAC/SCM/SYSTEM、升级故障与干净机器安装尚未验收，不能代表 I01–I06 完成。
 
 ## 用户动作与安装组成
