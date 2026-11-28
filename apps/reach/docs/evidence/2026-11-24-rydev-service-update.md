@@ -253,3 +253,25 @@ Ray 控制台显示同一设备在线，版本为 0.1.9。通过网页提交一�
 通过已登记的局域网 SSH 严格验证目标为 `CAN00`。RyDev 唯一活动的物理网卡只有链路本地 IPv6，系统无 IPv6 默认路由。`RYReach` 正在运行，实际 `reach.exe` 的 SHA-256 与 0.1.9 预览包的 Worker 完整匹配。运行镜像的 Windows 文件资源版本显示 `0.1.0`，此处按实际载荷摘要确认发布版本。[0.1.9 载荷](#rydev-019-preview-20261127)
 
 这组网络缺少 RyDev 的公网 IPv6 端点，运行中的 Worker 也只支持 IPv4。本轮完成前置探测，跨公网 IPv6 SSH 直连及回执待验。
+
+<a id="rydev-gitee-worker-agent-0110-20261128"></a>
+
+## 2026-11-28 RyDev 0.1.10 手动升级与 Gitee 检查
+
+RyDev（`CAN00`）通过官方 OSS 链接完整下载 Windows x64 Worker + Agent 0.1.10。HTTPS 返回 200，共 24,843,776 字节，SHA-256 为 `8005da6c941a2ba6024be599fb8b4bb1564fd70de92ae2b1f8febedbd92f1d7d`。安装器来自 Git 标签 `reach-worker-agent-v0.1.10` 对应的提交 `4786bd65183db38cc9a127c12f29e04d7bb9d1bb`。
+
+15:53（Asia/Taipei），以原登录账号的管理员身份执行 `--silent`，安装器退出码为 0。`install-journal.json` 为 `committed`，`last-install-result.json` 包含 `version=0.1.10`、`validationPassed=true`、`automatic=false`。`RYReach` 由 LocalSystem 启动，PID 从 `32640` 切到 `11384`，运行中的 Worker 与同包 Agent 的 SHA-256 均与发行制品一致。原安装 ID、Ray 设备 ID 和配对 epoch `1` 保留，既有 SSH 就绪。Ray 后端收到 0.1.10 心跳。 [RyDev 设备](https://bigrayzhang.cn/reach/#/devices/716322c7-de35-4a4a-8c7d-d28b6087870a)
+
+服务启动后的例行检查在 15:53:38.266（Asia/Taipei）访问 Gitee，`last-check.json` 记录 `currentVersion=0.1.10`、`source=gitee`、`outcome=current`。当时尚无更高的 Worker + Agent 标签，Gitee 0.1.10 发行附件仍待补齐。更高版本的下载、自动安装和服务恢复尚待实测。
+
+本轮回执在 `outputs/rydev-gitee-autoupdate-20261128/`，包含下载摘要、安装执行、运行进程、本机更新状态和 Ray 设备心跳。
+
+<a id="rydev-site-worker-updates-20261128"></a>
+
+## 2026-11-28 RyDev 站点更新准备
+
+按用户调整的方案，先手动安装站点更新引导版 0.1.12，再发布 0.1.13 观察自动升级。两版均由 Git 提交 `5a4f1895fbeca5b57cedefafbf095da441034511` 的源码归档构建，并使用原设备信任的 Ed25519 公钥验签。0.1.12 安装器的 SHA-256 为 `cd1b8150d70f5cf150dd7f1e1c1991f47105984b98a534cd4bac63c10fdac8b5`；0.1.13 为 `b08ce64eec7336ded578007e4019a4957b6ca49479dc2651b4e323b7bdbf8fef`。两份文件已传至 CAN00，并在目标机核对大小与摘要。
+
+远程启动 0.1.12 安装器的调用被自动审批以 `blocked by policy` 拒绝，命令未进入目标机。18:46（Asia/Taipei）只读复查时，RyDev 仍为 0.1.10、服务 PID `11384`，原安装 ID、Ray 节点 ID 和配对 epoch `1` 保留，状态 connected、SSH 就绪、无待结算操作。0.1.12 的真实安装和 0.1.13 的自动升级尚未执行。
+
+构建与待发布清单保留在 `outputs/reach-site-autoupdate-20261128/`。0.1.13 在 OSS 与 Ray 本地存储的三个发行文件已核对，站点清单尚未切换。

@@ -115,3 +115,13 @@ Windows x64 Worker、Agent 和 Setup 由 `reach-worker-agent-v0.1.10` 对应的 
 Ray 和 nmrkit 的下载清单均已切换到 `0.1.10`，共用上述 OSS 地址。清单 SHA-256 由 `72be31701b3249fc0793d17e070138542c8d871a639af941db2f74a21b696052` 更新为 `e102fdb587c41813f8e4fccabb689ec2363028f343f0afaab9685e5bb5c9ecd3`。两站按实际运行服务的用户和读取入口复核，Reach PID 分别为 `733752` 与 `956058`，公网健康检查均返回 HTTP 200。Ray 的已登录 `/api/v1/releases` 返回 `0.1.10`、正确摘要和 OSS 地址。两站分别将旧清单备份到 `/root/reach-git-0.1.10-4786bd6/manifest-original.json`。
 
 从 `0.1.9-preview` 迁移到该更新通道需先手动安装 0.1.10。Windows 安装事务 26 项和 OpenSSH 7 项回归通过。nmrkit 登录态页面、Windows 服务跨版本自动更新和公网 IPv6 SSH 仍待实测。
+
+<a id="site-worker-updates-20261128"></a>
+
+## 2026-11-28 两站 Worker 更新接口
+
+用户改为由 Worker 向绑定站点查询更新：nmrkit 返回阿里云地址，Ray 由自身服务器提供文件。源码提交 `5a4f1895fbeca5b57cedefafbf095da441034511` 已同步 GitHub 和 Gitee。Windows 本机测试 38 项、服务与清单测试 17 项通过；暂存树 QBuild 编译及 `cargo-test` 通过，测试退出码 0。一次此前的工作区 QBuild 因沙箱目录访问被拒在编译前失败，保留[原记录](http://127.0.0.1:38420/#task/758e8e80e8674ec1b219a30a152cc268)；[暂存树验证](http://127.0.0.1:38420/#task/969d1669d1b54b34a1556e7f9ae8d352)与提交树一致。
+
+两站从原 `4bbc977` 服务组装更新包：先核对原服务文件和已运行的 Linux sidecar 摘要，仅替换该 Git 提交的三个服务文件，再在各站隔离启动。nmrkit 与 Ray 正式服务分别于 18:43（Asia/Taipei）切换，PID 为 `1241666` 和 `795074`；用户、设备、操作与对话账本计数保持，公网健康检查均为 HTTP 200。旧 0.1.10 下载清单继续生效。
+
+0.1.13 的 Worker、Agent 和安装器按同一 Git 提交构建，安装器为 25,267,200 字节，SHA-256 为 `b08ce64eec7336ded578007e4019a4957b6ca49479dc2651b4e323b7bdbf8fef`。nmrkit 从 OSS 完整回读安装器、签名清单及签名，摘要均匹配；Ray 已下载同一组文件到本机发行目录并核对摘要。两个站点的新清单已准备并独立验签，尚未切换，等待 RyDev 完成 0.1.12 引导安装后进行自动升级实测。
